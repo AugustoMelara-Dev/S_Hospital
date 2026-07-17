@@ -188,9 +188,10 @@ class InstitutionalReceiptPdfService
         }
 
         $invoice = $receipt->invoice;
+        $timezone = $this->operationalTimezone();
         $isOwnCurrentDayReceipt = $receipt->issued_by === $user->id
             && $receipt->issued_at !== null
-            && $receipt->issued_at->copy()->timezone(config('app.timezone'))->isSameDay(now(config('app.timezone')));
+            && $receipt->issued_at->copy()->timezone($timezone)->isSameDay(now($timezone));
 
         if ($invoice instanceof Invoice) {
             abort_unless($invoiceAccess->canOperateInvoice($user, $invoice), 403);
@@ -199,6 +200,15 @@ class InstitutionalReceiptPdfService
         }
 
         abort_unless($isOwnCurrentDayReceipt, 403);
+    }
+
+    private function operationalTimezone(): string
+    {
+        $timezone = config('app.timezone', 'America/Tegucigalpa');
+
+        return is_string($timezone) && $timezone !== ''
+            ? $timezone
+            : 'America/Tegucigalpa';
     }
 
     private function recordLockedPrintEvent(InstitutionalReceipt $lockedReceipt, User $user, ?string $reason): InstitutionalReceiptPrintEvent

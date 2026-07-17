@@ -18,17 +18,20 @@ class PaperSize
     private const CUSTOM_HEIGHT_MAX_MM = 220;
 
     /**
-     * @param  array{paper_kind?: string|null, width_mm?: mixed, height_mm?: mixed}  $profile
+     * @param  array<string, mixed>  $profile
      * @return array{0: int, 1: int, 2: float, 3: float}
      */
     public static function fromProfileSnapshot(array $profile): array
     {
-        $paperKind = (string) ($profile['paper_kind'] ?? '');
+        $paperKind = $profile['paper_kind'] ?? null;
+        if (! is_string($paperKind)) {
+            throw new InvalidArgumentException('Institutional receipt paper kind must be a string.');
+        }
 
         return match ($paperKind) {
             'custom_mm' => self::customPaper(
-                (float) ($profile['width_mm'] ?? 0),
-                (float) ($profile['height_mm'] ?? 0),
+                self::dimension($profile, 'width_mm'),
+                self::dimension($profile, 'height_mm'),
             ),
             'half_letter_landscape' => [0, 0, 612, 396],
             'a5_landscape' => [0, 0, 595.28, 419.53],
@@ -36,11 +39,24 @@ class PaperSize
             'thermal_80mm', 'thermal_58mm' => [
                 0,
                 0,
-                self::mmToPoints((float) ($profile['width_mm'] ?? 0)),
-                self::mmToPoints((float) ($profile['height_mm'] ?? 0)),
+                self::mmToPoints(self::dimension($profile, 'width_mm')),
+                self::mmToPoints(self::dimension($profile, 'height_mm')),
             ],
             default => throw new InvalidArgumentException("Unsupported institutional receipt paper kind [{$paperKind}]."),
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $profile
+     */
+    private static function dimension(array $profile, string $field): float
+    {
+        $value = $profile[$field] ?? null;
+        if ((! is_int($value) && ! is_float($value) && ! is_string($value)) || ! is_numeric($value)) {
+            throw new InvalidArgumentException("Institutional receipt paper {$field} must be numeric.");
+        }
+
+        return (float) $value;
     }
 
     /**

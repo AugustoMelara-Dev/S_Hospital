@@ -12119,3 +12119,25 @@ Fechas y conteos son entradas obligatorias en este flujo; tratarlas como mixtas 
 ### Decision
 
 Los totales de un cierre son evidencia financiera inmutable. Validarlos con el parser monetario central evita que JSON mal formado se presente como cero u otro importe coercionado y conserva centavos exactos.
+
+## 519. Fase PHPStan 9 - Papel y zona operativa de recibos validados
+
+### Cambios
+
+- `PaperSize` acepta snapshots JSON completos pero valida `paper_kind` y dimensiones antes de convertirlos.
+- Papel personalizado y termico comparten un unico normalizador numerico de milimetros.
+- La autorizacion PDF resuelve la zona horaria configurada una sola vez con fallback local seguro.
+- No cambian tamanos institucionales, limites fisicos, permisos de reimpresion ni alcance del cajero.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre servicio y utilidad | OK: 0 errores. |
+| Pint sobre servicio y utilidad | OK. |
+| PDF, papel institucional y autorizacion de recibos | OK: 31 tests, 1323 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 712 a 705 hallazgos. |
+
+### Decision
+
+Los snapshots historicos cruzan una frontera JSON y deben validarse en la utilidad que interpreta sus dimensiones. Centralizar esa validacion evita papeles silenciosamente deformados, mientras una zona concreta mantiene estable el limite operativo diario.
