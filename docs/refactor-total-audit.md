@@ -10768,3 +10768,25 @@ La consulta solo puede producir series institucionales. Declararlo elimina ambig
 ### Decision
 
 Las hojas de calculo aceptan un unico payload ejecutivo y objetos Worksheet reales. En salud operativa, `getPdo()` ya devuelve un PDO o falla; eliminar una condicion siempre verdadera hace que el probe exprese la semantica efectiva sin cambiar su degradacion segura.
+
+## 459. Fase PHPStan 6 - Secciones del PDF ejecutivo tipadas
+
+### Cambios
+
+- `ExecutivePdfExportService` define aliases para el reporte raiz y sus secciones internas.
+- Generacion, HTML, cabecera, resumen, lectura financiera, metodos, tendencias, servicios, cajas, pendientes y auditoria declaran valores de sus arrays.
+- No cambian HTML, CSS, escapes, formato monetario ni permisos de auditoria.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 18 arrays sin tipo de valor. |
+| PHPStan nivel 6 sobre el servicio | OK: 0 errores. |
+| Pint sobre el servicio | OK. |
+| PDF ejecutivo, contenido y permisos | OK: 7 tests, 32 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 118 a 100 hallazgos. |
+
+### Decision
+
+Todas las secciones del PDF consumen partes del mismo reporte ejecutivo. Un contrato raiz y otro para secciones eliminan arrays opacos sin inventar un segundo formato ni alterar la representacion del documento.

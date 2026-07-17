@@ -12,9 +12,16 @@ use Carbon\Carbon;
  * accounting document for Hospital San Isidro. All amounts are
  * shown in L. 1,234.50 (lempiras with period) format, the only
  * place where that variant is allowed.
+ *
+ * @phpstan-type ExecutiveReport array<string, mixed>
+ * @phpstan-type ReportData array<array-key, mixed>
  */
 class ExecutivePdfExportService
 {
+    /**
+     * @param  ExecutiveReport  $report
+     * @param  array<string, mixed>  $fiscal
+     */
     public function buildHtml(array $report, array $fiscal, ?string $generatedBy = null, ?Carbon $generatedAt = null): string
     {
         $now = $generatedAt ?? Carbon::now('America/Tegucigalpa');
@@ -59,6 +66,10 @@ class ExecutivePdfExportService
         return $html;
     }
 
+    /**
+     * @param  ExecutiveReport  $report
+     * @param  array<string, mixed>  $fiscal
+     */
     public function generate(array $report, array $fiscal, ?string $generatedBy = null, ?Carbon $generatedAt = null): string
     {
         $html = $this->buildHtml($report, $fiscal, $generatedBy, $generatedAt);
@@ -126,6 +137,7 @@ class ExecutivePdfExportService
         return '<div class="section-heading"><h2 class="section-title">'.$this->e($title).'</h2>'.$sub.'</div>';
     }
 
+    /** @param ReportData $period */
     private function renderHeader(
         string $hospitalName,
         string $rtn,
@@ -160,6 +172,10 @@ class ExecutivePdfExportService
 HTML;
     }
 
+    /**
+     * @param  ReportData  $summary
+     * @param  ReportData  $comparison
+     */
     private function renderExecutiveSummary(array $summary, array $comparison): string
     {
         $billed = $this->money($summary['billed_total'] ?? '0.00');
@@ -205,6 +221,11 @@ HTML;
             .'</div>';
     }
 
+    /**
+     * @param  ReportData  $summary
+     * @param  ReportData  $paymentMethods
+     * @param  ReportData  $accountingPolicy
+     */
     private function renderFinancialReading(array $summary, array $paymentMethods, array $accountingPolicy): string
     {
         $billed = $this->money($summary['billed_total'] ?? '0.00');
@@ -236,6 +257,7 @@ HTML;
         ).$this->renderTable($rows, ['left', 'right', 'left']);
     }
 
+    /** @param ReportData $paymentMethods */
     private function renderPaymentMethods(array $paymentMethods): string
     {
         $rows = [['Metodo', 'Monto', 'Pagos', '% del total']];
@@ -254,6 +276,7 @@ HTML;
         ).$this->renderTable($rows, ['left', 'right', 'right', 'right']);
     }
 
+    /** @param ReportData $dailyTrend */
     private function renderDailyTrend(array $dailyTrend): string
     {
         if ($dailyTrend === []) {
@@ -279,6 +302,7 @@ HTML;
         ).$this->renderTable($rows, ['left', 'right', 'right', 'right', 'right', 'right']);
     }
 
+    /** @param ReportData $services */
     private function renderServices(array $services): string
     {
         $byAmount = $services['top_by_amount'] ?? [];
@@ -352,6 +376,7 @@ HTML;
         return $html;
     }
 
+    /** @param ReportData $cashiers */
     private function renderCashiers(array $cashiers): string
     {
         if ($cashiers === []) {
@@ -380,6 +405,7 @@ HTML;
         ).$this->renderTable($rows, ['left', 'right', 'right', 'right', 'right', 'right', 'right', 'right', 'right']);
     }
 
+    /** @param ReportData $cashSessions */
     private function renderCashSessions(array $cashSessions): string
     {
         if ($cashSessions === []) {
@@ -408,6 +434,7 @@ HTML;
         ).$this->renderTable($rows, ['left', 'left', 'left', 'right', 'right', 'right', 'right', 'left', 'left']);
     }
 
+    /** @param ReportData $pendingAging */
     private function renderPendingAging(array $pendingAging): string
     {
         $items = $pendingAging['items'] ?? [];
@@ -453,6 +480,7 @@ HTML;
         return $html;
     }
 
+    /** @param ReportData $rows */
     private function renderVoidsAndReversals(array $rows): string
     {
         if ($rows === []) {
@@ -481,6 +509,7 @@ HTML;
         ).$this->renderTable($tableRows, ['left', 'left', 'left', 'right', 'left', 'left', 'left', 'left']);
     }
 
+    /** @param ReportData $audit */
     private function renderAudit(array $audit): string
     {
         $rows = [
