@@ -20,11 +20,19 @@ class PruneCommandsTest extends TestCase
             ->firstWhere('name', 'audit_logs_created_at_id_index');
         $failedJobsIndex = collect(Schema::getIndexes('failed_jobs'))
             ->firstWhere('name', 'failed_jobs_failed_at_id_index');
+        $loginAttemptsIndex = collect(Schema::getIndexes('login_attempts'))
+            ->firstWhere('name', 'login_attempts_attempted_at_id_index');
+        $clientErrorsIndex = collect(Schema::getIndexes('client_error_logs'))
+            ->firstWhere('name', 'client_error_logs_occurred_at_id_index');
 
         $this->assertIsArray($auditIndex);
         $this->assertSame(['created_at', 'id'], $auditIndex['columns']);
         $this->assertIsArray($failedJobsIndex);
         $this->assertSame(['failed_at', 'id'], $failedJobsIndex['columns']);
+        $this->assertIsArray($loginAttemptsIndex);
+        $this->assertSame(['attempted_at', 'id'], $loginAttemptsIndex['columns']);
+        $this->assertIsArray($clientErrorsIndex);
+        $this->assertSame(['occurred_at', 'id'], $clientErrorsIndex['columns']);
     }
 
     public function test_prune_audit_logs_deletes_rows_older_than_cutoff(): void
