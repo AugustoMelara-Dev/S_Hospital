@@ -11,6 +11,7 @@ class PruneFailedJobsCommand extends Command
 {
     protected $signature = 'hospital:prune-failed-jobs
         {--days=30 : Keep failed_jobs rows newer than this many days}
+        {--chunk=1000 : Maximum rows deleted per batch}
         {--dry-run : Report the number of rows that would be deleted without removing them}';
 
     protected $description = 'Delete failed_jobs rows older than the configured retention window.';
@@ -18,6 +19,7 @@ class PruneFailedJobsCommand extends Command
     public function handle(): int
     {
         $days = (int) $this->option('days');
+        $chunk = min(5000, max(1, (int) $this->option('chunk')));
         if ($days < 1) {
             $this->error('Retention must be at least 1 day to keep the diagnostic trail.');
 
@@ -41,9 +43,32 @@ class PruneFailedJobsCommand extends Command
             return self::SUCCESS;
         }
 
-        $deleted = $query->delete();
+        $deleted = $this->deleteInChunks($cutoff, $chunk);
         $this->info(sprintf('Podadas %d filas de failed_jobs anteriores a %s.', $deleted, $cutoff->toIso8601String()));
 
         return self::SUCCESS;
+    }
+
+    private function deleteInChunks(\DateTimeInterface $cutoff, int $chunk): int
+    {
+        $deleted = 0;
+
+        do {
+            $ids = DB::table('failed_jobs')
+                ->where('failed_at', '<', $cutoff)
+                ->orderBy('id')
+                ->limit($chunk)
+                ->pluck('id');
+
+            if ($ids->isEmpty()) {
+                break;
+            }
+
+            $deleted += DB::table('failed_jobs')
+                ->whereIn('id', $ids)
+                ->delete();
+        } while ($ids->count() === $chunk);
+
+        return $deleted;
     }
 }

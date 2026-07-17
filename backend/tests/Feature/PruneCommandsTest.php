@@ -49,6 +49,29 @@ class PruneCommandsTest extends TestCase
         $this->assertSame('invoice.issued', AuditLog::query()->first()->action);
     }
 
+    public function test_prune_audit_logs_deletes_in_bounded_chunks(): void
+    {
+        foreach (range(1, 3) as $entityId) {
+            AuditLog::query()->create([
+                'action' => 'invoice.issued',
+                'entity_type' => 'App\\Models\\Invoice',
+                'entity_id' => $entityId,
+                'created_at' => now()->subDays(500),
+            ]);
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        Artisan::call('hospital:prune-audit-logs', ['--days' => 365, '--chunk' => 1]);
+
+        $deleteQueries = collect(DB::getQueryLog())
+            ->filter(fn (array $entry): bool => preg_match('/^delete from [`"]audit_logs[`"]/i', $entry['query']) === 1);
+
+        $this->assertCount(3, $deleteQueries);
+        $this->assertSame(0, AuditLog::query()->count());
+    }
+
     public function test_prune_audit_logs_dry_run_does_not_delete(): void
     {
         AuditLog::query()->create([
@@ -92,6 +115,31 @@ class PruneCommandsTest extends TestCase
 
         $this->assertSame(1, \DB::table('failed_jobs')->count());
         $this->assertSame('new-row', \DB::table('failed_jobs')->value('uuid'));
+    }
+
+    public function test_prune_failed_jobs_deletes_in_bounded_chunks(): void
+    {
+        foreach (range(1, 3) as $id) {
+            DB::table('failed_jobs')->insert([
+                'uuid' => "old-row-{$id}",
+                'connection' => 'database',
+                'queue' => 'backups',
+                'payload' => '[]',
+                'exception' => 'old',
+                'failed_at' => now()->subDays(60),
+            ]);
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        Artisan::call('hospital:prune-failed-jobs', ['--days' => 30, '--chunk' => 1]);
+
+        $deleteQueries = collect(DB::getQueryLog())
+            ->filter(fn (array $entry): bool => preg_match('/^delete from [`"]failed_jobs[`"]/i', $entry['query']) === 1);
+
+        $this->assertCount(3, $deleteQueries);
+        $this->assertSame(0, DB::table('failed_jobs')->count());
     }
 
     public function test_audit_admin_helper_runs_callback_when_driver_is_not_mysql(): void
