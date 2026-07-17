@@ -5,11 +5,25 @@ namespace Tests\Feature\Console;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class PruneIdempotencyKeysCommandTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_idempotency_pruning_scopes_have_temporal_indexes(): void
+    {
+        $legacyIndex = collect(Schema::getIndexes('idempotency_keys'))
+            ->firstWhere('name', 'idempotency_keys_completed_updated_id_index');
+        $operationIndex = collect(Schema::getIndexes('operation_idempotency_keys'))
+            ->firstWhere('name', 'operation_idempotency_keys_updated_at_id_index');
+
+        $this->assertIsArray($legacyIndex);
+        $this->assertSame(['completed_at', 'updated_at', 'id'], $legacyIndex['columns']);
+        $this->assertIsArray($operationIndex);
+        $this->assertSame(['updated_at', 'id'], $operationIndex['columns']);
+    }
 
     public function test_idempotency_pruning_is_registered_in_the_daily_scheduler(): void
     {
