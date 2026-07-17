@@ -92,4 +92,21 @@ class ProductionDockerfileTest extends TestCase
             );
         }
     }
+
+    public function test_composer_builder_validates_php_on_the_runtime_base(): void
+    {
+        $dockerfile = file_get_contents(base_path('Dockerfile.prod'));
+
+        $this->assertIsString($dockerfile);
+        $this->assertStringContainsString('FROM composer:2 AS composer-cli', $dockerfile);
+        $this->assertStringContainsString('FROM php:8.3-fpm-alpine AS composer-builder', $dockerfile);
+        $this->assertSame(2, substr_count($dockerfile, 'FROM php:8.3-fpm-alpine'));
+        $this->assertStringContainsString(
+            'COPY --from=composer-cli /usr/bin/composer /usr/bin/composer',
+            $dockerfile,
+        );
+        $this->assertStringContainsString('apk add --no-cache unzip', $dockerfile);
+        $this->assertStringContainsString("--ignore-platform-req='ext-*'", $dockerfile);
+        $this->assertStringNotContainsString('--ignore-platform-reqs', $dockerfile);
+    }
 }

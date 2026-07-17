@@ -12,11 +12,14 @@ COPY frontend/ ./
 # Build production assets (vite build outputs to /app/dist)
 RUN pnpm run build
 
-# === STAGE 2: Install backend Composer dependencies ===
-FROM composer:2 AS composer-builder
+# === STAGE 2: Install backend Composer dependencies on runtime PHP ===
+FROM composer:2 AS composer-cli
+FROM php:8.3-fpm-alpine AS composer-builder
+COPY --from=composer-cli /usr/bin/composer /usr/bin/composer
+RUN apk add --no-cache unzip
 WORKDIR /app
 COPY backend/composer.json backend/composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-req='ext-*'
 
 # === STAGE 3: Final Production Image (PHP-FPM) ===
 FROM php:8.3-fpm-alpine
