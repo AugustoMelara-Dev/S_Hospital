@@ -1,6 +1,6 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
-import { Drawer } from 'antd';
+import { Button, Drawer } from 'antd';
 import { cn } from '../../lib/utils';
 import { type AppNavigationItem } from '../../navigation/appNavigation';
 
@@ -42,15 +42,16 @@ export function InstitutionalMobileNav({ activeItem, navigation, onOpenChange, o
           );
         })}
         {remainingItems.length > 0 ? (
-          <button
-            type="button"
+          <Button
+            htmlType="button"
+            type="text"
             className="flex h-auto min-w-14 flex-1 cursor-pointer flex-col items-center justify-center gap-1 px-2 py-2 text-xs text-sidebar-foreground/65 outline-none transition hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             aria-label="Más destinos"
             onClick={() => onOpenChange(true)}
           >
             <MenuOutlined className="text-lg" aria-hidden="true" />
             <span>Más</span>
-          </button>
+          </Button>
         ) : null}
       </nav>
 

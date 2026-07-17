@@ -7,7 +7,7 @@ import {
   InboxOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { Button } from 'antd';
+import { Button, Collapse } from 'antd';
 
 export type RouteStateKind =
   | 'loading'
@@ -75,10 +75,15 @@ export function RouteState({ action, description, detail, headingLevel = 1, kind
           </Heading>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">{description}</p>
           {detail ? (
-            <details className="mt-4 border border-border bg-muted/30 p-3 text-left text-sm text-muted-foreground">
-              <summary className="min-h-11 cursor-pointer py-3 font-medium text-foreground">Ver detalle</summary>
-              <p className="border-l border-border pl-3 leading-6">{detail}</p>
-            </details>
+            <Collapse
+              className="mt-4 border border-border bg-muted/30 text-left text-sm"
+              items={[{
+                key: 'detail',
+                label: 'Ver detalle',
+                forceRender: true,
+                children: <p className="border-l border-border pl-3 leading-6 text-muted-foreground">{detail}</p>,
+              }]}
+            />
           ) : null}
           {actionable ? (
             <div className="mt-6">

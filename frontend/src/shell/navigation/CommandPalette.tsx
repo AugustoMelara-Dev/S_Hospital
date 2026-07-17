@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, Input } from 'antd';
+import { Button, Input, Modal } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
@@ -138,8 +138,10 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
                 const isActive = index === activeIndex;
                 return (
                   <li key={item.id}>
-                    <button
-                      type="button"
+                    <Button
+                      htmlType="button"
+                      type="text"
+                      block
                       onClick={() => selectCommand(item.path)}
                       className={cn(
                         'flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 py-2.5 text-left text-sm font-normal text-foreground outline-none transition',
@@ -150,7 +152,7 @@ export function CommandPalette({ navigation, onOpenChange, open, user }: Command
                       <span className={cn('text-xs font-semibold uppercase tracking-wider', isActive ? 'text-primary-foreground' : 'text-muted-foreground')}>
                         {item.group}
                       </span>
-                    </button>
+                    </Button>
                   </li>
                 );
               })}
