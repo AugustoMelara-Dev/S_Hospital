@@ -75,7 +75,7 @@ class RoleController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        abort_unless($request->user()?->can('users.view'), 403);
+        abort_unless($this->authenticatedUser($request)->can('users.view'), 403);
 
         return response()->json([
             'data' => Role::query()

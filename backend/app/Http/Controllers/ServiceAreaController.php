@@ -13,7 +13,7 @@ class ServiceAreaController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $request->user()->can('catalog.view') || abort(403);
+        $this->authenticatedUser($request)->can('catalog.view') || abort(403);
 
         $areas = ServiceArea::query()
             ->when($request->has('active'), fn ($query) => $query->where('active', $request->boolean('active')))

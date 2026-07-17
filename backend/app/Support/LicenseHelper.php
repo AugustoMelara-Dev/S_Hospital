@@ -69,7 +69,13 @@ class LicenseHelper
         }
 
         try {
-            $licenseData = json_decode(Storage::disk('local')->get('license.json'), true, 512, JSON_THROW_ON_ERROR);
+            $contents = Storage::disk('local')->get('license.json');
+
+            if (! is_string($contents)) {
+                throw new RuntimeException('No se pudo leer el archivo de registro local.');
+            }
+
+            $licenseData = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
 
             if (
                 ! is_array($licenseData)

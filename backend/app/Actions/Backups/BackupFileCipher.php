@@ -24,7 +24,7 @@ class BackupFileCipher
             $tag,
         );
 
-        if ($cipherText === false) {
+        if ($cipherText === false || ! is_string($tag)) {
             throw new RuntimeException('No se pudo cifrar el backup local.');
         }
 

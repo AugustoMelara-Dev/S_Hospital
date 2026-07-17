@@ -323,11 +323,10 @@ class SystemStatusController extends Controller
         ];
         $lastSuccessFileIsUsable = $lastSuccessFile['exists'] && $lastSuccessFile['checksum_matches'];
         $workerRecentlyActive = $workerRecentlyActive && $lastSuccessFileIsUsable;
-        $lastFailureIsUnresolved = $lastFailure !== null
-            && (
-                $lastSuccess === null
-                || $lastFailure->created_at->greaterThan($lastSuccess->created_at)
-            );
+        $lastFailureAt = $lastFailure?->created_at;
+        $lastSuccessAt = $lastSuccess?->created_at;
+        $lastFailureIsUnresolved = $lastFailureAt !== null
+            && ($lastSuccessAt === null || $lastFailureAt->greaterThan($lastSuccessAt));
         if (! $workerRecentlyActive && $lastSuccess?->completed_at !== null) {
             $schedulerHeartbeat = (string) ($queueStatus['scheduler_heartbeat']['status'] ?? 'never_run');
             $workerRecentlyActive =

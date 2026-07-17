@@ -11515,3 +11515,28 @@ Facturas, pagos y cajas son registros auditables que no se borran dentro de esto
 ### Decision
 
 Un recibo pagado necesita una identidad de cajero trazable; una relacion rota debe detener la emision. En cambio, el logo es decorativo y puede degradarse con seguridad. Separar esas dos politicas mantiene estricta la auditoria sin volver fragil la impresion.
+
+## 492. Fase PHPStan 8 - Cierre de fronteras externas
+
+### Cambios
+
+- Cifrado de backups valida que OpenSSL entregue tag y ciphertext antes de codificarlos.
+- Excel ejecutivo usa `ReportDate` para obtener fechas concretas ya validadas.
+- Roles y areas de servicio reutilizan la precondicion de usuario autenticado.
+- Estado del sistema compara fallos y exitos solo cuando existen timestamps concretos.
+- Licencia local valida que storage entregue contenido textual antes de decodificar JSON.
+- No cambian cifrado valido, permisos, catalogo, metricas, licencia ni archivos exportados normales.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 8 sobre los seis archivos | OK: 0 errores. |
+| Pint sobre los seis archivos | OK. |
+| Backups, licencia, roles, catalogo, estado y Excel ejecutivo | OK: 133 tests, 796 assertions. |
+| Roundtrip dependiente de `mysqldump` | 1 prueba omitida por binario no disponible; sin fallo funcional. |
+| PHPStan nivel 8 global sobre `app` y `routes` | OK: 0 errores; inventario inicial de 137 resuelto. |
+
+### Decision
+
+Las APIs de cifrado, storage y parseo declaran resultados que pueden fallar incluso tras comprobaciones previas. Validar esos resultados en la frontera evita conversiones silenciosas y completa nivel 8 sin baseline, supresiones ni relajacion de tipos.

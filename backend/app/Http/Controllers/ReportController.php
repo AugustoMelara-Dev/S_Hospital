@@ -15,6 +15,7 @@ use App\Actions\Reports\MonthlyReportService;
 use App\Actions\Reports\OperationsReportService;
 use App\Actions\Reports\PdfExportService;
 use App\Actions\Reports\PremiumExcelExportService;
+use App\Actions\Reports\ReportDate;
 use App\Actions\Reports\ServiceSalesReportService;
 use App\Actions\Reports\TodayReportService;
 use App\Http\Requests\Reports\DailyReportRequest;
@@ -278,8 +279,8 @@ class ReportController extends Controller
         $spreadsheet = $excelService->generate(
             $report,
             $fiscal->toArray(),
-            Carbon::createFromFormat('Y-m-d', $request->dateFrom()),
-            Carbon::createFromFormat('Y-m-d', $request->dateTo()),
+            ReportDate::day($request->dateFrom()),
+            ReportDate::day($request->dateTo()),
             $request->user()?->name,
         );
 
