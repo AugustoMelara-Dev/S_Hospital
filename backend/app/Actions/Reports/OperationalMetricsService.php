@@ -170,10 +170,7 @@ class OperationalMetricsService
     {
         try {
             return DB::table('audit_logs')
-                ->where(static function ($query): void {
-                    $query->where('action', 'like', '%.failed')
-                        ->orWhere('action', 'like', '%.error');
-                })
+                ->where('result', 'failed')
                 ->orderByDesc('created_at')
                 ->limit(5)
                 ->get(['action', 'created_at'])

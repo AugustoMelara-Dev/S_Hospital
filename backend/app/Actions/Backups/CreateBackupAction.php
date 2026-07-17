@@ -273,6 +273,7 @@ class CreateBackupAction
         AuditLog::query()->create([
             'user_id' => $userId,
             'action' => $action,
+            'result' => $backupLog->status === BackupLog::STATUS_SUCCESS ? 'success' : 'failed',
             'entity_type' => BackupLog::class,
             'entity_id' => $backupLog->id,
             'old_values' => null,

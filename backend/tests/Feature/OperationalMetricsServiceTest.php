@@ -87,6 +87,7 @@ class OperationalMetricsServiceTest extends TestCase
         AuditLog::query()->create([
             'user_id' => null,
             'action' => 'backup.failed',
+            'result' => 'failed',
             'entity_type' => BackupLog::class,
             'entity_id' => 123,
             'old_values' => null,
@@ -177,6 +178,7 @@ class OperationalMetricsServiceTest extends TestCase
         AuditLog::query()->create([
             'user_id' => null,
             'action' => 'backup.failed',
+            'result' => 'failed',
             'entity_type' => BackupLog::class,
             'entity_id' => 1,
             'old_values' => null,
@@ -188,6 +190,59 @@ class OperationalMetricsServiceTest extends TestCase
 
         $this->assertNotEmpty($snapshot['recent_errors']);
         $this->assertSame('backup.failed', $snapshot['recent_errors'][0]['action']);
+    }
+
+    public function test_recent_errors_uses_the_indexed_result_instead_of_action_suffixes(): void
+    {
+        AuditLog::query()->create([
+            'user_id' => null,
+            'action' => 'system.operational_alert',
+            'result' => 'failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => 10,
+            'created_at' => now(),
+        ]);
+        AuditLog::query()->create([
+            'user_id' => null,
+            'action' => 'legacy.backup.failed',
+            'result' => 'success',
+            'entity_type' => BackupLog::class,
+            'entity_id' => 11,
+            'created_at' => now()->addSecond(),
+        ]);
+
+        $errors = app(OperationalMetricsService::class)->snapshot()['recent_errors'];
+
+        $this->assertCount(1, $errors);
+        $this->assertSame('system.operational_alert', $errors[0]['action']);
+    }
+
+    public function test_failure_result_migration_backfills_legacy_action_suffixes(): void
+    {
+        $legacy = AuditLog::query()->create([
+            'user_id' => null,
+            'action' => 'backup.failed',
+            'result' => 'success',
+            'entity_type' => BackupLog::class,
+            'entity_id' => 12,
+            'created_at' => now(),
+        ]);
+        $successful = AuditLog::query()->create([
+            'user_id' => null,
+            'action' => 'backup.created',
+            'result' => 'success',
+            'entity_type' => BackupLog::class,
+            'entity_id' => 13,
+            'created_at' => now(),
+        ]);
+        $migrationPath = database_path('migrations/2026_07_16_000001_backfill_audit_failure_results.php');
+
+        $this->assertFileExists($migrationPath);
+        $migration = require $migrationPath;
+        $migration->up();
+
+        $this->assertSame('failed', $legacy->fresh()->result);
+        $this->assertSame('success', $successful->fresh()->result);
     }
 
     public function test_overall_health_score_reports_a_worker_idle_issue(): void

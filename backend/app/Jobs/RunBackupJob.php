@@ -54,6 +54,7 @@ class RunBackupJob implements ShouldQueue
         AuditLog::query()->create([
             'user_id' => $backupLog->created_by,
             'action' => 'backup.failed',
+            'result' => 'failed',
             'entity_type' => BackupLog::class,
             'entity_id' => $backupLog->id,
             'old_values' => null,

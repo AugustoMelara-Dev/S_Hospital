@@ -96,6 +96,7 @@ class AuditLogTest extends TestCase
         AuditLog::query()->create([
             'user_id' => null,
             'action' => 'backup.failed',
+            'result' => 'failed',
             'entity_type' => BackupLog::class,
             'entity_id' => 1,
             'new_values' => ['status' => 'failed'],
