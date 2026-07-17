@@ -10593,3 +10593,24 @@ El recibo institucional es el documento principal del sistema y cruza facturacio
 ### Decision
 
 La caja es el limite transaccional que enlaza usuario, pagos y movimientos. Sus relaciones explicitas permiten que el analizador detecte cruces de modelo incorrectos sin tocar importes, bloqueos, cierres ni auditoria historica.
+
+## 451. Fase PHPStan 6 - Historial de precios tipado
+
+### Cambios
+
+- `ServicePriceHistory` declara el servicio afectado y el usuario responsable de cada cambio.
+- Se conservan la clave `changed_by`, los casts monetarios y la fecha efectiva.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 2 genericos incompletos. |
+| PHPStan nivel 6 sobre el modelo | OK: 0 errores. |
+| Pint sobre el modelo | OK. |
+| Cambio de precio, motivo y auditoria | OK: 7 tests, 26 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 158 a 156 hallazgos. |
+
+### Decision
+
+El historial preserva quien cambio cada precio y a que servicio pertenece. Tipar ambos extremos permite validar esa trazabilidad sin modificar importes, motivos ni reglas de auditoria.
