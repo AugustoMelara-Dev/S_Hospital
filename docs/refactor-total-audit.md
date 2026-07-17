@@ -11693,3 +11693,26 @@ Los resultados de expresiones SQL pierden tipo en la capa ORM. Validarlos antes 
 ### Decision
 
 Los datos validados deben transformarse a shapes de dominio antes de cruzar hacia acciones o respuestas. Construirlos explicitamente evita que arrays mixtos entren a conciliacion, reglas de catalogo o mensajes operativos.
+
+## 500. Fase PHPStan 9 - Contratos internos de caja
+
+### Cambios
+
+- El lock MySQL de apertura acepta solo los resultados validos `1` o `"1"` sin cast desde `mixed`.
+- Cierre de caja declara el shape exacto del desglose recibido y opera directamente con enteros y string monetario validados.
+- Se eliminan conversiones internas que podian ocultar un payload mal formado.
+- No cambian exclusividad de caja, denominaciones, conciliacion, diferencias, auditoria ni movimientos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Documentacion oficial de `cast.int` | Revisada antes de corregir el identificador nuevo. |
+| PHPStan nivel 9 sobre apertura y cierre | OK: 0 errores. |
+| Pint sobre ambas acciones | OK. |
+| Apertura, pagos, cierre, diferencias e inmutabilidad | OK: 48 tests, 454 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 787 a 784 hallazgos. |
+
+### Decision
+
+El resultado de un advisory lock y el conteo fisico de caja son datos operativos sensibles. Comparar el lock estrictamente y propagar un shape concreto de denominaciones evita coerciones silenciosas en rutas de concurrencia y conciliacion.

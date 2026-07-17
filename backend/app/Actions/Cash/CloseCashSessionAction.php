@@ -25,7 +25,7 @@ class CloseCashSessionAction
     public function __construct(private readonly BuildCashReconciliationAction $buildCashReconciliation) {}
 
     /**
-     * @param  array{closing_amount: string, notes?: ?string, closing_breakdown?: array<string, mixed>}  $payload
+     * @param  array{closing_amount: string, notes?: ?string, closing_breakdown?: array{bills: array<int, int>, other_amount: string}}  $payload
      *
      * @throws AuthorizationException
      */
@@ -175,7 +175,7 @@ class CloseCashSessionAction
     }
 
     /**
-     * @param  array<string, mixed>|null  $breakdown
+     * @param  array{bills: array<int, int>, other_amount: string}|null  $breakdown
      * @return array{bills: array<int, int>, other_amount: string}|null
      */
     private function normalizeClosingBreakdown(?array $breakdown): ?array
@@ -184,14 +184,14 @@ class CloseCashSessionAction
             return null;
         }
 
-        $providedBills = is_array($breakdown['bills'] ?? null) ? $breakdown['bills'] : [];
+        $providedBills = $breakdown['bills'];
         $bills = [];
 
         foreach (self::BILL_DENOMINATIONS as $denomination) {
-            $bills[$denomination] = (int) ($providedBills[$denomination] ?? 0);
+            $bills[$denomination] = $providedBills[$denomination] ?? 0;
         }
 
-        $otherCents = Money::parseCents((string) ($breakdown['other_amount'] ?? '0.00'), 'closing_breakdown.other_amount');
+        $otherCents = Money::parseCents($breakdown['other_amount'], 'closing_breakdown.other_amount');
 
         return [
             'bills' => $bills,

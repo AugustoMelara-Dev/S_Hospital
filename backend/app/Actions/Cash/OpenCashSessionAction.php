@@ -108,8 +108,9 @@ class OpenCashSessionAction
 
         $result = DB::selectOne('SELECT GET_LOCK(?, 10) AS acquired', [self::OPEN_SESSION_LOCK_NAME]);
         $row = (array) $result;
+        $acquired = $row['acquired'] ?? null;
 
-        if ((int) ($row['acquired'] ?? 0) !== 1) {
+        if ($acquired !== 1 && $acquired !== '1') {
             throw ValidationException::withMessages([
                 'cash_session' => 'Otra apertura de caja esta en proceso. Intente de nuevo en unos segundos.',
             ]);
