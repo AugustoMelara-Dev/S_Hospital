@@ -9746,3 +9746,26 @@ Cobertura debe medir la suite unitaria y Storybook debe conservar su gate de nav
 ### Decision
 
 El canal `invoices` se mantiene como compatibilidad del contrato backend, pero una instancia del shell no debe reaccionar dos veces al mismo evento. Escuchar pagos solo en `payments` evita toasts duplicados, tres invalidaciones redundantes adicionales y trabajo de red/cache innecesario por cada cobro o reversa.
+
+## 413. Fase Reportes - Efectivo vivo sin N+1 de cajas
+
+### Cambios
+
+- El reporte ejecutivo carga hasta 50 cajas y obtiene los cobros en efectivo de todas las cajas abiertas con una sola consulta agrupada por `cash_session_id`.
+- Se elimina el `SUM` individual que se ejecutaba dentro del `map` de cada caja abierta.
+- Cajas cerradas conservan su snapshot `expected_amount`; cajas abiertas conservan apertura mas pagos posted en efectivo, excluyendo facturas anuladas.
+- Una prueba con tres cajeros/cajas escucha SQL y prohíbe consultas `SUM` parametrizadas por cada sesion.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| Prueba RED con 3 cajas abiertas | Falla: detecta 3 consultas `SUM`, una por caja. |
+| Pruebas focalizadas de efectivo vivo y presupuesto | OK: 2 tests, 10 assertions. |
+| `ExecutiveReportTest.php` completo | OK: 15 tests, 191 assertions. |
+| Pint focalizado | OK. |
+| PHPStan sobre `ExecutiveReportService` | OK. |
+
+### Decision
+
+El costo de mostrar cajas abiertas debe ser constante respecto al numero de sesiones incluidas. La agregacion reduce el camino de 1 + N consultas a una consulta de sesiones y una de efectivo agrupado, sin cambiar reglas contables ni snapshots de cajas cerradas.

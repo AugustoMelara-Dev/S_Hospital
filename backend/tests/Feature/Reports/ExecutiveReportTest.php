@@ -358,6 +358,40 @@ class ExecutiveReportTest extends TestCase
             ->assertJsonPath('data.cash_sessions.0.difference', null);
     }
 
+    public function test_executive_aggregates_live_cash_without_querying_each_open_session(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+
+        foreach (range(1, 3) as $_) {
+            $this->openSession($this->cashier());
+        }
+
+        $queries = [];
+        \DB::listen(function ($query) use (&$queries): void {
+            $queries[] = strtolower($query->sql);
+        });
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->assertJsonCount(3, 'data.cash_sessions');
+
+        $perSessionCashQueries = collect($queries)->filter(
+            fn (string $sql): bool => str_contains($sql, 'sum(')
+                && str_contains($sql, 'payments')
+                && preg_match('/cash_session_id[^?]*=\s*\?/', $sql) === 1,
+        );
+
+        $this->assertCount(
+            0,
+            $perSessionCashQueries,
+            'Open cash must be aggregated once; a SUM query per session creates an N+1 report path.',
+        );
+    }
+
     public function test_executive_includes_audit_summary_counts(): void
     {
         $this->seedBillingBase();
