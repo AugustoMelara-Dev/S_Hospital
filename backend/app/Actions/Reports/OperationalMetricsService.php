@@ -139,8 +139,8 @@ class OperationalMetricsService
                 ->first();
 
             return [
-                'backup_files' => (int) ($summary?->backup_files ?? 0),
-                'backup_bytes' => (int) ($summary?->backup_bytes ?? 0),
+                'backup_files' => (int) ($summary->backup_files ?? 0),
+                'backup_bytes' => (int) ($summary->backup_bytes ?? 0),
             ];
         } catch (Throwable $exception) {
             Log::warning('OperationalMetricsService: storage probe failed', ['message' => $exception->getMessage()]);

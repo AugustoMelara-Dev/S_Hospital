@@ -193,18 +193,6 @@ parameters:
 			path: app/Actions/Reports/MonthlyReportService.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>backup_bytes" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Reports/OperationalMetricsService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>backup_files" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Reports/OperationalMetricsService.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>rtn" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1

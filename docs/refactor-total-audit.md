@@ -10046,3 +10046,24 @@ La autorizacion no necesita resolver tres veces al principal de la solicitud. Va
 ### Decision
 
 Permisos y propiedad deben evaluarse sobre el mismo principal autenticado. La consolidacion elimina lecturas redundantes del resolver de usuario y hace imposible continuar hacia filtros o consultas de caja con un principal nulo, sin ampliar el alcance de cajeros ni alterar la capacidad gerencial.
+
+## 426. Fase Observabilidad - Agregado de almacenamiento con fila garantizada
+
+### Cambios
+
+- `OperationalMetricsService::storage()` accede directamente a la fila devuelta por `COUNT(*)` y `COALESCE(SUM(...), 0)`.
+- Se conserva el fallback de cada columna y el `catch` que degrada el sondeo ante un fallo real de base de datos.
+- Se retiran dos excepciones `nullsafe.neverNull`; el baseline PHPStan baja de 40 a 38 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo las excepciones | RED: 2 errores `nullsafe.neverNull` en las columnas agregadas. |
+| PHPStan estricto despues | OK: 0 errores fuera del baseline. |
+| `OperationalMetricsServiceTest.php` | OK: 17 tests, 72 assertions. |
+| Pint focalizado | OK. |
+
+### Decision
+
+Una consulta SQL sin `GROUP BY` que selecciona agregados siempre produce una fila, incluso sin respaldos. `COUNT` y `COALESCE(SUM)` fijan ambos valores; la ausencia de fila no era un estado operativo posible, mientras que errores de conexion o esquema siguen cubiertos por la degradacion segura existente.
