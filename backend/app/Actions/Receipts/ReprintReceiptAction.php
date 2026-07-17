@@ -17,6 +17,7 @@ class ReprintReceiptAction
         private readonly AuditLogger $auditLogger,
     ) {}
 
+    /** @return array{receipt: array<string, mixed>, audit: array<string, mixed>} */
     public function execute(Invoice $invoice, User $user, string $width, ?string $reason = null, ?Request $request = null): array
     {
         return DB::transaction(function () use ($invoice, $user, $width, $reason, $request) {

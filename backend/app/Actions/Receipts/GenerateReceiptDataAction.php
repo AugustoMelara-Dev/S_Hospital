@@ -14,6 +14,7 @@ class GenerateReceiptDataAction
 {
     public function __construct(private readonly AmountToSpanishWords $amountToSpanishWords) {}
 
+    /** @return array<string, mixed> */
     public function execute(Invoice $invoice, string $width, ?string $copyLabel = null): array
     {
         $paperSize = ReceiptPaperSize::normalize($width);

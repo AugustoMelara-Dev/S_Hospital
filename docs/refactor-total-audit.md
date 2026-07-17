@@ -10899,3 +10899,24 @@ Los metodos de pago admitidos son un conjunto cerrado usado en todos los reporte
 ### Decision
 
 Laravel distingue reglas declarativas de validadores posteriores. Tipar ambos contratos en toda la frontera HTTP evita arrays opacos y documenta la extension correcta del framework, sin duplicar ni flexibilizar reglas de negocio.
+
+## 465. Fase PHPStan 6 - Payloads de recibo y reimpresion
+
+### Cambios
+
+- `GenerateReceiptDataAction::execute()` declara un payload institucional con claves de texto.
+- `ReprintReceiptAction::execute()` declara las dos secciones entregadas: recibo y evidencia de auditoria.
+- No cambian snapshots, importes, etiquetas de copia ni transaccion de reimpresion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 6 sobre ambas acciones | OK: 0 errores. |
+| Pint sobre ambas acciones | OK. |
+| Historial, permisos, snapshots y reimpresion inmutable | OK: 24 tests, 145 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 21 a 19 hallazgos. |
+
+### Decision
+
+La accion generadora produce datos de presentacion y la accion de reimpresion los acompana con auditoria. Tipar esa envoltura hace explicita la frontera sin duplicar el shape detallado del recibo ni alterar su fuente historica.
