@@ -46,13 +46,14 @@ class OpenCashSessionAction
                     ]);
                 }
 
+                $openedAt = now();
                 $session = CashRegisterSession::query()->create([
                     'user_id' => $user->id,
                     'open_user_id' => $user->id,
                     'opening_amount' => $payload['opening_amount'],
                     'status' => CashRegisterSession::STATUS_OPEN,
                     'opening_notes' => $payload['notes'] ?? null,
-                    'opened_at' => now(),
+                    'opened_at' => $openedAt,
                 ]);
 
                 if (Money::parseCents($payload['opening_amount'], 'opening_amount') > 0) {
@@ -74,12 +75,12 @@ class OpenCashSessionAction
                     request: $request,
                     newValues: [
                         'opening_amount' => $session->opening_amount,
-                        'opened_at' => $session->opened_at->toISOString(),
+                        'opened_at' => $openedAt->toISOString(),
                     ],
                 );
 
                 DB::afterCommit(function () use ($session) {
-                    CashSessionChanged::dispatch($session->fresh(), 'opened');
+                    CashSessionChanged::dispatch($session->refresh(), 'opened');
                 });
 
                 return $session->load('user:id,name,username');

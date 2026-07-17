@@ -164,7 +164,7 @@ class CreateInvoiceAction
                 // if the DB transaction actually committed. Listeners
                 // (other cashier PCs) get a fresh invoice they can refetch.
                 DB::afterCommit(function () use ($invoice) {
-                    InvoiceChanged::dispatch($invoice->fresh(), 'created');
+                    InvoiceChanged::dispatch($invoice->refresh(), 'created');
                 });
 
                 return $invoice->load('items', 'issuer:id,name,username');

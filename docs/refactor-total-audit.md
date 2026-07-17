@@ -11469,3 +11469,25 @@ Los servicios de dominio no deben asumir que un parser nullable produjo una fech
 ### Decision
 
 Los reportes operativos deben degradarse con etiquetas seguras ante relaciones o timestamps historicos incompletos. Para integridad, la ausencia de contenido debe producir checksum no coincidente, nunca un hash de un valor nullable.
+
+## 490. Fase PHPStan 8 - Modelos concretos en eventos monetarios
+
+### Cambios
+
+- Eventos post-commit de facturas, pagos y caja usan `refresh()` sobre modelos que el dominio conserva, en vez de `fresh()` nullable.
+- Apertura de caja persiste y audita el mismo timestamp concreto generado antes de crear la sesion.
+- Broadcasts siguen ocurriendo solo despues de confirmar la transaccion.
+- No cambian estados, montos, idempotencia, conciliacion, permisos, auditoria ni payloads de eventos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 8 sobre las siete acciones | OK: 0 errores. |
+| Pint sobre las siete acciones | OK. |
+| Facturacion, anulacion, reversion, pagos, recibos y cierre de caja | OK: 134 tests, 972 assertions. |
+| Inventario PHPStan nivel 8 global | Baja de 24 a 14 hallazgos. |
+
+### Decision
+
+Facturas, pagos y cajas son registros auditables que no se borran dentro de estos flujos. `refresh()` representa esa invariancia y entrega a cada evento un modelo concreto; si el registro desapareciera por corrupcion, debe fallar de forma observable en vez de propagar `null`.

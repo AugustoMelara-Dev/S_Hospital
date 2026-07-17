@@ -166,8 +166,8 @@ class VoidPaymentAction
             ]);
 
             DB::afterCommit(function () use ($lockedPayment, $lockedInvoice) {
-                PaymentChanged::dispatch($lockedPayment->fresh(), 'voided');
-                InvoiceChanged::dispatch($lockedInvoice->fresh(), 'updated');
+                PaymentChanged::dispatch($lockedPayment->refresh(), 'voided');
+                InvoiceChanged::dispatch($lockedInvoice->refresh(), 'updated');
             });
 
             return $lockedPayment->load(

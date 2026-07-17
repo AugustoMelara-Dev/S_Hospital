@@ -150,8 +150,8 @@ class RegisterPaymentAction
             );
 
             DB::afterCommit(function () use ($payment, $lockedInvoice) {
-                PaymentChanged::dispatch($payment->fresh(), 'registered');
-                InvoiceChanged::dispatch($lockedInvoice->fresh(), 'updated');
+                PaymentChanged::dispatch($payment->refresh(), 'registered');
+                InvoiceChanged::dispatch($lockedInvoice->refresh(), 'updated');
             });
 
             return $payment->load('user:id,name,username', 'cashSession:id,user_id,status,opened_at');

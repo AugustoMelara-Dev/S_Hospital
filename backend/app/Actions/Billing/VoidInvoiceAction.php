@@ -119,7 +119,7 @@ class VoidInvoiceAction
             ]);
 
             DB::afterCommit(function () use ($lockedInvoice) {
-                InvoiceChanged::dispatch($lockedInvoice->fresh(), 'voided');
+                InvoiceChanged::dispatch($lockedInvoice->refresh(), 'voided');
             });
 
             return $lockedInvoice->load([
