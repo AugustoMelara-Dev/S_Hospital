@@ -93,21 +93,25 @@ class CashRegisterSession extends Model
         });
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function closedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'closed_by_user_id');
     }
 
+    /** @return HasMany<Payment, $this> */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'cash_session_id');
     }
 
+    /** @return HasMany<CashMovement, $this> */
     public function movements(): HasMany
     {
         return $this->hasMany(CashMovement::class, 'cash_session_id');

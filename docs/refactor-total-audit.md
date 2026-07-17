@@ -10571,3 +10571,25 @@ El tipado conserva las relaciones que usa facturacion y permite seguir el histor
 ### Decision
 
 El recibo institucional es el documento principal del sistema y cruza facturacion, caja, usuarios e impresion. Precisar todas sus relaciones fortalece el analisis de esa trazabilidad completa sin modificar numeracion, snapshots, autorizacion ni reglas de anulacion.
+
+## 450. Fase PHPStan 6 - Relaciones del agregado de caja
+
+### Cambios
+
+- `CashRegisterSession` tipa cajero, usuario de cierre, pagos y movimientos.
+- `CashMovement` tipa sesion, pago asociado y usuario responsable.
+- Se conservan claves explicitas, reglas de inmutabilidad y consultas de conciliacion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 7 genericos incompletos. |
+| PHPStan nivel 6 sobre ambos modelos | OK: 0 errores. |
+| Pint sobre ambos modelos | OK. |
+| Apertura, cobros, conciliacion, cierre e inmutabilidad | OK: 53 tests, 477 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 165 a 158 hallazgos. |
+
+### Decision
+
+La caja es el limite transaccional que enlaza usuario, pagos y movimientos. Sus relaciones explicitas permiten que el analizador detecte cruces de modelo incorrectos sin tocar importes, bloqueos, cierres ni auditoria historica.
