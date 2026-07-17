@@ -95,15 +95,19 @@ class OperationalMetricsService
         ];
 
         try {
-            $stats['pending'] = (int) DB::table('backup_logs')->where('status', 'pending')->count();
-            $stats['success_last_24h'] = (int) DB::table('backup_logs')
-                ->where('status', 'success')
-                ->where('completed_at', '>=', now()->subDay())
-                ->count();
-            $stats['failed_last_24h'] = (int) DB::table('backup_logs')
-                ->where('status', 'failed')
-                ->where('completed_at', '>=', now()->subDay())
-                ->count();
+            $since = now()->subDay();
+            $summary = DB::table('backup_logs')
+                ->selectRaw(
+                    'COALESCE(SUM(CASE WHEN status = ? THEN 1 ELSE 0 END), 0) as pending,
+                    COALESCE(SUM(CASE WHEN status = ? AND completed_at >= ? THEN 1 ELSE 0 END), 0) as success_last_24h,
+                    COALESCE(SUM(CASE WHEN status = ? AND completed_at >= ? THEN 1 ELSE 0 END), 0) as failed_last_24h',
+                    ['pending', 'success', $since, 'failed', $since],
+                )
+                ->first();
+
+            $stats['pending'] = (int) ($summary->pending ?? 0);
+            $stats['success_last_24h'] = (int) ($summary->success_last_24h ?? 0);
+            $stats['failed_last_24h'] = (int) ($summary->failed_last_24h ?? 0);
 
             $latestSuccessfulBackup = BackupLog::query()
                 ->where('status', BackupLog::STATUS_SUCCESS)

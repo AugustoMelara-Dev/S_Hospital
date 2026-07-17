@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Models\BackupLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -25,6 +26,19 @@ class OperationalMetricsServiceTest extends TestCase
 
         $this->assertIsArray($index);
         $this->assertSame(['status', 'completed_at', 'id'], $index['columns']);
+    }
+
+    public function test_snapshot_uses_at_most_three_backup_log_queries(): void
+    {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        app(OperationalMetricsService::class)->snapshot();
+
+        $backupQueries = collect(DB::getQueryLog())
+            ->filter(fn (array $entry): bool => preg_match('/\bfrom\s+[`"]backup_logs[`"]/i', $entry['query']) === 1);
+
+        $this->assertLessThanOrEqual(3, $backupQueries->count(), $backupQueries->pluck('query')->implode("\n"));
     }
 
     public function test_snapshot_returns_all_sections(): void
