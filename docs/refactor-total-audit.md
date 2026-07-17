@@ -11310,3 +11310,26 @@ Aunque las rutas autenticadas normalmente garantizan usuario, el controlador tam
 ### Decision
 
 El usuario autenticado es una precondicion transversal de las operaciones monetarias y debe declararse una sola vez. `refresh()` expresa mejor que la factura debe seguir existiendo dentro de la transaccion que un `fresh()` nullable seguido de una llamada inmediata.
+
+## 483. Fase PHPStan 8 - Usuario concreto en configuracion de recibos
+
+### Cambios
+
+- `InstitutionalReceiptSettingsController` usa la precondicion autenticada comun para consultar permisos, resolver perfiles y registrar autoria.
+- Creacion y edicion de institucion, series, perfiles y asignaciones ya no desreferencian un usuario nullable.
+- Las pruebas de vista previa e impresion conservan el mismo usuario concreto durante resolucion y autorizacion.
+- No cambian permisos, perfiles, numeracion, auditoria, formatos de papel ni contenido del recibo.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 8 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Configuracion, perfiles, emision, PDF, pagos y concurrencia de recibos | OK: 73 tests, 1555 assertions. |
+| Prueba exclusiva del guard generado de MySQL | 1 omitida fuera de MySQL; sin fallo funcional. |
+| Inventario PHPStan nivel 8 global | Baja de 103 a 82 hallazgos. |
+
+### Decision
+
+La configuracion de impresion es una frontera autenticada con efectos auditables. Exigir un `User` concreto antes de comprobar permisos o persistir autoria elimina accesos inseguros sin alterar las reglas operativas de recibos.

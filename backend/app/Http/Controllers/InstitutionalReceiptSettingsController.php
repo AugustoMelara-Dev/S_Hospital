@@ -28,12 +28,12 @@ class InstitutionalReceiptSettingsController extends Controller
     public function show(ViewReceiptSettingsRequest $request, ResolveReceiptPrintProfileAction $resolver): JsonResponse
     {
         try {
-            $resolvedProfile = $resolver->execute($request->user());
+            $resolvedProfile = $resolver->execute($this->authenticatedUser($request));
         } catch (ValidationException) {
             $resolvedProfile = null;
         }
 
-        $canViewAdvanced = $request->user()->can('receipt_settings.advanced');
+        $canViewAdvanced = $this->authenticatedUser($request)->can('receipt_settings.advanced');
         $printProfiles = $this->profilesQuery()->get();
         $assignments = ReceiptProfileAssignment::query()
             ->with('printProfile')
@@ -71,7 +71,7 @@ class InstitutionalReceiptSettingsController extends Controller
                     'primary_color' => 'indigo',
                     'receipt_paper_size' => 'half_letter',
                 ]);
-                $setting->created_by = $request->user()->id;
+                $setting->created_by = $this->authenticatedUser($request)->id;
             }
 
             $values = $request->validated();
@@ -81,11 +81,11 @@ class InstitutionalReceiptSettingsController extends Controller
                 ...$values,
                 'receipt_template_mode' => $request->input('receipt_template_mode', 'institutional'),
             ]);
-            $setting->updated_by = $request->user()->id;
+            $setting->updated_by = $this->authenticatedUser($request)->id;
             $setting->save();
 
             $this->audit(
-                $request->user()->id,
+                $this->authenticatedUser($request)->id,
                 $oldValues ? 'institutional_receipt.settings.updated' : 'institutional_receipt.settings.created',
                 FiscalSetting::class,
                 $setting->id,
@@ -118,12 +118,12 @@ class InstitutionalReceiptSettingsController extends Controller
                 'reprint_behavior' => InstitutionalReceiptSeries::REPRINT_AUDIT_ONLY,
                 'void_behavior' => InstitutionalReceiptSeries::VOID_PERMISSION_REASON_AUDIT,
                 ...$request->validated(),
-                'created_by' => $request->user()->id,
-                'updated_by' => $request->user()->id,
+                'created_by' => $this->authenticatedUser($request)->id,
+                'updated_by' => $this->authenticatedUser($request)->id,
             ]);
 
             $this->audit(
-                $request->user()->id,
+                $this->authenticatedUser($request)->id,
                 'institutional_receipt_series.created',
                 InstitutionalReceiptSeries::class,
                 $series->id,
@@ -145,11 +145,11 @@ class InstitutionalReceiptSettingsController extends Controller
             $oldValues = $this->seriesAuditPayload($series);
 
             $series->fill($request->validated());
-            $series->updated_by = $request->user()->id;
+            $series->updated_by = $this->authenticatedUser($request)->id;
             $series->save();
 
             $this->audit(
-                $request->user()->id,
+                $this->authenticatedUser($request)->id,
                 'institutional_receipt_series.updated',
                 InstitutionalReceiptSeries::class,
                 $series->id,
@@ -167,7 +167,7 @@ class InstitutionalReceiptSettingsController extends Controller
 
     public function printProfiles(ViewReceiptSettingsRequest $request): JsonResponse
     {
-        $canViewAdvanced = $request->user()->can('receipt_settings.advanced');
+        $canViewAdvanced = $this->authenticatedUser($request)->can('receipt_settings.advanced');
 
         return response()->json([
             'data' => $this->serializePrintProfiles($this->profilesQuery()->get(), $canViewAdvanced),
@@ -176,7 +176,7 @@ class InstitutionalReceiptSettingsController extends Controller
 
     public function updatePrintProfile(UpdateReceiptPrintProfileRequest $request, ReceiptPrintProfile $profile): JsonResponse
     {
-        if ($request->hasAdvancedFields() && ! $request->user()->can('receipt_settings.advanced')) {
+        if ($request->hasAdvancedFields() && ! $this->authenticatedUser($request)->can('receipt_settings.advanced')) {
             AuditLogger::log(
                 action: 'receipt_settings.advanced_denied',
                 entity: $profile,
@@ -214,7 +214,7 @@ class InstitutionalReceiptSettingsController extends Controller
                         $defaultProfile->save();
 
                         $this->audit(
-                            $request->user()->id,
+                            $this->authenticatedUser($request)->id,
                             'receipt_print_profile.updated',
                             ReceiptPrintProfile::class,
                             $defaultProfile->id,
@@ -231,7 +231,7 @@ class InstitutionalReceiptSettingsController extends Controller
             $profile->save();
 
             $this->audit(
-                $request->user()->id,
+                $this->authenticatedUser($request)->id,
                 'receipt_print_profile.updated',
                 ReceiptPrintProfile::class,
                 $profile->id,
@@ -268,11 +268,11 @@ class InstitutionalReceiptSettingsController extends Controller
                 $oldAssignmentValues = $this->assignmentAuditPayload($item);
 
                 $item->active = false;
-                $item->updated_by = $request->user()->id;
+                $item->updated_by = $this->authenticatedUser($request)->id;
                 $item->save();
 
                 $this->audit(
-                    $request->user()->id,
+                    $this->authenticatedUser($request)->id,
                     'receipt_profile_assignment.deactivated',
                     ReceiptProfileAssignment::class,
                     $item->id,
@@ -290,12 +290,12 @@ class InstitutionalReceiptSettingsController extends Controller
                 'scope_type' => $scopeType,
                 'scope_id' => $scopeId,
                 'active' => $active,
-                'created_by' => $request->user()->id,
-                'updated_by' => $request->user()->id,
+                'created_by' => $this->authenticatedUser($request)->id,
+                'updated_by' => $this->authenticatedUser($request)->id,
             ]);
 
             $this->audit(
-                $request->user()->id,
+                $this->authenticatedUser($request)->id,
                 $existing->isEmpty() ? 'receipt_profile_assignment.created' : 'receipt_profile_assignment.replaced',
                 ReceiptProfileAssignment::class,
                 $assignment->id,
@@ -313,7 +313,7 @@ class InstitutionalReceiptSettingsController extends Controller
 
     public function testPreview(TestReceiptPreviewRequest $request, ResolveReceiptPrintProfileAction $resolver): JsonResponse
     {
-        $user = $request->user();
+        $user = $this->authenticatedUser($request);
         $profile = $request->filled('profile_id') || $request->filled('profile_code')
             ? $this->profileFromRequest($request->validated())
             : $resolver->execute($user);
@@ -330,7 +330,7 @@ class InstitutionalReceiptSettingsController extends Controller
         $nextNumber = $series ? $series->current_number + 1 : null;
 
         $this->audit(
-            $request->user()->id,
+            $this->authenticatedUser($request)->id,
             'institutional_receipt.test_preview_requested',
             InstitutionalReceiptSeries::class,
             $series?->id,
@@ -362,7 +362,7 @@ class InstitutionalReceiptSettingsController extends Controller
         ResolveReceiptPrintProfileAction $resolver,
         InstitutionalReceiptPdfService $pdfService,
     ): Response {
-        $user = $request->user();
+        $user = $this->authenticatedUser($request);
         $profile = $request->filled('profile_id') || $request->filled('profile_code')
             ? $this->profileFromRequest($request->validated())
             : $resolver->execute($user);
@@ -481,7 +481,7 @@ class InstitutionalReceiptSettingsController extends Controller
         TestReceiptPreviewRequest $request,
         ReceiptPrintProfile $profile,
     ): ?JsonResponse {
-        if (! $this->isSupportOnlyProfile($profile) || $request->user()->can('receipt_settings.advanced')) {
+        if (! $this->isSupportOnlyProfile($profile) || $this->authenticatedUser($request)->can('receipt_settings.advanced')) {
             return null;
         }
 
