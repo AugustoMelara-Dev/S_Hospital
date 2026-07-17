@@ -109,41 +109,49 @@ class InstitutionalReceipt extends Model
         ];
     }
 
+    /** @return BelongsTo<Invoice, $this> */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
     }
 
+    /** @return BelongsTo<Payment, $this> */
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class);
     }
 
+    /** @return BelongsTo<CashRegisterSession, $this> */
     public function cashSession(): BelongsTo
     {
         return $this->belongsTo(CashRegisterSession::class, 'cash_session_id');
     }
 
+    /** @return BelongsTo<InstitutionalReceiptSeries, $this> */
     public function series(): BelongsTo
     {
         return $this->belongsTo(InstitutionalReceiptSeries::class, 'series_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function issuer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_by');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function voidedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'voided_by');
     }
 
+    /** @return BelongsTo<ReceiptPrintProfile, $this> */
     public function printProfile(): BelongsTo
     {
         return $this->belongsTo(ReceiptPrintProfile::class, 'print_profile_code', 'code');
     }
 
+    /** @return HasMany<InstitutionalReceiptPrintEvent, $this> */
     public function printEvents(): HasMany
     {
         return $this->hasMany(InstitutionalReceiptPrintEvent::class);

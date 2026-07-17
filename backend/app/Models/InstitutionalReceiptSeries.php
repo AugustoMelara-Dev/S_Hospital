@@ -79,16 +79,19 @@ class InstitutionalReceiptSeries extends Model
         ];
     }
 
+    /** @return HasMany<InstitutionalReceipt, $this> */
     public function receipts(): HasMany
     {
         return $this->hasMany(InstitutionalReceipt::class, 'series_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');

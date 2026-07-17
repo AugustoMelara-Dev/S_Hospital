@@ -48,11 +48,13 @@ class InstitutionalReceiptPrintEvent extends Model
         ];
     }
 
+    /** @return BelongsTo<InstitutionalReceipt, $this> */
     public function receipt(): BelongsTo
     {
         return $this->belongsTo(InstitutionalReceipt::class, 'institutional_receipt_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

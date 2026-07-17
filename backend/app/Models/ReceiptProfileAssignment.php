@@ -44,16 +44,19 @@ class ReceiptProfileAssignment extends Model
         ];
     }
 
+    /** @return BelongsTo<ReceiptPrintProfile, $this> */
     public function printProfile(): BelongsTo
     {
         return $this->belongsTo(ReceiptPrintProfile::class, 'receipt_print_profile_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');

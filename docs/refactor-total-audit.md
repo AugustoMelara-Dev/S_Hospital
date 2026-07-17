@@ -10549,3 +10549,25 @@ Estas relaciones forman la trazabilidad monetaria desde una partida hasta el cob
 ### Decision
 
 El tipado conserva las relaciones que usa facturacion y permite seguir el historial de precios con modelos concretos. Retirar el trait inoperante de `ServiceArea` evita anunciar una API de factories que Laravel no podia resolver porque nunca tuvo implementacion.
+
+## 449. Fase PHPStan 6 - Relaciones de recibos institucionales
+
+### Cambios
+
+- `InstitutionalReceipt` tipa sus relaciones con factura, pago, caja, serie, emisor, anulador, perfil y eventos de impresion.
+- La serie, los eventos, los perfiles y sus asignaciones tipan las relaciones inversas y los usuarios auditores.
+- Los 18 contratos declaran modelos relacionados y propietarios sin cambiar claves, filtros ni persistencia.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 18 genericos incompletos. |
+| PHPStan nivel 6 sobre los cinco modelos | OK: 0 errores. |
+| Pint sobre los cinco modelos | OK. |
+| Emision, numeracion, configuracion, perfiles y pagos | OK: 53 tests, 361 assertions; 1 guard exclusivo de MySQL omitido explicitamente en SQLite. |
+| Inventario PHPStan nivel 6 global | Baja de 183 a 165 hallazgos. |
+
+### Decision
+
+El recibo institucional es el documento principal del sistema y cruza facturacion, caja, usuarios e impresion. Precisar todas sus relaciones fortalece el analisis de esa trazabilidad completa sin modificar numeracion, snapshots, autorizacion ni reglas de anulacion.

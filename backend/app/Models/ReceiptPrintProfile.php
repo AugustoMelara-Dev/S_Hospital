@@ -96,11 +96,13 @@ class ReceiptPrintProfile extends Model
         ];
     }
 
+    /** @return HasMany<ReceiptProfileAssignment, $this> */
     public function assignments(): HasMany
     {
         return $this->hasMany(ReceiptProfileAssignment::class);
     }
 
+    /** @return HasMany<InstitutionalReceipt, $this> */
     public function receipts(): HasMany
     {
         return $this->hasMany(InstitutionalReceipt::class, 'print_profile_code', 'code');
