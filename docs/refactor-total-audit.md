@@ -11943,3 +11943,25 @@ La identidad forense no debe fabricarse mediante coercion desde un valor arbitra
 ### Decision
 
 Los renglones nacen dentro de la misma accion con centavos concretos; conservar ese contrato hasta la suma elimina coerciones y hace innecesario recorrer la factura dos veces para presentar el mismo total.
+
+## 511. Fase PHPStan 9 - Caja concreta al emitir recibos
+
+### Cambios
+
+- La resolucion de caja conserva el contrato validado `int|null` del request institucional.
+- Las prioridades pago seleccionado, ultimo pago y factura ahora distinguen explicitamente ausencia de un identificador.
+- La comparacion y el retorno dejan de coercionar IDs desde valores mixtos.
+- No cambian autorizacion entre cajeros, seleccion de pagos ni compatibilidad con cajas cerradas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre la accion | OK: 0 errores. |
+| Pint sobre la accion | OK. |
+| Integracion de emision y pagos institucionales | OK: 10 tests, 124 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 740 a 738 hallazgos. |
+
+### Decision
+
+Los IDs de caja son enteros positivos validados y no deben reconstruirse mediante casts. Mantener ese tipo permite que la ausencia sea solo `null` y hace explicita la precedencia financiera usada para emitir el recibo.

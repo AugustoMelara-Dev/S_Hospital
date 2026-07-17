@@ -159,7 +159,7 @@ class IssueInstitutionalReceiptAction
     }
 
     /**
-     * @param  array<string, mixed>  $payload
+     * @param  array{payment_id?: int|null}  $payload
      */
     private function selectedPaymentSnapshot(Invoice $invoice, array $payload): ?Payment
     {
@@ -181,7 +181,7 @@ class IssueInstitutionalReceiptAction
     }
 
     /**
-     * @param  array<string, mixed>  $payload
+     * @param  array{payment_id?: int|null}  $payload
      */
     private function selectedPayment(Invoice $invoice, array $payload): ?Payment
     {
@@ -210,7 +210,7 @@ class IssueInstitutionalReceiptAction
     }
 
     /**
-     * @param  array<string, mixed>  $payload
+     * @param  array{cash_session_id?: int|null}  $payload
      */
     private function resolveCashSessionId(Invoice $invoice, ?Payment $selectedPayment, array $payload): int
     {
@@ -221,7 +221,7 @@ class IssueInstitutionalReceiptAction
             $cashSessionId = $selectedPayment->cash_session_id;
         }
 
-        if (! $cashSessionId) {
+        if ($cashSessionId === null) {
             $latestPayment = $invoice->payments
                 ->where('status', Payment::STATUS_POSTED)
                 ->sortByDesc('paid_at')
@@ -232,27 +232,27 @@ class IssueInstitutionalReceiptAction
             }
         }
 
-        if (! $cashSessionId) {
+        if ($cashSessionId === null) {
             $cashSessionId = $invoice->cash_session_id;
         }
 
-        if ($requestedCashSessionId && $cashSessionId && (int) $requestedCashSessionId !== (int) $cashSessionId) {
+        if ($requestedCashSessionId !== null && $cashSessionId !== null && $requestedCashSessionId !== $cashSessionId) {
             throw ValidationException::withMessages([
                 'cash_session_id' => 'La caja seleccionada no coincide con la caja asociada al cobro de esta factura.',
             ]);
         }
 
-        if ($requestedCashSessionId && ! $cashSessionId) {
+        if ($requestedCashSessionId !== null && $cashSessionId === null) {
             $cashSessionId = $requestedCashSessionId;
         }
 
-        if (! $cashSessionId) {
+        if ($cashSessionId === null) {
             throw ValidationException::withMessages([
                 'cash_session_id' => 'No se encontro una caja asociada a la factura pagada.',
             ]);
         }
 
-        return (int) $cashSessionId;
+        return $cashSessionId;
     }
 
     private function assertCashSessionCanBeUsed(CashRegisterSession $cashSession, User $user, ?Payment $selectedPayment): void
