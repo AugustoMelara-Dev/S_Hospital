@@ -11245,3 +11245,24 @@ Las APIs de consola permiten opciones con uniones amplias y `json_encode` puede 
 ### Decision
 
 Timestamps de archivos y contadores de cache pueden fallar o llegar con tipos mas amplios que el contrato HTTP. Normalizarlos en una sola frontera mantiene headers validos y evita URLs de cache con valores falsos.
+
+## 480. Promocion del quality gate a PHPStan 7
+
+### Cambios
+
+- `phpstan.neon` eleva el nivel obligatorio de 6 a 7 para `app` y `routes`.
+- La promocion queda persistida sin baseline, exclusiones nuevas ni supresiones.
+- No cambian dependencias ni comportamiento de produccion.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan usando `phpstan.neon`, sin nivel por CLI | OK: 0 errores. |
+| Pint global del backend | OK. |
+| Suite backend completa | OK: 928 tests, 7013 assertions. |
+| Cobertura | 12 tests omitidos porque PCOV/Xdebug no esta habilitado; sin fallos funcionales. |
+
+### Decision
+
+Los 122 hallazgos iniciales de nivel 7 fueron resueltos mediante contratos y validaciones reales. Convertir el nivel en minimo del repositorio impide reintroducir argumentos incompatibles, offsets inexistentes, retornos imprecisos o propiedades ambiguas.
