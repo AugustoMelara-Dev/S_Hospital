@@ -24,6 +24,17 @@ class OperationsReportService
      */
     public function report(array $filters, bool $includeBackups = true): array
     {
+        $filters = [
+            'date_from' => $filters['date_from'],
+            'date_to' => $filters['date_to'],
+            'cash_session_id' => $filters['cash_session_id'] ?? null,
+            'user_id' => $filters['user_id'] ?? null,
+            'category_id' => $filters['category_id'] ?? null,
+            'area_id' => $filters['area_id'] ?? null,
+            'method' => $filters['method'] ?? null,
+            'status' => $filters['status'] ?? null,
+        ];
+
         $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
         $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
 

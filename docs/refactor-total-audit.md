@@ -11035,3 +11035,25 @@ El nivel 6 ya no es una medicion opcional: pasa a ser el minimo reproducible del
 ### Decision
 
 El route model binding es una garantia del endpoint, pero el request tambien puede ejecutarse desde pruebas o integraciones internas. Validar esa frontera evita doce inferencias ambiguas y transforma una configuracion incompleta en una respuesta controlada.
+
+## 471. Fase PHPStan 7 - Filtros operativos normalizados
+
+### Cambios
+
+- `OperationsReportService` materializa los seis filtros opcionales como claves presentes con valor `null` cuando no fueron enviados.
+- Las closures diferidas de Eloquent consumen una forma estable para usuario, caja, categoria, area, metodo y estado.
+- No cambian consultas, condiciones `empty`, limites de filas, conteos ni visibilidad de respaldos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 7 sobre el servicio antes del cambio | RED: 31 accesos a offsets opcionales dentro de closures. |
+| PHPStan nivel 7 sobre el servicio normalizado | OK: 0 errores. |
+| Pint sobre el servicio | OK. |
+| Suite funcional de reportes | OK: 60 tests, 872 assertions. |
+| Inventario PHPStan nivel 7 global | Baja de 110 a 79 hallazgos. |
+
+### Decision
+
+Las closures de consulta no conservan el refinamiento realizado por `when()` en el contexto exterior. Normalizar una vez en la frontera evita repetir `?? null` en 31 consultas y mantiene un unico contrato para todos los eventos operativos.
