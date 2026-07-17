@@ -12141,3 +12141,25 @@ Los totales de un cierre son evidencia financiera inmutable. Validarlos con el p
 ### Decision
 
 Los snapshots historicos cruzan una frontera JSON y deben validarse en la utilidad que interpreta sus dimensiones. Centralizar esa validacion evita papeles silenciosamente deformados, mientras una zona concreta mantiene estable el limite operativo diario.
+
+## 520. Fase PHPStan 9 - Validacion avanzada de perfiles tipada
+
+### Cambios
+
+- El request de perfiles usa el ID entero documentado para auditoria de intentos denegados.
+- Papel y motivo de soporte se leen mediante accesores string del request.
+- Ancho y alto pasan por un normalizador numerico que conserva el valor actual si la entrada ya es invalida.
+- El callback puede acumular errores de Laravel sin coercionar arrays u objetos ni lanzar excepciones secundarias.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el request | OK: 0 errores. |
+| Pint sobre el request | OK. |
+| Perfiles, dimensiones y permisos avanzados | OK: 13 tests, 74 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 705 a 699 hallazgos. |
+
+### Decision
+
+Los callbacks posteriores deben complementar la validacion, no competir con ella mediante casts. Accesores concretos y fallback al perfil permiten reportar todos los errores de entrada sin atribuciones o dimensiones fabricadas.

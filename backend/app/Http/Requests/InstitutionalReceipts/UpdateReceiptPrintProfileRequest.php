@@ -52,7 +52,7 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
         AuditLogger::log(
             action: 'receipt_settings.advanced_denied',
             entity: ReceiptPrintProfile::class,
-            entityId: $profile instanceof ReceiptPrintProfile ? $profile->getKey() : null,
+            entityId: $profile instanceof ReceiptPrintProfile ? $profile->id : null,
             request: $this,
             newValues: ['attempted_fields' => $present],
             reason: 'Intento de modificar campos avanzados sin permiso.',
@@ -115,7 +115,7 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
 
     public function supportReason(): ?string
     {
-        $reason = trim((string) $this->input('support_reason', ''));
+        $reason = $this->string('support_reason')->trim()->toString();
 
         return $reason === '' ? null : $reason;
     }
@@ -168,14 +168,14 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
             function (Validator $validator): void {
                 /** @var ReceiptPrintProfile $profile */
                 $profile = $this->route('profile');
-                $paperKind = (string) $this->input('paper_kind', $profile->paper_kind);
+                $paperKind = $this->string('paper_kind', $profile->paper_kind)->toString();
                 $active = $this->boolean('active', $profile->active);
                 $isGlobalDefault = $this->boolean('is_global_default', $profile->is_global_default);
 
                 $userHasAdvanced = $this->user()?->can('receipt_settings.advanced') === true;
 
                 if ($userHasAdvanced && $this->hasAdvancedFields()) {
-                    $supportReason = trim((string) $this->input('support_reason', ''));
+                    $supportReason = $this->supportReason() ?? '';
 
                     if ($supportReason === '') {
                         $validator->errors()->add('support_reason', 'Indique el motivo del ajuste avanzado de impresion.');
@@ -185,8 +185,8 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
                 }
 
                 if ($userHasAdvanced) {
-                    $width = (float) $this->input('width_mm', $profile->width_mm);
-                    $height = (float) $this->input('height_mm', $profile->height_mm);
+                    $width = $this->numericInput('width_mm', $profile->width_mm);
+                    $height = $this->numericInput('height_mm', $profile->height_mm);
 
                     if ($paperKind === 'custom_mm') {
                         if ($width < 80 || $width > 300) {
@@ -229,5 +229,15 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
                 }
             },
         ];
+    }
+
+    private function numericInput(string $field, string $fallback): float
+    {
+        $value = $this->input($field, $fallback);
+        if ((! is_int($value) && ! is_float($value) && ! is_string($value)) || ! is_numeric($value)) {
+            return (float) $fallback;
+        }
+
+        return (float) $value;
     }
 }
