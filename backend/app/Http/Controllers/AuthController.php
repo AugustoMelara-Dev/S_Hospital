@@ -76,7 +76,7 @@ class AuthController extends Controller
 
         Auth::logoutOtherDevices($credentials['password']);
 
-        $user = $request->user();
+        $user = $this->authenticatedUser($request);
 
         // Clear idempotency keys to prevent cross-session replays
         DB::table('idempotency_keys')
@@ -122,7 +122,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json([
-            'data' => $this->userPayload($request->user()),
+            'data' => $this->userPayload($this->authenticatedUser($request)),
         ]);
     }
 
@@ -130,7 +130,13 @@ class AuthController extends Controller
     {
         $user = Auth::guard('web')->user();
 
-        if ($user && ! $user->active) {
+        if (! $user instanceof User) {
+            return response()->json([
+                'data' => null,
+            ]);
+        }
+
+        if (! $user->active) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -144,13 +150,13 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'data' => $user ? $this->userPayload($user) : null,
+            'data' => $this->userPayload($user),
         ]);
     }
 
     public function changePassword(ChangePasswordRequest $request, AuditLogger $auditLogger): JsonResponse
     {
-        $user = $request->user();
+        $user = $this->authenticatedUser($request);
         $validated = $request->validated();
 
         if (! Hash::check($validated['current_password'], $user->password)) {
@@ -238,6 +244,17 @@ class AuthController extends Controller
             'uses_exact_permission_map' => $user->usesExactDirectPermissionMap(),
             'must_change_password' => $user->must_change_password,
         ];
+    }
+
+    private function authenticatedUser(Request $request): User
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            abort(401);
+        }
+
+        return $user;
     }
 
     /** @return Collection<int, string> */

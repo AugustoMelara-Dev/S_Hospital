@@ -11266,3 +11266,25 @@ Timestamps de archivos y contadores de cache pueden fallar o llegar con tipos ma
 ### Decision
 
 Los 122 hallazgos iniciales de nivel 7 fueron resueltos mediante contratos y validaciones reales. Convertir el nivel en minimo del repositorio impide reintroducir argumentos incompatibles, offsets inexistentes, retornos imprecisos o propiedades ambiguas.
+
+## 481. Fase PHPStan 8 - Usuario autenticado y estados de sesion
+
+### Cambios
+
+- `AuthController` centraliza la obtencion obligatoria de `App\Models\User` para login completado, `/me` y cambio de contrasena.
+- El endpoint de sesion distingue explicitamente invitado, usuario inactivo y usuario activo antes de acceder a propiedades.
+- Una configuracion de guard o middleware que no entregue el modelo esperado responde 401 o sesion nula en lugar de desreferenciar `null`.
+- No cambian credenciales, cookies, rotacion de sesion, lockout, auditoria ni payload del usuario.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 8 sobre `AuthController` | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Login, sesion, password, inactividad, auditoria y lockout | OK: 28 tests, 188 assertions. |
+| Inventario PHPStan nivel 8 global | Baja de 137 a 125 hallazgos. |
+
+### Decision
+
+Aunque las rutas autenticadas normalmente garantizan usuario, el controlador tambien es una frontera ejecutable y no debe asumir un modelo sobre un valor nullable. Un unico helper hace explicita esa precondicion y evita doce accesos inseguros.
