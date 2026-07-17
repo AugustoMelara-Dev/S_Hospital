@@ -19,11 +19,3 @@ export function useServices(filters: ServiceFilters = {}, options: { enabled?: b
     enabled: options.enabled ?? hasIntent,
   });
 }
-
-export function useService(id: number) {
-  return useQuery({
-    queryKey: queryKeys.services.detail(id),
-    queryFn: () => apiClient.getServices({}).then((services) => services.find((s) => s.id === id)),
-    enabled: !!id,
-  });
-}

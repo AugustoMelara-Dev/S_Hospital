@@ -18,7 +18,6 @@ export const queryKeys = {
   services: {
     all: ['services'] as const,
     list: (filters: ServiceFilters = {}) => ['services', filters] as const,
-    detail: (id: number) => ['services', id] as const,
   },
   invoices: {
     all: ['invoices'] as const,
