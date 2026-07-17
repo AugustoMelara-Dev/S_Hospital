@@ -12185,3 +12185,25 @@ Los callbacks posteriores deben complementar la validacion, no competir con ella
 ### Decision
 
 Rangos, correlativos y tasas fiscales no deben depender de casts desde estructuras arbitrarias. Los accesores concretos preservan validacion acumulativa y aseguran que la evidencia de auditoria coincide con el motivo autorizado.
+
+## 522. Fase PHPStan 9 - Origen websocket CSP validado
+
+### Cambios
+
+- El middleware normaliza entornos solo desde valores string.
+- Opciones de broadcasting se usan solo cuando son arrays y la URL publica solo cuando es string valida.
+- `connect-src` acepta exclusivamente hosts IP/dominio y puertos entre 1 y 65535.
+- IPv6 se serializa con corchetes en la autoridad websocket y configuraciones invalidas degradan al origen propio.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el middleware | OK: 0 errores. |
+| Pint sobre middleware y regresiones | OK. |
+| CSP, cabeceras y reporte de violaciones | OK: 28 tests, 181 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 690 a 682 hallazgos. |
+
+### Decision
+
+La configuracion de broadcasting termina dentro de una politica de seguridad y no puede interpolarse por coercion. Validar host y puerto evita directivas deformadas o ampliadas accidentalmente sin introducir dependencias externas.

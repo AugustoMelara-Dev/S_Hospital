@@ -58,6 +58,32 @@ class SecurityHeadersTest extends TestCase
         $this->assertStringContainsString("connect-src 'self' ws://127.0.0.1:6001 wss://127.0.0.1:6001", $csp);
     }
 
+    public function test_csp_rejects_invalid_websocket_authority_configuration(): void
+    {
+        config()->set('broadcasting.connections.pusher.client_options', [
+            'host' => 'hospital.local ws://attacker.invalid',
+            'port' => '70000',
+        ]);
+
+        $csp = (string) $this->get('/up')->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("connect-src 'self'", $csp);
+        $this->assertStringNotContainsString('attacker.invalid', $csp);
+        $this->assertStringNotContainsString('ws://hospital.local', $csp);
+    }
+
+    public function test_csp_serializes_ipv6_websocket_authority_with_brackets(): void
+    {
+        config()->set('broadcasting.connections.pusher.client_options', [
+            'host' => '::1',
+            'port' => 7001,
+        ]);
+
+        $csp = (string) $this->get('/up')->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("connect-src 'self' ws://[::1]:7001 wss://[::1]:7001", $csp);
+    }
+
     public function test_csp_report_only_channel_points_at_the_csp_endpoint(): void
     {
         $response = $this->get('/up');

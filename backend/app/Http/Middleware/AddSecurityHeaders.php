@@ -65,8 +65,8 @@ class AddSecurityHeaders
      */
     private function isProductionLike(): bool
     {
-        $runtimeEnv = strtolower(trim((string) app()->environment()));
-        $configuredEnv = strtolower(trim((string) config('app.env')));
+        $runtimeEnv = $this->normalizedEnvironment(app()->environment());
+        $configuredEnv = $this->normalizedEnvironment(config('app.env'));
 
         return in_array($runtimeEnv, ['production', 'prod'], true)
             || in_array($configuredEnv, ['production', 'prod'], true);
@@ -161,18 +161,67 @@ class AddSecurityHeaders
     private function connectSources(): array
     {
         $sources = ["'self'"];
-        $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
-        $clientOptions = config('broadcasting.connections.pusher.client_options', []);
-        $pusherOptions = config('broadcasting.connections.pusher.options', []);
-        $host = (string) ($clientOptions['host'] ?? $pusherOptions['host'] ?? $appHost ?? '');
-        $port = (int) ($clientOptions['port'] ?? $pusherOptions['port'] ?? 6001);
+        $appUrl = config('app.url');
+        $parsedAppHost = is_string($appUrl) ? parse_url($appUrl, PHP_URL_HOST) : null;
+        $appHost = is_string($parsedAppHost) ? $parsedAppHost : null;
+        $configuredClientOptions = config('broadcasting.connections.pusher.client_options', []);
+        $configuredPusherOptions = config('broadcasting.connections.pusher.options', []);
+        $clientOptions = is_array($configuredClientOptions) ? $configuredClientOptions : [];
+        $pusherOptions = is_array($configuredPusherOptions) ? $configuredPusherOptions : [];
+        $host = $this->validConnectHost($clientOptions['host'] ?? $pusherOptions['host'] ?? $appHost);
+        $port = $this->validConnectPort($clientOptions['port'] ?? $pusherOptions['port'] ?? 6001);
 
         if ($host !== '') {
-            $authority = $port > 0 ? "{$host}:{$port}" : $host;
+            $authorityHost = str_contains($host, ':') && ! str_starts_with($host, '[')
+                ? "[{$host}]"
+                : $host;
+            $authority = "{$authorityHost}:{$port}";
             $sources[] = "ws://{$authority}";
             $sources[] = "wss://{$authority}";
         }
 
         return array_values(array_unique($sources));
+    }
+
+    private function normalizedEnvironment(mixed $environment): string
+    {
+        return is_string($environment) ? strtolower(trim($environment)) : '';
+    }
+
+    private function validConnectHost(mixed $host): string
+    {
+        if (! is_string($host)) {
+            return '';
+        }
+
+        $host = trim($host);
+        if ($host === '') {
+            return '';
+        }
+
+        $unwrappedHost = str_starts_with($host, '[') && str_ends_with($host, ']')
+            ? substr($host, 1, -1)
+            : $host;
+
+        if (filter_var($unwrappedHost, FILTER_VALIDATE_IP) !== false) {
+            return $unwrappedHost;
+        }
+
+        return filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false
+            ? $host
+            : '';
+    }
+
+    private function validConnectPort(mixed $port): int
+    {
+        if (! is_int($port) && ! is_string($port)) {
+            return 6001;
+        }
+
+        $validated = filter_var($port, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1, 'max_range' => 65535],
+        ]);
+
+        return is_int($validated) ? $validated : 6001;
     }
 }
