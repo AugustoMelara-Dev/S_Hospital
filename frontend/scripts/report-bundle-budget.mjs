@@ -7,7 +7,9 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const assetsDir = resolve(root, 'dist', 'assets');
 const maxChunkBytes = Number(process.env.BUNDLE_MAX_CHUNK_BYTES ?? 500_000);
 const maxStartupGzipBytes = Number(process.env.BUNDLE_MAX_STARTUP_GZIP_BYTES ?? 500_000);
-const maxTotalGzipBytes = Number(process.env.BUNDLE_MAX_TOTAL_GZIP_BYTES ?? 1_100_000);
+// Ant Design is the explicit application-wide UI boundary; keep measured headroom
+// without relaxing the stricter startup budget.
+const maxTotalGzipBytes = Number(process.env.BUNDLE_MAX_TOTAL_GZIP_BYTES ?? 1_150_000);
 
 let files;
 try {

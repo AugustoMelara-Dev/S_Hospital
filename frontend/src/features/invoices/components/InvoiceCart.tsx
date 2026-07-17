@@ -1,5 +1,5 @@
 import { MinusOutlined as Minus, PlusOutlined as Plus, DeleteOutlined as Trash2 } from '@ant-design/icons';
-import { Alert, Button, Checkbox, Input, Tag } from 'antd';
+import { Alert, Button, Checkbox, Input, List, Tag } from 'antd';
 import { useRef } from 'react';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
@@ -105,21 +105,25 @@ export function InvoiceCart({
             <p className="mt-1 max-w-56 text-xs">Busque por nombre, area o categoria para comenzar.</p>
           </div>
         ) : (
-          <div role="table" aria-label="Cuenta actual" className="w-full border border-operational-border">
+          <div role="table" aria-label="Cuenta actual">
+            <List
+              className="w-full border border-operational-border"
+              dataSource={items}
+              header={(
               <div role="row" className="sr-only grid-cols-12 bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground sm:grid">
                 <span role="columnheader" className="col-span-7 p-2 font-semibold">Servicio</span>
                 <span role="columnheader" className="col-span-2 p-2 font-semibold">Cantidad</span>
                 <span role="columnheader" className="col-span-2 p-2 text-right font-semibold">Importe</span>
                 <span role="columnheader" className="col-span-1 p-2"><span className="sr-only">Acciones</span></span>
               </div>
-            <div role="rowgroup" className="divide-y divide-operational-border">
-            {items.map((item, index) => {
+              )}
+              renderItem={(item, index) => {
               const isErythropoietin = item.service.special_rule_code === ERYTHROPOIETIN_RULE;
               const isFree = dialysisPrescription && isErythropoietin;
               const estimatedLineTotal = isFree ? 0 : lineTotalCents(item.service.price, item.quantity);
 
               return (
-                <div
+                <List.Item
                   role="row"
                   key={`${item.service.id}-${index}`}
                   className="grid grid-cols-1 bg-card p-3 sm:grid-cols-12 sm:items-start sm:p-0"
@@ -184,10 +188,10 @@ export function InvoiceCart({
                       icon={<Trash2 className="size-4" aria-hidden="true" />}
                     />
                   </div>
-                </div>
+                </List.Item>
               );
-            })}
-            </div>
+              }}
+            />
           </div>
         )}
       </div>

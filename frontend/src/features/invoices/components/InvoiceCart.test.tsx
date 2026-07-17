@@ -14,8 +14,9 @@ describe('InvoiceCart', () => {
   });
 
   it('renders one compact account table without a promotional estimated-total block', () => {
-    renderCart({ actionLabel: 'Emitir y cobrar' });
+    const { container } = renderCart({ actionLabel: 'Emitir y cobrar' });
 
+    expect(container.querySelector('.ant-list')).toBeInTheDocument();
     expect(screen.getByRole('table', { name: /cuenta actual/i })).toBeVisible();
     expect(screen.getByText('Subtotal')).toBeVisible();
     expect(screen.getByText(/ISV/)).toBeVisible();
