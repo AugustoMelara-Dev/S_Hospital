@@ -68,7 +68,7 @@ class UpdateFiscalSequenceRequest extends FormRequest
             return;
         }
 
-        $reason = trim((string) ($this->input('reason') ?? ''));
+        $reason = $this->reason() ?? '';
         if ($reason === '') {
             throw new HttpResponseException(new JsonResponse([
                 'message' => 'Indique el motivo del cambio fiscal.',
@@ -93,6 +93,13 @@ class UpdateFiscalSequenceRequest extends FormRequest
         $this->authorizeReason();
     }
 
+    public function reason(): ?string
+    {
+        $reason = $this->string('reason')->trim()->toString();
+
+        return $reason === '' ? null : $reason;
+    }
+
     /** @return list<callable(Validator): void> */
     public function after(): array
     {
@@ -105,11 +112,11 @@ class UpdateFiscalSequenceRequest extends FormRequest
                     return;
                 }
 
-                $min = (int) ($this->input('min_number', $sequence->min_number));
-                $max = (int) ($this->input('max_number', $sequence->max_number));
-                $current = (int) ($this->input('current_number', $sequence->current_number));
+                $min = $this->integer('min_number', $sequence->min_number);
+                $max = $this->integer('max_number', $sequence->max_number);
+                $current = $this->integer('current_number', $sequence->current_number);
                 $next = $current + 1;
-                $documentType = $this->input('document_type', $sequence->document_type);
+                $documentType = $this->string('document_type', $sequence->document_type)->toString();
                 $active = $this->boolean('active', $sequence->active);
 
                 if ($max < $min) {
@@ -135,7 +142,7 @@ class UpdateFiscalSequenceRequest extends FormRequest
                     $validator->errors()->add('active', 'Ya existe una secuencia fiscal activa para este tipo de documento.');
                 }
 
-                $prefix = $this->input('prefix', $sequence->prefix);
+                $prefix = $this->string('prefix', $sequence->prefix)->toString();
                 if ($prefix && ! $validator->errors()->has('min_number') && ! $validator->errors()->has('max_number')) {
                     $overlaps = FiscalSequence::query()
                         ->where('prefix', $prefix)
@@ -162,7 +169,7 @@ class UpdateFiscalSequenceRequest extends FormRequest
                         request: $this,
                         oldValues: ['current' => $sequence->only(self::CRITICAL_FIELDS)],
                         newValues: ['current' => array_intersect_key($this->validated(), array_flip(self::CRITICAL_FIELDS))],
-                        reason: (string) $this->input('reason'),
+                        reason: $this->reason(),
                     );
                 }
             },

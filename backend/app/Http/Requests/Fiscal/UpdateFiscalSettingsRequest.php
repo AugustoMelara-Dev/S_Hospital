@@ -53,7 +53,7 @@ class UpdateFiscalSettingsRequest extends FormRequest
                 return;
             }
 
-            $reason = trim((string) ($this->input('reason') ?? ''));
+            $reason = $this->string('reason')->trim()->toString();
 
             if ($reason === '') {
                 $validator->errors()->add('reason', 'Indique el motivo del cambio fiscal.');
@@ -69,7 +69,7 @@ class UpdateFiscalSettingsRequest extends FormRequest
 
     public function reason(): ?string
     {
-        $reason = trim((string) ($this->validated('reason') ?? ''));
+        $reason = $this->string('reason')->trim()->toString();
 
         return $reason === '' ? null : $reason;
     }
@@ -82,12 +82,26 @@ class UpdateFiscalSettingsRequest extends FormRequest
             return false;
         }
 
+        $taxRate = $this->normalizedDecimalInput('default_tax_rate');
         if ($this->has('default_tax_rate')
-            && number_format((float) $setting->default_tax_rate, 2, '.', '') !== number_format((float) $this->input('default_tax_rate'), 2, '.', '')
+            && $taxRate !== null
+            && number_format((float) $setting->default_tax_rate, 2, '.', '') !== $taxRate
         ) {
             return true;
         }
 
-        return $this->has('rtn') && trim($setting->rtn) !== trim((string) $this->input('rtn'));
+        $rtn = $this->input('rtn');
+
+        return $this->has('rtn') && is_string($rtn) && trim($setting->rtn) !== trim($rtn);
+    }
+
+    private function normalizedDecimalInput(string $field): ?string
+    {
+        $value = $this->input($field);
+        if ((! is_int($value) && ! is_float($value) && ! is_string($value)) || ! is_numeric($value)) {
+            return null;
+        }
+
+        return number_format((float) $value, 2, '.', '');
     }
 }

@@ -12163,3 +12163,25 @@ Los snapshots historicos cruzan una frontera JSON y deben validarse en la utilid
 ### Decision
 
 Los callbacks posteriores deben complementar la validacion, no competir con ella mediante casts. Accesores concretos y fallback al perfil permiten reportar todos los errores de entrada sin atribuciones o dimensiones fabricadas.
+
+## 521. Fase PHPStan 9 - Cambios fiscales con entrada concreta
+
+### Cambios
+
+- La secuencia fiscal expone un motivo normalizado y usa accesores enteros/string para rango, correlativo, tipo y prefijo.
+- La auditoria reutiliza exactamente el motivo que supero la autorizacion previa.
+- Los ajustes fiscales comparan tasas solo tras validar un escalar numerico y RTN solo cuando es string.
+- Los callbacks evitan errores secundarios mientras Laravel procesa entradas invalidas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre ambos requests | OK: 0 errores. |
+| Pint sobre ambos requests | OK. |
+| Secuencias, motivos y configuracion fiscal | OK: 35 tests, 167 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 699 a 690 hallazgos. |
+
+### Decision
+
+Rangos, correlativos y tasas fiscales no deben depender de casts desde estructuras arbitrarias. Los accesores concretos preservan validacion acumulativa y aseguran que la evidencia de auditoria coincide con el motivo autorizado.
