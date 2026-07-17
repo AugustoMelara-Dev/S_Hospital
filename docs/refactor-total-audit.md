@@ -9722,3 +9722,27 @@ No se sube a cuatro workers: aunque el host expone 20 procesadores logicos, al d
 ### Decision
 
 Cobertura debe medir la suite unitaria y Storybook debe conservar su gate de navegador separado. Compartir un unico config hacia que opciones legitimas de V8 rompieran un preset no relacionado; el config dedicado convierte nuevamente el umbral en un gate reproducible y deja la cobertura global por encima del baseline historico cercano a 79%.
+
+## 412. Fase Realtime - Un evento de pago, una reaccion
+
+### Cambios
+
+- `PaymentChanged` se publica en `payments` e `invoices` por compatibilidad backend; el shell deja de escuchar `payment.changed` en ambos canales.
+- El frontend conserva la suscripcion semantica al canal `payments` y la suscripcion a cambios propios de factura en `invoices`.
+- Una prueba del hook simula todos los canales y exige un solo toast y una sola ronda de invalidaciones por pago.
+- Las pruebas cubren tambien eventos malformados, invalidacion de caja y limpieza completa de listeners/canales al desmontar.
+- El manifiesto segmentado se actualiza de 138 a 139 archivos para mantener cobertura exacta sin omisiones.
+
+### Verificacion
+
+| Comando | Resultado |
+| --- | --- |
+| Prueba RED de `useBroadcastSync` | Falla: `feedback.success` recibia 2 llamadas por un pago. |
+| `useBroadcastSync.test.tsx` + `echo.test.ts` | OK: 2 archivos, 6 tests. |
+| TypeScript y ESLint focalizado | OK. |
+| Contrato del manifiesto segmentado | OK: 139 archivos asignados exactamente una vez; 6 pruebas Node. |
+| Cobertura focalizada del hook | 80.70% lineas, 92.85% funciones; antes 23.72% lineas en el reporte global. |
+
+### Decision
+
+El canal `invoices` se mantiene como compatibilidad del contrato backend, pero una instancia del shell no debe reaccionar dos veces al mismo evento. Escuchar pagos solo en `payments` evita toasts duplicados, tres invalidaciones redundantes adicionales y trabajo de red/cache innecesario por cada cobro o reversa.

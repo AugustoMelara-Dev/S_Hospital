@@ -101,8 +101,6 @@ export function useBroadcastSync(): void {
       const channelInvoices: ReturnType<typeof echo.private> = echo.private('invoices');
       (channelInvoices as { listen: (event: string, cb: (p: unknown) => void) => void })
         .listen(INVOICE_EVENT, onInvoice);
-      (channelInvoices as { listen: (event: string, cb: (p: unknown) => void) => void })
-        .listen(PAYMENT_EVENT, onPayment);
 
       const channelCash: ReturnType<typeof echo.private> = echo.private('cash');
       (channelCash as { listen: (event: string, cb: (p: unknown) => void) => void })
@@ -115,8 +113,6 @@ export function useBroadcastSync(): void {
       cleanup = () => {
         (channelInvoices as { stopListening: (event: string, cb: (p: unknown) => void) => void })
           .stopListening(INVOICE_EVENT, onInvoice);
-        (channelInvoices as { stopListening: (event: string, cb: (p: unknown) => void) => void })
-          .stopListening(PAYMENT_EVENT, onPayment);
         (channelCash as { stopListening: (event: string, cb: (p: unknown) => void) => void })
           .stopListening(CASH_EVENT, onCash);
         (channelPayments as { stopListening: (event: string, cb: (p: unknown) => void) => void })
