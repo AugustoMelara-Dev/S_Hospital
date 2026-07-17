@@ -19,7 +19,8 @@ class LoginLockout
 
     public function handle(Request $request, Closure $next): Response
     {
-        $login = mb_strtolower(trim((string) $request->input('login', '')));
+        $rawLogin = $request->input('login', '');
+        $login = is_string($rawLogin) ? mb_strtolower(trim($rawLogin)) : '';
         $ip = (string) $request->ip();
         $since = now()->subMinutes(self::LOCKOUT_MINUTES);
         $failedByIp = $ip !== '' ? LoginAttempt::failedCountForIp($ip, $since) : 0;

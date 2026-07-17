@@ -11585,3 +11585,25 @@ Los 137 hallazgos iniciales de nivel 8 fueron resueltos con precondiciones, pars
 ### Decision
 
 Los casts desde `mixed` ocultaban paquetes o configuraciones estructuralmente invalidos. Validar el tipo antes de decodificar evita warnings, mantiene mensajes operativos precisos y mejora una frontera de seguridad sin imponer nivel 9 global prematuramente.
+
+## 495. Fase PHPStan 9 - Strings seguros en requests
+
+### Cambios
+
+- Autenticacion y lockout solo normalizan el login cuando la entrada es textual; arrays quedan para rechazo de validacion.
+- Paciente, motivos, ancho de recibo y fechas de reportes usan accesores string o comprobaciones de tipo.
+- Caja normaliza el scope validado con fallback seguro y reimpresion evita casts directos desde `mixed`.
+- No cambian reglas, valores por defecto, permisos, respuestas 422 ni payloads exitosos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre los 12 archivos | OK: 0 errores. |
+| Pint sobre los 12 archivos | OK. |
+| Auth, lockout, validacion, facturas, recibos, caja y reportes | OK: 195 tests, 1798 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 806 a 794 hallazgos. |
+
+### Decision
+
+La entrada HTTP es `mixed` hasta que la validacion demuestra lo contrario. Evitar casts anticipados impide warnings con estructuras maliciosas y permite que Laravel produzca la respuesta de validacion prevista.

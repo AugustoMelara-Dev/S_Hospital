@@ -40,7 +40,7 @@ class ReprintReceiptRequest extends FormRequest
 
     public function width(): string
     {
-        return ReceiptPaperSize::normalize((string) $this->validated('width'));
+        return ReceiptPaperSize::normalize($this->string('width')->toString());
     }
 
     public function reason(): ?string

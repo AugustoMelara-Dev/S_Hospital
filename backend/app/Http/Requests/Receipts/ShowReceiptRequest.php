@@ -38,7 +38,7 @@ class ShowReceiptRequest extends FormRequest
     public function width(): string
     {
         if ($this->filled('width')) {
-            return ReceiptPaperSize::normalize((string) $this->input('width'));
+            return ReceiptPaperSize::normalize($this->string('width')->toString());
         }
 
         $invoice = $this->route('invoice');

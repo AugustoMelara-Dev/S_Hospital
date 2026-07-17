@@ -21,6 +21,8 @@ class DailyReportRequest extends FormRequest
 
     public function reportDate(): string
     {
-        return (string) ($this->input('date') ?: now()->toDateString());
+        return $this->filled('date')
+            ? $this->string('date')->toString()
+            : now()->toDateString();
     }
 }

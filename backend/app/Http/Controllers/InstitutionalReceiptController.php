@@ -92,7 +92,7 @@ class InstitutionalReceiptController extends Controller
             return null;
         }
 
-        $reason = trim((string) $request->input('reason'));
+        $reason = trim($request->string('reason')->toString());
 
         return $reason === '' ? null : $reason;
     }

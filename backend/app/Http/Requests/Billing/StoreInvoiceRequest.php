@@ -10,8 +10,14 @@ class StoreInvoiceRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('patient_name')) {
+            $patientName = $this->input('patient_name');
+
+            if (! is_string($patientName)) {
+                return;
+            }
+
             $this->merge([
-                'patient_name' => trim((string) $this->input('patient_name')),
+                'patient_name' => trim($patientName),
             ]);
         }
     }

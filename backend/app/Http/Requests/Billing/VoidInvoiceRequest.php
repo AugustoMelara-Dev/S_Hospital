@@ -23,6 +23,6 @@ class VoidInvoiceRequest extends FormRequest
 
     public function reason(): string
     {
-        return (string) $this->validated('reason');
+        return $this->string('reason')->toString();
     }
 }

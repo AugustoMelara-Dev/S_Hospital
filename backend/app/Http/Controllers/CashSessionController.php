@@ -20,7 +20,8 @@ class CashSessionController extends Controller
         BuildCashReconciliationAction $buildCashReconciliation,
     ): JsonResponse {
         $user = $this->authenticatedUser($request);
-        $scope = (string) ($request->validated()['scope'] ?? 'own');
+        $validatedScope = $request->validated('scope', 'own');
+        $scope = is_string($validatedScope) ? $validatedScope : 'own';
         $canViewClosableSession = $scope === 'closable' && $user->can('cash.close_any');
 
         $session = CashRegisterSession::query()

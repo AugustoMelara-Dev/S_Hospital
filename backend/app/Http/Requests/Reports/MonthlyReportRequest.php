@@ -21,6 +21,8 @@ class MonthlyReportRequest extends FormRequest
 
     public function reportMonth(): string
     {
-        return (string) ($this->input('month') ?: now()->format('Y-m'));
+        return $this->filled('month')
+            ? $this->string('month')->toString()
+            : now()->format('Y-m');
     }
 }

@@ -9,8 +9,14 @@ class LoginRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('login')) {
+            $login = $this->input('login');
+
+            if (! is_string($login)) {
+                return;
+            }
+
             $this->merge([
-                'login' => mb_strtolower(trim((string) $this->input('login'))),
+                'login' => mb_strtolower(trim($login)),
             ]);
         }
     }
