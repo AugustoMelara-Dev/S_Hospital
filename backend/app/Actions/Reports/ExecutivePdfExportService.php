@@ -593,14 +593,18 @@ HTML;
     private function nullableFloat(mixed $value): ?float
     {
         if (is_int($value) || is_float($value)) {
-            $float = (float) $value;
+            $float = $value + 0.0;
 
             return is_finite($float) ? $float : null;
         }
 
-        return is_string($value) && is_numeric($value) && is_finite((float) $value)
-            ? (float) $value
-            : null;
+        if (! is_string($value) || ! is_numeric($value)) {
+            return null;
+        }
+
+        $float = $value + 0.0;
+
+        return is_finite($float) ? $float : null;
     }
 
     private function renderFooter(Carbon $now): string

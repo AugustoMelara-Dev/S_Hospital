@@ -12665,3 +12665,28 @@ Los reportes PDF son documentos institucionales y deben seguir siendo generables
 ### Decision
 
 Al quedar todo el backend limpio en nivel 9, mantener nivel 8 permitiria regresiones que la auditoria ya demostro relevantes en fronteras de datos. Promover el nivel en la configuracion convierte la mejora puntual en una garantia permanente para desarrollo local y CI.
+
+## 543. Correccion del gate global - Sin casts flotantes en reportes
+
+### Hallazgo
+
+La primera suite backend completa paso 944 pruebas, pero `ReportMoneyArchitectureTest` detecto casts `(float)` agregados al normalizador de porcentajes del PDF ejecutivo. La guarda aplica a todas las acciones de reportes para impedir que futuras rutas monetarias adopten conversiones binarias directas.
+
+### Cambio
+
+- `ExecutivePdfExportService` convierte numeros finitos mediante aritmetica tipada despues de validar su dominio.
+- Se elimina todo `(float)`, `floatval()` y `doubleval()` de las acciones de reportes.
+- No se modifica la guarda arquitectonica ni se agrega una excepcion para porcentajes.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Primera suite global | 944 passed, 12 skipped, 1 failed; 7029 assertions. |
+| Guarda de dinero y suite PDF ejecutivo | OK: 9 tests, 141 assertions. |
+| PHPStan nivel 9 global | OK: 0 errores. |
+| Pint y `git diff --check` | OK. |
+
+### Decision
+
+La regla es deliberadamente mas amplia que el caso puntual porque los exportadores mezclan porcentajes y montos. Mantener una unica prohibicion verificable reduce el riesgo de que una refactorizacion futura convierta centavos mediante floats por proximidad o reutilizacion accidental.
