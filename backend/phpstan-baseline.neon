@@ -31,36 +31,6 @@ parameters:
 			path: app/Actions/Billing/VoidInvoiceAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$invoice_count\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Cash/BuildCashReconciliationAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$payments_count\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Cash/BuildCashReconciliationAction.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$total_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Cash/BuildCashReconciliationAction.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>invoice_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Cash/BuildCashReconciliationAction.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>total_cents" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Actions/Cash/BuildCashReconciliationAction.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1

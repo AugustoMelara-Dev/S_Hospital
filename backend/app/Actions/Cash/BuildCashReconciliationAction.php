@@ -39,6 +39,7 @@ class BuildCashReconciliationAction
                 DB::raw('COUNT(*) as payments_count'),
                 DB::raw('SUM(payments.amount_cents) as total_cents'),
             )
+            ->toBase()
             ->get();
 
         $paymentsCount = 0;
@@ -70,6 +71,7 @@ class BuildCashReconciliationAction
                     });
             })
             ->selectRaw('COUNT(*) as invoice_count, COALESCE(SUM(balance_due_cents), 0) as total_cents')
+            ->toBase()
             ->first();
 
         $missingInstitutionalReceiptCount = Invoice::query()
@@ -111,8 +113,8 @@ class BuildCashReconciliationAction
             'payments_total' => Money::formatCents($paymentsTotal->toCents()),
             'payments_by_method' => $paymentsByMethod,
             'expected_cash_amount' => Money::formatCents($expectedCents),
-            'pending_invoice_count' => (int) ($pendingRow?->invoice_count ?? 0),
-            'pending_amount' => Money::formatCents((int) ($pendingRow?->total_cents ?? 0)),
+            'pending_invoice_count' => (int) ($pendingRow->invoice_count ?? 0),
+            'pending_amount' => Money::formatCents((int) ($pendingRow->total_cents ?? 0)),
             'missing_institutional_receipt_count' => (int) $missingInstitutionalReceiptCount,
             'reversed_payments_count' => $reversedPaymentsCount,
             'reversed_payments_total' => Money::formatCents($reversedPaymentsTotalCents),

@@ -10110,3 +10110,26 @@ Una consulta SQL sin `GROUP BY` que selecciona agregados siempre produce una fil
 ### Decision
 
 Una fila de `COUNT`/`SUM` no es una entidad `Payment` y no debe heredar su contrato de modelo. Cambiar solo la capa de hidratacion conserva joins, filtros y SQL, mejora la precision del analisis estatico y evita legitimar propiedades dinamicas en el dominio financiero.
+
+## 429. Fase Conciliacion De Caja - Agregados sin modelos dinamicos
+
+### Cambios
+
+- Los totales por metodo y el resumen de facturas pendientes de `BuildCashReconciliationAction` pasan a Query Builder antes de hidratar filas agregadas.
+- `payments_count`, `invoice_count` y `total_cents` dejan de interpretarse como propiedades dinamicas de `Payment` o `Invoice`.
+- La fila agregada de pendientes se consume directamente, manteniendo fallback por columna.
+- Se retiran cinco excepciones `property.notFound`/`nullsafe.neverNull`; el baseline PHPStan baja de 25 a 20 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo las excepciones | RED: 5 errores sobre filas agregadas de conciliacion. |
+| PHPStan estricto despues | OK: 0 errores fuera del baseline. |
+| Conciliacion operativa focalizada | OK: 2 tests, 28 assertions; incluye pagos por metodo y saldo parcial entre sesiones. |
+| Guarda monetaria SQL | OK: 9 tests, 162 assertions. |
+| Pint focalizado | OK. |
+
+### Decision
+
+La conciliacion necesita modelos Eloquent para construir alcances, pero sus resultados agrupados son filas SQL. Cambiar la hidratacion despues de definir filtros conserva el comportamiento y hace explicito el limite entre entidades persistidas y proyecciones financieras calculadas.
