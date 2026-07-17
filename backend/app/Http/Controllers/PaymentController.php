@@ -134,10 +134,13 @@ class PaymentController extends Controller
 
             return ['receipt' => $receipt, 'error' => null, 'outcome' => 'issued'];
         } catch (ValidationException $exception) {
+            $firstError = collect($exception->errors())->flatten()->first();
+
             return [
                 'receipt' => null,
-                'error' => collect($exception->errors())->flatten()->first()
-                    ?? 'Pago registrado, pero no se pudo emitir el recibo institucional.',
+                'error' => is_string($firstError) && $firstError !== ''
+                    ? $firstError
+                    : 'Pago registrado, pero no se pudo emitir el recibo institucional.',
                 'outcome' => 'recovery_required',
             ];
         } catch (ModelNotFoundException) {

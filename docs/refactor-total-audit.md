@@ -11671,3 +11671,25 @@ La suma de lineas es una comprobacion critica de consistencia fiscal. Validar el
 ### Decision
 
 Los resultados de expresiones SQL pierden tipo en la capa ORM. Validarlos antes de construir la coleccion impide que una incompatibilidad de driver suprima silenciosamente actividad financiera del reporte mensual.
+
+## 499. Fase PHPStan 9 - Payloads concretos de caja, catalogo y pago
+
+### Cambios
+
+- Cierre de caja construye el desglose desde denominaciones enteras y monto adicional textual ya validados.
+- La regla especial solicitada del catalogo solo retorna string o null.
+- Recuperacion de recibo tras pago solo expone un mensaje de validacion cuando es un string no vacio; de lo contrario usa el fallback institucional.
+- No cambian denominaciones, totales, eritropoyetina, permisos, outcomes ni respuestas exitosas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre request y controlador | OK: 0 errores. |
+| Pint sobre los tres archivos | OK. |
+| Cierre con desglose, catalogo y recibo posterior al pago | OK: 58 tests, 406 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 790 a 787 hallazgos. |
+
+### Decision
+
+Los datos validados deben transformarse a shapes de dominio antes de cruzar hacia acciones o respuestas. Construirlos explicitamente evita que arrays mixtos entren a conciliacion, reglas de catalogo o mensajes operativos.

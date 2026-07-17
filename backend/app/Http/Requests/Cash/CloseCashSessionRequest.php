@@ -30,7 +30,7 @@ class CloseCashSessionRequest extends FormRequest
         return $rules;
     }
 
-    /** @return array{closing_amount: string, notes?: string|null, closing_breakdown?: array<string, mixed>} */
+    /** @return array{closing_amount: string, notes?: string|null, closing_breakdown?: array{bills: array<int, int>, other_amount: string}} */
     public function payload(): array
     {
         $payload = [
@@ -43,9 +43,19 @@ class CloseCashSessionRequest extends FormRequest
                 : $this->string('notes')->toString();
         }
 
-        $breakdown = $this->input('closing_breakdown');
-        if (is_array($breakdown)) {
-            $payload['closing_breakdown'] = $breakdown;
+        if ($this->has('closing_breakdown')) {
+            $bills = [];
+
+            foreach ([500, 200, 100, 50, 20, 10, 5, 2, 1] as $denomination) {
+                if ($this->exists("closing_breakdown.bills.{$denomination}")) {
+                    $bills[$denomination] = $this->integer("closing_breakdown.bills.{$denomination}");
+                }
+            }
+
+            $payload['closing_breakdown'] = [
+                'bills' => $bills,
+                'other_amount' => $this->string('closing_breakdown.other_amount')->toString(),
+            ];
         }
 
         return $payload;

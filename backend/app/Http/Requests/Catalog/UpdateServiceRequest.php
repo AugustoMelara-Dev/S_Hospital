@@ -173,9 +173,13 @@ class UpdateServiceRequest extends FormRequest
 
     private function requestedSpecialRuleCode(Service $service): ?string
     {
-        return $this->has('special_rule_code')
-            ? $this->input('special_rule_code')
-            : $service->special_rule_code;
+        if (! $this->has('special_rule_code')) {
+            return $service->special_rule_code;
+        }
+
+        $specialRuleCode = $this->input('special_rule_code');
+
+        return is_string($specialRuleCode) ? $specialRuleCode : null;
     }
 
     private function priceChanged(Service $service): bool
