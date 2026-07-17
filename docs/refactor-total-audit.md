@@ -10856,3 +10856,25 @@ Los cuatro puntos de entrada comparten dos clases de datos: reporte e identidad 
 ### Decision
 
 El libro consolidado recibe seis secciones del mismo contrato de reportes. Tiparlas en el punto de entrada mejora la verificacion de integracion sin duplicar shapes ni alterar el formato consumido por contabilidad.
+
+## 463. Fase PHPStan 6 - Totales por metodo compartidos
+
+### Cambios
+
+- `FormatsReportMoney::zeroMethodTotals()` declara el shape fijo de efectivo, transferencia, tarjeta y otros.
+- El contrato se propaga automaticamente a los doce servicios que usan el trait.
+- No cambian asignacion proporcional, conversion a centavos ni formato monetario.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 6 de reportes antes/despues | Los hallazgos del directorio bajan de 27 a 15; desaparecen 12 replicas del trait. |
+| PHPStan nivel 6 sobre el trait | OK: 0 errores. |
+| Pint sobre el trait | OK. |
+| Suite funcional de reportes | OK: 60 tests, 872 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 62 a 50 hallazgos. |
+
+### Decision
+
+Los metodos de pago admitidos son un conjunto cerrado usado en todos los reportes. Declarar una sola forma en el trait evita doce contratos ambiguos y mantiene al backend como fuente unica de totales.
