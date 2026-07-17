@@ -10178,3 +10178,25 @@ Los modelos siguen construyendo los alcances temporales y de estado, pero una fi
 ### Decision
 
 El dashboard usa modelos para construir filtros y joins, pero sus agrupaciones representan proyecciones de lectura. Cambiar la hidratacion justo antes de `get()` conserva el SQL y el comportamiento, evita fabricar atributos de dominio y permite que PHPStan compruebe los callbacks sobre filas SQL reales.
+
+## 432. Fase Recibos - Emisor validado como usuario
+
+### Cambios
+
+- `GenerateReceiptDataAction` valida que la relacion cargada `issuer` sea un `User` antes de usar su nombre como respaldo del cajero.
+- Una factura con relacion corrupta ahora falla con una excepcion explicita y legible, en lugar de acceder a una propiedad sobre un modelo generico.
+- La seleccion del ultimo pago publicado y la prioridad del cobrador sobre el emisor permanecen intactas.
+- Se retira una excepcion `property.notFound`; el baseline PHPStan baja de 10 a 9 errores contabilizados.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan tras retirar solo la excepcion | RED: 1 error al acceder a `name` sobre la relacion `issuer` inferida como `Model`. |
+| PHPStan focalizado y completo despues | OK: 0 errores fuera del baseline. |
+| Recibo con emisor y cobrador distintos | OK: 1 test, 7 assertions; el cajero impreso sigue siendo quien registro el pago. |
+| Pint focalizado | OK. |
+
+### Decision
+
+El emisor es obligatorio para la trazabilidad de una factura. Expresar y comprobar esa invariante en el limite de generacion del recibo mejora el fallo ante datos inconsistentes y elimina la dependencia de una propiedad dinamica sin agregar consultas ni alterar el formato institucional.

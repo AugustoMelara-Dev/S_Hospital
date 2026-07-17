@@ -5,8 +5,10 @@ namespace App\Actions\Receipts;
 use App\Actions\InstitutionalReceipts\AmountToSpanishWords;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\User;
 use App\Support\HospitalName;
 use App\Support\ReceiptPaperSize;
+use LogicException;
 
 class GenerateReceiptDataAction
 {
@@ -24,9 +26,14 @@ class GenerateReceiptDataAction
         $postedPayments = $invoice->payments
             ->filter(fn (Payment $payment): bool => $payment->status === Payment::STATUS_POSTED)
             ->values();
+        $issuer = $invoice->issuer;
+        if (! $issuer instanceof User) {
+            throw new LogicException('La factura no tiene un emisor valido para generar el recibo.');
+        }
+
         $cashierName = $postedPayments
             ->sortByDesc(fn ($payment): int => $payment->paid_at->getTimestamp())
-            ->first()?->user->name ?? $invoice->issuer->name;
+            ->first()?->user->name ?? $issuer->name;
         $fiscalCai = $this->fiscalValue($invoice->fiscal_cai);
         $hasFiscalAuthorization = $fiscalCai !== null
             && $invoice->fiscal_range_from
