@@ -10834,3 +10834,25 @@ El estado operacional combina datos de subsistemas y evidencia manual; normaliza
 ### Decision
 
 Los cuatro puntos de entrada comparten dos clases de datos: reporte e identidad institucional. Nombrarlas elimina arrays opacos y mantiene una unica representacion para HTML y PDF sin duplicar logica fiscal.
+
+## 462. Fase PHPStan 6 - Payloads del XLSX consolidado
+
+### Cambios
+
+- `PremiumExcelExportService` define un contrato comun para payloads de reporte.
+- `generate()` lo aplica a ingresos, categorias, areas, servicios, operaciones y cierre opcional de caja.
+- No cambian hojas, graficos, filtros, estilos ni formulas protegidas.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 6 arrays sin tipo de valor. |
+| PHPStan nivel 6 sobre el servicio | OK: 0 errores. |
+| Pint sobre el servicio | OK. |
+| Exportaciones XLSX/PDF y cierres filtrados | OK: 20 tests, 266 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 68 a 62 hallazgos. |
+
+### Decision
+
+El libro consolidado recibe seis secciones del mismo contrato de reportes. Tiparlas en el punto de entrada mejora la verificacion de integracion sin duplicar shapes ni alterar el formato consumido por contabilidad.

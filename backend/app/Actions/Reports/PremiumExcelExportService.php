@@ -26,6 +26,7 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
+/** @phpstan-type ReportPayload array<string, mixed> */
 class PremiumExcelExportService
 {
     private function moneyFloat(mixed $value): float
@@ -33,6 +34,14 @@ class PremiumExcelExportService
         return Money::parseCents((string) ($value ?? 0), 'amount') / 100;
     }
 
+    /**
+     * @param  ReportPayload  $income
+     * @param  ReportPayload  $categories
+     * @param  ReportPayload  $areas
+     * @param  ReportPayload  $services
+     * @param  ReportPayload  $operations
+     * @param  ReportPayload|null  $cashSessionReport
+     */
     public function generate(
         array $income,
         array $categories,
