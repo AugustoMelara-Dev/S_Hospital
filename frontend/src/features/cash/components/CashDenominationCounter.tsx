@@ -103,8 +103,8 @@ export function CashDenominationCounter({
             const inputId = `cash-denomination-${denomination}`;
 
             return (
-              <div key={denomination} className="grid grid-cols-[minmax(0,1fr)_6.5rem] items-end gap-3 border-b border-border pb-3">
-                <div className="min-w-0">
+              <div key={denomination} className="flex items-end gap-3 border-b border-border pb-3">
+                <div className="min-w-0 flex-1">
                   <label htmlFor={inputId} className="block text-sm font-semibold">
                     Billetes de L {denomination}
                   </label>
@@ -119,7 +119,7 @@ export function CashDenominationCounter({
                   autoComplete="off"
                   value={count}
                   placeholder="0"
-                  className="min-h-11 text-right font-mono tabular-nums"
+                  className="min-h-11 w-28 text-right font-mono tabular-nums"
                   onChange={(event) => {
                     const value = event.target.value;
                     if (/^\d{0,5}$/.test(value)) onCountChange(denomination, value);
@@ -130,8 +130,8 @@ export function CashDenominationCounter({
           })}
         </div>
 
-        <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-end">
-          <div>
+        <div className="grid gap-3 border-t border-border pt-4 sm:flex sm:items-end">
+          <div className="min-w-0 flex-1">
             <label htmlFor="cash-denomination-other" className="block text-sm font-semibold">
               Monedas y otros (L.)
             </label>
@@ -146,7 +146,7 @@ export function CashDenominationCounter({
             autoComplete="off"
             value={otherAmount}
             placeholder="0.00"
-            className="min-h-11 text-right font-mono tabular-nums"
+            className="min-h-11 text-right font-mono tabular-nums sm:w-48"
             onChange={(event) => {
               const value = event.target.value;
               if (/^\d{0,7}(\.\d{0,2})?$/.test(value)) onOtherAmountChange(value);

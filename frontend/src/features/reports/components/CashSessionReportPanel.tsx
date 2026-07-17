@@ -296,21 +296,21 @@ function CashDenominationBreakdown({
       </p>
       <dl className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {billEntries.map(([denomination, count]) => (
-          <div key={denomination} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b border-border py-2">
+          <div key={denomination} className="flex flex-wrap justify-between gap-x-3 border-b border-border py-2">
             <dt className="font-medium">Billetes de L {denomination}</dt>
             <dd className="text-right font-semibold tabular-nums">
               {moneyLabel(String(Number(denomination) * count))}
             </dd>
-            <dd className="col-span-2 text-xs text-muted-foreground">
+            <dd className="w-full text-xs text-muted-foreground">
               {count} {count === 1 ? 'billete' : 'billetes'}
             </dd>
           </div>
         ))}
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-b border-border py-2">
+        <div className="flex justify-between gap-x-3 border-b border-border py-2">
           <dt className="font-medium">Monedas y otros</dt>
           <dd className="text-right font-semibold tabular-nums">{moneyLabel(breakdown.other_amount)}</dd>
         </div>
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-l-2 border-primary bg-muted/40 px-3 py-2 sm:col-span-2 xl:col-span-3">
+        <div className="flex justify-between gap-x-3 border-l-2 border-primary bg-muted/40 px-3 py-2 sm:col-span-2 xl:col-span-3">
           <dt className="font-semibold">Total contado por desglose</dt>
           <dd className="text-right text-lg font-bold tabular-nums">
             {formatLempirasUIFromCents(totalCents)}
