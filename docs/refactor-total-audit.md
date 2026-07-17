@@ -10702,3 +10702,25 @@ El payload de autenticacion solo es valido para el modelo de usuario local y sus
 ### Decision
 
 La administracion de usuarios necesita distinguir listas de nombres de valores arbitrarios, especialmente al aplicar permisos exactos. Los contratos y comprobaciones agregados hacen explicita esa frontera sin cambiar campos, roles ni reglas de autorizacion.
+
+## 456. Fase PHPStan 6 - Busqueda y acciones de servicios
+
+### Cambios
+
+- La busqueda candidata recibe un `Builder<Service>` y el fuzzy search devuelve un paginador de servicios.
+- `serviceActions()` declara una lista no vacia de acciones de auditoria, coherente con su fallback `service.updated`.
+- No cambian coincidencia tolerante, filtros, paginacion ni nombres de eventos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: builder, paginador e iterable incompletos. |
+| PHPStan nivel 6 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Catalogo, busqueda, precios, disponibilidad y auditoria | OK: 43 tests, 264 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 142 a 139 hallazgos. |
+
+### Decision
+
+El controlador opera exclusivamente sobre servicios y siempre produce al menos un evento de auditoria por actualizacion. Explicitar ambos invariantes permite detectar consultas o retornos de modelos equivocados sin modificar la experiencia del catalogo.

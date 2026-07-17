@@ -68,6 +68,7 @@ class ServiceController extends Controller
         ]);
     }
 
+    /** @param Builder<Service> $query */
     private function applySearchCandidates(Builder $query, string $search): void
     {
         $tokens = array_slice(array_values(array_filter(
@@ -106,6 +107,7 @@ class ServiceController extends Controller
 
     /**
      * @param  Collection<int, Service>  $services
+     * @return LengthAwarePaginator<int, Service>
      */
     private function fuzzySearch(Collection $services, string $search, IndexServiceRequest $request): LengthAwarePaginator
     {
@@ -277,6 +279,7 @@ class ServiceController extends Controller
 
     /**
      * @param  array<string, mixed>  $oldValues
+     * @return non-empty-list<string>
      */
     private function serviceActions(array $oldValues, Service $service): array
     {
