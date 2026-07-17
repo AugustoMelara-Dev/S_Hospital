@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 
 import { useBackups, useBackupWorkerHealth, useCreateBackup } from './useBackups';
+import { useOperationalHealth } from './useServerStatus';
 import { apiClient } from '@/lib/api';
 import { createClientIdempotencyKey } from '@/lib/api/base';
 
@@ -213,6 +214,36 @@ describe('useBackupWorkerHealth polling', () => {
       successLast24h: 6,
       failedLast24h: 0,
     });
+  });
+
+  it('shares the operational health request with the global status hook', async () => {
+    mockedGetSystemHealth.mockResolvedValue({
+      generated_at: '2026-06-02T08:00:00Z',
+      database: { driver: 'mysql', connected: true },
+      queue: { connection: 'database', pending: 0, failed: 0 },
+      backups: {
+        worker_recently_active: true,
+        pending: 0,
+        success_last_24h: 6,
+        failed_last_24h: 0,
+      },
+      storage: { backup_files: 14, backup_bytes: 4_194_304 },
+      recent_errors: [],
+    });
+
+    const { result } = renderHook(() => ({
+      operational: useOperationalHealth(),
+      worker: useBackupWorkerHealth(),
+    }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.operational.isSuccess).toBe(true);
+      expect(result.current.worker.isSuccess).toBe(true);
+    });
+
+    expect(mockedGetSystemHealth).toHaveBeenCalledTimes(1);
   });
 
   it('flips the recent flag to false when the worker heartbeat is stale', async () => {

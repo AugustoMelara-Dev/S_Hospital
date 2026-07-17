@@ -51,7 +51,6 @@ export const queryKeys = {
   backups: {
     all: ['backups'] as const,
     list: (filters: BackupListFilters = {}) => ['backups', filters] as const,
-    workerHealth: () => ['backups', 'worker-health'] as const,
   },
   system: {
     all: ['system'] as const,

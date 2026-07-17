@@ -82,9 +82,9 @@ export interface BackupWorkerHealth {
 
 export function useBackupWorkerHealth(enabled = true) {
   return useQuery({
-    queryKey: queryKeys.backups.workerHealth(),
-    queryFn: async (): Promise<BackupWorkerHealth> => {
-      const health = await apiClient.getSystemHealth();
+    queryKey: queryKeys.system.health(),
+    queryFn: () => apiClient.getSystemHealth(),
+    select: (health): BackupWorkerHealth => {
       const backups = health.backups ?? {};
       return {
         recent: Boolean(backups.worker_recently_active),
