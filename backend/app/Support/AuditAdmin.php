@@ -27,6 +27,12 @@ use Throwable;
  */
 final class AuditAdmin
 {
+    /**
+     * @template T
+     *
+     * @param  Closure(): T  $callback
+     * @return T
+     */
     public static function run(Closure $callback): mixed
     {
         $driver = DB::connection()->getDriverName();

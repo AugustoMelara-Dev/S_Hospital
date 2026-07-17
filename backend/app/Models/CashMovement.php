@@ -69,10 +69,16 @@ class CashMovement extends Model
 
     private function guardClosedCashSessionMutation(): void
     {
-        $cashSessionIds = array_values(array_unique(array_filter([
-            $this->getOriginal('cash_session_id'),
-            $this->cash_session_id,
-        ], fn ($cashSessionId): bool => $cashSessionId !== null)));
+        $cashSessionIds = [$this->cash_session_id];
+        $originalCashSessionId = $this->getOriginal('cash_session_id');
+
+        if (is_int($originalCashSessionId)) {
+            $cashSessionIds[] = $originalCashSessionId;
+        } elseif (is_string($originalCashSessionId) && ctype_digit($originalCashSessionId)) {
+            $cashSessionIds[] = (int) $originalCashSessionId;
+        }
+
+        $cashSessionIds = array_values(array_unique($cashSessionIds));
 
         $hasClosedSession = CashRegisterSession::query()
             ->whereIn('id', $cashSessionIds)

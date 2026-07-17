@@ -11716,3 +11716,28 @@ Los datos validados deben transformarse a shapes de dominio antes de cruzar haci
 ### Decision
 
 El resultado de un advisory lock y el conteo fisico de caja son datos operativos sensibles. Comparar el lock estrictamente y propagar un shape concreto de denominaciones evita coerciones silenciosas en rutas de concurrencia y conciliacion.
+
+## 501. Fase PHPStan 9 - Contadores y bypass forense tipados
+
+### Cambios
+
+- Throttling valida el contador del cache con `FILTER_VALIDATE_INT` y usa cero ante un valor corrupto.
+- `AuditAdmin::run()` preserva mediante template el tipo retornado por su callback.
+- El comando de poda recibe asi un entero concreto sin casts ni guardias redundantes.
+- Inmutabilidad de movimientos de caja normaliza el ID original solo desde entero o string numerico.
+- No cambian limites, retencion, bypass MariaDB, sesiones cerradas ni mensajes operativos.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Documentacion oficial de `function.alreadyNarrowedType` | Revisada antes de retirar la guardia redundante. |
+| PHPStan nivel 9 sobre middleware, comando, modelo y helper | OK: 0 errores. |
+| Pint sobre los cuatro archivos | OK. |
+| Throttling, podas, bypass e inmutabilidad de caja | OK: 26 tests, 101 assertions. |
+| Bypass real de MariaDB/MySQL | 1 prueba omitida fuera de esos drivers. |
+| Inventario PHPStan nivel 9 global | Baja de 784 a 781 hallazgos. |
+
+### Decision
+
+Contadores de cache, callbacks administrativos e IDs originales atraviesan APIs genericas. Validarlos o preservar sus templates evita coerciones silenciosas sin debilitar el bypass forense ni las protecciones de caja cerrada.

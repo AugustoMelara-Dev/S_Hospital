@@ -40,7 +40,8 @@ class ThrottleByUser
 
         $response = $next($request);
 
-        $attempts = (int) $this->limiter->attempts($bucket);
+        $attemptsValue = filter_var($this->limiter->attempts($bucket), FILTER_VALIDATE_INT);
+        $attempts = is_int($attemptsValue) ? $attemptsValue : 0;
         $remaining = max(0, $maxAttempts - $attempts);
 
         foreach ($this->headers($maxAttempts, $remaining, $this->limiter->availableIn($bucket)) as $name => $value) {
