@@ -10812,3 +10812,25 @@ Todas las secciones del PDF consumen partes del mismo reporte ejecutivo. Un cont
 ### Decision
 
 El estado operacional combina datos de subsistemas y evidencia manual; normalizar sus listas evita que valores no estructurados afecten la severidad. Los contratos comparten el payload existente y no cambian la politica conservadora que impide declarar produccion lista automaticamente.
+
+## 461. Fase PHPStan 6 - Payloads de PDF de cierre
+
+### Cambios
+
+- `PdfExportService` define contratos para payloads de reporte e identidad fiscal.
+- Los aplica a construccion HTML y generacion PDF de cierre diario y cierre por periodo.
+- No cambian escapes, filtros, contenido financiero, cabeceras ni bytes de respuesta.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Medicion PHPStan nivel 6 inicial del corte | RED controlado: 8 arrays sin tipo de valor. |
+| PHPStan nivel 6 sobre el servicio | OK: 0 errores. |
+| Pint sobre el servicio | OK. |
+| Escapes, reportes y PDFs diarios/por periodo | OK: 65 tests, 887 assertions. |
+| Inventario PHPStan nivel 6 global | Baja de 76 a 68 hallazgos. |
+
+### Decision
+
+Los cuatro puntos de entrada comparten dos clases de datos: reporte e identidad institucional. Nombrarlas elimina arrays opacos y mantiene una unica representacion para HTML y PDF sin duplicar logica fiscal.

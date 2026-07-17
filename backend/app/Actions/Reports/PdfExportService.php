@@ -11,6 +11,10 @@ use App\Support\Money;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Carbon;
 
+/**
+ * @phpstan-type ReportPayload array<string, mixed>
+ * @phpstan-type FiscalIdentity array<string, mixed>
+ */
 class PdfExportService
 {
     public function e(mixed $value): string
@@ -27,6 +31,10 @@ class PdfExportService
         return Money::formatLempiras(Money::parseCents((string) ($value ?? 0), 'amount'));
     }
 
+    /**
+     * @param  ReportPayload  $data
+     * @param  FiscalIdentity  $fiscal
+     */
     public function buildDailyClosureHtml(array $data, array $fiscal): string
     {
         $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
@@ -304,11 +312,19 @@ class PdfExportService
         return $html;
     }
 
+    /**
+     * @param  ReportPayload  $data
+     * @param  FiscalIdentity  $fiscal
+     */
     public function generateDailyClosurePdf(array $data, array $fiscal): string
     {
         return Pdf::loadHTML($this->buildDailyClosureHtml($data, $fiscal))->output();
     }
 
+    /**
+     * @param  ReportPayload  $data
+     * @param  FiscalIdentity  $fiscal
+     */
     public function buildRangeClosureHtml(array $data, array $fiscal): string
     {
         $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
@@ -872,6 +888,10 @@ class PdfExportService
         return Carbon::parse((string) $value)->format('d/m/Y H:i');
     }
 
+    /**
+     * @param  ReportPayload  $data
+     * @param  FiscalIdentity  $fiscal
+     */
     public function generateRangeClosurePdf(array $data, array $fiscal): string
     {
         return Pdf::loadHTML($this->buildRangeClosureHtml($data, $fiscal))->output();
