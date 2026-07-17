@@ -252,8 +252,8 @@ class InstitutionalReceiptSettingsController extends Controller
     {
         $assignment = DB::transaction(function () use ($request): ReceiptProfileAssignment {
             $profile = $this->profileFromRequest($request->validated());
-            $scopeType = (string) $request->input('scope_type');
-            $scopeId = $scopeType === ReceiptProfileAssignment::SCOPE_GLOBAL ? null : (int) $request->input('scope_id');
+            $scopeType = $request->string('scope_type')->toString();
+            $scopeId = $scopeType === ReceiptProfileAssignment::SCOPE_GLOBAL ? null : $request->integer('scope_id');
             $active = $request->boolean('active', true);
 
             $existing = ReceiptProfileAssignment::query()

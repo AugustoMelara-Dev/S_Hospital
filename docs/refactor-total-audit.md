@@ -11965,3 +11965,25 @@ Los renglones nacen dentro de la misma accion con centavos concretos; conservar 
 ### Decision
 
 Los IDs de caja son enteros positivos validados y no deben reconstruirse mediante casts. Mantener ese tipo permite que la ausencia sea solo `null` y hace explicita la precedencia financiera usada para emitir el recibo.
+
+## 512. Fase PHPStan 9 - Alcance concreto de perfiles de impresion
+
+### Cambios
+
+- La asignacion de perfiles obtiene `scope_type` y `scope_id` mediante los accesores tipados del request.
+- El alcance global sigue almacenando `scope_id` nulo; usuario y caja conservan su identificador entero validado.
+- Se eliminan casts desde entrada mixta y lecturas genericas del mismo payload.
+- No cambian reemplazo de asignaciones activas, permisos avanzados ni auditoria.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| PHPStan nivel 9 sobre el controlador | OK: 0 errores. |
+| Pint sobre el controlador | OK. |
+| Configuracion y migraciones de recibos institucionales | OK: 18 tests, 108 assertions. |
+| Inventario PHPStan nivel 9 global | Baja de 738 a 736 hallazgos. |
+
+### Decision
+
+El Form Request ya impone el dominio del alcance. Sus accesores concretos mantienen ese contrato en el controlador y evitan que una asignacion operativa dependa de la coercion de valores arbitrarios.
