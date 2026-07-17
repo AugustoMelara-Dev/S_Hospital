@@ -68,7 +68,7 @@ class RegisterPaymentAction
             }
 
             $amountCents = Money::parsePositiveCents($payload['amount'], 'amount');
-            $balanceCents = $this->resolveBalanceCents($lockedInvoice);
+            $balanceCents = (int) $lockedInvoice->balance_due_cents;
 
             if ($amountCents > $balanceCents) {
                 throw ValidationException::withMessages([
@@ -121,7 +121,7 @@ class RegisterPaymentAction
                 'occurred_at' => now(),
             ]);
 
-            $paidCents = $this->resolvePaidCents($lockedInvoice) + $amountCents;
+            $paidCents = (int) $lockedInvoice->paid_amount_cents + $amountCents;
             $nextBalanceCents = $balanceCents - $amountCents;
 
             $lockedInvoice->forceFill([
@@ -156,23 +156,5 @@ class RegisterPaymentAction
 
             return $payment->load('user:id,name,username', 'cashSession:id,user_id,status,opened_at');
         });
-    }
-
-    private function resolveBalanceCents(Invoice $invoice): int
-    {
-        if ($invoice->balance_due_cents !== null) {
-            return (int) $invoice->balance_due_cents;
-        }
-
-        return Money::parseCents((string) $invoice->balance_due, 'balance_due');
-    }
-
-    private function resolvePaidCents(Invoice $invoice): int
-    {
-        if ($invoice->paid_amount_cents !== null) {
-            return (int) $invoice->paid_amount_cents;
-        }
-
-        return Money::parseCents((string) $invoice->paid_amount, 'paid_amount');
     }
 }

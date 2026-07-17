@@ -118,6 +118,17 @@ class PaymentCentsSqlGuardTest extends TestCase
         }
     }
 
+    public function test_register_payment_uses_non_nullable_invoice_cents_without_decimal_fallbacks(): void
+    {
+        $source = $this->readSource('app/Actions/Payments/RegisterPaymentAction.php');
+
+        $this->assertStringContainsString('(int) $lockedInvoice->balance_due_cents', $source);
+        $this->assertStringContainsString('(int) $lockedInvoice->paid_amount_cents', $source);
+        $this->assertStringNotContainsString('Money::parseCents', $source);
+        $this->assertStringNotContainsString('resolveBalanceCents', $source);
+        $this->assertStringNotContainsString('resolvePaidCents', $source);
+    }
+
     public function test_report_services_do_not_recompute_invoice_cents_via_sql(): void
     {
         $reports = [

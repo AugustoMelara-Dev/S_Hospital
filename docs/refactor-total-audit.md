@@ -9815,3 +9815,25 @@ El costo N+1 debe fallar cerca de su introduccion y no depender de que una prueb
 ### Decision
 
 Laravel no carga `.env` despues de cachear configuracion; por eso las tareas programadas y la deteccion de `mysqldump` deben consumir valores ya materializados por `config()`. El cambio conserva defaults y contratos operativos, elimina deuda del baseline y evita que un despliegue optimizado pierda horarios o el binario configurado.
+
+## 416. Fase Pagos - Centavos no nulos sin compatibilidad muerta
+
+### Cambios
+
+- `RegisterPaymentAction` consume directamente `balance_due_cents` y `paid_amount_cents`, columnas enteras que la migracion rellena y convierte a `NOT NULL`.
+- Se eliminan dos resolutores privados y sus conversiones decimales inalcanzables.
+- El baseline PHPStan pierde cuatro supresiones: dos comparaciones siempre verdaderas y dos retornos inalcanzables.
+- Un contrato impide que el alta de pagos vuelva a convertir saldos historicos desde decimal o a ocultar el contrato no nulo.
+
+### Verificacion
+
+| Evidencia | Resultado |
+| --- | --- |
+| Contrato antes del cambio | RED: el action aun delegaba a resolutores con `Money::parseCents`. |
+| Guardas monetarias + action + doble pago | OK: 19 tests, 189 assertions. |
+| PHPStan focalizado | OK: 0 errores. |
+| Pint focalizado | OK. |
+
+### Decision
+
+La migracion de centavos ya hizo obligatorias ambas columnas y los contratos SQL prohiben recomputarlas desde decimal. Mantener una ruta alternativa imposible agregaba complejidad en facturacion y obligaba a ocultar codigo muerto; la lectura directa alinea implementacion, esquema, tipos y pruebas sin cambiar calculos ni estados.
