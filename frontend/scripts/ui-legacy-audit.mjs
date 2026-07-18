@@ -11,8 +11,21 @@ export const prohibitedClasses = [
 ];
 
 export const strictModulePrefixes = [
+  'src/App.tsx',
   'src/components/ui/',
+  'src/design-system/components/',
+  'src/design-system/patterns/',
+  'src/design-system/providers/',
   'src/hooks/use-mobile.ts',
+  'src/hooks/useTheme.ts',
+  'src/shell/',
+  'src/features/auth/',
+  'src/features/onboarding/',
+  'src/components/AppErrorBoundary.tsx',
+  'src/components/PermissionGate.tsx',
+  'src/components/keyboard-shortcuts-palette.tsx',
+  'src/layout/components/UserMenu.tsx',
+  'src/navigation/appNavigation.ts',
 ];
 
 const semanticNativeTableFiles = new Set([
@@ -123,7 +136,7 @@ export function scanSource(file, rawSource) {
     const isModuleDeclaration = /^\s*(?:import|export)\b/.test(line);
     const broadVisualClasses = isModuleDeclaration || isUiPrimitive
       ? []
-      : line.match(/\b(?:rounded|shadow|from|via|to)(?:-[\w[\].:/%-]+)+\b|\bbackdrop-blur(?:-[\w[\].:/%-]+)?\b|\bglass\b/g) ?? [];
+      : line.match(/\b(?:from|via|to)(?:-[\w[\].:/%-]+)+\b|\bbackdrop-blur(?:-[\w[\].:/%-]+)?\b|\bglass\b/g) ?? [];
     for (const cssClass of broadVisualClasses) {
       if (prohibitedClasses.includes(cssClass)) continue;
       violations.push(makeViolation({

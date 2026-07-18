@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { COLOR_THEMES, normalizeColorTheme, type ColorTheme } from '../design-system/themes/colorThemes';
-import { institutionalDarkTheme, institutionalLightTheme } from '../design-system/antd/theme';
+import { COLOR_THEMES, normalizeColorTheme, THEME_SEMANTICS, type ColorTheme } from '../design-system/themes/colorThemes';
 
 export { COLOR_THEMES, type ColorTheme } from '../design-system/themes/colorThemes';
 
@@ -36,10 +35,10 @@ export function useTheme() {
 
     // 2. Apply theme color variables
     const config = COLOR_THEMES[colorTheme][isDark ? 'dark' : 'light'];
-    const semanticTokens = (isDark ? institutionalDarkTheme : institutionalLightTheme).token ?? {};
+    const semantic = THEME_SEMANTICS[isDark ? 'dark' : 'light'];
     root.style.setProperty('--institutional-primary', config.secondary);
-    root.style.setProperty('--institutional-primary-foreground', String(isDark ? semanticTokens.colorBgBase : semanticTokens.colorTextLightSolid));
-    root.style.setProperty('--institutional-secondary', String(semanticTokens.colorTextSecondary));
+    root.style.setProperty('--institutional-primary-foreground', semantic.primaryForeground);
+    root.style.setProperty('--institutional-secondary', semantic.secondary);
     root.style.setProperty('--institutional-accent', config.accent);
     root.style.setProperty('--institutional-accent-foreground', config.accentForeground);
 

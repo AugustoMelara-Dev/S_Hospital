@@ -1,12 +1,12 @@
-import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Empty, Flex, Input, Modal, Space, Typography } from 'antd';
+import { SearchIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { Input } from '@/components/ui/input';
 import { KEYBOARD_SHORTCUTS, shortcutLabel, type ShortcutScope } from '@/lib/shortcuts';
 
-type KeyboardShortcutsPaletteProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
+type KeyboardShortcutsPaletteProps = { open: boolean; onOpenChange: (open: boolean) => void };
 
 const SCOPES: Array<{ id: ShortcutScope; label: string; description: string }> = [
   { id: 'global', label: 'Global', description: 'Atajos disponibles en cualquier pantalla.' },
@@ -19,101 +19,64 @@ const SCOPES: Array<{ id: ShortcutScope; label: string; description: string }> =
 export function KeyboardShortcutsPalette({ open, onOpenChange }: KeyboardShortcutsPaletteProps) {
   const [filter, setFilter] = useState('');
 
-  useEffect(() => {
-    if (!open) setFilter('');
-  }, [open]);
+  useEffect(() => { if (!open) setFilter(''); }, [open]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const target = event.target instanceof HTMLElement ? event.target : document.body;
-      const tagName = target.tagName.toLowerCase();
-      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target.isContentEditable) return;
-
+      if (['input', 'textarea', 'select'].includes(target.tagName.toLowerCase()) || target.isContentEditable) return;
       const isOpen = document.querySelector('[data-shortcuts-palette="open"]') !== null;
-      if (event.key === 'Escape' && isOpen) {
-        event.preventDefault();
-        onOpenChange(false);
-        return;
-      }
       if (event.key === '?' && !event.ctrlKey && !event.altKey && !event.metaKey) {
         event.preventDefault();
         onOpenChange(!isOpen);
       }
     }
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onOpenChange]);
 
   const normalizedFilter = filter.trim().toLowerCase();
   const filteredShortcuts = normalizedFilter
-    ? KEYBOARD_SHORTCUTS.filter((entry) =>
-        entry.description.toLowerCase().includes(normalizedFilter)
-        || shortcutLabel(entry).toLowerCase().includes(normalizedFilter)
-        || entry.scope.toLowerCase().includes(normalizedFilter),
-      )
+    ? KEYBOARD_SHORTCUTS.filter((entry) => entry.description.toLowerCase().includes(normalizedFilter)
+      || shortcutLabel(entry).toLowerCase().includes(normalizedFilter)
+      || entry.scope.toLowerCase().includes(normalizedFilter))
     : KEYBOARD_SHORTCUTS;
 
   return (
-    <Modal
-      destroyOnHidden
-      footer={null}
-      onCancel={() => onOpenChange(false)}
-      open={open}
-      title={<Typography.Title level={2}>Atajos de teclado</Typography.Title>}
-      width={640}
-    >
-      <Space data-shortcuts-palette={open ? 'open' : 'closed'} orientation="vertical" size="middle">
-        <Typography.Paragraph type="secondary">
-          Pulsa ? en cualquier momento para abrir esta paleta. Pulsa Esc para cerrar.
-        </Typography.Paragraph>
-        <Space.Compact block>
-          <Input
-            aria-label="Buscar atajo de teclado"
-            autoComplete="off"
-            onChange={(event) => setFilter(event.target.value)}
-            placeholder="Buscar atajo..."
-            prefix={<SearchOutlined aria-hidden="true" />}
-            type="search"
-            value={filter}
-          />
-          {filter ? (
-            <Button
-              aria-label="Limpiar filtro de atajos"
-              icon={<CloseOutlined aria-hidden="true" />}
-              onClick={() => setFilter('')}
-            >
-              Limpiar
-            </Button>
-          ) : null}
-        </Space.Compact>
-
-        <Space orientation="vertical" size="middle">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl" data-shortcuts-palette={open ? 'open' : 'closed'}>
+        <DialogHeader>
+          <DialogTitle>Atajos de teclado</DialogTitle>
+          <DialogDescription>Pulsa ? para abrir esta paleta y Esc para cerrar.</DialogDescription>
+        </DialogHeader>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <SearchIcon aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" />
+            <Input aria-label="Buscar atajo de teclado" autoComplete="off" className="pl-9" onChange={(event) => setFilter(event.target.value)} placeholder="Buscar atajo..." type="search" value={filter} />
+          </div>
+          {filter ? <Button variant="outline" onClick={() => setFilter('')}><XIcon /> Limpiar</Button> : null}
+        </div>
+        <div className="flex max-h-96 flex-col gap-5 overflow-y-auto pr-1">
           {SCOPES.map((scope) => {
-            const scopeShortcuts = filteredShortcuts.filter((entry) => entry.scope === scope.id);
-            if (scopeShortcuts.length === 0) return null;
+            const entries = filteredShortcuts.filter((entry) => entry.scope === scope.id);
+            if (entries.length === 0) return null;
             return (
-              <section key={scope.id} aria-labelledby={`shortcuts-scope-${scope.id}`}>
-                <Typography.Title id={`shortcuts-scope-${scope.id}`} level={3}>{scope.label}</Typography.Title>
-                <Typography.Text type="secondary">{scope.description}</Typography.Text>
-                <ul>
-                  {scopeShortcuts.map((entry) => (
-                    <li key={`${entry.scope}-${entry.key}-${entry.ctrl ? 'ctrl' : ''}`}>
-                      <Flex justify="space-between" gap="middle">
-                      <Typography.Text type="secondary">{entry.description}</Typography.Text>
-                      <Typography.Text keyboard>{shortcutLabel(entry)}</Typography.Text>
-                      </Flex>
+              <section key={scope.id} aria-labelledby={`shortcuts-scope-${scope.id}`} className="flex flex-col gap-2">
+                <div><h3 id={`shortcuts-scope-${scope.id}`} className="font-semibold">{scope.label}</h3><p className="text-sm text-muted-foreground">{scope.description}</p></div>
+                <ul className="flex flex-col gap-1">
+                  {entries.map((entry) => (
+                    <li key={`${entry.scope}-${entry.key}-${entry.ctrl ? 'ctrl' : ''}`} className="flex items-center justify-between gap-4 rounded-lg px-2 py-1.5 hover:bg-muted">
+                      <span className="text-sm text-muted-foreground">{entry.description}</span>
+                      <kbd className="rounded-md border bg-muted px-2 py-1 font-mono text-xs">{shortcutLabel(entry)}</kbd>
                     </li>
                   ))}
                 </ul>
               </section>
             );
           })}
-          {filteredShortcuts.length === 0 ? (
-            <Empty description={`No se encontraron atajos para «${filter}».`} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          ) : null}
-        </Space>
-      </Space>
-    </Modal>
+          {filteredShortcuts.length === 0 ? <Empty><EmptyHeader><EmptyTitle>Sin resultados</EmptyTitle><EmptyDescription>No se encontraron atajos para «{filter}».</EmptyDescription></EmptyHeader></Empty> : null}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

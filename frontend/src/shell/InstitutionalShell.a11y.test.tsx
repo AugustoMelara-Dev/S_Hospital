@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { configureAxe } from 'vitest-axe';
 import { describe, expect, it, vi } from 'vitest';
 import { InstitutionalShell } from './InstitutionalShell';
+import { ThemeProvider } from '@/design-system/providers/ThemeProvider';
 
 const axe = configureAxe({ rules: { 'color-contrast': { enabled: false } } });
 
@@ -34,9 +35,11 @@ const user = {
 function renderShell() {
   return render(
     <MemoryRouter initialEntries={['/settings/institutional-receipts']}>
-      <InstitutionalShell cashSession={null} onLogout={vi.fn()} status="Servidor local disponible" user={user}>
-        <h1>Panel operativo</h1>
-      </InstitutionalShell>
+      <ThemeProvider>
+        <InstitutionalShell cashSession={null} onLogout={vi.fn()} status="Servidor local disponible" user={user}>
+          <h1>Panel operativo</h1>
+        </InstitutionalShell>
+      </ThemeProvider>
     </MemoryRouter>,
   );
 }

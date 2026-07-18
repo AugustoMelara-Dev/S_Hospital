@@ -4,6 +4,7 @@ import { filterViolationsForMode, scanSource } from './ui-legacy-audit.mjs';
 describe('ui legacy audit', () => {
   it('accepts the modern shadcn radius and shadow vocabulary', () => {
     expect(scanSource('src/components/ui/card.tsx', '<div className="rounded-xl shadow-sm" />')).toEqual([]);
+    expect(scanSource('src/design-system/patterns/Panel.tsx', '<section className="rounded-xl shadow-sm" />')).toEqual([]);
     expect(scanSource('src/design-system/themes/theme.ts', 'const token = { borderRadiusLG: 12 };')).toEqual([]);
   });
 
@@ -43,7 +44,7 @@ describe('ui legacy audit', () => {
     ]));
   });
 
-  it('limits strict mode to the foundation while final mode keeps all runtime violations', () => {
+  it('limits strict mode to migrated surfaces while final mode keeps all runtime violations', () => {
     const violations = [
       ...scanSource('src/components/ui/button.tsx', "import 'antd';"),
       ...scanSource('src/features/reports/Report.tsx', "import 'echarts';"),
@@ -52,6 +53,15 @@ describe('ui legacy audit', () => {
     expect(filterViolationsForMode(violations, 'inventory')).toHaveLength(2);
     expect(filterViolationsForMode(violations, 'strict')).toHaveLength(1);
     expect(filterViolationsForMode(violations, 'final')).toHaveLength(2);
+  });
+
+  it('keeps migrated shell and authentication surfaces in strict mode', () => {
+    const violations = [
+      ...scanSource('src/shell/LegacyShell.tsx', "import 'antd';"),
+      ...scanSource('src/features/auth/LegacyLogin.tsx', "import '@ant-design/icons';"),
+    ];
+
+    expect(filterViolationsForMode(violations, 'strict')).toHaveLength(2);
   });
 
   it('keeps test fixtures out of runtime strict and final gates', () => {

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { Button } from 'antd';
 import { describe, expect, it } from 'vitest';
+import { Button } from '@/components/ui/button';
 import { PageHeader } from './PageHeader';
 
 describe('PageHeader', () => {

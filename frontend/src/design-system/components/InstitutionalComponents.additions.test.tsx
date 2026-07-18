@@ -10,7 +10,7 @@ describe('SectionCard', () => {
       </SectionCard>,
     );
 
-    expect(container.querySelector('[data-slot="section-card"]')).toHaveClass('ant-card');
+    expect(container.querySelector('[data-slot="section-card"]')).not.toHaveClass('ant-card');
     expect(screen.getByTestId('section')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Datos' })).toBeInTheDocument();
     expect(screen.getByText('Contenido del panel')).toBeInTheDocument();
@@ -21,8 +21,8 @@ describe('StatCard', () => {
   it('shows label and value with optional helper', () => {
     const { container } = render(<StatCard label="Sesiones" value="3" helper="hoy" tone="success" />);
 
-    expect(container.querySelector('[data-slot="stat-card"]')).toHaveClass('ant-card');
-    expect(container.querySelector('.ant-statistic')).toBeInTheDocument();
+    expect(container.querySelector('[data-slot="stat-card"]')).not.toHaveClass('ant-card');
+    expect(container.querySelector('.ant-statistic')).not.toBeInTheDocument();
     expect(screen.getByText('Sesiones')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('hoy')).toBeInTheDocument();

@@ -1,6 +1,8 @@
-import { App as AntApp } from 'antd';
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { toast } from 'sonner';
 import type { OperationalStatusEvent } from '@/app/operationalStatus';
+import { Toaster } from '@/components/ui/sonner';
+import { useThemeContext } from './ThemeProvider';
 
 export type FeedbackApi = {
   error: (content: string) => void;
@@ -13,21 +15,22 @@ export type FeedbackApi = {
 const FeedbackContext = createContext<FeedbackApi | null>(null);
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {
-  const { message: feedback } = AntApp.useApp();
+  const { isDark } = useThemeContext();
   const value = useMemo<FeedbackApi>(() => ({
-    error: (content) => { void feedback.error(content); },
-    info: (content) => { void feedback.info(content); },
-    success: (content) => { void feedback.success(content); },
-    warning: (content) => { void feedback.warning(content); },
+    error: (content) => { toast.error(content); },
+    info: (content) => { toast.info(content); },
+    success: (content) => { toast.success(content); },
+    warning: (content) => { toast.warning(content); },
     notify: (event) => {
-      void feedback.open({
-        content: event.message,
-        key: event.key ?? `${event.level}:${event.message}`,
-        type: event.level,
-      });
+      toast[event.level](event.message, { id: event.key ?? `${event.level}:${event.message}` });
     },
-  }), [feedback]);
-  return <FeedbackContext.Provider value={value}>{children}</FeedbackContext.Provider>;
+  }), []);
+  return (
+    <FeedbackContext.Provider value={value}>
+      {children}
+      <Toaster theme={isDark ? 'dark' : 'light'} richColors closeButton position="top-right" />
+    </FeedbackContext.Provider>
+  );
 }
 
 export function useFeedback(): FeedbackApi {

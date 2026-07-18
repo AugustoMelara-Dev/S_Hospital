@@ -1,17 +1,19 @@
 import {
-  AppstoreOutlined,
-  AuditOutlined,
-  CloudSyncOutlined,
-  DashboardOutlined,
-  FileTextOutlined,
-  HistoryOutlined,
-  InfoCircleOutlined,
-  QuestionCircleOutlined,
-  SettingOutlined,
-  UserOutlined,
-  WalletOutlined,
-} from '@ant-design/icons';
-import type React from 'react';
+  CircleHelpIcon,
+  DatabaseBackupIcon,
+  FileChartColumnIcon,
+  FileClockIcon,
+  FilePlus2Icon,
+  InfoIcon,
+  LayoutDashboardIcon,
+  LibraryBigIcon,
+  LifeBuoyIcon,
+  ReceiptTextIcon,
+  SettingsIcon,
+  UsersIcon,
+  WalletCardsIcon,
+  type LucideIcon,
+} from 'lucide-react';
 
 type PermissionMode = 'all' | 'any';
 export type NavigationGroup = 'operations' | 'administration' | 'support';
@@ -20,8 +22,7 @@ export type AppNavigationItem = {
   id: string;
   label: string;
   path: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   navigationGroup?: NavigationGroup;
   navigationPermissions?: string[];
   navigationPermissionMode?: PermissionMode;
@@ -36,8 +37,7 @@ export type AppRouteDefinition = {
   id: string;
   label: string;
   path: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   breadcrumbs: AppBreadcrumb[];
   navigation: boolean;
   navigationGroup?: NavigationGroup;
@@ -53,7 +53,7 @@ export const appRoutes = {
     id: 'dashboard',
     label: 'Inicio',
     path: '/dashboard',
-    icon: DashboardOutlined,
+    icon: LayoutDashboardIcon,
     breadcrumbs: [{ label: 'Inicio', path: '/dashboard' }],
     navigationGroup: 'operations',
     navigation: true,
@@ -62,7 +62,7 @@ export const appRoutes = {
     id: 'newInvoice',
     label: 'Nueva factura',
     path: '/billing/new',
-    icon: FileTextOutlined,
+    icon: FilePlus2Icon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Nueva factura', path: '/billing/new' },
@@ -79,7 +79,7 @@ export const appRoutes = {
     id: 'cashbox',
     label: 'Caja',
     path: '/cashbox',
-    icon: WalletOutlined,
+    icon: WalletCardsIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Caja', path: '/cashbox' },
@@ -94,7 +94,7 @@ export const appRoutes = {
     id: 'catalog',
     label: 'Catálogo',
     path: '/catalog',
-    icon: AppstoreOutlined,
+    icon: LibraryBigIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Catálogo', path: '/catalog' },
@@ -109,7 +109,7 @@ export const appRoutes = {
     id: 'invoices',
     label: 'Historial',
     path: '/invoices',
-    icon: HistoryOutlined,
+    icon: FileClockIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Historial', path: '/invoices' },
@@ -124,7 +124,7 @@ export const appRoutes = {
     id: 'reports',
     label: 'Reportes',
     path: '/reports',
-    icon: AuditOutlined,
+    icon: FileChartColumnIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Reportes', path: '/reports' },
@@ -140,7 +140,7 @@ export const appRoutes = {
     id: 'backups',
     label: 'Respaldos',
     path: '/backups',
-    icon: CloudSyncOutlined,
+    icon: DatabaseBackupIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Respaldos', path: '/backups' },
@@ -155,7 +155,7 @@ export const appRoutes = {
     id: 'fiscalSettings',
     label: 'Configuración',
     path: '/settings/fiscal',
-    icon: SettingOutlined,
+    icon: SettingsIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Configuración', path: '/settings/fiscal' },
@@ -171,7 +171,7 @@ export const appRoutes = {
     id: 'receiptSettings',
     label: 'Recibos',
     path: '/settings/institutional-receipts',
-    icon: FileTextOutlined,
+    icon: ReceiptTextIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Recibos institucionales', path: '/settings/institutional-receipts' },
@@ -186,7 +186,7 @@ export const appRoutes = {
     id: 'users',
     label: 'Usuarios',
     path: '/admin/users',
-    icon: UserOutlined,
+    icon: UsersIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Usuarios', path: '/admin/users' },
@@ -201,7 +201,7 @@ export const appRoutes = {
     id: 'help',
     label: 'Ayuda',
     path: '/help',
-    icon: QuestionCircleOutlined,
+    icon: CircleHelpIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Ayuda', path: '/help' },
@@ -213,7 +213,7 @@ export const appRoutes = {
     id: 'support',
     label: 'Soporte',
     path: '/support',
-    icon: QuestionCircleOutlined,
+    icon: LifeBuoyIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Soporte', path: '/support' },
@@ -224,7 +224,7 @@ export const appRoutes = {
     id: 'about',
     label: 'Acerca de',
     path: '/about',
-    icon: InfoCircleOutlined,
+    icon: InfoIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Acerca de', path: '/about' },

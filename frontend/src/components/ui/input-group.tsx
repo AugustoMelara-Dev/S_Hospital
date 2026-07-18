@@ -44,36 +44,14 @@ const inputGroupAddonVariants = cva(
 function InputGroupAddon({
   className,
   align = "inline-start",
-  onClick,
-  onKeyDown,
-  tabIndex,
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
-  const focusControl = (target: HTMLElement) => {
-    target.parentElement?.querySelector<HTMLElement>("input, textarea")?.focus()
-  }
-
   return (
     <div
-      role="button"
-      tabIndex={tabIndex ?? 0}
+      role="group"
       data-slot="input-group-addon"
       data-align={align}
       className={cn(inputGroupAddonVariants({ align }), className)}
-      onClick={(e) => {
-        onClick?.(e)
-        if (e.defaultPrevented) return
-        if ((e.target as HTMLElement).closest("button")) {
-          return
-        }
-        focusControl(e.currentTarget)
-      }}
-      onKeyDown={(e) => {
-        onKeyDown?.(e)
-        if (e.defaultPrevented || (e.key !== "Enter" && e.key !== " ")) return
-        e.preventDefault()
-        focusControl(e.currentTarget)
-      }}
       {...props}
     />
   )

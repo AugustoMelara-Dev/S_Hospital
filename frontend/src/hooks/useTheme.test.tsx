@@ -1,7 +1,9 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { COLOR_THEMES, useTheme } from './useTheme';
-import { institutionalDarkTheme, institutionalLightTheme } from '../design-system/antd/theme';
+
+const LIGHT_BACKGROUND = '#f8fafc';
+const DARK_BACKGROUND = '#0f172a';
 
 describe('institutional color themes', () => {
   beforeEach(() => localStorage.clear());
@@ -15,8 +17,19 @@ describe('institutional color themes', () => {
   });
 
   it.each(Object.entries(COLOR_THEMES))('%s keeps primary controls at WCAG AA contrast', (_name, palette) => {
-    expect(contrastRatio(palette.light.secondary, String(institutionalLightTheme.token?.colorBgBase))).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(palette.dark.secondary, String(institutionalDarkTheme.token?.colorBgBase))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.light.secondary, LIGHT_BACKGROUND)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.dark.secondary, DARK_BACKGROUND)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('applies the local dark class and semantic variables without Ant Design', async () => {
+    const { result } = renderHook(() => useTheme());
+
+    act(() => result.current.setTheme('dark'));
+
+    await waitFor(() => {
+      expect(document.documentElement).toHaveClass('dark');
+      expect(document.documentElement.style.getPropertyValue('--institutional-primary-foreground')).toBe(DARK_BACKGROUND);
+    });
   });
 
   it('uses the accessible light palette for sidebar indicators in light mode', async () => {

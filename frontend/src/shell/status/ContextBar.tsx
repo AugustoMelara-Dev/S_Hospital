@@ -1,10 +1,8 @@
-import {
-  DisconnectOutlined,
-  QuestionCircleOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
+import { CircleHelpIcon, SearchIcon, UnplugIcon } from 'lucide-react';
 import { type RefObject } from 'react';
-import { Button, Tooltip, Tag } from 'antd';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useServerStatus } from '../../hooks/useServerStatus';
 import { type AuthUser, type CashSession } from '../../lib/api';
 import { roleListLabel } from '../../lib/role-labels';
@@ -38,9 +36,9 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <Tag color="processing" className="m-0 px-3 py-1 text-xs font-bold">
+        <Badge variant="secondary" className="px-3 py-1 text-xs font-bold">
           {cashLabel}
-        </Tag>
+        </Badge>
         <span
           role="img"
           aria-label={isOnline ? 'Conexión local disponible' : 'Sin conexión al servidor local'}
@@ -48,7 +46,7 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
         >
           {isOnline ? 'Conexión local disponible' : (
             <>
-              <DisconnectOutlined className="text-lg" />
+              <UnplugIcon />
               <span>Sin conexión</span>
             </>
           )}
@@ -57,24 +55,23 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
 
       <Button
         ref={commandButtonRef as never}
-        type="default"
+        variant="outline"
         className="hidden min-w-44 justify-start bg-surface text-muted-foreground sm:inline-flex"
         onClick={onOpenCommands}
         aria-label="Abrir comandos"
-        icon={<SearchOutlined />}
       >
+        <SearchIcon />
         Buscar
         <span className="ml-auto border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">Ctrl K</span>
       </Button>
 
-      <Tooltip title="Ayuda" mouseEnterDelay={0.4}>
-        <Button
-          type="text"
-          icon={<QuestionCircleOutlined />}
-          className="hidden sm:inline-flex"
-          onClick={onOpenGuide}
-          aria-label="Abrir ayuda"
-        />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="hidden sm:inline-flex" onClick={onOpenGuide} aria-label="Abrir ayuda">
+            <CircleHelpIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Ayuda</TooltipContent>
       </Tooltip>
 
       <UserMenu hospitalName={hospitalName} onLogout={onLogout} onOpenGuide={onOpenGuide} roleLabel={roleListLabel(user.roles)} user={user} />

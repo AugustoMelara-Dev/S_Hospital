@@ -2,6 +2,11 @@ export type ColorTheme = 'teal' | 'blue' | 'green' | 'indigo' | 'rose';
 
 export const DEFAULT_COLOR_THEME: ColorTheme = 'teal';
 
+export const THEME_SEMANTICS = {
+  dark: { primaryForeground: '#0f172a', secondary: '#cbd5e1' },
+  light: { primaryForeground: '#ffffff', secondary: '#475569' },
+} as const;
+
 export const COLOR_THEMES: Record<ColorTheme, {
   name: string;
   light: { secondary: string; ring: string; accent: string; accentForeground: string };

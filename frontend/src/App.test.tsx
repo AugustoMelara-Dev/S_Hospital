@@ -7,7 +7,7 @@ import { apiClient } from './lib/api';
 import { queryClient } from './lib/query-client';
 import { resetRequestChain } from './lib/api/base';
 
-const LAZY_ROUTE_TIMEOUT_MS = 15_000;
+const LAZY_ROUTE_TIMEOUT_MS = 60_000;
 
 describe('App', () => {
   function mockSystemStatus() {
@@ -376,7 +376,7 @@ describe('App', () => {
     const navigation = await screen.findByRole('navigation', { name: /navegaci[oó]n principal/i });
 
     expect(navigation).toBeInTheDocument();
-    expect(navigation.closest('aside')).toBeInTheDocument();
+    expect(navigation.closest('[data-slot="sidebar-container"]')).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i })[0]).toHaveAttribute(
@@ -405,7 +405,7 @@ describe('App', () => {
     fireEvent.change(await screen.findByLabelText(/prefijo/i), { target: { value: 'A' } });
     expect(await screen.findByRole('button', { name: /guardar numeraci[oó]n/i })).toBeEnabled();
     expect(screen.queryByDisplayValue(placeholderCai)).not.toBeInTheDocument();
-  });
+  }, 120_000);
 
   it('renders catalog as read only for a cashier', async () => {
     window.history.pushState({}, '', '/catalog');

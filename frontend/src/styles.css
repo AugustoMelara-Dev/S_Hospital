@@ -85,6 +85,14 @@
     height: calc(100dvh - 13rem);
   }
 
+  .quick-cash-dialog {
+    max-height: calc(100dvh - 2rem);
+  }
+
+  .mobile-destinations-sheet {
+    max-height: 85dvh;
+  }
+
   .institutional-receipt-preview-frame {
     min-height: 70vh;
     background: var(--color-receipt-paper);

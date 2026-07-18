@@ -6,14 +6,16 @@ import { AppRoutes } from './AppRoutes';
 import { useHospitalSession } from './app/useHospitalSession';
 import { useCashSession } from './hooks/useCashSession';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
-import { Empty, Modal, Spin } from 'antd';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Empty, EmptyDescription, EmptyHeader } from '@/components/ui/empty';
+import { Spinner } from '@/components/ui/spinner';
 import { LoginView } from './features/auth/LoginView';
 import { PasswordChangeView } from './features/auth/PasswordChangeView';
 import { InstitutionalShell } from './shell/InstitutionalShell';
 import { queryClient } from './lib/query-client';
 import { apiClient } from './lib/api';
-import { DesignSystemProvider } from './design-system/providers/DesignSystemProvider';
 import { FeedbackProvider, useFeedback } from './design-system/providers/FeedbackProvider';
+import { ThemeProvider } from './design-system/providers/ThemeProvider';
 import { appRoutes, canAccessRoute } from './navigation/appNavigation';
 import { normalizeOperationalStatus, type OperationalStatusReporter } from './app/operationalStatus';
 
@@ -22,7 +24,7 @@ const CashBoxView = lazy(() => import('./features/cash/CashBoxView').then((modul
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <DesignSystemProvider>
+      <ThemeProvider>
         <FeedbackProvider>
           <BrowserRouter>
             <AppErrorBoundary>
@@ -30,7 +32,7 @@ export function App() {
             </AppErrorBoundary>
           </BrowserRouter>
         </FeedbackProvider>
-      </DesignSystemProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
@@ -74,7 +76,7 @@ function HospitalApp() {
   }, [session.user]); // Refresh when user changes/logs in
 
   if (session.loading) {
-    return <div role="status" aria-label="Cargando sesion" className="flex min-h-screen items-center justify-center"><Spin size="large" /></div>;
+    return <div role="status" aria-label="Cargando sesión" className="flex min-h-screen items-center justify-center"><Spinner className="size-8" /></div>;
   }
 
   if (!session.user) {
@@ -111,9 +113,9 @@ function HospitalApp() {
       logoUrl={logoUrl}
     >
       {!session.hasAnyOperationalPermission ? (
-        <Empty description="No tiene permisos operativos asignados." />
+        <Empty><EmptyHeader><EmptyDescription>No tiene permisos operativos asignados.</EmptyDescription></EmptyHeader></Empty>
       ) : session.loading ? (
-        <div role="status" aria-label="Validando caja para facturacion" className="flex min-h-48 items-center justify-center"><Spin /></div>
+        <div role="status" aria-label="Validando caja para facturación" className="flex min-h-48 items-center justify-center"><Spinner /></div>
       ) : (
         <AppRoutes
           canCreateInvoices={session.canCreateInvoices}
@@ -150,30 +152,28 @@ function HospitalApp() {
       )}
 
 
-      <Modal
-        open={quickCashOpen}
-        onCancel={() => setQuickCashOpen(false)}
-        footer={null}
-        width={920}
-        destroyOnHidden
-        title={cashSession ? 'Caja activa' : 'Abrir caja'}
-      >
-        <p className="mb-4 text-sm text-muted-foreground">Apertura y cierre de turno sin navegar a otra pantalla.</p>
-        <Suspense fallback={<div role="status" aria-label="Cargando caja rápida" className="flex min-h-48 items-center justify-center"><Spin /></div>}>
-          <CashBoxView
-          cashSession={cashSession ?? null}
-          canCloseAnyCash={session.canCloseAnyCash}
-          canCloseCash={session.canCloseCash}
-          canCreateInvoices={canAccessRoute(appRoutes.newInvoice, session.user.permissions)}
-          canOpenCash={session.canOpenCash}
-          canViewInvoices={session.canViewInvoices}
-          canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}
-          currentUserId={session.user.id}
-          onStatus={handleStatus}
-          compact
-          />
-        </Suspense>
-      </Modal>
+      <Dialog open={quickCashOpen} onOpenChange={setQuickCashOpen}>
+        <DialogContent className="quick-cash-dialog overflow-y-auto sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{cashSession ? 'Caja activa' : 'Abrir caja'}</DialogTitle>
+            <DialogDescription>Apertura y cierre de turno sin navegar a otra pantalla.</DialogDescription>
+          </DialogHeader>
+          <Suspense fallback={<div role="status" aria-label="Cargando caja rápida" className="flex min-h-48 items-center justify-center"><Spinner /></div>}>
+            <CashBoxView
+              cashSession={cashSession ?? null}
+              canCloseAnyCash={session.canCloseAnyCash}
+              canCloseCash={session.canCloseCash}
+              canCreateInvoices={canAccessRoute(appRoutes.newInvoice, session.user.permissions)}
+              canOpenCash={session.canOpenCash}
+              canViewInvoices={session.canViewInvoices}
+              canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}
+              currentUserId={session.user.id}
+              onStatus={handleStatus}
+              compact
+            />
+          </Suspense>
+        </DialogContent>
+      </Dialog>
     </InstitutionalShell>
   );
 }

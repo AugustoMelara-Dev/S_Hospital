@@ -1,8 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Button, Input, Modal } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '../../lib/utils';
+import {
+  CommandDialog,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandShortcut,
+} from '@/components/ui/command';
 import { type AuthUser } from '../../lib/api';
 import { type AppNavigationItem } from '../../navigation/appNavigation';
 
@@ -33,133 +40,51 @@ export function buildPermittedCommands(_user: AuthUser, navigation: readonly App
 
 export function CommandPalette({ navigation, onOpenChange, open, user }: CommandPaletteProps) {
   const navigate = useNavigate();
-  const commands = buildPermittedCommands(user, navigation);
   const [search, setSearch] = useState('');
-  const [activeIndex, setActiveIndex] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const commands = buildPermittedCommands(user, navigation);
 
   useEffect(() => {
-    function rememberExternalFocus(event: FocusEvent) {
-      const target = event.target;
-      if (target instanceof HTMLElement && !target.closest('.ant-modal')) {
-        returnFocusRef.current = target;
-      }
-    }
-
-    document.addEventListener('focusin', rememberExternalFocus);
-    return () => document.removeEventListener('focusin', rememberExternalFocus);
-  }, []);
-
-  // Reset search on open
-  useEffect(() => {
-    if (open) {
-      setSearch('');
-      setActiveIndex(0);
-    }
+    if (open) setSearch('');
   }, [open]);
 
-  const filteredCommands = commands.filter((cmd) => {
-    const query = search.toLowerCase();
-    return (
-      cmd.label.toLowerCase().includes(query) ||
-      cmd.group.toLowerCase().includes(query) ||
-      cmd.keywords.some((kw) => kw.toLowerCase().includes(query))
-    );
-  });
-
-  const selectCommand = useCallback((path: string) => {
+  function selectCommand(path: string) {
     navigate(path);
     onOpenChange(false);
-  }, [navigate, onOpenChange]);
-
-  // Keyboard navigation handlers
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setActiveIndex((prev) => (filteredCommands.length ? (prev + 1) % filteredCommands.length : 0));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setActiveIndex((prev) => (filteredCommands.length ? (prev - 1 + filteredCommands.length) % filteredCommands.length : 0));
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        if (filteredCommands[activeIndex]) {
-          selectCommand(filteredCommands[activeIndex].path);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, filteredCommands, activeIndex, selectCommand, onOpenChange]);
+  }
 
   return (
-    <Modal
-      title="Comandos"
+    <CommandDialog
       open={open}
-      onCancel={() => onOpenChange(false)}
-      afterClose={() => returnFocusRef.current?.focus()}
-      footer={null}
-      closable={false}
-      width={600}
-      styles={{ body: { padding: 0 } }}
-      destroyOnHidden
-      transitionName=""
-      maskTransitionName=""
+      onOpenChange={onOpenChange}
+      title="Comandos"
+      description="Busque una pantalla permitida y presione Enter para abrirla."
+      className="sm:max-w-xl"
+      showCloseButton
     >
-      <div className="flex flex-col border border-border bg-surface" ref={containerRef}>
-        <div className="border-b border-border p-3">
-          <Input
-            autoFocus
-            size="large"
-            placeholder="Buscar pantalla o acción (Use ↑↓ para navegar, Enter para seleccionar)..."
-            prefix={<SearchOutlined className="text-muted-foreground mr-1" />}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setActiveIndex(0);
-            }}
-            variant="borderless"
-            className="w-full text-base font-medium"
-          />
-        </div>
-        
-        <div className="max-h-72 overflow-y-auto p-2">
-          {filteredCommands.length === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              No se encontraron comandos.
-            </div>
-          ) : (
-            <ul aria-label="Resultados de comandos">
-              {filteredCommands.map((item, index) => {
-                const isActive = index === activeIndex;
-                return (
-                  <li key={item.id}>
-                    <Button
-                      htmlType="button"
-                      type={isActive ? 'primary' : 'text'}
-                      block
-                      onClick={() => selectCommand(item.path)}
-                      className={cn(
-                        'flex w-full cursor-pointer items-center justify-between border-none px-4 py-2.5 text-left text-sm font-normal outline-none transition',
-                        isActive ? 'font-semibold text-primary-foreground' : 'bg-transparent text-foreground hover:bg-muted'
-                      )}
-                    >
-                      <span>{item.label}</span>
-                      <span className={cn('text-xs font-semibold uppercase tracking-wider', isActive ? 'text-primary-foreground' : 'text-muted-foreground')}>
-                        {item.group}
-                      </span>
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      </div>
-    </Modal>
+      <Command>
+        <CommandInput autoFocus placeholder="Buscar pantalla o acción..." value={search} onValueChange={setSearch} />
+        <CommandList>
+        <CommandEmpty>No se encontraron comandos.</CommandEmpty>
+        {(['Operaciones', 'Administración', 'Asistencia'] as const).map((group) => {
+          const groupCommands = commands.filter((command) => command.group === group);
+          if (groupCommands.length === 0) return null;
+          return (
+            <CommandGroup key={group} heading={group}>
+              {groupCommands.map((command) => (
+                <CommandItem
+                  key={command.id}
+                  value={`${command.label} ${command.keywords.join(' ')}`}
+                  onSelect={() => selectCommand(command.path)}
+                >
+                  <span>{command.label}</span>
+                  <CommandShortcut>{command.group}</CommandShortcut>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          );
+        })}
+        </CommandList>
+      </Command>
+    </CommandDialog>
   );
 }

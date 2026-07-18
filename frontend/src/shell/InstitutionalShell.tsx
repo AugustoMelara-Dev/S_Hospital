@@ -6,12 +6,12 @@ import { usePublicBranding } from '../hooks/useFiscalSettings';
 import { type AuthUser, type CashSession } from '../lib/api';
 import { displayHospitalName } from '../lib/hospital-name';
 import { useBroadcastSync } from '../lib/realtime/useBroadcastSync';
-import { cn } from '../lib/utils';
 import { getActiveNavigationItem, getBreadcrumbs, getVisibleNavigation } from '../navigation/appNavigation';
 import { InstitutionalMobileNav } from './navigation/InstitutionalMobileNav';
 import { InstitutionalRail } from './navigation/InstitutionalRail';
 import { CommandPalette } from './navigation/CommandPalette';
 import { ContextBar } from './status/ContextBar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 const RAIL_PREFERENCE_KEY = 's-hospital-institutional-rail:v1';
 
@@ -56,6 +56,7 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
   const [mobileOpen, setMobileOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const commandButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileNavigationButtonRef = useRef<HTMLButtonElement>(null);
   const { data: branding } = usePublicBranding();
   const hospitalName = displayHospitalName(branding?.hospital_name);
 
@@ -95,15 +96,32 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
     });
   }
 
+  function handleSidebarOpenChange(open: boolean) {
+    const nextCollapsed = !open;
+    setCollapsed(nextCollapsed);
+    writeRailCollapsed(nextCollapsed);
+  }
+
+  function handleCommandsOpenChange(open: boolean) {
+    setCommandsOpen(open);
+    if (!open) {
+      window.setTimeout(() => commandButtonRef.current?.focus(), 0);
+    }
+  }
+
   return (
-    <div className="min-h-screen overflow-x-clip bg-background text-foreground">
+    <SidebarProvider
+      open={!collapsed}
+      onOpenChange={handleSidebarOpenChange}
+      className="min-h-screen overflow-x-clip bg-background text-foreground"
+    >
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
         Omitir al contenido principal
       </a>
 
       <InstitutionalRail activeItem={activeItem} collapsed={collapsed} hospitalName={hospitalName} logoUrl={logoUrl} navigation={visibleNavigation} onToggleCollapsed={toggleCollapsed} />
 
-      <div className={cn('flex min-h-screen min-w-0 flex-col pb-20 lg:pb-0', collapsed ? 'lg:ml-20' : 'lg:ml-56')}>
+      <SidebarInset id="main-content" data-audit-panel="content" tabIndex={-1} className="min-w-0 scroll-mt-20 pb-20 outline-none lg:pb-0">
         <ContextBar
           cashSession={cashSession}
           commandButtonRef={commandButtonRef}
@@ -115,16 +133,16 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
           status={status}
           user={user}
         />
-        <main id="main-content" data-audit-panel="content" tabIndex={-1} className="min-w-0 flex-1 scroll-mt-20 px-3 py-4 outline-none sm:px-5 lg:px-7 lg:py-6 xl:px-8">
+        <div className="min-w-0 flex-1 px-3 py-4 sm:px-5 lg:px-7 lg:py-6 xl:px-8">
           <div className="mx-auto flex max-w-screen-2xl flex-col gap-5">{children}</div>
-        </main>
+        </div>
         <footer className="print-hidden sr-only">Sistema hospitalario local</footer>
-      </div>
+      </SidebarInset>
 
-      <InstitutionalMobileNav activeItem={activeItem} navigation={visibleNavigation} onOpenChange={setMobileOpen} open={mobileOpen} />
-      <CommandPalette navigation={visibleNavigation} onOpenChange={setCommandsOpen} open={commandsOpen} user={user} />
+      <InstitutionalMobileNav activeItem={activeItem} navigation={visibleNavigation} onOpenChange={setMobileOpen} open={mobileOpen} triggerRef={mobileNavigationButtonRef} />
+      <CommandPalette navigation={visibleNavigation} onOpenChange={handleCommandsOpenChange} open={commandsOpen} user={user} />
       <GuidedTour open={guideOpen} onOpenChange={setGuideOpen} />
       <KeyboardShortcutsPalette open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
-    </div>
+    </SidebarProvider>
   );
 }

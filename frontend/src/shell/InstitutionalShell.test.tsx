@@ -1,67 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type AuthUser, type CashSession } from '../lib/api';
 import { InstitutionalShell } from './InstitutionalShell';
 import { InstitutionalMobileNav } from './navigation/InstitutionalMobileNav';
 import { InstitutionalRail } from './navigation/InstitutionalRail';
-
-vi.mock('antd', async (importOriginal) => {
-  const original = await importOriginal<typeof import('antd')>();
-  return {
-    ...original,
-    Dropdown: ({ children, menu, open, onOpenChange }: any) => {
-      console.log('Mock Dropdown rendering with open:', open);
-      const child = React.Children.only(children);
-      const childWithClick = React.cloneElement(child, {
-        onClick: (e: any) => {
-          console.log('Mock Dropdown click triggered, current open:', open);
-          if (child.props.onClick) child.props.onClick(e);
-          if (onOpenChange) {
-            console.log('Mock Dropdown calling onOpenChange with:', !open);
-            onOpenChange(!open);
-          }
-        },
-      });
-
-      return (
-        <div className="ant-dropdown-trigger-container">
-          {childWithClick}
-          {open && (
-            <div role="menu" className="ant-dropdown-menu">
-              {menu.items.map((item: any) => {
-                if (!item) return null;
-                if (item.type === 'divider') return <hr key={item.key || Math.random()} />;
-                if (item.type === 'group') {
-                  return (
-                    <div key={item.key || Math.random()} role="group">
-                      {item.label}
-                    </div>
-                  );
-                }
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      if (item.onClick) item.onClick();
-                      if (onOpenChange) onOpenChange(false);
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      );
-    },
-  };
-});
+import { ThemeProvider } from '@/design-system/providers/ThemeProvider';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 vi.mock('../hooks/useFiscalSettings', () => ({
   usePublicBranding: () => ({ data: { hospital_name: 'Hospital General San Isidro' } }),
@@ -144,10 +90,12 @@ function renderShell({
 } = {}) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
-      <InstitutionalShell cashSession={cashSession} onLogout={onLogout} status="Servidor local disponible" user={user}>
-        <div>Contenido</div>
-        <LocationProbe />
-      </InstitutionalShell>
+      <ThemeProvider>
+        <InstitutionalShell cashSession={cashSession} onLogout={onLogout} status="Servidor local disponible" user={user}>
+          <div>Contenido</div>
+          <LocationProbe />
+        </InstitutionalShell>
+      </ThemeProvider>
     </MemoryRouter>,
   );
 }
@@ -162,10 +110,12 @@ describe('InstitutionalShell', () => {
   it('restaura el inicio de la página al cambiar de ruta', async () => {
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
-        <InstitutionalShell cashSession={openCashSession} onLogout={vi.fn()} status="Listo" user={cashier}>
-          <Link to="/cashbox">Abrir caja de prueba</Link>
-          <LocationProbe />
-        </InstitutionalShell>
+        <ThemeProvider>
+          <InstitutionalShell cashSession={openCashSession} onLogout={vi.fn()} status="Listo" user={cashier}>
+            <Link to="/cashbox">Abrir caja de prueba</Link>
+            <LocationProbe />
+          </InstitutionalShell>
+        </ThemeProvider>
       </MemoryRouter>,
     );
 
@@ -179,7 +129,7 @@ describe('InstitutionalShell', () => {
   it('clips horizontal overflow without creating a competing vertical scroll container', () => {
     renderShell();
 
-    const shellRoot = screen.getByRole('main').parentElement?.parentElement;
+    const shellRoot = screen.getByRole('main').parentElement;
     expect(shellRoot).toHaveClass('overflow-x-clip');
     expect(shellRoot).not.toHaveClass('overflow-x-hidden');
   });
@@ -190,10 +140,10 @@ describe('InstitutionalShell', () => {
     const rail = screen.getByTestId('institutional-rail');
     const navigation = screen.getByRole('navigation', { name: 'Navegación principal' });
 
-    expect(rail).toHaveAttribute('data-expanded-width', '224');
-    expect(rail).toHaveClass('lg:w-56');
-    expect(navigation).toHaveAttribute('data-scroll-when-needed', 'true');
-    expect(screen.getByRole('main').parentElement).toHaveClass('lg:ml-56');
+    expect(rail).toHaveAttribute('data-expanded-width', '256');
+    expect(rail).toHaveAttribute('data-slot', 'sidebar-container');
+    expect(navigation.parentElement).toHaveAttribute('data-scroll-when-needed', 'true');
+    expect(screen.getByRole('main')).toHaveAttribute('data-slot', 'sidebar-inset');
     expect(screen.getAllByText('Nueva factura', { selector: '[data-current-location]' })).toHaveLength(1);
     expect(screen.queryByRole('navigation', { name: 'Ruta actual' })).not.toBeInTheDocument();
     expect(within(rail).queryByText(cashier.name)).not.toBeInTheDocument();
@@ -211,7 +161,7 @@ describe('InstitutionalShell', () => {
 
     expect(identities).toHaveLength(2);
     expect(mobileIdentity).toHaveClass('lg:hidden');
-    expect(desktopIdentity.closest('aside')).toHaveClass('hidden', 'lg:flex');
+    expect(desktopIdentity.closest('[data-slot="sidebar-container"]')).toHaveClass('hidden', 'lg:flex');
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
   });
 
@@ -246,7 +196,7 @@ describe('InstitutionalShell', () => {
   it('reserves the full mobile dock height and exposes keyboard focus styles', () => {
     renderShell({ user: administrator });
 
-    const contentColumn = screen.getByRole('main').parentElement;
+    const contentColumn = screen.getByRole('main');
     const dock = screen.getByRole('navigation', { name: /Accesos m/ });
     expect(contentColumn).toHaveClass('pb-20');
     expect(dock).toHaveClass('min-h-20');
@@ -296,7 +246,7 @@ describe('InstitutionalShell', () => {
     renderShell();
 
     const toggle = screen.getByRole('button', { name: 'Reducir navegación' });
-    expect(toggle).toHaveClass('!size-11');
+    expect(toggle).toHaveClass('size-11');
     expect(toggle).not.toHaveClass('w-full');
   });
 
@@ -385,18 +335,20 @@ describe('InstitutionalShell', () => {
   });
 
   it('mantiene el callback de logout', async () => {
+    const interaction = userEvent.setup();
     const onLogout = vi.fn();
     renderShell({ onLogout });
-    const trigger = screen.getByRole('button', { name: 'Abrir menu de usuario' });
-    fireEvent.click(trigger);
-    fireEvent.click(await screen.findByRole('menuitem', { name: /Cerrar sesi.n/i }));
+    const trigger = screen.getByRole('button', { name: /Abrir men[uú] de usuario/ });
+    await interaction.click(trigger);
+    await interaction.click(await screen.findByRole('menuitem', { name: /Cerrar sesi.n/i }));
     expect(onLogout).toHaveBeenCalledOnce();
   });
 
   it('entrega el nombre real del hospital al menú de usuario', async () => {
+    const interaction = userEvent.setup();
     renderShell();
-    const trigger = screen.getByRole('button', { name: 'Abrir menu de usuario' });
-    fireEvent.click(trigger);
+    const trigger = screen.getByRole('button', { name: /Abrir men[uú] de usuario/ });
+    await interaction.click(trigger);
 
     const menu = await screen.findByRole('menu');
     expect(within(menu).getByText('Hospital General San Isidro')).toBeInTheDocument();
@@ -405,13 +357,17 @@ describe('InstitutionalShell', () => {
   it('explica una navegación vacía', () => {
     render(
       <MemoryRouter>
-        <InstitutionalRail
-          activeItem={undefined}
-          collapsed={false}
-          hospitalName="Hospital General San Isidro"
-          navigation={[]}
-          onToggleCollapsed={vi.fn()}
-        />
+        <ThemeProvider>
+          <SidebarProvider>
+            <InstitutionalRail
+              activeItem={undefined}
+              collapsed={false}
+              hospitalName="Hospital General San Isidro"
+              navigation={[]}
+              onToggleCollapsed={vi.fn()}
+            />
+          </SidebarProvider>
+        </ThemeProvider>
       </MemoryRouter>,
     );
 

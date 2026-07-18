@@ -7,17 +7,19 @@ describe('institutional shell boundary', () => {
     const shell = readFileSync('src/shell/InstitutionalShell.tsx', 'utf8');
 
     expect(`${app}\n${shell}`).not.toMatch(/Clinical(?:Shell|Rail|MobileNav|Toaster)|MotionProvider/);
-    expect(app).not.toMatch(/components\/ui\/(?:dialog|states)/);
+    expect(app).toContain("from '@/components/ui/dialog'");
   });
 
-  it('hosts contextual Ant Design feedback inside the application provider', () => {
+  it('hosts contextual Sonner feedback inside the local theme provider', () => {
     const app = readFileSync('src/App.tsx', 'utf8');
     const designProvider = readFileSync('src/design-system/providers/DesignSystemProvider.tsx', 'utf8');
     const feedbackProvider = readFileSync('src/design-system/providers/FeedbackProvider.tsx', 'utf8');
 
-    expect(designProvider).toContain('<AntApp>');
+    expect(designProvider).toContain('<ThemeProvider>');
+    expect(app.indexOf('<ThemeProvider>')).toBeLessThan(app.indexOf('<FeedbackProvider>'));
     expect(app).toContain('<FeedbackProvider>');
     expect(`${app}\n${feedbackProvider}`).toContain('useFeedback()');
-    expect(feedbackProvider).toContain('AntApp.useApp()');
+    expect(feedbackProvider).toContain("from 'sonner'");
+    expect(feedbackProvider).not.toMatch(/AntApp|antd/);
   });
 });
