@@ -84,7 +84,7 @@ class ExecutiveReportService
                 'from' => $start->toDateString(),
                 'to' => $end->toDateString(),
                 'timezone' => self::HOSPITAL_TIMEZONE,
-                'days' => $start->diffInDays($end) + 1,
+                'days' => $this->inclusiveDays($start, $end),
             ],
             'filters' => [
                 'cash_session_id' => $filters['cash_session_id'] ?? null,
@@ -757,7 +757,7 @@ class ExecutiveReportService
      */
     private function comparison(Carbon $start, Carbon $end, array $filters): array
     {
-        $days = $start->diffInDays($end) + 1;
+        $days = $this->inclusiveDays($start, $end);
         $previousEnd = $start->copy()->subDay()->endOfDay();
         $previousStart = $previousEnd->copy()->subDays($days - 1)->startOfDay();
 
@@ -791,6 +791,11 @@ class ExecutiveReportService
                 'to' => $previousEnd->toDateString(),
             ],
         ];
+    }
+
+    private function inclusiveDays(Carbon $start, Carbon $end): int
+    {
+        return (int) $start->copy()->startOfDay()->diffInDays($end->copy()->startOfDay()) + 1;
     }
 
     /** @param array<string, mixed> $filters */

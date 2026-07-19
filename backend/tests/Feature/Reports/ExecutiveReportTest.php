@@ -176,6 +176,7 @@ class ExecutiveReportTest extends TestCase
                     ],
                 ],
             ])
+            ->assertJsonPath('data.period.days', 1)
             ->assertJsonPath('data.accounting_policy.scope', 'operational_cash')
             ->assertJsonPath('data.accounting_policy.expenses_supported', false)
             ->assertJsonPath('data.accounting_policy.exclusions_already_applied', true);
