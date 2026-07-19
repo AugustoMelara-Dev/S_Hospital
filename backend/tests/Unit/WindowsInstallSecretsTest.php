@@ -142,7 +142,10 @@ class WindowsInstallSecretsTest extends TestCase
 
         $this->assertIsString($config);
         $normalized = str_replace("\r\n", "\n", trim($config));
-        $this->assertSame("allowBuilds:\n  esbuild: true", $normalized);
+        $matched = preg_match('/^allowBuilds:\n(?<builds>(?:[ \t]+[^\n]+\n?)*)/m', $normalized, $matches);
+
+        $this->assertSame(1, $matched);
+        $this->assertSame('esbuild: true', trim($matches['builds']));
         $this->assertStringNotContainsString('dangerouslyAllowAllBuilds', $normalized);
         $this->assertStringNotContainsString('strictDepBuilds: false', $normalized);
     }

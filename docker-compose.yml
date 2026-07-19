@@ -13,6 +13,7 @@ services:
       DB_DATABASE: ${DB_DATABASE:-hospital_billing}
       DB_USERNAME: ${DB_USERNAME:-hospital}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      HOSPITAL_BACKUP_ENCRYPTION_KEY: ${HOSPITAL_BACKUP_ENCRYPTION_KEY:?HOSPITAL_BACKUP_ENCRYPTION_KEY is required}
       CACHE_STORE: file
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
@@ -53,7 +54,7 @@ services:
       PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/chromium-browser
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
     depends_on:
       - backend
 
