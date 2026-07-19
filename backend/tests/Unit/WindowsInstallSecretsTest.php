@@ -76,6 +76,23 @@ class WindowsInstallSecretsTest extends TestCase
         }
     }
 
+    public function test_production_separates_backup_and_realtime_queue_workers(): void
+    {
+        $compose = file_get_contents(base_path('../docker-compose.prod.yml'));
+
+        $this->assertIsString($compose);
+        $this->assertStringContainsString('  queue-worker:', $compose);
+        $this->assertStringContainsString(
+            'php artisan queue:work --queue=backups --tries=1 --timeout=600 --memory=256',
+            $compose,
+        );
+        $this->assertStringContainsString('  realtime-worker:', $compose);
+        $this->assertStringContainsString(
+            'php artisan queue:work --queue=default --tries=3 --timeout=60 --memory=128',
+            $compose,
+        );
+    }
+
     public function test_ci_checks_backend_worktree_clean_immediately_after_phpunit(): void
     {
         $workflow = file_get_contents(base_path('../.github/workflows/ci.yml'));

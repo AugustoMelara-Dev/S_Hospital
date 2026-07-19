@@ -210,7 +210,7 @@ function Test-DockerRuntimeServices([string] $project) {
             Add-Failure "Could not parse Docker container '$containerId'"
         }
     }
-    foreach ($requiredService in @("mysql", "backend", "nginx", "queue-worker", "scheduler")) {
+    foreach ($requiredService in @("mysql", "backend", "nginx", "queue-worker", "realtime-worker", "scheduler")) {
         if ($runningServices -contains $requiredService) {
             Add-Pass "Docker runtime service '$requiredService' is running"
         } else {

@@ -191,6 +191,69 @@ services:
       backend:
         condition: service_started
 
+  realtime-worker:
+    image: s_hospital-queue-worker:latest
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.prod
+    restart: unless-stopped
+    command: php artisan queue:work --queue=default --tries=3 --timeout=60 --memory=128
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?APP_KEY is required}
+      HOSPITAL_BACKUP_ENCRYPTION_KEY: ${HOSPITAL_BACKUP_ENCRYPTION_KEY:?HOSPITAL_BACKUP_ENCRYPTION_KEY is required}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-hospital_billing}
+      DB_USERNAME: ${DB_USERNAME:-hospital}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      CACHE_STORE: database
+      DB_CACHE_TABLE: cache
+      DB_CACHE_LOCK_TABLE: cache_locks
+      QUEUE_CONNECTION: database
+      DB_QUEUE_RETRY_AFTER: "660"
+      SESSION_DRIVER: database
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-60}
+      SESSION_ENCRYPT: "true"
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
+      LOG_CHANNEL: daily
+      LOG_LEVEL: warning
+      RUN_MIGRATIONS: "false"
+      SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
+      SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
+      CORS_ALLOWED_ORIGINS: ${APP_SCHEME:-http}://${SERVER_IP}:${APP_PORT:-8000}
+      BROADCAST_CONNECTION: pusher
+      PUSHER_APP_ID: ${PUSHER_APP_ID:?PUSHER_APP_ID is required}
+      PUSHER_APP_KEY: ${PUSHER_APP_KEY:?PUSHER_APP_KEY is required}
+      PUSHER_APP_SECRET: ${PUSHER_APP_SECRET:?PUSHER_APP_SECRET is required}
+      PUSHER_APP_CLUSTER: ${PUSHER_APP_CLUSTER:-mt1}
+      PUSHER_HOST: soketi
+      PUSHER_PORT: 6001
+      PUSHER_SCHEME: http
+      PUSHER_CLIENT_HOST: ${SERVER_IP:?SERVER_IP is required}
+      PUSHER_CLIENT_PORT: ${SOKETI_PORT:-6001}
+      PUSHER_CLIENT_SCHEME: ${PUSHER_CLIENT_SCHEME:-http}
+    volumes:
+      - backup_data:/var/www/html/storage/app/private/backups
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan tinker --execute=\"DB::connection()->getPdo(); echo 'OK';\" 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    security_opt:
+      - "no-new-privileges:true"
+    mem_limit: 256m
+    cpus: "0.5"
+    pids_limit: 150
+    depends_on:
+      mysql:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
   # Scheduler sidecar: uses the production Laravel image so `php artisan`
   # is available inside the container. It runs the Laravel scheduler once
   # per minute and writes a local heartbeat for Docker health checks.

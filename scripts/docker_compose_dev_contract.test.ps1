@@ -36,4 +36,36 @@ foreach ($linuxPackage in @("node_modules/@emnapi/core", "node_modules/@emnapi/r
     }
 }
 
+Assert-Contains `
+    '  queue-worker:' `
+    "Development compose must run the database backup queue."
+
+Assert-Contains `
+    'php artisan queue:work --queue=backups --tries=1 --timeout=600 --memory=256' `
+    "Development backup worker must match the reviewed production queue contract."
+
+Assert-Contains `
+    '  realtime-worker:' `
+    "Development compose must consume queued operational broadcasts."
+
+Assert-Contains `
+    'php artisan queue:work --queue=default --tries=3 --timeout=60 --memory=128' `
+    "Development realtime worker must not compete with long-running backups."
+
+Assert-Contains `
+    '  scheduler:' `
+    "Development compose must run the Laravel scheduler."
+
+Assert-Contains `
+    'php artisan schedule:run --no-interaction' `
+    "Development scheduler must execute Laravel schedules."
+
+Assert-Contains `
+    'php artisan hospital:scheduler-tick --result=ok' `
+    "Development scheduler must persist an operational heartbeat."
+
+Assert-Contains `
+    'curl -fsS http://127.0.0.1:8000/up' `
+    "Development workers must wait for a healthy backend with installed dependencies."
+
 Write-Host "[ OK ] development compose keeps backups recoverable and frontend installs reproducible"

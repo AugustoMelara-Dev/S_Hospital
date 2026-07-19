@@ -36,7 +36,7 @@ Assert-Contains '[string] $DockerProject = ""'
 Assert-Contains 'Test-DockerRuntimeServices'
 Assert-Contains 'Read-DockerRuntimeEnv'
 Assert-Contains 'Join-Path $ProjectRoot ".env"'
-Assert-Contains '@("mysql", "backend", "nginx", "queue-worker", "scheduler")'
+Assert-Contains '@("mysql", "backend", "nginx", "queue-worker", "realtime-worker", "scheduler")'
 Assert-Contains 'Docker runtime service ''$requiredService'' is running'
 
 Write-Host "[ OK ] production readiness preflight requires receipt proof and validates Docker workers"

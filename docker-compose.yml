@@ -1,22 +1,33 @@
+x-backend-environment: &backend-environment
+  APP_NAME: Sistema de Caja Hospitalaria
+  APP_ENV: local
+  APP_DEBUG: "false"
+  APP_URL: http://localhost:${APP_PORT:-8000}
+  DB_CONNECTION: mysql
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_DATABASE: ${DB_DATABASE:-hospital_billing}
+  DB_USERNAME: ${DB_USERNAME:-hospital}
+  DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+  HOSPITAL_BACKUP_ENCRYPTION_KEY: ${HOSPITAL_BACKUP_ENCRYPTION_KEY:?HOSPITAL_BACKUP_ENCRYPTION_KEY is required}
+  HOSPITAL_DAILY_BACKUP_TIME: ${HOSPITAL_DAILY_BACKUP_TIME:-02:00}
+  HOSPITAL_OPERATION_START: ${HOSPITAL_OPERATION_START:-06:00}
+  HOSPITAL_OPERATION_END: ${HOSPITAL_OPERATION_END:-18:00}
+  HOSPITAL_AUDIT_RETENTION_DAYS: ${HOSPITAL_AUDIT_RETENTION_DAYS:-365}
+  HOSPITAL_FAILED_JOBS_RETENTION_DAYS: ${HOSPITAL_FAILED_JOBS_RETENTION_DAYS:-30}
+  HOSPITAL_IDEMPOTENCY_RETENTION_DAYS: ${HOSPITAL_IDEMPOTENCY_RETENTION_DAYS:-30}
+  HOSPITAL_SCHEDULER_TICK_RETENTION_DAYS: ${HOSPITAL_SCHEDULER_TICK_RETENTION_DAYS:-7}
+  HOSPITAL_LOGIN_ATTEMPT_RETENTION_DAYS: ${HOSPITAL_LOGIN_ATTEMPT_RETENTION_DAYS:-30}
+  HOSPITAL_CLIENT_ERROR_RETENTION_DAYS: ${HOSPITAL_CLIENT_ERROR_RETENTION_DAYS:-90}
+  CACHE_STORE: file
+  QUEUE_CONNECTION: database
+  SESSION_DRIVER: database
+
 services:
   backend:
     build:
       context: ./backend
-    environment:
-      APP_NAME: Sistema de Caja Hospitalaria
-      APP_ENV: local
-      APP_DEBUG: "false"
-      APP_URL: http://localhost:${APP_PORT:-8000}
-      DB_CONNECTION: mysql
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_DATABASE: ${DB_DATABASE:-hospital_billing}
-      DB_USERNAME: ${DB_USERNAME:-hospital}
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      HOSPITAL_BACKUP_ENCRYPTION_KEY: ${HOSPITAL_BACKUP_ENCRYPTION_KEY:?HOSPITAL_BACKUP_ENCRYPTION_KEY is required}
-      CACHE_STORE: file
-      QUEUE_CONNECTION: database
-      SESSION_DRIVER: database
+    environment: *backend-environment
     volumes:
       - ./backend:/var/www/html
       - backend_vendor:/var/www/html/vendor
@@ -35,11 +46,73 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/up >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     command: >
       sh -c "composer install &&
              if [ ! -f .env ]; then cp .env.docker.example .env && php artisan key:generate --force; fi &&
              cd public &&
              exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
+
+  queue-worker:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment: *backend-environment
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    command: php artisan queue:work --queue=backups --tries=1 --timeout=600 --memory=256
+    depends_on:
+      mysql:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
+  realtime-worker:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment: *backend-environment
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    command: php artisan queue:work --queue=default --tries=3 --timeout=60 --memory=128
+    depends_on:
+      mysql:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment: *backend-environment
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    command: >
+      sh -c "
+        while true; do
+          if php artisan schedule:run --no-interaction; then
+            php artisan hospital:scheduler-tick --result=ok;
+          else
+            php artisan hospital:scheduler-tick --result=fail --message='schedule:run failed' || true;
+            exit 1;
+          fi;
+          sleep 60;
+        done
+      "
+    depends_on:
+      mysql:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
 
   frontend:
     build:
