@@ -1,5 +1,8 @@
-import { BuildOutlined as MonitorCheck, ClockCircleOutlined as Clock3, HddOutlined as HardDrive, HeartOutlined as HeartHandshake, HomeOutlined as Building2, SafetyCertificateOutlined as ShieldCheck, WifiOutlined as Network } from '@ant-design/icons';
-import { Button, Card, Flex, Tag, Typography } from 'antd';
+import { Building2, Clock3, HardDrive, HeartHandshake, MonitorCheck, Network, ShieldCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import { useBackups } from '../../hooks/useBackups';
 import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { summarizeOperationalHealth, useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
@@ -70,10 +73,10 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <Typography.Title level={2} className="text-xl font-bold">{hospitalName}</Typography.Title>
-                <Tag>Activo</Tag>
+                <h2 className="text-xl font-bold">{hospitalName}</h2>
+                <Badge variant="secondary">Activo</Badge>
               </div>
-              <Typography.Text type="secondary">Sistema de caja y facturacion hospitalaria local.</Typography.Text>
+              <p className="text-sm text-muted-foreground">Sistema de caja y facturación hospitalaria local.</p>
             </div>
           </div>
           <div className="space-y-4 text-sm text-muted-foreground">
@@ -89,35 +92,35 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                   <p className="font-semibold text-foreground">Sistema disponible en la red del hospital</p>
                   <p className="text-xs text-muted-foreground">Uso local para caja, facturacion, reportes y respaldos.</p>
                 </div>
-                <Tag icon={<ShieldCheck aria-hidden="true" />}>Activa</Tag>
+                <Badge variant="secondary"><ShieldCheck aria-hidden="true" />Activa</Badge>
               </div>
 
             </div>
 
-            <Flex gap="small" wrap>
-              <Button htmlType="button" onClick={() => void triggerDiagnosticTest()} size="small" disabled={checking} loading={checking}>
-                Revisar conexión local
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={() => void triggerDiagnosticTest()} size="sm" disabled={checking}>
+                {checking ? <Spinner data-icon="inline-start" /> : null}Revisar conexión local
               </Button>
-            </Flex>
+            </div>
           </div>
         </Card>
 
         <Card>
           <div className="mb-4">
-            <Typography.Title level={2} className="text-base font-bold">Estado local</Typography.Title>
-            <Typography.Text type="secondary">Senales utiles para soporte del hospital.</Typography.Text>
+            <h2 className="text-base font-bold">Estado local</h2>
+            <p className="text-sm text-muted-foreground">Señales útiles para soporte del hospital.</p>
           </div>
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="text-xs font-semibold text-muted-foreground">Servidor local</span>
-              <Tag>
+              <Badge variant="outline">
                 {isOnline ? 'Conectado' : 'Desconectado'}
-              </Tag>
+              </Badge>
             </div>
 
             <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="text-xs font-semibold text-muted-foreground">Diagnostico</span>
-              <Tag>{summary.label}</Tag>
+              <Badge variant="outline">{summary.label}</Badge>
             </div>
 
             <p className="border-b border-border pb-3 text-xs leading-5 text-muted-foreground">
@@ -141,10 +144,10 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
       {canViewAdminDiagnostics && (
         <Card>
           <div className="mb-4">
-            <Typography.Title level={2} className="flex items-center gap-2 text-base font-bold">
+            <h2 className="flex items-center gap-2 text-base font-bold">
               <MonitorCheck aria-hidden="true" className="h-5 w-5 text-secondary" /> Diagnostico administrativo
-            </Typography.Title>
-            <Typography.Text type="secondary">Lectura resumida para soporte local, sin claves ni rutas internas.</Typography.Text>
+            </h2>
+            <p className="text-sm text-muted-foreground">Lectura resumida para soporte local, sin claves ni rutas internas.</p>
           </div>
           <div className="space-y-4">
             {systemStatusError ? (
@@ -158,7 +161,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                     <div key={item.label} className="border border-border p-4">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">{item.label}</p>
-                        <Tag>{diagnosticLevelLabel(item.level)}</Tag>
+                        <Badge variant="outline">{diagnosticLevelLabel(item.level)}</Badge>
                       </div>
                       <p className="mt-2 break-words text-sm font-semibold text-foreground">{item.value}</p>
                     </div>
@@ -191,10 +194,10 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
 
       <Card>
         <div className="mb-4">
-          <Typography.Title level={2} className="flex items-center gap-2 text-base font-bold">
+          <h2 className="flex items-center gap-2 text-base font-bold">
             <HeartHandshake aria-hidden="true" className="h-5 w-5 text-secondary" /> Soporte
-          </Typography.Title>
-          <Typography.Text type="secondary">Informacion para continuidad operativa.</Typography.Text>
+          </h2>
+          <p className="text-sm text-muted-foreground">Información para continuidad operativa.</p>
         </div>
         <div className="grid grid-cols-1 gap-4 text-sm text-muted-foreground sm:grid-cols-2">
           <div className="space-y-1">
