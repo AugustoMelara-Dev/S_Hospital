@@ -39,10 +39,20 @@ export default defineConfig({
     rolldownOptions: {
       output: {
         codeSplitting: {
-          groups: [{
-            name: 'react-router',
-            test: /node_modules[\\/]react-router(?:-dom)?[\\/]/,
-          }],
+          groups: [
+            {
+              name: 'react-core',
+              test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/,
+            },
+            {
+              name: 'react-router',
+              test: /node_modules[\\/]react-router(?:-dom)?[\\/]/,
+            },
+            {
+              name: 'radix-ui',
+              test: /node_modules[\\/](?:radix-ui|@radix-ui)[\\/]/,
+            },
+          ],
         },
       },
     },
