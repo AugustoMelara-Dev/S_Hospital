@@ -1,17 +1,10 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Service } from '@/lib/api';
-import type { InstitutionalColumn } from '@/design-system/ag-grid';
 
 const mediaState = vi.hoisted(() => ({ isMobile: false }));
 vi.mock('@/hooks/useMediaQuery', () => ({ useMediaQuery: () => mediaState.isMobile }));
 
-vi.mock('@/design-system/ag-grid', () => ({
-  InstitutionalDataGrid: ({ ariaLabel, rows, columns, state, errorMessage, emptyMessage, actions }: { ariaLabel: string; rows: Service[]; columns: InstitutionalColumn<Service>[]; state: string; errorMessage?: string; emptyMessage?: string; actions?: React.ReactNode }) => {
-    if (state !== 'ready') return <section aria-label={ariaLabel}><div role={state === 'error' ? 'alert' : 'status'}>{state === 'loading' ? 'Cargando servicios del catálogo...' : state === 'error' ? errorMessage : emptyMessage}</div>{actions}</section>;
-    return <section aria-label={ariaLabel}><table><thead><tr>{columns.map((column) => <th key={column.colId ?? String(column.field)}>{column.headerName}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.id}>{columns.map((column) => { const value = column.field ? row[column.field as keyof Service] : undefined; const params = { data: row, value }; const renderer = column.cellRenderer as ((input: typeof params) => React.ReactNode) | undefined; const formatter = column.valueFormatter as ((input: typeof params) => string) | undefined; const getter = column.valueGetter as ((input: { data: Service }) => unknown) | undefined; return <td key={column.colId ?? String(column.field)}>{renderer ? renderer(params) : formatter ? formatter(params) : String(getter ? getter({ data: row }) : value ?? '')}</td>; })}</tr>)}</tbody></table>{actions}</section>;
-  },
-}));
 import { ServiceCatalogTable } from './ServiceCatalogTable';
 
 describe('ServiceCatalogTable', () => {
