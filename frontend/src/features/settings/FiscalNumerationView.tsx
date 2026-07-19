@@ -3,8 +3,16 @@ import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
 import type { ComponentProps, ReactNode } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AlertOutlined as AlertTriangle, SaveOutlined as Save } from '@ant-design/icons';
-import { Alert, Button, Card, Form, Input, Modal, Tag, Typography } from 'antd';
+import { Save, TriangleAlert } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { type FiscalSequence, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
@@ -41,22 +49,23 @@ function FiscalField({ children, error, id, label, required, hint }: {
   required?: boolean;
   hint?: ReactNode;
 }) {
-  const help = error ?? hint;
   return (
-    <Form.Item label={label} htmlFor={id} required={required} validateStatus={error ? 'error' : undefined} help={help}>
-      {children({ id, invalid: Boolean(error), describedBy: help ? `${id}-help` : undefined })}
-    </Form.Item>
+    <Field data-invalid={Boolean(error)} data-required={required}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      {children({ id, invalid: Boolean(error), describedBy: error || hint ? `${id}-help` : undefined })}
+      {error ? <FieldError id={`${id}-help`}>{error}</FieldError> : hint ? <FieldDescription id={`${id}-help`}>{hint}</FieldDescription> : null}
+    </Field>
   );
 }
 
 function RegisteredInput({ registration, ...props }: ComponentProps<typeof Input> & { registration: UseFormRegisterReturn }) {
   const { ref, ...field } = registration;
-  return <Input {...field} {...props} ref={(node) => ref(node?.input ?? null)} />;
+  return <Input {...field} {...props} ref={ref} />;
 }
 
-function RegisteredTextArea({ registration, ...props }: ComponentProps<typeof Input.TextArea> & { registration: UseFormRegisterReturn }) {
+function RegisteredTextArea({ registration, ...props }: ComponentProps<typeof Textarea> & { registration: UseFormRegisterReturn }) {
   const { ref, ...field } = registration;
-  return <Input.TextArea {...field} {...props} ref={(node) => ref(node?.resizableTextArea?.textArea ?? null)} />;
+  return <Textarea {...field} {...props} ref={ref} />;
 }
 
 function isPlaceholderCai(value: string | null | undefined): boolean {
@@ -179,15 +188,14 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
   }
 
   return (
-    <section>
-      <Typography.Title level={3}>Numeración fiscal</Typography.Title>
-      <Typography.Paragraph type="secondary">Configure el rango autorizado para emitir facturas. Cambios requieren motivo y quedan auditados.</Typography.Paragraph>
+    <section className="grid gap-4">
+      <header><h2 className="text-lg font-semibold">Numeración fiscal</h2><p className="text-sm text-muted-foreground">Configure el rango autorizado. Los cambios requieren motivo y quedan auditados.</p></header>
       {error ? (
-        <Alert type="error" showIcon title="No se pudo guardar" description={error} />
+        <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
       ) : null}
 
       {!sequence && (
-        <Alert type="warning" showIcon icon={<AlertTriangle />} title="Sin numeración" description="Configure el CAI, prefijo y rango autorizado antes de emitir facturas." />
+        <Alert><TriangleAlert /><AlertTitle>Sin numeración</AlertTitle><AlertDescription>Configure el CAI, prefijo y rango autorizado antes de emitir facturas.</AlertDescription></Alert>
       )}
 
       {sequence ? (
@@ -195,9 +203,9 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
           <div className="border border-operational-border bg-muted/40 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold">Disponibilidad del rango</p>
-              <Tag color={availableNumbers <= 100 ? 'warning' : 'success'}>
+              <Badge variant="secondary">
                 {availableNumbers <= 100 ? 'Rango por agotarse' : 'Rango disponible'}
-              </Tag>
+              </Badge>
             </div>
             <p className="mt-2 text-sm tabular-nums text-muted-foreground">
               {availableNumbers.toLocaleString('es-HN')} números disponibles de {Number(sequence.max_number - sequence.min_number + 1).toLocaleString('es-HN')} autorizados.
@@ -206,9 +214,9 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
           <div className="border border-operational-border bg-muted/40 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold">Vigencia</p>
-              <Tag color={isExpired ? 'error' : 'success'}>
+              <Badge variant={isExpired ? 'destructive' : 'secondary'}>
                 {isExpired ? 'Vencida' : 'Vigente'}
-              </Tag>
+              </Badge>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
               {isExpired ? 'Venció el' : 'Vigente hasta'} {sequence.valid_until}.
@@ -217,10 +225,10 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         </div>
       ) : null}
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" aria-busy={form.formState.isSubmitting || saving}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4" aria-busy={form.formState.isSubmitting || saving}>
         <Card>
-          <Typography.Title level={3}>Datos fiscales</Typography.Title>
-          <Typography.Paragraph type="secondary">CAI, prefijo y rango autorizado por el SAR.</Typography.Paragraph>
+          <CardHeader><CardTitle>Datos fiscales</CardTitle><CardDescription>CAI, prefijo y rango autorizado por el SAR.</CardDescription></CardHeader>
+          <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <FiscalField id="prefix" label="Prefijo" required error={form.formState.errors.prefix?.message}>
               {({ id, invalid, describedBy }) => (
@@ -298,6 +306,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
               </p>
             </div>
           </div>
+          </CardContent>
         </Card>
 
         {sequence?.id ? (
@@ -328,28 +337,19 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
             className="sticky bottom-20 z-20 flex items-center justify-between gap-3 border-t border-operational-border bg-operational-surface p-3 lg:bottom-0"
           >
             <span className="text-xs text-muted-foreground">Hay cambios fiscales sin guardar.</span>
-            <Button htmlType="submit" type="primary" icon={<Save aria-hidden="true" />} disabled={form.formState.isSubmitting || saving}>
-              Guardar numeración
+            <Button type="submit" disabled={form.formState.isSubmitting || saving}>
+              {saving ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}Guardar numeración
             </Button>
           </div>
         ) : null}
       </form>
 
-      <Modal
-        open={pendingChange !== null}
-        title="Revisar cambio fiscal"
-        okText={saving ? 'Guardando...' : 'Confirmar y guardar'}
-        okButtonProps={{ disabled: saving }}
-        cancelButtonProps={{ disabled: saving }}
-        onCancel={() => setPendingChange(null)}
-        onOk={() => {
-          if (pendingChange) void saveSequence(pendingChange);
-        }}
-        modalRender={(node) => <div role="alertdialog" aria-label="Revisar cambio fiscal">{node}</div>}
-      >
+      <AlertDialog open={pendingChange !== null} onOpenChange={(next) => { if (!next && !saving) setPendingChange(null); }}>
+        <AlertDialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
+          <AlertDialogHeader><AlertDialogTitle>Revisar cambio fiscal</AlertDialogTitle><AlertDialogDescription>Confirme la numeración autorizada antes de guardar.</AlertDialogDescription></AlertDialogHeader>
         {pendingChange ? (
           <div className="space-y-3">
-            {error ? <Alert type="error" showIcon title="No se pudo guardar" description={error} /> : null}
+            {error ? <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
             <p>Este cambio afecta la numeración de las próximas facturas y quedará auditado.</p>
             <dl className="grid gap-3 border border-operational-border bg-muted/40 p-4 sm:grid-cols-2">
               <div>
@@ -390,7 +390,14 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
             <p className="font-medium text-foreground">El correlativo actual no cambia desde esta pantalla.</p>
           </div>
         ) : null}
-      </Modal>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={saving} onClick={() => { if (pendingChange) void saveSequence(pendingChange); }}>
+              {saving ? <Spinner data-icon="inline-start" /> : null}{saving ? 'Guardando…' : 'Confirmar y guardar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

@@ -53,8 +53,8 @@ function HospitalField({ children, error, id, label, required }: {
   hint?: ReactNode;
 }) {
   return (
-    <Field data-invalid={Boolean(error)}>
-      <FieldLabel htmlFor={id}>{label}{required ? ' *' : ''}</FieldLabel>
+    <Field data-invalid={Boolean(error)} data-required={required}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {children({ id, invalid: Boolean(error), describedBy: error ? `${id}-error` : undefined })}
       <FieldError id={`${id}-error`}>{error}</FieldError>
     </Field>
