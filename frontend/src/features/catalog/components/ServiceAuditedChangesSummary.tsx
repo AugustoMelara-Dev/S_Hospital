@@ -55,7 +55,7 @@ export function ServiceAuditedChangesSummary({ changes }: { changes: string[] })
       <p className="mt-1 text-xs leading-5 text-current/80">
         El backend exigira motivo y guardara auditoria para estos cambios.
       </p>
-      <ul className="mt-3 space-y-1 text-xs">
+      <ul className="mt-3 flex flex-col gap-1 text-xs">
         {changes.map((change) => (
           <li key={change}>{change}</li>
         ))}

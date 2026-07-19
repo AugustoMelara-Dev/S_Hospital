@@ -10,7 +10,7 @@ const renderDrawer = (props: Partial<React.ComponentProps<typeof CategoryDrawer>
 describe('CategoryDrawer', () => {
   beforeEach(() => vi.restoreAllMocks());
 
-  it('exposes an accessible Ant drawer for create and edit', () => {
+  it('exposes an accessible sheet for create and edit', () => {
     const { rerender } = renderDrawer();
     expect(screen.getByRole('dialog', { name: /nueva categoría/i })).toBeInTheDocument();
     expect(screen.getByText(/cree una nueva categoría/i)).toBeInTheDocument();
@@ -20,8 +20,8 @@ describe('CategoryDrawer', () => {
 
   it('organizes data and status sections', () => {
     renderDrawer();
-    expect(screen.getByRole('heading', { name: /datos básicos/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /estado/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /datos básicos/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /estado/i })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /categoría activa/i })).toBeChecked();
   });
 

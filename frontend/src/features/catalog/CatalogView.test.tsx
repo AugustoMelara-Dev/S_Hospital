@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
@@ -78,7 +79,7 @@ describe('CatalogView', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    expect(await screen.findByText('Glucosa')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Glucosa')).toBeInTheDocument());
     expect(screen.getByText('Buscar servicio')).toBeInTheDocument();
     expect(screen.getByLabelText('Categoría')).toBeInTheDocument();
     expect(screen.getByLabelText('Estado')).toBeInTheDocument();
@@ -224,6 +225,7 @@ describe('CatalogView modernized structure', () => {
   });
 
   it('preserves a category selected while the search debounce is pending', async () => {
+    const user = userEvent.setup();
     setupBasicMocks();
     vi.spyOn(apiClient, 'getCategories').mockResolvedValue([
       { id: 7, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
@@ -241,15 +243,11 @@ describe('CatalogView modernized structure', () => {
     );
 
     const search = await screen.findByLabelText(/buscar servicio/i);
-    fireEvent.mouseDown(screen.getByLabelText(/categor/i));
-    await screen.findByRole('option', { name: 'Laboratorio' });
-    const laboratoryOption = Array.from(document.querySelectorAll<HTMLElement>('.ant-select-item-option'))
-      .find((option) => option.textContent === 'Laboratorio');
-    expect(laboratoryOption).toBeDefined();
+    await user.click(screen.getByLabelText(/categor/i));
+    const laboratoryOption = await screen.findByRole('option', { name: 'Laboratorio' });
 
     fireEvent.change(search, { target: { value: 'glucosa' } });
-    fireEvent.mouseDown(laboratoryOption!);
-    fireEvent.click(laboratoryOption!);
+    await user.click(laboratoryOption);
 
     await waitFor(() => {
       const params = new URLSearchParams(screen.getByTestId('location-search').textContent ?? '');
@@ -283,7 +281,7 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    expect(await screen.findByText('Glucosa basal')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Glucosa basal')).toBeInTheDocument());
 
     fireEvent.change(screen.getByLabelText(/buscar servicio/i), { target: { value: 'hemo' } });
 
@@ -311,7 +309,7 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser(['catalog.view'])} onStatus={vi.fn()} />);
 
-    expect(await screen.findByText('Glucosa')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Glucosa')).toBeInTheDocument());
     expect(
       screen.queryByRole('button', { name: /crear nuevo servicio/i }),
     ).not.toBeInTheDocument();
@@ -448,9 +446,7 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    expect(
-      await screen.findByText('Consulta General Larga Para Validar Caption'),
-    ).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Consulta General Larga Para Validar Caption')).toBeInTheDocument());
     expect(
       screen.getByRole('region', { name: /listado de servicios del cat[aá]logo/i }),
     ).toBeInTheDocument();
@@ -465,7 +461,8 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    const priceCell = await screen.findByText('L 1,234.50');
+    await waitFor(() => expect(screen.getByText('L 1,234.50')).toBeInTheDocument());
+    const priceCell = screen.getByText('L 1,234.50');
     expect(priceCell).toBeInTheDocument();
     expect(priceCell.className).toMatch(/tabular-nums/);
   });

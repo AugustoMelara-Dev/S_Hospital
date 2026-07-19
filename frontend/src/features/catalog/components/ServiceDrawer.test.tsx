@@ -466,15 +466,9 @@ describe('ServiceDrawer contract preservation', () => {
       />,
     );
 
-    const sectionHeadings = screen
-      .getAllByRole('heading', { level: 5 })
-      .map((heading) => heading.textContent);
-
-    expect(sectionHeadings).toEqual([
-      'Información',
-      'Tarifa y reglas',
-      'Disponibilidad',
-    ]);
+    expect(screen.getByRole('group', { name: 'Información' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Tarifa y reglas' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Disponibilidad' })).toBeInTheDocument();
     expect(screen.queryByText(/identificaci[oÃ³]n/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/tarifa y trazabilidad/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/reglas operativas/i)).not.toBeInTheDocument();

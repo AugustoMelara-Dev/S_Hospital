@@ -33,7 +33,7 @@ export function DataTable<TData>({ ariaLabel, columns, data, emptyTitle = 'Sin r
   if (loading) return <div role="status" aria-label={`Cargando ${ariaLabel}`} className="grid gap-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>;
   if (data.length === 0) return <div role="status" className="rounded-lg border border-dashed border-border px-4 py-10 text-center"><p className="font-semibold">{emptyTitle}</p><p className="mt-1 text-sm text-muted-foreground">{emptyDescription}</p></div>;
 
-  return <div className="min-w-0">
+  return <div className="min-w-0" role="region" aria-label={ariaLabel}>
     {renderMobileRow ? <div className="grid gap-2 md:hidden">{table.getRowModel().rows.map((row) => <div key={row.id}>{renderMobileRow(row.original)}</div>)}</div> : null}
     <div className={renderMobileRow ? 'hidden overflow-x-auto rounded-lg border border-border md:block' : 'overflow-x-auto rounded-lg border border-border'}>
       <Table aria-label={ariaLabel}>

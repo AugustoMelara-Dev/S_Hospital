@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Alert, Button, Collapse, Input, Modal, Typography } from 'antd';
+import { EditIcon, PlusIcon } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Textarea } from '@/components/ui/textarea';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
 import { useOperationalSettings } from '@/hooks/useFiscalSettings';
@@ -268,16 +274,14 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           : 'Consulte el catálogo y sus precios vigentes sin modificar servicios.'}
         actions={canManageCatalog ? (
           <>
-            <Button onClick={openNewCategory} aria-label="Crear nueva categoría" icon={<PlusOutlined />}>Nueva categoría</Button>
-            <Button type="primary" onClick={openNewService} aria-label="Crear nuevo servicio" icon={<PlusOutlined />}>Nuevo servicio</Button>
+            <Button type="button" variant="outline" onClick={openNewCategory} aria-label="Crear nueva categoría"><PlusIcon data-icon="inline-start" />Nueva categoría</Button>
+            <Button type="button" onClick={openNewService} aria-label="Crear nuevo servicio"><PlusIcon data-icon="inline-start" />Nuevo servicio</Button>
           </>
         ) : undefined}
       />
-      <Typography.Text role="status" aria-label="Resumen de servicios en el catálogo">
-        {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catálogo
-      </Typography.Text>
+      <div role="status" aria-label="Resumen de servicios en el catálogo"><Badge variant="secondary">{meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catálogo</Badge></div>
       {!canManageCatalog ? (
-        <Alert type="info" title="Solo lectura" description="Esta cuenta puede consultar el catálogo, pero no modificar servicios ni categorías." />
+        <Alert><AlertTitle>Solo lectura</AlertTitle><AlertDescription>Esta cuenta puede consultar el catálogo, pero no modificar servicios ni categorías.</AlertDescription></Alert>
       ) : null}
 
       <CatalogToolbar
@@ -320,38 +324,12 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       ) : null}
 
       {canManageCatalog && categories.length > 0 ? (
-        <Collapse
-          className="border-y border-border bg-surface"
-          destroyOnHidden
-          expandIconPlacement="end"
-          size="small"
-          items={[{
-            key: 'editable-categories',
-            label: (
-              <div>
-                <h2 className="text-sm font-semibold text-foreground">Categorías del catálogo</h2>
-                <p className="text-xs text-muted-foreground">{categories.length} disponibles · abrir para editar</p>
-              </div>
-            ),
-            children: (
-              <ul className="flex flex-wrap gap-2" aria-label="Categorías editables">
-                {categories.map((category) => (
-                  <li key={category.id}>
-                    <Button
-                      htmlType="button"
-                      size="small"
-                      aria-label={`Editar categoría ${category.name}`}
-                      onClick={() => openEditCategory(category)}
-                    >
-                      <EditOutlined aria-hidden="true" />
-                      {category.name}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ),
-          }]}
-        />
+        <Accordion type="single" collapsible className="rounded-lg border border-border bg-card px-4">
+          <AccordionItem value="editable-categories">
+            <AccordionTrigger><span className="text-left"><span className="block text-sm font-semibold text-foreground">Categorías del catálogo</span><span className="block text-xs font-normal text-muted-foreground">{categories.length} disponibles · abrir para editar</span></span></AccordionTrigger>
+            <AccordionContent><ul className="flex flex-wrap gap-2" aria-label="Categorías editables">{categories.map((category) => <li key={category.id}><Button type="button" size="sm" variant="outline" aria-label={`Editar categoría ${category.name}`} onClick={() => openEditCategory(category)}><EditIcon data-icon="inline-start" />{category.name}</Button></li>)}</ul></AccordionContent>
+          </AccordionItem>
+        </Accordion>
       ) : null}
 
       {canManageCatalog ? (
@@ -465,18 +443,12 @@ export function ConfirmDialog({ open, title, children, confirmLabel, danger, onC
 }) {
   const [reason, setReason] = useState('');
   return (
-    <Modal
-      open={open}
-      title={title}
-      okText={confirmLabel}
-      okButtonProps={{ danger, disabled: reason.trim().length < requireReasonMinLength }}
-      onCancel={() => { setReason(''); onCancel(); }}
-      onOk={() => { onConfirm(reason.trim() || null); setReason(''); }}
-    >
-      <Typography.Paragraph>{children}</Typography.Paragraph>
-      <label htmlFor="catalog-audit-reason">Motivo de auditoría</label>
-      <Input.TextArea id="catalog-audit-reason" value={reason} onChange={(event) => setReason(event.target.value)} aria-describedby="catalog-audit-help" />
-      <Typography.Text id="catalog-audit-help" type="secondary">{reasonHelpText}</Typography.Text>
-    </Modal>
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) { setReason(''); onCancel(); } }}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{children}</DialogDescription></DialogHeader>
+        <Field data-invalid={reason.trim().length > 0 && reason.trim().length < requireReasonMinLength}><FieldLabel htmlFor="catalog-audit-reason">Motivo de auditoría</FieldLabel><Textarea id="catalog-audit-reason" value={reason} onChange={(event) => setReason(event.target.value)} aria-describedby="catalog-audit-help" aria-invalid={reason.trim().length > 0 && reason.trim().length < requireReasonMinLength} /><FieldDescription id="catalog-audit-help">{reasonHelpText}</FieldDescription></Field>
+        <DialogFooter><Button type="button" variant="outline" onClick={() => { setReason(''); onCancel(); }}>Cancelar</Button><Button type="button" variant={danger ? 'destructive' : 'default'} disabled={reason.trim().length < requireReasonMinLength} onClick={() => { onConfirm(reason.trim() || null); setReason(''); }}>{confirmLabel}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
