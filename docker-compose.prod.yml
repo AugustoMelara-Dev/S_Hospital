@@ -55,7 +55,6 @@ services:
       PUSHER_CLIENT_SCHEME: ${PUSHER_CLIENT_SCHEME:-http}
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
-      - ./qa:/var/www/qa:ro
       - shared_public:/shared_public
     healthcheck:
       test: ["CMD-SHELL", "php artisan tinker --execute=\"DB::connection()->getPdo(); echo 'OK';\" 2>/dev/null && nc -z 127.0.0.1 9000 || exit 1"]

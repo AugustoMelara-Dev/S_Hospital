@@ -6,6 +6,15 @@ use Tests\TestCase;
 
 class ProductionDockerfileTest extends TestCase
 {
+    public function test_production_compose_does_not_mount_qa_sources(): void
+    {
+        $compose = file_get_contents(base_path('../docker-compose.prod.yml'));
+
+        $this->assertIsString($compose);
+        $this->assertStringNotContainsString('./qa:', $compose);
+        $this->assertStringNotContainsString('/var/www/qa', $compose);
+    }
+
     public function test_frontend_builder_uses_the_same_frozen_pnpm_lock_as_ci(): void
     {
         $dockerfile = file_get_contents(base_path('Dockerfile.prod'));
