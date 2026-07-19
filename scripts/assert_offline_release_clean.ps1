@@ -93,8 +93,13 @@ function Test-ReleaseFileMatchesSource([string] $relativePath) {
     $source = Join-Path $ProjectRoot $relativePath
     $release = Join-Path $ReleaseRoot $relativePath
 
-    if (-not (Test-Path -LiteralPath $source -PathType Leaf) -or
-        -not (Test-Path -LiteralPath $release -PathType Leaf)) {
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        Add-Failure "Missing versioned source file required by offline release contract: $relativePath"
+        return
+    }
+
+    if (-not (Test-Path -LiteralPath $release -PathType Leaf)) {
+        Add-Failure "Missing release file required by offline release contract: $relativePath"
         return
     }
 
@@ -195,9 +200,7 @@ Test-ReleaseFileMatchesSource "scripts\deploy_hospital_lan.ps1"
 Test-ReleaseFileMatchesSource "scripts\install_hospital_startup_shortcut.ps1"
 Test-ReleaseFileMatchesSource "scripts\install_backup_tasks_windows.ps1"
 Test-ReleaseFileMatchesSource "scripts\lib\operational_url_safety.ps1"
-Test-ReleaseFileMatchesSource "scripts\open_hospital_system.ps1"
 Test-ReleaseFileMatchesSource "scripts\repair_hospital_system.ps1"
-Test-ReleaseFileMatchesSource "scripts\start_hospital_services.ps1"
 Test-ReleaseFileMatchesSource "scripts\run_backup_worker.cmd"
 Test-ReleaseFileMatchesSource "scripts\run_scheduled_backup.cmd"
 

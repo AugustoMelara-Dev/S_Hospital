@@ -138,11 +138,14 @@ function Get-LanEnvValue($values, [string] $key, [string] $fallback = "") {
     return $fallback
 }
 
-function New-WebSocketCheckResult([string] $BaseUrl, [string] $PusherKey) {
+function New-WebSocketCheckResult([string] $ClientHost, [int] $ClientPort, [string] $ClientScheme, [string] $PusherKey) {
+    $scheme = if ($ClientScheme -in @("https", "wss")) { "wss" } else { "ws" }
+    $endpoint = "${scheme}://${ClientHost}:${ClientPort}"
+
     if ([string]::IsNullOrWhiteSpace($PusherKey)) {
         return [ordered] @{
             Label = "Realtime WebSocket"
-            Url = "$($BaseUrl.TrimEnd('/'))/app/<pusher-key>"
+            Url = "$endpoint/app/<pusher-key>"
             StatusCode = $null
             ContentType = ""
             Passed = $false
@@ -150,17 +153,28 @@ function New-WebSocketCheckResult([string] $BaseUrl, [string] $PusherKey) {
         }
     }
 
-    $baseUri = [Uri] $BaseUrl
-    $scheme = if ($baseUri.Scheme -eq "https") { "wss" } else { "ws" }
-    $builder = [System.UriBuilder]::new($baseUri)
+    if ($ClientPort -lt 1 -or $ClientPort -gt 65535) {
+        return [ordered] @{
+            Label = "Realtime WebSocket"
+            Url = "$endpoint/app/$PusherKey"
+            StatusCode = $null
+            ContentType = ""
+            Passed = $false
+            Detail = "SOKETI_PORT/PUSHER_CLIENT_PORT must be between 1 and 65535"
+        }
+    }
+
+    $builder = [System.UriBuilder]::new()
     $builder.Scheme = $scheme
+    $builder.Host = $ClientHost
+    $builder.Port = $ClientPort
     $builder.Path = "/app/$PusherKey"
     $builder.Query = "protocol=7&client=js&version=8.5.0&flash=false"
 
     $socket = [System.Net.WebSockets.ClientWebSocket]::new()
     $cts = [System.Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds(10))
     try {
-        $socket.ConnectAsync($builder.Uri, $cts.Token).GetAwaiter().GetResult()
+        $socket.ConnectAsync($builder.Uri, $cts.Token).GetAwaiter().GetResult() | Out-Null
         return [ordered] @{
             Label = "Realtime WebSocket"
             Url = $builder.Uri.ToString()
@@ -180,7 +194,7 @@ function New-WebSocketCheckResult([string] $BaseUrl, [string] $PusherKey) {
         }
     } finally {
         if ($socket.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
-            $socket.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, "lan-validation", [System.Threading.CancellationToken]::None).GetAwaiter().GetResult()
+            $socket.CloseOutputAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, "lan-validation", [System.Threading.CancellationToken]::None).GetAwaiter().GetResult() | Out-Null
         }
         $socket.Dispose()
         $cts.Dispose()
@@ -206,6 +220,11 @@ $baseUri = [Uri] $base
 $rootEnv = Read-LanEnvFile (Join-Path $ProjectRoot ".env")
 $backendEnv = Read-LanEnvFile (Join-Path $ProjectRoot "backend\.env")
 $pusherAppKey = Get-LanEnvValue $rootEnv "PUSHER_APP_KEY" (Get-LanEnvValue $backendEnv "PUSHER_APP_KEY" "")
+$pusherClientHost = Get-LanEnvValue $rootEnv "SERVER_IP" (Get-LanEnvValue $backendEnv "PUSHER_CLIENT_HOST" $baseUri.Host)
+$pusherClientPortValue = Get-LanEnvValue $rootEnv "SOKETI_PORT" (Get-LanEnvValue $backendEnv "PUSHER_CLIENT_PORT" "6001")
+$pusherClientScheme = Get-LanEnvValue $rootEnv "PUSHER_CLIENT_SCHEME" (Get-LanEnvValue $backendEnv "PUSHER_CLIENT_SCHEME" $baseUri.Scheme)
+[int] $pusherClientPort = 0
+[void] [int]::TryParse($pusherClientPortValue, [ref] $pusherClientPort)
 
 $resolvedEvidencePath = $EvidencePath
 if ($EvidencePath -ne "") {
@@ -245,7 +264,7 @@ if ($assetPath) {
     }) | Out-Null
 }
 
-$checks.Add((New-WebSocketCheckResult $base $pusherAppKey)) | Out-Null
+$checks.Add((New-WebSocketCheckResult $pusherClientHost $pusherClientPort $pusherClientScheme $pusherAppKey)) | Out-Null
 
 Write-Host "LAN client validation for $base"
 foreach ($check in $checks) {
@@ -285,7 +304,7 @@ if ($EvidencePath -ne "") {
         $mark = if ($check.Passed) { "x" } else { " " }
         $label = switch ($check.Label) {
             "/assets/*.js" { "/assets/*.js loads as JavaScript" }
-            "Realtime WebSocket" { "Realtime WebSocket handshake succeeds through the same LAN origin" }
+            "Realtime WebSocket" { "Realtime WebSocket handshake succeeds through the configured LAN endpoint" }
             default { "$($check.Label) responds from the client computer" }
         }
         $lines.Add("- [$mark] $label. Result/evidence: $($check.StatusCode) $($check.ContentType) $($check.Detail)") | Out-Null

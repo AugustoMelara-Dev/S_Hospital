@@ -346,25 +346,47 @@ function Invoke-RouteCheck([string] $url, [string] $label, [int[]] $AllowedStatu
     Add-Failure "$label failed after $Attempts attempts: $lastError"
 }
 
-function Invoke-WebSocketHandshake([string] $BaseUrl, [string] $PusherKey) {
+function Test-ServedFrontendBuild([string] $BaseUrl) {
+    try {
+        $loginResponse = Invoke-WebRequest -Uri "$($BaseUrl.TrimEnd('/'))/login" -UseBasicParsing -TimeoutSec 20
+        $assetMatches = [regex]::Matches($loginResponse.Content, '(?:src|href)="(?<path>/assets/[^"?]+\.(?:js|css))"')
+        if ($assetMatches.Count -eq 0) {
+            Add-Failure "Docker frontend HTML does not reference a built JavaScript or CSS asset"
+            return
+        }
+
+        $assetPath = $assetMatches[0].Groups["path"].Value
+        $assetResponse = Invoke-WebRequest -Uri "$($BaseUrl.TrimEnd('/'))$assetPath" -UseBasicParsing -TimeoutSec 20
+        if ([int] $assetResponse.StatusCode -eq 200 -and $assetResponse.RawContentLength -gt 0) {
+            Add-Pass "Docker frontend build serves hashed assets"
+        } else {
+            Add-Failure "Docker frontend asset $assetPath did not return non-empty HTTP 200 content"
+        }
+    } catch {
+        Add-Failure "Docker frontend build validation failed: $($_.Exception.Message)"
+    }
+}
+
+function Invoke-WebSocketHandshake([string] $ClientHost, [int] $ClientPort, [string] $ClientScheme, [string] $PusherKey) {
     if ([string]::IsNullOrWhiteSpace($PusherKey)) {
         Add-Failure "PUSHER_APP_KEY is required to validate realtime WebSocket handshake"
         return
     }
 
-    $baseUri = [Uri] $BaseUrl
-    $scheme = if ($baseUri.Scheme -eq "https") { "wss" } else { "ws" }
-    $builder = [System.UriBuilder]::new($baseUri)
+    $scheme = if ($ClientScheme -in @("https", "wss")) { "wss" } else { "ws" }
+    $builder = [System.UriBuilder]::new()
     $builder.Scheme = $scheme
+    $builder.Host = $ClientHost
+    $builder.Port = $ClientPort
     $builder.Path = "/app/$PusherKey"
     $builder.Query = "protocol=7&client=js&version=8.5.0&flash=false"
 
     $socket = [System.Net.WebSockets.ClientWebSocket]::new()
     $cts = [System.Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds(10))
     try {
-        $socket.ConnectAsync($builder.Uri, $cts.Token).GetAwaiter().GetResult()
+        $socket.ConnectAsync($builder.Uri, $cts.Token).GetAwaiter().GetResult() | Out-Null
         if ($socket.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
-            Add-Pass "Realtime WebSocket handshake succeeded through Nginx same-origin route"
+            Add-Pass "Realtime WebSocket handshake succeeded through the configured client endpoint"
         } else {
             Add-Failure "Realtime WebSocket handshake did not open; state=$($socket.State)"
         }
@@ -372,7 +394,7 @@ function Invoke-WebSocketHandshake([string] $BaseUrl, [string] $PusherKey) {
         Add-Failure "Realtime WebSocket handshake failed: $($_.Exception.Message)"
     } finally {
         if ($socket.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
-            $socket.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, "preflight", [System.Threading.CancellationToken]::None).GetAwaiter().GetResult()
+            $socket.CloseOutputAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, "preflight", [System.Threading.CancellationToken]::None).GetAwaiter().GetResult() | Out-Null
         }
         $socket.Dispose()
         $cts.Dispose()
@@ -436,6 +458,9 @@ $allowInsecureHttp = Get-EnvValue $envValues "HOSPITAL_ALLOW_INSECURE_HTTP" ""
 $sessionSecureCookie = Get-EnvValue $envValues "SESSION_SECURE_COOKIE" ""
 $backupEncryptionKey = Get-EnvValue $envValues "HOSPITAL_BACKUP_ENCRYPTION_KEY" ""
 $pusherAppKey = Get-EnvValue $envValues "PUSHER_APP_KEY" ""
+$pusherClientHost = Get-EnvValue $envValues "PUSHER_CLIENT_HOST" $baseUri.Host
+$pusherClientPortValue = Get-EnvValue $envValues "PUSHER_CLIENT_PORT" "6001"
+$pusherClientScheme = Get-EnvValue $envValues "PUSHER_CLIENT_SCHEME" $baseUri.Scheme
 $appScheme = Get-EnvValue $envValues "APP_SCHEME" ""
 
 Write-Host "Production readiness preflight for $BaseUrl"
@@ -516,18 +541,22 @@ if ($resolvedRuntimeMode -eq "Docker") {
     Add-Warning "Non-Windows host detected. Validate an equivalent continuous backup worker/service before production handoff."
 }
 
-if (Test-Path -LiteralPath (Join-Path $frontendDist "index.html")) {
-    Add-Pass "frontend/dist/index.html exists"
+if ($resolvedRuntimeMode -eq "Docker") {
+    Test-ServedFrontendBuild $BaseUrl
 } else {
-    Add-Failure "Missing frontend build. Run npm.cmd run build in frontend/"
-}
+    if (Test-Path -LiteralPath (Join-Path $frontendDist "index.html")) {
+        Add-Pass "frontend/dist/index.html exists"
+    } else {
+        Add-Failure "Missing frontend build. Run npm.cmd run build in frontend/"
+    }
 
-$assetDir = Join-Path $frontendDist "assets"
-if (Test-Path -LiteralPath $assetDir) {
-    $assetCount = (Get-ChildItem -LiteralPath $assetDir -File | Measure-Object).Count
-    if ($assetCount -gt 0) { Add-Pass "frontend/dist/assets contains $assetCount files" } else { Add-Failure "frontend/dist/assets is empty" }
-} else {
-    Add-Failure "Missing frontend/dist/assets"
+    $assetDir = Join-Path $frontendDist "assets"
+    if (Test-Path -LiteralPath $assetDir) {
+        $assetCount = (Get-ChildItem -LiteralPath $assetDir -File | Measure-Object).Count
+        if ($assetCount -gt 0) { Add-Pass "frontend/dist/assets contains $assetCount files" } else { Add-Failure "frontend/dist/assets is empty" }
+    } else {
+        Add-Failure "Missing frontend/dist/assets"
+    }
 }
 
 if (Test-CommandExists "php") { Add-Pass "php is available in PATH" } else { Add-Failure "php is not available in PATH" }
@@ -580,7 +609,12 @@ try {
 Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/up" "/up"
 Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/login" "/login"
 Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/verify-email" "/verify-email" @(200, 302)
-Invoke-WebSocketHandshake $BaseUrl $pusherAppKey
+[int] $pusherClientPort = 0
+if ([int]::TryParse($pusherClientPortValue, [ref] $pusherClientPort) -and $pusherClientPort -ge 1 -and $pusherClientPort -le 65535) {
+    Invoke-WebSocketHandshake $pusherClientHost $pusherClientPort $pusherClientScheme $pusherAppKey
+} else {
+    Add-Failure "PUSHER_CLIENT_PORT must be an integer between 1 and 65535"
+}
 
 if ($AllowMissingPhysicalProof) {
     Add-Strong-Warning "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
