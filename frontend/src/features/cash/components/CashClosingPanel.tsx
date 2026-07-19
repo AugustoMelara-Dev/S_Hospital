@@ -1,7 +1,11 @@
 import { type FormEvent, type ReactNode, type RefObject } from 'react';
-import { AuditOutlined, WarningOutlined } from '@ant-design/icons';
-import { Alert, Button, Form, Input } from 'antd';
+import { ShieldCheckIcon, TriangleAlertIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { formatLempirasUI } from '@/lib/money';
 
 type CashClosingPanelProps = {
@@ -67,7 +71,7 @@ export function CashClosingPanel({
       <div className="border-b border-border bg-muted/40 px-4 py-4 sm:px-5">
         <div className="flex items-start gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center bg-primary text-primary-foreground ">
-            <AuditOutlined aria-hidden="true" />
+            <ShieldCheckIcon aria-hidden="true" />
           </span>
           <div className="min-w-0">
             <h2 id="cash-close-guided-title" className="text-lg font-semibold leading-tight">
@@ -82,19 +86,10 @@ export function CashClosingPanel({
 
       <form onSubmit={onSubmit} className="flex flex-col gap-4 px-4 py-4 sm:px-5" aria-busy={isSubmitting}>
         <div className="grid gap-4 md:grid-cols-2">
-          <Form.Item
-            label="Monto contado (L.)"
-            htmlFor="closing_amount"
-            required
-            validateStatus={closingAmountError ? 'error' : undefined}
-            help={closingAmountError ?? (
-              <span className="block bg-surface text-muted-foreground">
-                {closingAmountReadOnly ? 'Monto calculado desde el arqueo por denominaciones. Regrese a Arqueo para corregir el conteo.' : 'Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.'}
-              </span>
-            )}
-          >
+          <div className="grid gap-2">
+              <Label htmlFor="closing_amount">Monto contado (L.) *</Label>
               <Input
-                ref={(control) => { closingAmountRef.current = control?.input ?? null; }}
+                ref={(control) => { closingAmountRef.current = control; }}
                 id="closing_amount"
                 name="closing_amount"
                 type="text"
@@ -107,8 +102,10 @@ export function CashClosingPanel({
                 readOnly={closingAmountReadOnly}
                 className="min-h-11 font-mono text-lg tabular-nums"
                 aria-invalid={Boolean(closingAmountError)}
+                aria-describedby="closing-amount-help"
               />
-          </Form.Item>
+              <p id="closing-amount-help" className={closingAmountError ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'}>{closingAmountError ?? (closingAmountReadOnly ? 'Monto calculado desde el arqueo por denominaciones. Regrese a Arqueo para corregir el conteo.' : 'Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.')}</p>
+          </div>
 
           <div className="border border-secondary/25 bg-accent/35 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -129,9 +126,7 @@ export function CashClosingPanel({
         </div>
 
         {hasCashDifference ? (
-          <Alert type="warning" showIcon icon={<WarningOutlined />} description={<div>
-              Hay una diferencia de <strong>{formatLempirasUI(difference)}</strong>. La nota de cierre es obligatoria para dejar el motivo auditado.
-            </div>} />
+          <Alert><TriangleAlertIcon aria-hidden="true" /><AlertDescription>Hay una diferencia de <strong>{formatLempirasUI(difference)}</strong>. La nota de cierre es obligatoria para dejar el motivo auditado.</AlertDescription></Alert>
         ) : null}
 
         {hasPendingBalance || missingInstitutionalReceiptCount > 0 ? (
@@ -157,18 +152,9 @@ export function CashClosingPanel({
           </ul>
         ) : null}
 
-        <Form.Item
-          label={hasCashDifference ? 'Nota de cierre *' : 'Nota de cierre'}
-          htmlFor="closing_notes"
-          help={(
-            <span className="block bg-surface text-muted-foreground">
-              {hasCashDifference
-                ? 'Nota obligatoria: explique el faltante o sobrante antes de confirmar.'
-                : 'Opcional cuando el conteo coincide.'}
-            </span>
-          )}
-        >
-            <Input.TextArea
+        <div className="grid gap-2">
+            <Label htmlFor="closing_notes">{hasCashDifference ? 'Nota de cierre *' : 'Nota de cierre'}</Label>
+            <Textarea
               id="closing_notes"
               name="closing_notes"
               value={closingNotes}
@@ -177,12 +163,12 @@ export function CashClosingPanel({
               rows={2}
               disabled={isSubmitting}
             />
-        </Form.Item>
+            <p className="text-sm text-muted-foreground">{hasCashDifference ? 'Nota obligatoria: explique el faltante o sobrante antes de confirmar.' : 'Opcional cuando el conteo coincide.'}</p>
+        </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Button
-            htmlType="submit"
-            type="primary"
+            type="submit"
             className="min-h-11"
             disabled={isSubmitting || !canCloseCash || hasPendingBalance || missingInstitutionalReceiptCount > 0}
           >
@@ -211,7 +197,7 @@ function ClosingBlocker({
   return (
     <li className="flex flex-col gap-2 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
       <span className="flex min-w-0 items-start gap-2">
-        <WarningOutlined aria-hidden="true" className="mt-0.5 shrink-0 text-warning-foreground" />
+        <TriangleAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-warning-foreground" />
         <span>{children}</span>
       </span>
       {canViewInvoices ? (

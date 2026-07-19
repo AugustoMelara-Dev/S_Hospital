@@ -1,4 +1,5 @@
-import { Button, Input } from 'antd';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { formatLempirasUI, parseCents } from '@/lib/money';
 import type { CashClosingBreakdown } from '@/lib/api/types';
 
@@ -119,7 +120,7 @@ export function CashDenominationCounter({
                   autoComplete="off"
                   value={count}
                   placeholder="0"
-                  className="min-h-11 w-28 text-right font-mono tabular-nums"
+                  className="h-11 w-28 text-right font-mono tabular-nums"
                   onChange={(event) => {
                     const value = event.target.value;
                     if (/^\d{0,5}$/.test(value)) onCountChange(denomination, value);
@@ -146,7 +147,7 @@ export function CashDenominationCounter({
             autoComplete="off"
             value={otherAmount}
             placeholder="0.00"
-            className="min-h-11 text-right font-mono tabular-nums sm:w-48"
+            className="h-11 text-right font-mono tabular-nums sm:w-48"
             onChange={(event) => {
               const value = event.target.value;
               if (/^\d{0,7}(\.\d{0,2})?$/.test(value)) onOtherAmountChange(value);
@@ -174,8 +175,8 @@ export function CashDenominationCounter({
         </div>
 
         <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
-          <Button htmlType="button" onClick={onReset}>Limpiar conteo</Button>
-          <Button htmlType="button" type="primary" disabled={!hasCounted} onClick={onContinue}>
+          <Button type="button" variant="outline" onClick={onReset}>Limpiar conteo</Button>
+          <Button type="button" disabled={!hasCounted} onClick={onContinue}>
             Continuar al cierre
           </Button>
         </div>
