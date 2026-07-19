@@ -1,5 +1,30 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-07-19 - Cierre integral shadcn, backend y entrega offline
+
+- Completa la migracion local a shadcn/Radix, TanStack Table y Recharts; los
+  gates finales confirman cero imports o dependencias runtime de Ant Design,
+  AG Grid y ECharts.
+- Corrige operaciones monetarias negativas en centavos, conserva redondeo y
+  asignaciones sin floats y mantiene al backend como autoridad fiscal.
+- Endurece respaldos cifrados y restauracion: audita solicitudes encoladas como
+  exitosas, reconcilia logs `pending` dentro del dump y recrea unicamente bases
+  descartables antes de importar.
+- Separa etiquetas Docker de desarrollo y produccion para impedir que una
+  construccion offline reemplace imagenes del stack local.
+- Corrige el preflight de la distribucion Docker para validar assets realmente
+  servidos y el endpoint WebSocket configurado de Soketi.
+- Restaura la biblioteca compartida de seguridad de URL operativa, repara el
+  validador de segunda PC LAN y hace fallar el contrato offline si falta un
+  archivo requerido en fuente o paquete.
+- Certificacion fresca: suite Laravel completa sin fallos; 1,083/1,083 pruebas
+  frontend en 141 archivos y 12 segmentos; PHPStan, Pint, TypeScript, ESLint,
+  build y presupuesto de bundle aprobados; 49/49 E2E mock, 2/2 E2E reales
+  Laravel/MariaDB y 18/18 PDFs automatizados.
+- Regenera seis imagenes Docker offline con checksums y manifiesto del commit
+  certificado. La aceptacion fisica de impresoras y segunda PC LAN permanece
+  como evidencia externa obligatoria antes de `PRODUCTION_READY`.
+
 ## 2026-07-09 - Reescritura total, Fase 6: instalacion y cierre de liberacion
 
 - Reemplaza el instalador legado por un flujo PowerShell reproducible para

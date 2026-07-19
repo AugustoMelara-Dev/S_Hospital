@@ -4,6 +4,9 @@ Estado: `LOCAL_RELEASE_CANDIDATE`. La aplicacion no debe declararse
 `PRODUCTION_READY` hasta completar la evidencia fisica de impresoras y la
 aceptacion desde una computadora cliente de la LAN hospitalaria.
 
+HEAD de codigo certificado: `0fc27450`. El commit documental que contiene este
+registro no se usa como identificador autorreferencial.
+
 ## Alcance certificado
 
 - Frontend React 19/Tailwind 4 basado en shadcn/ui y Radix.
@@ -18,7 +21,7 @@ aceptacion desde una computadora cliente de la LAN hospitalaria.
 
 | Gate | Resultado |
 |---|---|
-| Suite Laravel completa posterior a integracion | 948 aprobadas; 0 fallos; 13 omitidas |
+| Suite Laravel completa posterior a integracion | PASS; 0 fallos; 952 aprobadas y 12 omitidas en la corrida integral vigente |
 | Suite Laravel sobre MariaDB aislada | 957 casos; 0 fallos, 0 errores, 12 omitidos |
 | Laravel Pint | PASS |
 | PHPStan | PASS, 0 errores |
@@ -28,13 +31,22 @@ aceptacion desde una computadora cliente de la LAN hospitalaria.
 | E2E mock | 49/49 |
 | E2E real Laravel + MariaDB | 2/2; 0 errores de consola |
 | PDFs automatizados | 18/18: Carta, Media Carta, A5, 80 mm, 58 mm y 190x140 mm; original y copias |
-| Backup cifrado y descifrado | checksum verificado; SQL MariaDB valido |
+| Backup y restore MariaDB | checksum y descifrado verificados; 122 servicios, 5 roles y 81 migraciones preservados; 0 logs `pending` restaurados |
+| Preflight del paquete Docker | Todos los gates locales aprobados; frontend servido, seis servicios requeridos y WebSocket 101 |
+| Paquete offline | 6/6 imagenes cargadas desde TAR; checksums validos; manifiesto regenerado desde el commit de cierre vigente |
 
 El E2E real se ejecuto en el proyecto Docker aislado
-`s_hospital_release_e2e`, despues de `migrate:fresh --seed`. El reporte generado
+`s_hospital_final_e2e_20260719`, despues de `migrate:fresh --seed`. El reporte generado
 es `frontend/test-results/mariadb-release-e2e-report.json`; el resultado valido
-tiene `database_driver=mysql`, ambos specs en `passed`, caja final `closed` y
-acceso protegido con estado 403.
+tiene `run_id=e1b0e76aab18435382f2295a12c83fbf`,
+`database_driver=mysql`, ambos specs en `passed`, caja final `closed`, cero
+problemas de consola y acceso protegido con estado 403.
+
+El preflight se ejecuto sobre la distribucion offline en una pila de produccion
+descartable con MariaDB nueva. `APP_ENV=production`, `APP_DEBUG=false`, Nginx,
+backend, MariaDB, workers, scheduler, assets, rutas y Soketi aprobaron. Al usar
+`-AllowMissingPhysicalProof`, el unico bloqueo restante fue precisamente la
+evidencia fisica omitida; no aparecieron bloqueantes locales adicionales.
 
 ## Hallazgos corregidos
 
@@ -50,6 +62,17 @@ acceso protegido con estado 403.
   lista de roles.
 - Los selectores E2E siguen el nombre accesible real de shadcn y toleran una
   instalacion fria sin relajar las comprobaciones financieras o RBAC.
+- Los dumps restaurados convierten operaciones de backup en vuelo a `failed`,
+  evitando alertas permanentes por un `pending` que no puede reanudarse.
+- El restaurador de Windows elimina y recrea exclusivamente bases con nombre
+  descartable antes de importar; produccion y bases del sistema siguen
+  bloqueadas.
+- El preflight Docker valida el frontend dentro de la imagen en vez de exigir
+  `frontend/dist` en el disco del paquete.
+- Preflight y validador LAN conectan al host, puerto y esquema publicados por
+  Soketi, y cierran el canal WebSocket sin ocultar los gates posteriores.
+- El contrato offline ya falla si un archivo requerido falta en fuente o en la
+  entrega; se restauro `scripts/lib/operational_url_safety.ps1`.
 
 ## Validaciones externas pendientes
 
@@ -58,8 +81,9 @@ acceso protegido con estado 403.
    `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` desde su plantilla.
 2. Ejecutar desde otra computadora de la LAN `scripts/validate_lan_client.ps1`
    y completar `qa/LAN_CLIENT_VALIDATION_PROOF.md`.
-3. Ejecutar el preflight final con `APP_ENV=production`, `APP_DEBUG=false`, IP
-   fija, workers activos y evidencias firmadas.
+3. Repetir en el servidor hospitalario el preflight ya aprobado localmente,
+   usando IP fija, HTTPS o la aceptacion formal del riesgo HTTP y las evidencias
+   firmadas.
 
 Estas validaciones requieren hardware/red externos y no pueden sustituirse por
 capturas o mocks locales.
