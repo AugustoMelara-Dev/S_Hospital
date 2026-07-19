@@ -199,6 +199,7 @@ class BackupWorkflowTest extends TestCase
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
             'action' => 'backup.requested',
+            'result' => 'success',
             'entity_type' => BackupLog::class,
             'entity_id' => $backup->id,
         ]);

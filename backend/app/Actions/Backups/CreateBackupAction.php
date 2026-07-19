@@ -45,7 +45,7 @@ class CreateBackupAction
                 'created_by' => $user?->id,
             ]);
 
-        $this->audit($backupLog, $user?->id, 'backup.requested');
+        $this->audit($backupLog, $user?->id, 'backup.requested', 'success');
 
         return $backupLog->fresh(['creator:id,name,username']) ?? $backupLog;
     }
@@ -124,6 +124,7 @@ class CreateBackupAction
             $backupLog,
             $backupLog->created_by,
             $backupLog->status === BackupLog::STATUS_SUCCESS ? 'backup.created' : 'backup.failed',
+            $backupLog->status === BackupLog::STATUS_SUCCESS ? 'success' : 'failed',
         );
 
         return $backupLog->fresh(['creator:id,name,username']) ?? $backupLog;
@@ -271,12 +272,12 @@ class CreateBackupAction
             ?? 'Error tecnico registrado. Revise el paquete de soporte.';
     }
 
-    private function audit(BackupLog $backupLog, ?int $userId, string $action): void
+    private function audit(BackupLog $backupLog, ?int $userId, string $action, string $result): void
     {
         AuditLog::query()->create([
             'user_id' => $userId,
             'action' => $action,
-            'result' => $backupLog->status === BackupLog::STATUS_SUCCESS ? 'success' : 'failed',
+            'result' => $result,
             'entity_type' => BackupLog::class,
             'entity_id' => $backupLog->id,
             'old_values' => null,
