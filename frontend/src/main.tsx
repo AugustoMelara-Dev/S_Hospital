@@ -7,6 +7,18 @@ import './printing/styles/receipt-print.css';
 function registerServiceWorker() {
   if (typeof window === 'undefined') return;
   if (!('serviceWorker' in navigator)) return;
+
+  if (!import.meta.env.PROD) {
+    void navigator.serviceWorker.getRegistrations()
+      .then((registrations) =>
+        Promise.all(registrations.map((registration) => registration.unregister())),
+      )
+      .catch((error) => {
+        console.warn('Stale service worker cleanup failed', error);
+      });
+    return;
+  }
+
   if (import.meta.env.PROD) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch((error) => {

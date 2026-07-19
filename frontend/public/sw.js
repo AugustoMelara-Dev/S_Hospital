@@ -7,7 +7,7 @@
 //   - explicit public assets -> CacheFirst.
 //   - every other request -> pass through to the browser.
 
-const CACHE_VERSION = 's-hospital-v2';
+const CACHE_VERSION = 's-hospital-v3';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const PRECACHE_PATHS = [
@@ -86,7 +86,7 @@ self.addEventListener('fetch', (event) => {
 
 async function navigationWithOfflineShell(request) {
   try {
-    return await fetchWithTimeout(request, 2000);
+    return await fetchWithTimeout(request, 8000);
   } catch {
     const cache = await caches.open(STATIC_CACHE);
     const fallback = await cache.match('/');
