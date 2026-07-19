@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { SearchOutlined as Search, SaveOutlined as Save } from '@ant-design/icons';
-import { Alert, Button, Checkbox, Input, Modal, Tag } from 'antd';
+import { Info, Save, Search, TriangleAlert } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { type RoleDefinition, type RolePermission } from '@/lib/api';
 import { isCriticalPermission, permissionRiskLabel } from './permission-risk';
 
@@ -102,26 +109,18 @@ export function RoleFormDialog({
   }
 
   return (
-    <Modal
-      open={open}
-      onCancel={() => { if (!isSaving) onOpenChange(false); }}
-      title={editingRole ? 'Editar rol' : 'Nuevo rol'}
-      footer={null}
-      width={860}
-      destroyOnHidden
-    >
-      <p>Seleccione los permisos exactos que tendra este rol operativo.</p>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Dialog open={open} onOpenChange={(next) => { if (!isSaving) onOpenChange(next); }}>
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-3xl" onInteractOutside={(event) => { if (isSaving) event.preventDefault(); }}>
+        <DialogHeader>
+          <DialogTitle>{editingRole ? 'Editar rol' : 'Nuevo rol'}</DialogTitle>
+          <DialogDescription>Seleccione los permisos exactos que tendrá este rol operativo.</DialogDescription>
+        </DialogHeader>
+      <form onSubmit={handleSubmit} className="grid gap-4">
         {globalError && (
-          <Alert type="error" showIcon title="No se pudo guardar" description={globalError} />
+          <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{globalError}</AlertDescription></Alert>
         )}
 
-        <Alert
-          type="info"
-          showIcon
-          title="Permisos por modulo"
-          description="Seleccione exactamente los accesos que tendra el rol. Use permisos entendibles por modulo para evitar asignaciones accidentales."
-        />
+        <Alert><Info /><AlertTitle>Permisos por módulo</AlertTitle><AlertDescription>Seleccione exactamente los accesos del rol para evitar asignaciones accidentales.</AlertDescription></Alert>
 
         {requiresCriticalConfirmation && (
           <div className="border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">
@@ -154,15 +153,15 @@ export function RoleFormDialog({
                 id="critical-role-confirmation"
                 checked={criticalAccessConfirmed}
                 disabled={isSaving}
-                onChange={(event) => setCriticalAccessConfirmed(event.target.checked)}
+                onCheckedChange={(checked) => setCriticalAccessConfirmed(Boolean(checked))}
               />
               <span>Confirmo que este rol necesita permisos criticos</span>
             </label>
           </div>
         )}
 
-        <div className="space-y-1 border border-operational-border bg-muted/40 p-4">
-          <label htmlFor="role-name">Nombre del rol *</label>
+        <Field className="rounded-xl border bg-muted/40 p-4">
+          <FieldLabel htmlFor="role-name">Nombre del rol *</FieldLabel>
           <Input
             id="role-name"
             value={roleName}
@@ -172,11 +171,11 @@ export function RoleFormDialog({
             autoComplete="off"
           />
           {isProtected && (
-            <p className="text-xs text-muted-foreground">
+            <FieldDescription>
               Los roles protegidos no pueden renombrarse para preservar la asignacion administrativa.
-            </p>
+            </FieldDescription>
           )}
-        </div>
+        </Field>
 
         <div className="relative">
           <Search
@@ -221,12 +220,12 @@ export function RoleFormDialog({
                           id={id}
                           checked={checked}
                           disabled={isSaving}
-                          onChange={(event) => onTogglePermission(permission.name, event.target.checked)}
+                          onCheckedChange={(checked) => onTogglePermission(permission.name, Boolean(checked))}
                         />
                         <span>
                           <span className="flex flex-wrap items-center gap-2 font-medium text-foreground">
                             {permission.label}
-                            {critical && <Tag color="warning">Permiso critico</Tag>}
+                            {critical && <Badge variant="secondary">Permiso critico</Badge>}
                           </span>
                           {critical && riskLabel && (
                             <span className="block text-xs text-warning-foreground">{riskLabel}</span>
@@ -241,16 +240,17 @@ export function RoleFormDialog({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button onClick={() => onOpenChange(false)} disabled={isSaving}>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Cancelar
           </Button>
-          <Button type="primary" htmlType="submit" loading={isSaving} disabled={isSaving || (requiresCriticalConfirmation && !criticalAccessConfirmed)}>
-            <Save data-icon aria-hidden="true" />
-            {isSaving ? 'Guardando...' : editingRole ? 'Guardar rol' : 'Crear rol'}
+          <Button type="submit" disabled={isSaving || (requiresCriticalConfirmation && !criticalAccessConfirmed)}>
+            {isSaving ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}
+            {isSaving ? 'Guardando…' : editingRole ? 'Guardar rol' : 'Crear rol'}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }

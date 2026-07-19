@@ -6,7 +6,10 @@ import {
   apiClient,
   userSafeErrorMessage,
 } from '@/lib/api';
-import { Alert, Button, Skeleton } from 'antd';
+import { TriangleAlert } from 'lucide-react';
+import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/design-system/components/PageHeader';
 import { UserFormDialog, type UserFormData } from './components/UserFormDialog';
 import { UserManagementOverview } from './components/UserManagementOverview';
@@ -315,24 +318,19 @@ export function UsersView({
   };
 
   if (loading) {
-    return <><PageHeader title="Cargando usuarios" description="Preparando cuentas, roles y permisos operativos." /><div role="status"><Skeleton active={false} />Cargando usuarios...</div></>;
+    return <><PageHeader title="Cargando usuarios" description="Preparando cuentas, roles y permisos operativos." /><div role="status" className="grid gap-3"><Skeleton className="h-28 w-full" /><Skeleton className="h-64 w-full" /><span className="sr-only">Cargando usuarios...</span></div></>;
   }
 
   if (loadError) {
     return (
       <>
         <PageHeader title="Usuarios y funciones" description="Administre cuentas individuales, roles operativos y permisos por módulo." />
-        <Alert
-          type="error"
-          showIcon
-          title={<h2>No se pudieron cargar los usuarios</h2>}
-          description={loadError}
-          action={(
-            <Button onClick={() => void fetchUsers()}>
-              Reintentar
-            </Button>
-          )}
-        />
+        <Alert variant="destructive">
+          <TriangleAlert />
+          <AlertTitle><h2>No se pudieron cargar los usuarios</h2></AlertTitle>
+          <AlertDescription>{loadError}</AlertDescription>
+          <AlertAction><Button variant="outline" onClick={() => void fetchUsers()}>Reintentar</Button></AlertAction>
+        </Alert>
       </>
     );
   }

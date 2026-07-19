@@ -379,7 +379,7 @@ describe('UsersView', () => {
     const dialog = await screen.findByRole('dialog', { name: /editar usuario/i });
     expect(within(dialog).getByText(/conserva el rol protegido/i)).toBeInTheDocument();
 
-    fireEvent.mouseDown(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
+    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
 
     expect(screen.getByRole('option', { name: /Admin/i })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /^Cajero$/i })).not.toBeInTheDocument();
@@ -504,7 +504,7 @@ describe('UsersView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
-    fireEvent.mouseDown(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
+    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
 
     expect(screen.getByRole('option', { name: /^Cajero$/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Catalog manager/i })).toBeInTheDocument();
@@ -519,7 +519,7 @@ describe('UsersView', () => {
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
 
-    fireEvent.mouseDown(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
+    fireEvent.click(within(dialog).getByRole('combobox', { name: /rol operativo/i }));
 
     expect(await screen.findByRole('option', { name: /Catalog manager/i })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /Auditor/i })).not.toBeInTheDocument();
@@ -547,11 +547,9 @@ describe('UsersView', () => {
 
     const roleSelector = within(dialog).getByRole('combobox', { name: /rol operativo/i });
     await user.click(roleSelector);
-    await user.type(roleSelector, 'Catalog manager');
     const catalogOption = await screen.findByRole('option', { name: /Catalog manager/i });
-    fireEvent.mouseDown(catalogOption);
     fireEvent.click(catalogOption);
-    await waitFor(() => expect(roleSelector.closest('.ant-select')).toHaveTextContent(/Catalog manager/i));
+    await waitFor(() => expect(roleSelector).toHaveTextContent(/Catalog manager/i));
     openAdvancedUserPermissions(dialog);
 
     expect(within(dialog).getByRole('checkbox', { name: /Catalog view/i })).toBeChecked();

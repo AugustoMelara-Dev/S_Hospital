@@ -2,10 +2,17 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { SaveOutlined as Save } from '@ant-design/icons';
-import { Alert, Button, Checkbox, Input, Modal, Select, Tag } from 'antd';
+import { Info, Save, TriangleAlert } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Field as UiField, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { type AuthUser, type RoleDefinition, type RolePermission, type UserPayload } from '@/lib/api';
-import { cn } from '@/lib/utils';
 import { roleLabel } from '@/lib/role-labels';
 import { isCriticalPermission, permissionRiskLabel } from './permission-risk';
 
@@ -132,29 +139,21 @@ export function UserFormDialog({
   });
 
   return (
-    <Modal
-      open={open}
-      onCancel={() => { if (!isSubmitting) onOpenChange(false); }}
-      title={editingUser ? 'Editar usuario' : 'Crear usuario'}
-      footer={null}
-      width={720}
-      destroyOnHidden
-    >
-      <p>Configure nombre, acceso y rol operativo.</p>
-      <form onSubmit={handleSafeSubmit} className="space-y-5">
+    <Dialog open={open} onOpenChange={(next) => { if (!isSubmitting) onOpenChange(next); }}>
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl" onInteractOutside={(event) => { if (isSubmitting) event.preventDefault(); }}>
+        <DialogHeader>
+          <DialogTitle>{editingUser ? 'Editar usuario' : 'Crear usuario'}</DialogTitle>
+          <DialogDescription>Configure nombre, acceso y rol operativo.</DialogDescription>
+        </DialogHeader>
+      <form onSubmit={handleSafeSubmit} className="grid gap-5">
         {globalError && (
-          <Alert type="error" showIcon title="No se pudo guardar" description={globalError} />
+          <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{globalError}</AlertDescription></Alert>
         )}
 
-        <Alert
-          type="info"
-          showIcon
-          title={editingUser ? 'Edicion de cuenta operativa' : 'Alta de usuario individual'}
-          description={editingUser ? 'Actualice datos visibles y rol sin modificar la clave.' : 'Cree una cuenta personal para evitar usuarios compartidos.'}
-        />
+        <Alert><Info /><AlertTitle>{editingUser ? 'Edición de cuenta operativa' : 'Alta de usuario individual'}</AlertTitle><AlertDescription>{editingUser ? 'Actualice datos visibles y rol sin modificar la clave.' : 'Cree una cuenta personal para evitar usuarios compartidos.'}</AlertDescription></Alert>
 
         {protectedRoleLocked && (
-          <Alert type="warning" showIcon title="Unico administrador activo" description="Esta cuenta conserva el rol protegido porque es el unico administrador activo. Cree o active otro administrador antes de cambiar este rol." />
+          <Alert><TriangleAlert /><AlertTitle>Único administrador activo</AlertTitle><AlertDescription>Esta cuenta conserva el rol protegido porque es el único administrador activo. Cree o active otro administrador antes de cambiar este rol.</AlertDescription></Alert>
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -169,7 +168,7 @@ export function UserFormDialog({
           </Field>
           {!editingUser && (
             <Field label="Contraseña inicial" id="password" error={errors.password?.message}>
-              <Controller name="password" control={control} render={({ field: { ref: _ref, ...field } }) => <Input.Password id="password" placeholder="Mínimo 12 caracteres" disabled={isSubmitting} aria-invalid={Boolean(errors.password)} {...field} />} />
+              <Controller name="password" control={control} render={({ field: { ref: _ref, ...field } }) => <Input id="password" type="password" placeholder="Mínimo 12 caracteres" disabled={isSubmitting} aria-invalid={Boolean(errors.password)} {...field} />} />
             </Field>
           )}
         </div>
@@ -179,20 +178,13 @@ export function UserFormDialog({
             name="role"
             control={control}
             render={({ field }) => (
-              <Select
-                id="role"
-                aria-label="Rol operativo"
-                showSearch
-                optionFilterProp="label"
-                virtual={false}
-                value={field.value}
-                disabled={identityOnly}
-                options={assignableRoles.map((role) => ({ value: role.name, label: `${roleLabel(role.name)}${role.protected ? ' (base protegido)' : ''}` }))}
-                onChange={(value) => {
+              <Select value={field.value} disabled={identityOnly} onValueChange={(value) => {
                   field.onChange(value);
                   onRoleChange?.(value);
-                }}
-              />
+                }}>
+                <SelectTrigger id="role" aria-label="Rol operativo"><SelectValue /></SelectTrigger>
+                <SelectContent>{assignableRoles.map((role) => <SelectItem key={role.id} value={role.name}>{roleLabel(role.name)}{role.protected ? ' (base protegido)' : ''}</SelectItem>)}</SelectContent>
+              </Select>
             )}
           />
         </Field>
@@ -207,7 +199,7 @@ export function UserFormDialog({
           <div className="border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">
             <p className="flex flex-wrap items-center gap-2 font-semibold">
               Rol administrativo seleccionado
-              <Tag color="warning">Rol critico</Tag>
+              <Badge variant="secondary">Rol critico</Badge>
             </p>
             <p className="mt-1 text-xs text-current/80">
               Este rol puede incluir acceso amplio a caja, facturacion, auditoria, reportes o administracion. Confirme que esta cuenta realmente lo necesita.
@@ -217,7 +209,7 @@ export function UserFormDialog({
                 id="critical-user-role-confirmation"
                 checked={criticalAccessConfirmed}
                 disabled={isSubmitting}
-                onChange={(event) => setCriticalAccessConfirmed(event.target.checked)}
+                onCheckedChange={(checked) => setCriticalAccessConfirmed(Boolean(checked))}
               />
               <span>Confirmo que este usuario necesita rol administrativo</span>
             </label>
@@ -233,6 +225,8 @@ export function UserFormDialog({
         {canManageRoles && !identityOnly && (
           <div className="space-y-4 border border-operational-border bg-muted/40 p-4 sm:p-5">
             <Button
+              type="button"
+              variant="outline"
               aria-expanded={advancedPermissionMode}
               onClick={() => onAdvancedPermissionModeChange(!advancedPermissionMode)}
             >
@@ -257,7 +251,7 @@ export function UserFormDialog({
                         id="critical-user-confirmation"
                         checked={criticalAccessConfirmed}
                         disabled={isSubmitting}
-                        onChange={(event) => setCriticalAccessConfirmed(event.target.checked)}
+                        onCheckedChange={(checked) => setCriticalAccessConfirmed(Boolean(checked))}
                       />
                       <span>Confirmo que este usuario necesita permisos criticos</span>
                     </label>
@@ -284,12 +278,12 @@ export function UserFormDialog({
                                 id={id}
                                 checked={checked}
                                 disabled={isSubmitting}
-                                onChange={(event) => onToggleUserPermission(permission.name, event.target.checked)}
+                                onCheckedChange={(checked) => onToggleUserPermission(permission.name, Boolean(checked))}
                               />
                               <span>
                                 <span className="flex flex-wrap items-center gap-2 font-medium text-foreground">
                                   {permission.label}
-                                  {critical && <Tag color="warning">Permiso critico</Tag>}
+                                  {critical && <Badge variant="secondary">Permiso critico</Badge>}
                                 </span>
                                 {critical && riskLabel && (
                                   <span className="block text-xs text-warning-foreground">{riskLabel}</span>
@@ -307,17 +301,18 @@ export function UserFormDialog({
           </div>
         )}
 
-        <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
-          <Button onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button type="primary" htmlType="submit" loading={isSubmitting} disabled={isSubmitting || (requiresCriticalAccessConfirmation && !criticalAccessConfirmed)}>
-            <Save data-icon aria-hidden="true" />
-            {isSubmitting ? 'Guardando...' : editingUser ? 'Guardar cambios' : 'Crear usuario'}
+          <Button type="submit" disabled={isSubmitting || (requiresCriticalAccessConfirmation && !criticalAccessConfirmed)}>
+            {isSubmitting ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}
+            {isSubmitting ? 'Guardando…' : editingUser ? 'Guardar cambios' : 'Crear usuario'}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -333,15 +328,11 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1">
-      <label htmlFor={id}>{label} *</label>
+    <UiField data-invalid={Boolean(error)}>
+      <FieldLabel htmlFor={id}>{label} *</FieldLabel>
       {children}
-      {error && (
-        <p id={`${id}-error`} role="alert" className={cn('text-xs text-destructive')}>
-          {error}
-        </p>
-      )}
-    </div>
+      <FieldError id={`${id}-error`}>{error}</FieldError>
+    </UiField>
   );
 }
 
