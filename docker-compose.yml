@@ -32,12 +32,14 @@ services:
       - ./backend:/var/www/html
       - backend_vendor:/var/www/html/vendor
       - ./.env.example:/var/www/.env.example:ro
+      - ./.dockerignore:/var/www/.dockerignore:ro
       - ./.github:/var/www/.github:ro
       - ./.gitignore:/var/www/.gitignore:ro
       - ./docker-compose.yml:/var/www/docker-compose.yml:ro
       - ./docker-compose.prod.yml:/var/www/docker-compose.prod.yml:ro
       - ./docs:/var/www/docs:ro
       - ./frontend/e2e:/var/www/frontend/e2e:ro
+      - ./frontend/pnpm-workspace.yaml:/var/www/frontend/pnpm-workspace.yaml:ro
       - ./frontend/dist:/var/www/frontend/dist
       - ./nginx:/var/www/nginx:ro
       - ./setup.bat:/var/www/setup.bat:ro
