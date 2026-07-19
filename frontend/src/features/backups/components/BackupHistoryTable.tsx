@@ -1,36 +1,52 @@
-import { DownloadOutlined } from '@ant-design/icons';
-import { Button, Empty, Tag } from 'antd';
-import type { InstitutionalColumn } from '@/design-system/ag-grid/InstitutionalDataGrid';
-import { InstitutionalDataGrid } from '@/design-system/ag-grid/InstitutionalDataGrid';
+import { Download } from 'lucide-react';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { DataTable } from '@/design-system/patterns/DataTable';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { BackupLog } from '@/lib/api';
 import { formatLocalizedDateTime } from '@/lib/format/formatDate';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { formatBytes } from '../backupPresentation';
 import { BackupStatusBadge, getStatusDescription } from './BackupStatusBadge';
 
 type BackupStatusFilter = 'all' | 'pending' | 'success' | 'failed';
 type Props = { backups: BackupLog[]; canDownload: boolean; downloadingBackupId: number | null; onDownloadRequest: (backup: BackupLog) => void; onStatusFilterChange: (filter: BackupStatusFilter) => void; statusFilter: BackupStatusFilter };
-const filterOptions = [{ label: 'Todos', value: 'all' }, { label: 'Pendientes', value: 'pending' }, { label: 'Completados', value: 'success' }, { label: 'Fallidos', value: 'failed' }];
+const filterOptions = [{ label: 'Todos', value: 'all' }, { label: 'Pendientes', value: 'pending' }, { label: 'Completados', value: 'success' }, { label: 'Fallidos', value: 'failed' }] as const;
 
 export function BackupHistoryTable({ backups, canDownload, downloadingBackupId, onDownloadRequest, onStatusFilterChange, statusFilter }: Props) {
   const isMobile = useMediaQuery('(max-width: 767px)');
-  const columns: InstitutionalColumn<BackupLog>[] = [
-    { headerName: 'Fecha', valueGetter: ({ data }) => data ? formatDate(data.completed_at ?? data.created_at) : '' },
-    { field: 'status', headerName: 'Estado', valueFormatter: ({ value }) => getStatusDescription(value as BackupLog['status']) },
-    { field: 'size_bytes', headerName: 'Tamaño', type: 'numericColumn', valueFormatter: ({ value }) => formatBytes(value == null ? null : Number(value)) },
-    { headerName: 'Usuario', valueGetter: ({ data }) => data?.creator?.name ?? 'Sistema' },
-    { headerName: 'Acciones', cellRenderer: ({ data }: { data?: BackupLog }) => data && canDownload && data.status === 'success' ? <Button aria-label={`Descargar respaldo del ${formatDate(data.completed_at ?? data.created_at)}`} icon={<DownloadOutlined />} disabled={downloadingBackupId !== null} onClick={() => onDownloadRequest(data)} /> : <span>Sin descarga</span> },
+  const emptyMessage = statusFilter === 'all' ? 'No hay respaldos registrados' : 'No hay respaldos con este estado';
+  const columns: ColumnDef<BackupLog>[] = [
+    { id: 'date', header: 'Fecha', accessorFn: (row) => row.completed_at ?? row.created_at, cell: ({ row }) => formatDate(row.original.completed_at ?? row.original.created_at) },
+    { accessorKey: 'status', header: 'Estado', cell: ({ row }) => <div className="flex flex-col gap-1"><BackupStatusBadge status={row.original.status} /><span className="text-xs text-muted-foreground">{getStatusDescription(row.original.status)}</span></div> },
+    { accessorKey: 'size_bytes', header: 'Tamaño', meta: { numeric: true }, cell: ({ row }) => formatBytes(row.original.size_bytes) },
+    { id: 'user', header: 'Usuario', accessorFn: (row) => row.creator?.name ?? 'Sistema' },
+    { id: 'actions', header: 'Acciones', cell: ({ row }) => <DownloadAction backup={row.original} canDownload={canDownload} downloadingBackupId={downloadingBackupId} onDownloadRequest={onDownloadRequest} /> },
   ];
-  return <div className="space-y-4">
-    <div role="group" aria-label="Filtros de estado de respaldos" className="flex flex-wrap gap-2">
-      {filterOptions.map((option) => (
-        <Button key={option.value} aria-pressed={statusFilter === option.value} onClick={() => onStatusFilterChange(option.value as BackupStatusFilter)}>
-          {option.label}
-        </Button>
-      ))}
-    </div>
-    {isMobile ? backups.length ? <ul aria-label="Historial de respaldos locales">{backups.map((backup) => <li key={backup.id} className="border-b border-border p-4"><div className="flex justify-between gap-3"><div><strong>{formatDate(backup.completed_at ?? backup.created_at)}</strong><p>{backup.creator?.name ?? 'Sistema'} · {formatBytes(backup.size_bytes)}</p></div><BackupStatusBadge status={backup.status} /></div><p>{getStatusDescription(backup.status)}</p>{backup.status === 'failed' ? <Tag color="red">No se completó. Revise con soporte técnico.</Tag> : null}{canDownload && backup.status === 'success' ? <Button aria-label={`Descargar respaldo del ${formatDate(backup.completed_at ?? backup.created_at)}`} icon={<DownloadOutlined />} disabled={downloadingBackupId !== null} onClick={() => onDownloadRequest(backup)}>Descargar</Button> : <span>Sin descarga</span>}</li>)}</ul> : <Empty description={statusFilter === 'all' ? 'No hay respaldos registrados' : 'No hay respaldos con este estado'} />
-      : <InstitutionalDataGrid ariaLabel="Historial de respaldos locales" columns={columns} rows={backups} getRowId={(row) => String(row.id)} density="compact" emptyMessage={statusFilter === 'all' ? 'No hay respaldos registrados' : 'No hay respaldos con este estado'} />}
+
+  return <div className="flex flex-col gap-4">
+    <ToggleGroup type="single" variant="outline" size="sm" value={statusFilter} onValueChange={(value) => { if (value) onStatusFilterChange(value as BackupStatusFilter); }} aria-label="Filtros de estado de respaldos">
+      {filterOptions.map((option) => <ToggleGroupItem key={option.value} value={option.value}>{option.label}</ToggleGroupItem>)}
+    </ToggleGroup>
+    {isMobile ? backups.length ? (
+      <ul aria-label="Historial de respaldos locales" className="flex flex-col">
+        {backups.map((backup) => <li key={backup.id} className="flex flex-col gap-3 border-b p-4">
+          <div className="flex justify-between gap-3"><div><strong>{formatDate(backup.completed_at ?? backup.created_at)}</strong><p className="text-sm text-muted-foreground">{backup.creator?.name ?? 'Sistema'} · {formatBytes(backup.size_bytes)}</p></div><BackupStatusBadge status={backup.status} /></div>
+          <p className="text-sm text-muted-foreground">{getStatusDescription(backup.status)}</p>
+          {backup.status === 'failed' ? <Badge variant="destructive">No se completó. Revise con soporte técnico.</Badge> : null}
+          <DownloadAction backup={backup} canDownload={canDownload} downloadingBackupId={downloadingBackupId} onDownloadRequest={onDownloadRequest} showLabel />
+        </li>)}
+      </ul>
+    ) : <Empty><EmptyHeader><EmptyTitle>{emptyMessage}</EmptyTitle><EmptyDescription>Los respaldos locales aparecerán aquí cuando estén disponibles.</EmptyDescription></EmptyHeader></Empty>
+      : <DataTable ariaLabel="Historial de respaldos locales" caption="Historial de respaldos locales con fecha, tamaño, estado, usuario y acciones disponibles." columns={columns} data={backups} getRowId={(row) => String(row.id)} emptyTitle={emptyMessage} />}
   </div>;
 }
+
+function DownloadAction({ backup, canDownload, downloadingBackupId, onDownloadRequest, showLabel = false }: { backup: BackupLog; canDownload: boolean; downloadingBackupId: number | null; onDownloadRequest: (backup: BackupLog) => void; showLabel?: boolean }) {
+  if (!canDownload || backup.status !== 'success') return <span className="text-sm text-muted-foreground">Sin descarga</span>;
+  return <Button size="sm" variant="outline" aria-label={`Descargar respaldo del ${formatDate(backup.completed_at ?? backup.created_at)}`} disabled={downloadingBackupId !== null} onClick={() => onDownloadRequest(backup)}><Download data-icon="inline-start" />{showLabel ? 'Descargar' : null}</Button>;
+}
+
 function formatDate(value: string) { return formatLocalizedDateTime(value); }

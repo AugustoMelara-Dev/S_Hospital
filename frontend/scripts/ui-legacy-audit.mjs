@@ -20,6 +20,7 @@ export const strictModulePrefixes = [
   'src/hooks/useTheme.ts',
   'src/shell/',
   'src/features/auth/',
+  'src/features/backups/',
   'src/features/cash/',
   'src/features/catalog/',
   'src/features/dashboard/',

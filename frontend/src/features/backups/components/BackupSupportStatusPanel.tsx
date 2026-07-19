@@ -1,6 +1,7 @@
-import { HddOutlined as HardDrive, CloudServerOutlined as Server, WarningOutlined as ShieldAlert } from '@ant-design/icons';
-
-import { Button, Card, Tag } from 'antd';
+import { HardDrive, Server, ShieldAlert } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import type { SystemStatus } from '@/lib/api';
 import {
   automaticBackupHeartbeatLabel,
@@ -11,7 +12,6 @@ import {
   friendlyProductionDetail,
   localAccessIsReady,
   localAccessLabel,
-  operationalStatusBadge,
   statusClass,
   statusLabel,
   type OperationalStatus,
@@ -47,34 +47,34 @@ export function BackupSupportStatusPanel({
   const recoveryStatus = recoverySupportStatus(systemStatus, latestBackupNotConfirmed);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <Card className={`${operationalStatus.className} overflow-hidden `}>
-        <div className="flex flex-col gap-3 pt-6 md:flex-row md:items-center md:justify-between">
+        <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-normal">Estado operativo</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h3 className="text-xl font-semibold">{operationalStatus.label}</h3>
-              <Tag color={operationalStatusBadge(operationalStatus.level)}>
+              <Badge variant={operationalStatus.level === 'error' ? 'destructive' : operationalStatus.level === 'ok' ? 'default' : 'secondary'}>
                 {operationalStatus.level === 'ok' ? 'Correcto' : operationalStatus.level === 'error' ? 'Error' : 'Atencion'}
-              </Tag>
+              </Badge>
             </div>
             <p className="mt-1 max-w-3xl text-sm leading-6">{operationalStatus.description}</p>
           </div>
           <Button
-            htmlType="button"
-            size="small"
+            type="button"
+            size="sm"
             aria-controls={advancedStatusId}
             aria-expanded={showAdvancedStatus}
             onClick={onToggleAdvancedStatus}
           >
             {showAdvancedStatus ? 'Ocultar detalle de soporte' : 'Ver detalle de soporte'}
           </Button>
-        </div>
+        </CardContent>
       </Card>
 
       <section aria-labelledby="backup-recovery-support-title">
         <Card className={`${recoveryStatus.className} overflow-hidden `}>
-          <div className="pt-6">
+          <CardContent>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-normal">Guia de soporte</p>
@@ -85,9 +85,9 @@ export function BackupSupportStatusPanel({
                   {recoveryStatus.description}
                 </p>
               </div>
-              <Tag color={recoveryStatus.badgeStatus}>{recoveryStatus.label}</Tag>
+              <Badge variant={recoveryStatus.badgeStatus === 'failed' ? 'destructive' : recoveryStatus.badgeStatus === 'success' ? 'default' : 'secondary'}>{recoveryStatus.label}</Badge>
             </div>
-          </div>
+          </CardContent>
         </Card>
       </section>
 
@@ -95,12 +95,12 @@ export function BackupSupportStatusPanel({
         <>
           <div id={advancedStatusId} className="grid grid-cols-1 gap-4 xl:grid-cols-4">
             <Card className={`${systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && localAccessIsReady(systemStatus) ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'} `}>
-              <div className="pt-6">
+              <CardContent>
                 <div className="flex items-start gap-3">
                   <div className="bg-background/80 p-2.5">
-                    <Server aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
+                    <Server aria-hidden="true" className="size-5 text-muted-foreground" />
                   </div>
-                  <div className="min-w-0 space-y-1">
+                  <div className="flex min-w-0 flex-col gap-1">
                     <p className="text-sm font-semibold">Servidor, datos y red local</p>
                     <p className="text-xs text-muted-foreground">
                       Base de datos: {systemStatus.database.connected ? 'conectada' : 'pendiente'}
@@ -116,16 +116,16 @@ export function BackupSupportStatusPanel({
                     </p>
                   </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
 
             <Card className={`${systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'} `}>
-              <div className="pt-6">
+              <CardContent>
                 <div className="flex items-start gap-3">
                   <div className="bg-background/80 p-2.5">
-                    <HardDrive aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
+                    <HardDrive aria-hidden="true" className="size-5 text-muted-foreground" />
                   </div>
-                  <div className="min-w-0 space-y-1">
+                  <div className="flex min-w-0 flex-col gap-1">
                     <p className="text-sm font-semibold">Preparacion de respaldos</p>
                     <p className="text-xs text-muted-foreground">
                       Creacion de archivos: {systemStatus.backups.dump_binary.available ? 'lista' : 'pendiente'}
@@ -142,16 +142,16 @@ export function BackupSupportStatusPanel({
                     )}
                   </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
 
             <Card className={`${systemStatus.backups.pending_count > 0 ? 'border-warning/30 bg-warning/10 text-warning-foreground' : 'bg-muted/30'} `}>
-              <div className="pt-6">
+              <CardContent>
                 <div className="flex items-start gap-3">
                   <div className="bg-background/80 p-2.5">
-                    <Server aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
+                    <Server aria-hidden="true" className="size-5 text-muted-foreground" />
                   </div>
-                  <div className="min-w-0 space-y-1">
+                  <div className="flex min-w-0 flex-col gap-1">
                     <p className="text-sm font-semibold">Proceso de respaldo</p>
                     <p className="text-xs text-muted-foreground">
                       Respaldos esperando: {systemStatus.backups.queue.pending_backup_jobs ?? 'pendiente de revision'}
@@ -173,16 +173,16 @@ export function BackupSupportStatusPanel({
                     </p>
                   </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
 
             <Card className="border-info/30 bg-info/10 text-info-foreground ">
-              <div className="pt-6">
+              <CardContent>
                 <div className="flex items-start gap-3">
                   <div className="bg-background/80 p-2.5">
-                    <ShieldAlert aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
+                    <ShieldAlert aria-hidden="true" className="size-5 text-muted-foreground" />
                   </div>
-                  <div className="min-w-0 space-y-1">
+                  <div className="flex min-w-0 flex-col gap-1">
                     <p className="text-sm font-semibold">Estado general</p>
                     <p className="text-xs text-muted-foreground">
                       Instalacion: {systemStatus.readiness.production_ready ? 'lista para operar' : 'con pendientes'}
@@ -201,13 +201,13 @@ export function BackupSupportStatusPanel({
                     </p>
                   </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
           </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <Card className="border-operational-border bg-operational-surface ">
-              <div className="pt-6">
+              <CardContent>
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-semibold">Checklist operativo</h3>
@@ -290,16 +290,16 @@ export function BackupSupportStatusPanel({
                     </p>
                   </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
 
             <Card className="border-operational-border bg-operational-surface ">
-              <div className="pt-6">
+              <CardContent>
                 <h3 className="text-sm font-semibold">Pruebas de campo obligatorias</h3>
-                <div className="mt-3 space-y-3">
+                <div className="mt-3 flex flex-col gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase text-muted-foreground">Prueba en red local</p>
-                    <ul className="mt-2 space-y-2">
+                    <ul className="mt-2 flex flex-col gap-2">
                       {systemStatus.preflight.public_routes.map((route) => (
                         <li key={route.path} className="flex items-start justify-between gap-3 border border-border p-2">
                           <span>
@@ -317,7 +317,7 @@ export function BackupSupportStatusPanel({
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase text-muted-foreground">Pruebas fisicas</p>
-                    <ul className="mt-2 space-y-2">
+                    <ul className="mt-2 flex flex-col gap-2">
                       {systemStatus.preflight.physical_proofs.map((proof) => (
                         <li key={proof.code} className="border border-border p-2">
                           <div className="flex items-start justify-between gap-3">
@@ -332,7 +332,7 @@ export function BackupSupportStatusPanel({
                     </ul>
                   </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
           </div>
         </>

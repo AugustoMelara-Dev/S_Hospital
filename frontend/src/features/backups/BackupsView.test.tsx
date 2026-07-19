@@ -1,16 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { BackupsView } from './BackupsView';
 import { apiClient, type AuthUser, type BackupLog, type SystemStatus } from '../../lib/api';
-
-vi.mock('@/design-system/ag-grid/InstitutionalDataGrid', () => ({
-  InstitutionalDataGrid: ({ ariaLabel, columns, emptyMessage, rows }: any) => rows.length === 0
-    ? <div role="status">{emptyMessage}</div>
-    : <table aria-label={ariaLabel}><caption>Historial de respaldos locales con fecha, tamaño, estado, usuario y acciones disponibles.</caption><thead><tr>{columns.map((column: any) => <th key={column.headerName} data-numeric={column.type === 'numericColumn' ? 'true' : undefined}>{column.headerName}</th>)}</tr></thead><tbody>{rows.map((row: any) => <tr key={row.id}>{columns.map((column: any) => { const raw = column.valueGetter ? column.valueGetter({ data: row }) : row[column.field]; const value = column.valueFormatter ? column.valueFormatter({ value: raw, data: row }) : raw; return <td key={column.headerName} data-numeric={column.type === 'numericColumn' ? 'true' : undefined}>{column.cellRenderer ? column.cellRenderer({ data: row }) : value}</td>; })}</tr>)}</tbody></table>,
-}));
 
 const adminUser: AuthUser = {
   id: 1,
@@ -682,12 +675,12 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     await screen.findByRole('table', { name: /historial de respaldos locales/i });
-    fireEvent.click(screen.getByRole('button', { name: /completados/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /completados/i }));
 
     await waitFor(() => {
       expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'success' });
     });
-    expect(screen.getByRole('button', { name: /completados/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('radio', { name: /completados/i })).toHaveAttribute('aria-checked', 'true');
   });
 
   it('labels failed backup filters for operators while preserving the API status contract', async () => {
@@ -698,12 +691,12 @@ describe('BackupsView', () => {
     await screen.findByRole('table', { name: /historial de respaldos locales/i });
     expect(screen.queryByRole('button', { name: /^error$/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /^fallidos$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^fallidos$/i }));
 
     await waitFor(() => {
       expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'failed' });
     });
-    expect(screen.getByRole('button', { name: /^fallidos$/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('radio', { name: /^fallidos$/i })).toHaveAttribute('aria-checked', 'true');
   });
 
   it('keeps the current backup history visible while a status filter refetch is pending', async () => {
@@ -724,7 +717,7 @@ describe('BackupsView', () => {
 
     expect(await screen.findByText(/operador visible/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /completados/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /completados/i }));
 
     await waitFor(() => {
       expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'success' });

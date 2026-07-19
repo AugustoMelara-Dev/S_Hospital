@@ -11,5 +11,6 @@ describe('BackupsView module architecture', () => {
     const lines = source.split(/\r?\n/).length;
 
     expect(lines).toBeLessThanOrEqual(360);
+    expect(source).not.toMatch(/from ['"]antd['"]|@ant-design\/icons|InstitutionalDataGrid/);
   });
 });

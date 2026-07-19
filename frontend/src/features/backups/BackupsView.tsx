@@ -1,5 +1,11 @@
-import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactElement } from 'react';
-import { Alert, Button, Col, Flex, Modal, Pagination, Result, Row, Spin, Statistic, Typography } from 'antd';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
+import { RouteState } from '@/design-system/patterns/RouteState';
 import { useBackups, useCreateBackup } from '@/hooks/useBackups';
 import { useSystemStatusSnapshot } from '@/hooks/useServerStatus';
 import { BackupEmptyState } from './components/BackupExplanationCard';
@@ -176,9 +182,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         </p>
       ) : null}
 
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <section aria-label="Indicadores principales de respaldos">
-          <Row gutter={[16, 16]}>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {[
               {
                 label: 'Ultimo exitoso',
@@ -204,12 +210,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   : failedCount > 0 ? 'Revise con soporte antes de confiar en respaldos' : 'Sin errores registrados',
                 tone: failedCount !== null && failedCount > 0 ? 'destructive' : 'success',
               },
-            ].map((item) => <Col xs={24} sm={12} xl={8} key={item.label}><article aria-label={item.label}><Statistic title={item.label} value={item.value} /><p>{item.helper}</p></article></Col>)}
-          </Row>
+            ].map((item) => <article key={item.label} aria-label={item.label}><Card size="sm"><CardHeader><CardDescription>{item.label}</CardDescription><CardTitle className="text-2xl tabular-nums">{item.value}</CardTitle></CardHeader><CardContent><p className="text-sm text-muted-foreground">{item.helper}</p></CardContent></Card></article>)}
+          </div>
         </section>
 
         {systemStatusError ? (
-          <Alert type="error" showIcon title="Estado operativo no disponible" description={systemStatusError} />
+          <Alert variant="destructive"><AlertTriangle aria-hidden="true" /><AlertTitle>Estado operativo no disponible</AlertTitle><AlertDescription>{systemStatusError}</AlertDescription></Alert>
         ) : null}
 
         {systemStatus && operationalStatus ? (
@@ -225,39 +231,32 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         ) : null}
 
         {latestBackupNotConfirmed ? (
-          <Alert type="warning" showIcon title="Respaldo reciente no confirmado" description="El último respaldo exitoso registrado no se puede confirmar en el servidor local. Cree un respaldo nuevo antes de confiar en la recuperación." />
+          <WarningAlert title="Respaldo reciente no confirmado">El último respaldo exitoso registrado no se puede confirmar en el servidor local. Cree un respaldo nuevo antes de confiar en la recuperación.</WarningAlert>
         ) : null}
 
         {stalePendingCount > 0 ? (
-          <Alert type="warning" showIcon title="Respaldos pendientes por demasiado tiempo" description={`${stalePendingCount} respaldo(s) siguen pendientes por más de ${stalePendingThresholdMinutes} minutos. Revise el estado del servidor local antes de confiar en la automatización.`} />
+          <WarningAlert title="Respaldos pendientes por demasiado tiempo">{stalePendingCount} respaldo(s) siguen pendientes por más de {stalePendingThresholdMinutes} minutos. Revise el estado del servidor local antes de confiar en la automatización.</WarningAlert>
         ) : null}
 
         {visibleReadinessBlockers.length ? (
-          <Alert type="warning" showIcon title="Pendientes antes de operar" description={visibleReadinessBlockers.map((blocker) => friendlyReadinessBlocker(blocker.code, blocker.label)).join(' - ')} />
+          <WarningAlert title="Pendientes antes de operar">{visibleReadinessBlockers.map((blocker) => friendlyReadinessBlocker(blocker.code, blocker.label)).join(' - ')}</WarningAlert>
         ) : null}
 
         {initialLoading ? (
-          <div role="status" aria-label="Cargando respaldos locales..."><Spin /> Cargando respaldos locales...</div>
+          <div role="status" aria-label="Cargando respaldos locales..." className="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Cargando respaldos locales...</div>
         ) : null}
 
         {error ? (
-          <div role="alert"><Result
-            status="error"
-            title="Error al cargar respaldos"
-            subTitle={error}
-            extra={<Button onClick={() => {
+          <RouteState kind="error" title="Error al cargar respaldos" description={error} action={{ label: 'Reintentar carga', onClick: () => {
               setManualError('');
               void backupsQuery.refetch();
-            }}>Reintentar carga</Button>}
-          /></div>
+            } }} />
         ) : null}
 
         {showHistory ? (
-          <section aria-label="Historial de respaldos locales" className="overflow-hidden border border-operational-border bg-operational-surface p-4 sm:p-6">
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold tracking-tight">Historial de respaldos</h2>
-              <p className="text-sm text-muted-foreground">Ejecuciones locales, estado y descarga autorizada.</p>
-            </div>
+          <Card aria-label="Historial de respaldos locales">
+            <CardHeader><CardTitle><h2>Historial de respaldos</h2></CardTitle><CardDescription>Ejecuciones locales, estado y descarga autorizada.</CardDescription></CardHeader>
+            <CardContent className="flex flex-col gap-4">
             <BackupHistoryTable
               backups={backupsList}
               canDownload={canDownload}
@@ -271,31 +270,14 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             />
 
             {meta ? (
-              <Flex align="center" gap="middle" wrap>
-                <Typography.Text type="secondary">
-                  Página {meta.current_page} de {Math.max(1, Math.ceil(meta.total / meta.per_page))}
-                </Typography.Text>
-                <Pagination
-                disabled={busy}
-                current={meta.current_page}
-                pageSize={meta.per_page}
-                total={meta.total}
-                showSizeChanger={false}
-                onChange={setPage}
-                itemRender={(_, type, originalElement) => {
-                  if (!isValidElement(originalElement) || (type !== 'prev' && type !== 'next')) {
-                    return originalElement;
-                  }
-                  const label = type === 'prev' ? 'Página anterior' : 'Página siguiente';
-                  return cloneElement(originalElement as ReactElement<Record<string, unknown>>, {
-                    'aria-label': label,
-                    title: label,
-                  });
-                }}
-                />
-              </Flex>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm text-muted-foreground">Página {meta.current_page} de {Math.max(1, Math.ceil(meta.total / meta.per_page))}</span>
+                <Button variant="outline" size="sm" disabled={busy || meta.current_page <= 1} onClick={() => setPage(meta.current_page - 1)} aria-label="Página anterior">Anterior</Button>
+                <Button variant="outline" size="sm" disabled={busy || meta.current_page >= Math.ceil(meta.total / meta.per_page)} onClick={() => setPage(meta.current_page + 1)} aria-label="Página siguiente">Siguiente</Button>
+              </div>
             ) : null}
-          </section>
+            </CardContent>
+          </Card>
         ) : null}
 
         {isEmpty ? (
@@ -303,35 +285,16 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         ) : null}
       </div>
 
-      <Modal
-        okButtonProps={{ disabled: creatingBackup }}
-        cancelButtonProps={{ disabled: creatingBackup }}
-        okText={creatingBackup ? 'Creando...' : 'Crear respaldo'}
-        onCancel={() => setConfirmCreateOpen(false)}
-        onOk={() => {
-          setConfirmCreateOpen(false);
-          void handleCreateBackup();
-        }}
-        open={confirmCreateOpen}
-        title="¿Crear respaldo local?"
-      >
-        Se creará una copia de seguridad local. Confirme que aparezca como protegida antes de cerrar esta pantalla.
-      </Modal>
+      <AlertDialog open={confirmCreateOpen} onOpenChange={setConfirmCreateOpen}>
+        <AlertDialogContent role="dialog">
+          <AlertDialogHeader><AlertDialogTitle>¿Crear respaldo local?</AlertDialogTitle><AlertDialogDescription>Se creará una copia de seguridad local. Confirme que aparezca como protegida antes de cerrar esta pantalla.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel disabled={creatingBackup}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={creatingBackup} onClick={() => void handleCreateBackup()}>{creatingBackup ? <Spinner data-icon="inline-start" /> : null}{creatingBackup ? 'Creando…' : 'Crear respaldo'}</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      <Modal
-        okButtonProps={{ disabled: downloadTarget ? downloadingBackupId === downloadTarget.id : false }}
-        cancelButtonProps={{ disabled: downloadTarget ? downloadingBackupId === downloadTarget.id : false }}
-        okText={downloadTarget && downloadingBackupId === downloadTarget.id ? 'Descargando...' : 'Descargar'}
-        onCancel={() => setDownloadTarget(null)}
-        onOk={() => {
-          const target = downloadTarget;
-          setDownloadTarget(null);
-          if (target) void handleDownloadBackup(target);
-        }}
-        open={Boolean(downloadTarget)}
-        title="¿Descargar respaldo?"
-      >
-        <div className="space-y-3 text-sm">
+      <AlertDialog open={Boolean(downloadTarget)} onOpenChange={(open) => { if (!open) setDownloadTarget(null); }}>
+        <AlertDialogContent role="dialog">
+          <AlertDialogHeader><AlertDialogTitle>¿Descargar respaldo?</AlertDialogTitle><AlertDialogDescription asChild><div className="flex flex-col gap-3 text-sm">
           <p>Descargará el respaldo seleccionado. Esta acción queda auditada.</p>
           {downloadTarget ? (
             <dl className="grid gap-2 border border-border bg-muted/35 p-3 sm:grid-cols-2">
@@ -349,8 +312,14 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </div>
             </dl>
           ) : null}
-        </div>
-      </Modal>
+          </div></AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel disabled={downloadTarget ? downloadingBackupId === downloadTarget.id : false}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={downloadTarget ? downloadingBackupId === downloadTarget.id : false} onClick={() => { const target = downloadTarget; setDownloadTarget(null); if (target) void handleDownloadBackup(target); }}>{downloadTarget && downloadingBackupId === downloadTarget.id ? <Spinner data-icon="inline-start" /> : null}{downloadTarget && downloadingBackupId === downloadTarget.id ? 'Descargando…' : 'Descargar'}</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
+}
+
+function WarningAlert({ title, children }: { title: string; children: ReactNode }) {
+  return <Alert><AlertTriangle aria-hidden="true" /><AlertTitle>{title}</AlertTitle><AlertDescription>{children}</AlertDescription></Alert>;
 }
