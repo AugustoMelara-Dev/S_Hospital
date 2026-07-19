@@ -53,4 +53,21 @@ describe('KeyboardShortcutsPalette', () => {
 
     expect(onOpenChange).not.toHaveBeenCalled();
   });
+
+  it('restores focus after a keyboard-opened palette closes', async () => {
+    const onOpenChange = vi.fn();
+    const { rerender } = render(
+      <>
+        <button type="button">Comandos</button>
+        <KeyboardShortcutsPalette open={false} onOpenChange={onOpenChange} />
+      </>,
+    );
+    const previousControl = screen.getByRole('button', { name: 'Comandos' });
+    previousControl.focus();
+
+    rerender(<><button type="button">Comandos</button><KeyboardShortcutsPalette open onOpenChange={onOpenChange} /></>);
+    rerender(<><button type="button">Comandos</button><KeyboardShortcutsPalette open={false} onOpenChange={onOpenChange} /></>);
+
+    await waitFor(() => expect(previousControl).toHaveFocus());
+  });
 });

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -25,6 +25,8 @@ export function catalogValuesForSpecialRule(value: string) {
 
 export function ServiceDrawer({ open, onOpenChange, service, categories, areas, scannerEnabled = false, onSuccess }: ServiceDrawerProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(open);
   const { control, register, handleSubmit, reset, setError, setFocus, setValue, watch, formState: { errors, isSubmitting } } = useForm<ServiceFormData>({ resolver: zodResolver(serviceSchema), defaultValues: defaultServiceFormValues });
   const values = watch();
   const locksEpo = Boolean(service?.special_rule_code === SPECIAL_RULE_ERYTHROPOIETIN);
@@ -53,6 +55,16 @@ export function ServiceDrawer({ open, onOpenChange, service, categories, areas, 
       special_rule_code: service.special_rule_code,
     } : { ...defaultServiceFormValues, category_id: categories[0]?.id ?? 0, area_id: areas[0]?.id ?? 0 });
   }, [open, service, categories, areas, reset]);
+
+  useLayoutEffect(() => {
+    if (!wasOpenRef.current && open) {
+      previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+    if (wasOpenRef.current && !open) {
+      window.setTimeout(() => previousFocusRef.current?.focus(), 0);
+    }
+    wasOpenRef.current = open;
+  }, [open]);
 
   function requireReason(required: boolean, field: 'price_change_reason' | 'tax_change_reason' | 'availability_change_reason', value: string | null | undefined, missing: string) {
     if (!required) return true;

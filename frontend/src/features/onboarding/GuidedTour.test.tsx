@@ -55,4 +55,22 @@ describe('GuidedTour', () => {
     localStorage.setItem('hospital-onboarding-completed', 'true');
     expect(shouldAutoOpenGuidedTour()).toBe(false);
   });
+
+  it('restores focus to the control that opened the guide', async () => {
+    const onOpenChange = vi.fn();
+    const view = (open: boolean) => (
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <button type="button">Abrir ayuda</button>
+        <GuidedTour open={open} onOpenChange={onOpenChange} />
+      </MemoryRouter>
+    );
+    const { rerender } = render(view(false));
+    const trigger = screen.getByRole('button', { name: 'Abrir ayuda' });
+    trigger.focus();
+
+    rerender(view(true));
+    rerender(view(false));
+
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
 });

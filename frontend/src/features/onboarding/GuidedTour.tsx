@@ -1,5 +1,5 @@
 import { ArrowLeftIcon, ArrowRightIcon, CircleCheckIcon, MapPinIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -21,10 +21,22 @@ const steps = [
 export function GuidedTour({ open, onOpenChange }: GuidedTourProps) {
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(open);
   const step = steps[index];
   const progress = useMemo(() => `${index + 1} de ${steps.length}`, [index]);
 
   useEffect(() => { if (open) setIndex(0); }, [open]);
+
+  useEffect(() => {
+    if (!wasOpenRef.current && open) {
+      previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+    if (wasOpenRef.current && !open) {
+      window.setTimeout(() => previousFocusRef.current?.focus(), 0);
+    }
+    wasOpenRef.current = open;
+  }, [open]);
 
   function goToStep(nextIndex: number) {
     const bounded = Math.min(Math.max(nextIndex, 0), steps.length - 1);

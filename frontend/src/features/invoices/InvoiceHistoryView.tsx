@@ -1133,10 +1133,21 @@ function LocalConfirmDialog({
   reasonHelpText?: string;
 }) {
   const [reason, setReason] = useState('');
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(open);
   useEffect(() => {
     if (open) {
       setReason('');
     }
+  }, [open]);
+  useEffect(() => {
+    if (!wasOpenRef.current && open) {
+      previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+    if (wasOpenRef.current && !open) {
+      window.setTimeout(() => previousFocusRef.current?.focus(), 0);
+    }
+    wasOpenRef.current = open;
   }, [open]);
 
   return (

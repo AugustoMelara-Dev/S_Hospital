@@ -94,8 +94,8 @@ export function InvoiceDetailDrawer({
   ) : undefined;
 
   return (
-    <Sheet open={open} onOpenChange={(nextOpen) => { onOpenChange(nextOpen); if (!nextOpen) onAfterClose(); }}>
-      <SheetContent showCloseButton={false} className="w-full overflow-y-auto sm:max-w-xl" aria-label={`Factura ${invoice?.invoice_number ?? ''}`.trim()}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent showCloseButton={false} className="w-full overflow-y-auto sm:max-w-xl" aria-label={`Factura ${invoice?.invoice_number ?? ''}`.trim()} onCloseAutoFocus={(event) => { event.preventDefault(); onAfterClose(); }}>
       <SheetClose asChild><Button type="button" variant="ghost" size="icon-sm" className="absolute right-3 top-3" aria-label="Cerrar panel"><XIcon aria-hidden="true" /></Button></SheetClose>
       <SheetHeader className="border-b border-border pr-12">
         <SheetTitle>{`Factura ${invoice?.invoice_number ?? ''}`.trim()}</SheetTitle>

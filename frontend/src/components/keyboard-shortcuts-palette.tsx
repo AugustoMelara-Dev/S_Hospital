@@ -1,5 +1,5 @@
 import { SearchIcon, XIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
@@ -18,8 +18,20 @@ const SCOPES: Array<{ id: ShortcutScope; label: string; description: string }> =
 
 export function KeyboardShortcutsPalette({ open, onOpenChange }: KeyboardShortcutsPaletteProps) {
   const [filter, setFilter] = useState('');
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(open);
 
   useEffect(() => { if (!open) setFilter(''); }, [open]);
+
+  useEffect(() => {
+    if (!wasOpenRef.current && open) {
+      previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+    if (wasOpenRef.current && !open) {
+      window.setTimeout(() => previousFocusRef.current?.focus(), 0);
+    }
+    wasOpenRef.current = open;
+  }, [open]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -56,7 +68,7 @@ export function KeyboardShortcutsPalette({ open, onOpenChange }: KeyboardShortcu
           </div>
           {filter ? <Button variant="outline" onClick={() => setFilter('')}><XIcon /> Limpiar</Button> : null}
         </div>
-        <div className="flex max-h-96 flex-col gap-5 overflow-y-auto pr-1">
+        <div className="flex max-h-96 flex-col gap-5 overflow-y-auto pr-1" role="region" aria-label="Atajos disponibles" tabIndex={0}>
           {SCOPES.map((scope) => {
             const entries = filteredShortcuts.filter((entry) => entry.scope === scope.id);
             if (entries.length === 0) return null;

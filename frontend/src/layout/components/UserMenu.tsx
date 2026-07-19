@@ -21,7 +21,7 @@ type UserMenuProps = {
 
 export function UserMenu({ hospitalName, onLogout, onOpenGuide, roleLabel, user }: UserMenuProps) {
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="h-10 gap-2 px-2" aria-label="Abrir menú de usuario">
           <Avatar size="sm"><AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback></Avatar>

@@ -29,7 +29,7 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
   return (
     <header data-audit-panel="context-bar" className="print-hidden sticky top-0 z-20 flex min-h-16 items-center gap-2 border-b border-border bg-surface px-3 text-foreground lg:px-5">
       <div className="min-w-0 flex-1 py-2">
-        <p data-testid="institutional-mobile-identity" className="truncate text-xs font-semibold uppercase tracking-wider text-secondary lg:hidden">
+        <p data-testid="institutional-mobile-identity" className="truncate text-xs font-semibold uppercase tracking-wider text-foreground lg:hidden">
           {hospitalName}
         </p>
         <p className="truncate text-lg font-semibold tracking-tight" data-current-location>{currentTitle}</p>

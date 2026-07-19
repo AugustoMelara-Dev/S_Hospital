@@ -323,7 +323,7 @@ export function DashboardView({
         <OperationalQueue items={queueItems} />
 
         {canViewInvoices ? (
-          <Card className="min-w-0" aria-labelledby="recent-invoices-title">
+          <Card className="min-w-0" role="region" aria-labelledby="recent-invoices-title">
             <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
               <div className="flex flex-col gap-1">
                 <CardDescription className="text-xs font-semibold uppercase tracking-wider">Actividad</CardDescription>
