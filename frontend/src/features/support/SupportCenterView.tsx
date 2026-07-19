@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Result } from 'antd';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { PageHeader } from '@/design-system/components/PageHeader';
 import { type AuthUser, type SystemStatus, type SystemStatusSummary, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { safeClientMessage } from '../../lib/support/clientIssueLog';
@@ -59,17 +61,17 @@ export function SupportCenterView({ user, onStatus }: Props) {
   }, [loadStatus]);
 
   return (
-    <section className="space-y-6" aria-label="Asistencia operativa">
+    <section className="flex flex-col gap-6" aria-label="Asistencia operativa">
       <PageHeader
         title="Asistencia operativa"
         description="Guías de turno, recuperación segura y diagnóstico del sistema hospitalario local."
       />
 
       {error ? (
-        <div role="alert"><Result status="error" title="Diagnóstico no disponible" subTitle={error} extra={<Button onClick={loadStatus}>Reintentar diagnóstico</Button>} /></div>
+        <Empty role="alert"><EmptyHeader><EmptyTitle>Diagnóstico no disponible</EmptyTitle><EmptyDescription>{error}</EmptyDescription></EmptyHeader><EmptyContent><Button type="button" onClick={loadStatus}>Reintentar diagnóstico</Button></EmptyContent></Empty>
       ) : null}
 
-      <Alert type="info" showIcon title="Continuidad operativa" description="Si una incidencia afecta caja, recibos o red local, registre hora, pantalla y usuario antes de repetir una acción." />
+      <Alert><AlertTitle>Continuidad operativa</AlertTitle><AlertDescription>Si una incidencia afecta caja, recibos o red local, registre hora, pantalla y usuario antes de repetir una acción.</AlertDescription></Alert>
 
       <OperationalStatusSummary
         canViewAdvanced={canViewAdvanced}

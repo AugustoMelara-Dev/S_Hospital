@@ -1,5 +1,8 @@
-import { AlertOutlined as AlertTriangle, CheckCircleOutlined as CheckCircle2, ClockCircleOutlined as Clock3, CloseCircleOutlined as XCircle, CloudServerOutlined as Server, DatabaseOutlined as Database, HddOutlined as HardDrive, ReloadOutlined as RefreshCw } from '@ant-design/icons';
-import { Button, Card, Space, Spin, Statistic, Tag, Typography } from 'antd';
+import { CircleAlertIcon as AlertTriangle, CircleCheckIcon as CheckCircle2, Clock3Icon as Clock3, CircleXIcon as XCircle, ServerIcon as Server, DatabaseIcon as Database, HardDriveIcon as HardDrive, RefreshCwIcon as RefreshCw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 import type { ReactNode } from 'react';
 import type { SystemStatus, SystemStatusCheck, SystemStatusSummary as PublicSystemStatusSummary } from '../../../lib/api';
 
@@ -70,31 +73,29 @@ export function OperationalStatusSummary({ loading, summary, status, canViewAdva
     : 'Cree un respaldo nuevo';
 
   if (loading && !summary) {
-    return <div role="status" aria-label="Cargando diagnóstico operativo..."><Spin /> Cargando diagnóstico operativo...</div>;
+    return <div role="status" aria-label="Cargando diagnóstico operativo..." className="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Cargando diagnóstico operativo...</div>;
   }
 
   return (
     <Card>
-      <div className="mb-4 flex gap-4 md:flex-row md:items-start md:justify-between">
+      <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div className="min-w-0">
-          <Typography.Title level={2}>Estado operativo</Typography.Title>
-          <Typography.Text type="secondary">
+          <CardTitle><h2>Estado operativo</h2></CardTitle>
+          <CardDescription>
             {summary?.summary.action ?? 'Cargando verificacion comprensible para el personal de turno.'}
-          </Typography.Text>
+          </CardDescription>
         </div>
-        <Space className="shrink-0">
-          <Button htmlType="button" size="small" onClick={onRefresh} disabled={loading} aria-label="Actualizar diagnostico operativo">
-            <RefreshCw aria-hidden="true" className="size-4" />
+          <Button type="button" size="sm" variant="outline" onClick={onRefresh} disabled={loading} aria-label="Actualizar diagnostico operativo">
+            <RefreshCw data-icon="inline-start" />
             Actualizar
           </Button>
-        </Space>
-      </div>
-      <div className="space-y-4">
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
         <div className="border border-border p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-3">
               <Icon className={iconClass(severity)} aria-hidden="true" />
-              <div className="min-w-0 space-y-1">
+              <div className="flex min-w-0 flex-col gap-1">
                 <p className="text-sm font-semibold text-foreground">
                   {summary?.summary.label ?? 'Diagnostico cargando'}
                 </p>
@@ -103,7 +104,7 @@ export function OperationalStatusSummary({ loading, summary, status, canViewAdva
                 </p>
               </div>
             </div>
-            <Tag color={statusForSeverity(severity)}>{statusLabelForSeverity(severity)}</Tag>
+            <Badge variant={severity === 'error' ? 'destructive' : 'secondary'} data-tone={statusForSeverity(severity)}>{statusLabelForSeverity(severity)}</Badge>
           </div>
 
           {summary ? (
@@ -112,9 +113,9 @@ export function OperationalStatusSummary({ loading, summary, status, canViewAdva
                 <li key={check.code} className="border border-border bg-card p-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <span className="font-medium text-foreground">{check.label}</span>
-                    <Tag color={check.status === 'validated' ? 'success' : check.status === 'error' ? 'error' : 'warning'}>
+                    <Badge variant={check.status === 'error' ? 'destructive' : 'secondary'}>
                       {statusLabels[check.status]}
-                    </Tag>
+                    </Badge>
                   </div>
                   <p className="mt-2 break-words leading-6">{check.detail}</p>
                 </li>
@@ -155,7 +156,7 @@ export function OperationalStatusSummary({ loading, summary, status, canViewAdva
             <p>El diagnostico tecnico detallado se mantiene reservado para usuarios autorizados.</p>
           </div>
         ) : null}
-      </div>
+      </CardContent>
     </Card>
   );
 }
@@ -164,8 +165,7 @@ function OperationalMetric({ helper, icon, label, value, variant }: { helper: Re
   return (
     <div className="border border-border bg-surface p-4" data-tone={variant}>
       <div aria-hidden="true" className="mb-2 text-secondary">{icon}</div>
-      <Statistic title={label} value={String(value)} />
-      <Typography.Text type="secondary">{helper}</Typography.Text>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 font-semibold tabular-nums">{value}</p><p className="mt-1 text-xs text-muted-foreground">{helper}</p>
     </div>
   );
 }
