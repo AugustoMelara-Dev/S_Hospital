@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Alert, Button, Empty, Spin, Typography } from 'antd';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { Spinner } from '@/components/ui/spinner';
 import {
   type ExecutiveReportFilters as ExecutiveReportFilterState,
   apiClient,
@@ -72,7 +75,7 @@ export function ReportsExecutive({
 
   if (!canViewManagerial) {
     return (
-      <Empty description={<><Typography.Title level={3}>Reporte ejecutivo no disponible</Typography.Title><Typography.Text>Su usuario no tiene permiso para consultar el reporte ejecutivo. Solicite a un supervisor el permiso reports.managerial.view.</Typography.Text></>} />
+      <Empty><EmptyHeader><EmptyTitle>Reporte ejecutivo no disponible</EmptyTitle><EmptyDescription>Su usuario no tiene permiso para consultar el reporte ejecutivo. Solicite a un supervisor el permiso reports.managerial.view.</EmptyDescription></EmptyHeader></Empty>
     );
   }
 
@@ -223,28 +226,15 @@ export function ReportsExecutive({
       ) : null}
 
       {executiveRangeError ? (
-        <Alert type="warning" showIcon title="Rango ejecutivo no válido" description={executiveRangeError} />
+        <Alert><AlertTitle>Rango ejecutivo no válido</AlertTitle><AlertDescription>{executiveRangeError}</AlertDescription></Alert>
       ) : null}
 
       {isError ? (
-        <Alert
-          type="error"
-          showIcon
-          title="No se pudo cargar el reporte ejecutivo"
-          description={<>{userSafeErrorMessage(queryError, 'No se pudo cargar la información. Revise la conexión local y vuelva a intentar.')}
-            <Button
-              htmlType="button"
-              onClick={handleRefresh}
-              size="large"
-            >
-              Reintentar
-            </Button>
-          </>}
-        />
+        <Alert variant="destructive"><AlertTitle>No se pudo cargar el reporte ejecutivo</AlertTitle><AlertDescription className="flex flex-col items-start gap-3">{userSafeErrorMessage(queryError, 'No se pudo cargar la información. Revise la conexión local y vuelva a intentar.')}<Button type="button" variant="outline" onClick={handleRefresh}>Reintentar</Button></AlertDescription></Alert>
       ) : null}
 
       {isFetching && !report ? (
-        <div role="status" aria-label="Cargando reporte ejecutivo..."><Spin /> Cargando reporte ejecutivo...</div>
+        <div role="status" aria-label="Cargando reporte ejecutivo..." className="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Cargando reporte ejecutivo...</div>
       ) : null}
 
       {report ? (

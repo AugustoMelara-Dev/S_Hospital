@@ -2,25 +2,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-vi.mock('@/design-system/ag-grid', () => ({
-  InstitutionalDataGrid: ({
-    ariaLabel,
-    rows,
-    getRowId,
-  }: {
-    ariaLabel: string;
-    rows: Array<{ id?: number; action?: string; reason?: string | null; result?: string }>;
-    getRowId: (row: { id?: number; action?: string; reason?: string | null; result?: string }) => string;
-  }) => (
-    <section aria-label={ariaLabel}>
-      {rows.length ? rows.map((row, index) => (
-        <div key={index} data-testid={`audit-row-${index}`} data-row-id={getRowId(row)}>
-          {row.action} {row.reason} {row.result === 'error' ? 'Con error' : row.result}
-        </div>
-      )) : <div role="status">Sin entradas</div>}
-    </section>
-  ),
-}));
 import { ReportsAudit } from './ReportsAudit';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import type { AuditLogPage, OperationsReport } from '@/lib/api/types';
@@ -268,7 +249,8 @@ describe('ReportsAudit', () => {
 
     renderView();
 
-    const rows = await screen.findAllByTestId(/^audit-row-/);
+    await screen.findAllByText(/factura anulada/i);
+    const rows = Array.from(document.querySelectorAll('tbody tr'));
     expect(rows).toHaveLength(2);
     expect(rows.map((row) => row.getAttribute('data-row-id'))).toEqual(['101', '102']);
     expect(screen.getAllByText(/factura anulada/i)).toHaveLength(2);
@@ -369,8 +351,5 @@ describe('ReportsAudit', () => {
 });
 
 async function selectDate(label: RegExp, date: string) {
-  const user = userEvent.setup();
-  await user.click(screen.getByLabelText(label));
-  const matchingDates = await screen.findAllByTitle(date);
-  await user.click(matchingDates[matchingDates.length - 1]);
+  fireEvent.change(screen.getByLabelText(label), { target: { value: date } });
 }

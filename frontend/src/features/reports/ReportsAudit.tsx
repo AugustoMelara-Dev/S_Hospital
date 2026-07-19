@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { SearchOutlined, WarningOutlined } from '@ant-design/icons';
-import { Alert, Button, DatePicker, Form, Input, Spin, Statistic, Typography } from 'antd';
-import dayjs from 'dayjs';
-import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid';
+import { SearchIcon, TriangleAlertIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { DataTable, type InstitutionalColumn } from '@/design-system/patterns/DataTable';
+import { PageHeader } from '@/design-system/components/PageHeader';
 import { apiClient, system } from '@/lib/api';
 import type { AuditLogEntry as ApiAuditLogEntry, AuditLogPage, OperationsReport } from '@/lib/api/types';
 import { formatLocalizedDateTime } from '@/lib/format/formatDate';
@@ -15,7 +20,7 @@ import { ReportScope } from './components/ReportScope';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type AuditLogEntry = { id: number; action: string; created_at: string; reason?: string | null; result?: string; user?: { name: string } | null };
-function AuditLogList({ entries }: { entries: AuditLogEntry[] }) { const columns: InstitutionalColumn<AuditLogEntry>[] = [{ field: 'created_at', headerName: 'Fecha', priority: 'secondary', valueFormatter: ({ value }) => formatLocalizedDateTime(String(value ?? '')) }, { field: 'action', headerName: 'Acción', priority: 'primary', flex: 1 }, { colId: 'user', headerName: 'Usuario', priority: 'secondary', valueGetter: ({ data }) => data?.user?.name ?? 'Sistema' }, { field: 'reason', headerName: 'Motivo', priority: 'primary', flex: 1 }, { field: 'result', headerName: 'Resultado', priority: 'tertiary' }]; return <InstitutionalDataGrid ariaLabel="Bitácora de auditoría" rows={entries} columns={columns} getRowId={(entry) => String(entry.id)} state={entries.length ? 'ready' : 'empty'} density="compact" />; }
+function AuditLogList({ entries }: { entries: AuditLogEntry[] }) { const columns: Array<InstitutionalColumn<AuditLogEntry>> = [{ accessorKey: 'created_at', header: 'Fecha', cell: ({ row }) => formatLocalizedDateTime(row.original.created_at) }, { accessorKey: 'action', header: 'Acción' }, { id: 'user', header: 'Usuario', cell: ({ row }) => row.original.user?.name ?? 'Sistema' }, { accessorKey: 'reason', header: 'Motivo', cell: ({ row }) => row.original.reason || 'Sin motivo' }, { accessorKey: 'result', header: 'Resultado', cell: ({ row }) => row.original.result === 'error' ? 'Con error' : row.original.result || 'Completado' }]; return <DataTable ariaLabel="Bitácora de auditoría" data={entries} columns={columns} getRowId={(entry) => String(entry.id)} emptyTitle="Sin entradas de auditoría" />; }
 
 type AuditLogFilters = {
   action: string;
@@ -105,7 +110,7 @@ export function ReportsAudit({
 
   if (!canViewManagerial) {
     return (
-      <Alert type="warning" showIcon title="Sin permisos para auditoría" description="Su usuario no tiene permisos para consultar el registro de auditoría." />
+      <Alert><AlertTitle>Sin permisos para auditoría</AlertTitle><AlertDescription>Su usuario no tiene permisos para consultar el registro de auditoría.</AlertDescription></Alert>
     );
   }
 
@@ -135,10 +140,7 @@ export function ReportsAudit({
 
   return (
     <section className="flex flex-col gap-5" aria-label="Registro de auditoria">
-      <header>
-        <Typography.Title level={1}>Auditoria</Typography.Title>
-        <Typography.Paragraph type="secondary">Resumen mensual de supervision operativa y bitacora filtrable.</Typography.Paragraph>
-      </header>
+      <PageHeader eyebrow="Supervisión" title="Auditoría" description="Resumen mensual de supervisión operativa y bitácora filtrable." />
 
       {applied.from && applied.to && !rangeError ? (
         <ReportScope
@@ -152,7 +154,7 @@ export function ReportsAudit({
       {summary ? <AuditSummaryPanel report={summary} /> : null}
 
       {!summary && summaryLoading ? (
-        <div role="status" aria-label="Cargando resumen de auditoría..."><Spin /> Cargando resumen de auditoría...</div>
+        <div role="status" aria-label="Cargando resumen de auditoría..." className="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Cargando resumen de auditoría...</div>
       ) : null}
 
       {operationsReport ? <OperationsSnapshot report={operationsReport} /> : null}
@@ -162,12 +164,12 @@ export function ReportsAudit({
           event.preventDefault();
           handleApply();
         }}
-        className="border border-operational-border bg-operational-surface p-5"
+        className="rounded-xl border border-border bg-card p-5"
       >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Form.Item label="Acción" htmlFor="audit-action" className="mb-0">
+        <FieldGroup className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
+          <Field><FieldLabel htmlFor="audit-action">Acción</FieldLabel>
             <div className="relative">
-              <SearchOutlined
+              <SearchIcon
                 aria-hidden="true"
                 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
               />
@@ -181,57 +183,30 @@ export function ReportsAudit({
                 disabled={auditControlsLocked}
               />
             </div>
-          </Form.Item>
-          <Form.Item label="Desde" htmlFor="audit-from" className="mb-0">
-            <DatePicker
-              id="audit-from"
-              aria-label="Desde"
-              value={draft.from ? dayjs(draft.from) : null}
-              format="YYYY-MM-DD"
-              onChange={(_, value) => setDraft((current) => ({ ...current, from: String(value) }))}
-              disabled={auditControlsLocked}
-            />
-          </Form.Item>
-          <Form.Item label="Hasta" htmlFor="audit-to" className="mb-0">
-            <DatePicker
-              id="audit-to"
-              aria-label="Hasta"
-              value={draft.to ? dayjs(draft.to) : null}
-              format="YYYY-MM-DD"
-              onChange={(_, value) => setDraft((current) => ({ ...current, to: String(value) }))}
-              disabled={auditControlsLocked}
-            />
-          </Form.Item>
+          </Field>
+          <Field><FieldLabel htmlFor="audit-from">Desde</FieldLabel><Input id="audit-from" type="date" value={draft.from} onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))} disabled={auditControlsLocked} /></Field>
+          <Field><FieldLabel htmlFor="audit-to">Hasta</FieldLabel><Input id="audit-to" type="date" value={draft.to} onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))} disabled={auditControlsLocked} /></Field>
           <div className="flex items-end gap-2">
-            <Button htmlType="submit" type="primary" className="flex-1" disabled={auditControlsLocked}>
+            <Button type="submit" className="flex-1" disabled={auditControlsLocked}>
               Buscar
             </Button>
-            <Button htmlType="button" onClick={handleReset} disabled={auditControlsLocked}>
+            <Button type="button" variant="outline" onClick={handleReset} disabled={auditControlsLocked}>
               Limpiar
             </Button>
           </div>
-        </div>
+        </FieldGroup>
       </form>
 
       {rangeError ? (
-        <Alert type="warning" showIcon title="Rango de auditoría no válido" description={rangeError} />
+        <Alert><AlertTitle>Rango de auditoría no válido</AlertTitle><AlertDescription>{rangeError}</AlertDescription></Alert>
       ) : null}
 
       {isLoading ? (
-        <div role="status" aria-label="Cargando bitácora de auditoría..."><Spin /> Cargando bitácora de auditoría...</div>
+        <div role="status" aria-label="Cargando bitácora de auditoría..." className="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Cargando bitácora de auditoría...</div>
       ) : null}
 
       {isError ? (
-        <Alert
-          type="error"
-          showIcon
-          title="No se pudo cargar la auditoría"
-          description={<>Verifique la conexión local o sus permisos.
-            <Button htmlType="button" onClick={() => void refetch()}>
-              Reintentar
-            </Button>
-          </>}
-        />
+        <Alert variant="destructive"><AlertTitle>No se pudo cargar la auditoría</AlertTitle><AlertDescription className="flex flex-col items-start gap-3">Verifique la conexión local o sus permisos.<Button type="button" variant="outline" onClick={() => void refetch()}>Reintentar</Button></AlertDescription></Alert>
       ) : null}
 
       {!isLoading && !isError && data ? (
@@ -243,26 +218,25 @@ export function ReportsAudit({
             </span>
           </header>
           {data.data.length === 0 ? (
-            <p className="flex items-center justify-center gap-2 border border-dashed border-operational-border bg-muted/40 p-6 text-sm text-muted-foreground">
-              <WarningOutlined aria-hidden="true" className="size-4" />
-              No hay entradas para los filtros aplicados.
-            </p>
+            <Empty><EmptyHeader><EmptyMedia variant="icon"><TriangleAlertIcon /></EmptyMedia><EmptyTitle>Sin entradas</EmptyTitle><EmptyDescription>No hay entradas para los filtros aplicados.</EmptyDescription></EmptyHeader></Empty>
           ) : (
             <AuditLogList entries={data.data.map(toSafeAuditEntry)} />
           )}
           {data.meta.total > data.meta.per_page && (
             <div className="mt-3 flex items-center justify-between">
               <Button
-                htmlType="button"
-                size="small"
+                type="button"
+                size="sm"
+                variant="outline"
                 disabled={applied.page <= 1}
                 onClick={() => applyAuditFilters({ ...applied, page: applied.page - 1 })}
               >
                 Anterior
               </Button>
               <Button
-                htmlType="button"
-                size="small"
+                type="button"
+                size="sm"
+                variant="outline"
                 disabled={applied.page * data.meta.per_page >= data.meta.total}
                 onClick={() => applyAuditFilters({ ...applied, page: applied.page + 1 })}
               >
@@ -344,9 +318,7 @@ function OperationsSnapshot({ report }: { report: OperationsReport }) {
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border border-operational-border bg-card p-4">
-      <Statistic title={label} value={value} />
-    </div>
+    <div className="rounded-lg border border-operational-border bg-card p-4"><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-2 text-2xl font-semibold tabular-nums">{value}</dd></div>
   );
 }
 

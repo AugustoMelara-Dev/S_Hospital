@@ -1,13 +1,19 @@
 import { type FormEvent } from 'react';
-import { DownloadOutlined, FilePdfOutlined, WarningOutlined } from '@ant-design/icons';
-import { Alert, Button, Col, Form, Input, Row, Select, Statistic, Typography } from 'antd';
-import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid';
+import { DownloadIcon, FileTextIcon, TriangleAlertIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { DataTable, type InstitutionalColumn } from '@/design-system/patterns/DataTable';
 import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 import type { CashSession, CashSessionReport } from '../../../lib/api/types';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 import { AccountingControlPanel } from '../../../modules/accounting/components/AccountingControlPanel';
 
-function StatGrid({ items }: { className?: string; items: Array<{ label: string; value: React.ReactNode; helper?: string; tone?: string }> }) { return <Row gutter={[12, 12]}>{items.map((item) => <Col xs={24} sm={12} xl={4} key={item.label}><Statistic title={item.label} value={String(item.value)} /><Typography.Text type="secondary">{item.helper}</Typography.Text></Col>)}</Row>; }
+function StatGrid({ items }: { className?: string; items: Array<{ label: string; value: React.ReactNode; helper?: string; tone?: string }> }) { return <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">{items.map((item) => <div className="rounded-xl border border-border bg-card p-4" key={item.label}><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{item.label}</dt><dd className="mt-2 text-xl font-semibold tabular-nums">{item.value}</dd>{item.helper ? <p className="mt-1 text-xs text-muted-foreground">{item.helper}</p> : null}</div>)}</dl>; }
 
 interface CashSessionReportPanelProps {
   canExport: boolean;
@@ -25,6 +31,10 @@ interface CashSessionReportPanelProps {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
+function ReportTableCard({ children, description, title }: { children: React.ReactNode; description: string; title: string }) {
+  return <section aria-label={title}><Card><CardHeader><CardTitle><h3>{title}</h3></CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent>{children}</CardContent></Card></section>;
+}
+
 type MethodTotalRow = {
   method: string;
   total: string;
@@ -34,67 +44,25 @@ type RegisteredPayment = CashSessionReport['payments'][number];
 type CashMovement = CashSessionReport['movements'][number];
 
 const methodTotalColumns: InstitutionalColumn<MethodTotalRow>[] = [
-  {
-    colId: 'method', headerName: 'Método', field: 'method', flex: 1,
-    valueFormatter: ({ value }) => methodLabel(String(value)),
-  },
-  {
-    colId: 'total', headerName: 'Total', field: 'total', priority: 'secondary',
-    type: 'rightAligned', cellClass: 'tabular-nums',
-    valueFormatter: ({ value }) => moneyLabel(String(value)),
-  },
+  { accessorKey: 'method', header: 'Método', cell: ({ row }) => methodLabel(row.original.method) },
+  { accessorKey: 'total', header: 'Total', meta: { numeric: true }, cell: ({ row }) => <span className="tabular-nums">{moneyLabel(row.original.total)}</span> },
 ];
 
 const paymentColumns: InstitutionalColumn<RegisteredPayment>[] = [
-  {
-    colId: 'invoice', headerName: 'Factura', flex: 1,
-    valueGetter: ({ data }) => fallbackText(data?.invoice?.invoice_number, 'Sin factura'),
-  },
-  {
-    colId: 'patient', headerName: 'Paciente', flex: 1,
-    valueGetter: ({ data }) => fallbackText(data?.invoice?.patient_name, 'Sin paciente'),
-  },
-  {
-    colId: 'method', headerName: 'Método', field: 'method',
-    valueFormatter: ({ value }) => methodLabel(String(value)),
-  },
-  {
-    colId: 'amount', headerName: 'Monto', field: 'amount', priority: 'secondary',
-    type: 'rightAligned', cellClass: 'tabular-nums',
-    valueFormatter: ({ value }) => moneyLabel(String(value)),
-  },
-  {
-    colId: 'paid_at', headerName: 'Fecha', field: 'paid_at', priority: 'secondary',
-    valueFormatter: ({ value }) => formatDate(String(value)),
-  },
+  { id: 'invoice', header: 'Factura', cell: ({ row }) => fallbackText(row.original.invoice?.invoice_number, 'Sin factura') },
+  { id: 'patient', header: 'Paciente', cell: ({ row }) => fallbackText(row.original.invoice?.patient_name, 'Sin paciente') },
+  { accessorKey: 'method', header: 'Método', cell: ({ row }) => methodLabel(row.original.method) },
+  { accessorKey: 'amount', header: 'Monto', meta: { numeric: true }, cell: ({ row }) => <span className="tabular-nums">{moneyLabel(row.original.amount)}</span> },
+  { accessorKey: 'paid_at', header: 'Fecha', cell: ({ row }) => formatDate(row.original.paid_at) },
 ];
 
 const movementColumns: InstitutionalColumn<CashMovement>[] = [
-  {
-    colId: 'type', headerName: 'Tipo', field: 'type', flex: 1,
-    valueFormatter: ({ value }) => movementTypeLabel(String(value)),
-  },
-  {
-    colId: 'method', headerName: 'Método', field: 'method',
-    valueFormatter: ({ value }) => movementMethodLabel(value ? String(value) : null),
-  },
-  {
-    colId: 'amount', headerName: 'Monto', field: 'amount', priority: 'secondary',
-    type: 'rightAligned', cellClass: 'tabular-nums',
-    valueFormatter: ({ value }) => signedMoneyLabel(String(value)),
-  },
-  {
-    colId: 'notes', headerName: 'Notas', field: 'notes', flex: 1,
-    valueFormatter: ({ value }) => fallbackText(value ? String(value) : null, 'Sin nota'),
-  },
-  {
-    colId: 'user', headerName: 'Usuario',
-    valueGetter: ({ data }) => fallbackText(data?.user?.name, 'Sin usuario'),
-  },
-  {
-    colId: 'occurred_at', headerName: 'Fecha', field: 'occurred_at', priority: 'secondary',
-    valueFormatter: ({ value }) => formatDate(value ? String(value) : null),
-  },
+  { accessorKey: 'type', header: 'Tipo', cell: ({ row }) => movementTypeLabel(row.original.type) },
+  { accessorKey: 'method', header: 'Método', cell: ({ row }) => movementMethodLabel(row.original.method) },
+  { accessorKey: 'amount', header: 'Monto', meta: { numeric: true }, cell: ({ row }) => <span className="tabular-nums">{signedMoneyLabel(row.original.amount)}</span> },
+  { accessorKey: 'notes', header: 'Notas', cell: ({ row }) => fallbackText(row.original.notes, 'Sin nota') },
+  { id: 'user', header: 'Usuario', cell: ({ row }) => fallbackText(row.original.user?.name, 'Sin usuario') },
+  { accessorKey: 'occurred_at', header: 'Fecha', cell: ({ row }) => formatDate(row.original.occurred_at) },
 ];
 
 export function CashSessionReportPanel({
@@ -119,27 +87,22 @@ export function CashSessionReportPanel({
     : [];
 
   return (
-    <div className="space-y-6">
-      <section className="overflow-hidden">
-        <div className="bg-muted/40 pt-6">
-          <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2 sm:items-end">
-            <div className="w-full">
+    <div className="flex flex-col gap-6">
+      <section className="rounded-xl border border-border bg-card p-4" aria-label="Consulta de caja">
+          <form onSubmit={onSubmit}>
+            <FieldGroup className="grid gap-4 sm:grid-cols-2 sm:items-end">
               {hasRecentCashSessions ? (
-                <Form.Item label="Caja reciente" htmlFor="cash-session-id" extra="Seleccione una caja reciente. La más nueva queda lista para consultar.">
-                  <Select
-                    id="cash-session-id"
-                    aria-label="Caja reciente"
-                    value={cashReportId}
-                    onChange={onCashReportIdChange}
-                    disabled={lookupLocked || sessionsLoading}
-                    options={recentCashSessions.map((session) => ({
-                      value: String(session.id),
-                      label: cashSessionOptionLabel(session),
-                    }))}
-                  />
-                </Form.Item>
+                <Field>
+                  <FieldLabel htmlFor="cash-session-id">Caja reciente</FieldLabel>
+                  <Select value={cashReportId} onValueChange={onCashReportIdChange} disabled={lookupLocked || sessionsLoading}>
+                    <SelectTrigger id="cash-session-id" className="w-full"><SelectValue placeholder="Seleccione una caja" /></SelectTrigger>
+                    <SelectContent><SelectGroup>{recentCashSessions.map((session) => <SelectItem key={session.id} value={String(session.id)}>{cashSessionOptionLabel(session)}</SelectItem>)}</SelectGroup></SelectContent>
+                  </Select>
+                  <FieldDescription>Seleccione una caja reciente. La más nueva queda lista para consultar.</FieldDescription>
+                </Field>
               ) : (
-                <Form.Item label="Número de caja" htmlFor="cash-session-id" extra="Use el número que aparece en Caja al abrir o cerrar turno.">
+                <Field>
+                  <FieldLabel htmlFor="cash-session-id">Número de caja</FieldLabel>
                   <Input
                     id="cash-session-id"
                     type="text"
@@ -150,19 +113,15 @@ export function CashSessionReportPanel({
                     onChange={(event) => onCashReportIdChange(event.target.value)}
                     disabled={lookupLocked}
                   />
-                </Form.Item>
+                  <FieldDescription id="cash-session-id-help">Use el número que aparece en Caja al abrir o cerrar turno.</FieldDescription>
+                </Field>
               )}
-            </div>
-            <Button htmlType="submit" type="primary" size="large" className="w-full sm:w-auto" disabled={lookupLocked} loading={loading}>
-              Ver caja
-            </Button>
+              <Button type="submit" className="w-full sm:w-auto" disabled={lookupLocked}>{loading ? <Spinner data-icon="inline-start" /> : null}Ver caja</Button>
+            </FieldGroup>
           </form>
           {error ? (
-            <div className="mt-3">
-              <Alert type="error" showIcon title="No se pudo cargar la caja" description={error} />
-            </div>
+            <Alert variant="destructive" className="mt-3"><AlertTitle>No se pudo cargar la caja</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
           ) : null}
-        </div>
       </section>
 
       {cashSession ? (
@@ -211,12 +170,11 @@ export function CashSessionReportPanel({
           <CashDenominationBreakdown breakdown={cashSession.cash_session.closing_breakdown} />
 
           {cashSession.cash_session.difference_amount && (parseCents(cashSession.cash_session.difference_amount) ?? 0) !== 0 ? (
-            <section className="border border-destructive/30 bg-destructive/5 p-4" aria-labelledby="cash-difference-title">
-                <Typography.Title id="cash-difference-title" level={3} className="flex items-center gap-2 text-destructive">
-                  <WarningOutlined aria-hidden />
-                  Diferencia
-                </Typography.Title>
-                <div className="text-3xl font-bold text-destructive">
+            <Alert variant="destructive" aria-labelledby="cash-difference-title">
+                <TriangleAlertIcon aria-hidden="true" />
+                <AlertTitle id="cash-difference-title">Diferencia</AlertTitle>
+                <AlertDescription>
+                <div className="text-3xl font-bold tabular-nums">
                   {moneyLabel(cashSession.cash_session.difference_amount)}
                 </div>
                 {cashSession.cash_session.closing_notes?.trim() ? (
@@ -224,33 +182,25 @@ export function CashSessionReportPanel({
                     {cashSession.cash_session.closing_notes.trim()}
                   </p>
                 ) : null}
-            </section>
+                </AlertDescription>
+            </Alert>
           ) : null}
 
-          <section aria-labelledby="method-totals-title">
-            <Typography.Title id="method-totals-title" level={3}>Totales por método</Typography.Title>
-            <InstitutionalDataGrid ariaLabel="Totales por método" rows={methodTotalRows} columns={methodTotalColumns} getRowId={(row) => row.method} state={methodTotalRows.length ? 'ready' : 'empty'} emptyMessage="Sin totales por método" density="compact" gridOptions={{ pagination: false }} />
-          </section>
+          <ReportTableCard title="Totales por método" description="Distribución de lo cobrado por forma de pago."><DataTable ariaLabel="Totales por método" data={methodTotalRows} columns={methodTotalColumns} getRowId={(row) => row.method} emptyTitle="Sin totales por método" /></ReportTableCard>
 
-          <section aria-labelledby="payments-title">
-            <Typography.Title id="payments-title" level={3}>Pagos registrados ({cashSession.payments.length})</Typography.Title>
-            <InstitutionalDataGrid ariaLabel="Pagos registrados" rows={cashSession.payments} columns={paymentColumns} getRowId={(payment) => String(payment.id)} state={cashSession.payments.length ? 'ready' : 'empty'} emptyMessage="Sin pagos registrados" density="compact" gridOptions={{ pagination: false }} />
-          </section>
+          <ReportTableCard title={`Pagos registrados (${cashSession.payments.length})`} description="Pagos asociados a esta sesión de caja."><DataTable ariaLabel="Pagos registrados" data={cashSession.payments} columns={paymentColumns} getRowId={(payment) => String(payment.id)} emptyTitle="Sin pagos registrados" /></ReportTableCard>
 
-          <section aria-labelledby="movements-title">
-            <Typography.Title id="movements-title" level={3}>Movimientos ({cashSession.movements.length})</Typography.Title>
-            <InstitutionalDataGrid ariaLabel="Movimientos de caja" rows={cashSession.movements} columns={movementColumns} getRowId={(movement) => String(movement.id)} state={cashSession.movements.length ? 'ready' : 'empty'} emptyMessage="Sin movimientos de caja" density="compact" gridOptions={{ pagination: false }} />
-          </section>
+          <ReportTableCard title={`Movimientos (${cashSession.movements.length})`} description="Entradas, salidas, reversos y ajustes auditados."><DataTable ariaLabel="Movimientos de caja" data={cashSession.movements} columns={movementColumns} getRowId={(movement) => String(movement.id)} emptyTitle="Sin movimientos de caja" /></ReportTableCard>
 
           <div className="flex flex-wrap justify-end gap-2">
             {canExport ? (
               <>
-                <Button htmlType="button" onClick={onExportPdf} disabled={exporting}>
-                  <FilePdfOutlined aria-hidden />
+                <Button type="button" variant="outline" onClick={onExportPdf} disabled={exporting}>
+                  <FileTextIcon data-icon="inline-start" />
                   {exportingType === 'pdf' ? 'Abriendo PDF...' : 'PDF caja'}
                 </Button>
-                <Button htmlType="button" onClick={onExport} disabled={exporting}>
-                  <DownloadOutlined aria-hidden />
+                <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
+                  <DownloadIcon data-icon="inline-start" />
                   {exportingType === 'excel' ? 'Exportando Excel...' : 'Exportar Excel'}
                 </Button>
               </>
@@ -288,9 +238,7 @@ function CashDenominationBreakdown({
       aria-labelledby="cash-denomination-report-title"
       className="border border-operational-border bg-operational-surface p-4"
     >
-      <Typography.Title id="cash-denomination-report-title" level={3}>
-        Desglose del conteo físico
-      </Typography.Title>
+      <h3 id="cash-denomination-report-title" className="text-base font-semibold">Desglose del conteo físico</h3>
       <p className="mb-4 text-sm text-muted-foreground">
         Conteo auditado al cerrar la sesión. Solo se muestran denominaciones con unidades registradas.
       </p>

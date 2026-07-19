@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { ReportsExecutive } from './ReportsExecutive';
@@ -300,7 +299,5 @@ describe('ReportsExecutive', () => {
 });
 
 async function selectDate(label: RegExp, date: string) {
-  const user = userEvent.setup();
-  await user.click(screen.getByLabelText(label));
-  await user.click(await screen.findByTitle(date));
+  fireEvent.change(screen.getByLabelText(label), { target: { value: date } });
 }

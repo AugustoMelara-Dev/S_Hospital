@@ -1,32 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-vi.mock('@/design-system/ag-grid', () => ({
-  InstitutionalDataGrid: ({ ariaLabel, rows, columns, emptyMessage }: {
-    ariaLabel: string;
-    rows: Record<string, unknown>[];
-    columns: Array<{
-      colId?: string;
-      field?: string;
-      headerName?: string;
-      valueGetter?: (params: { data: Record<string, unknown> }) => unknown;
-      valueFormatter?: (params: { data: Record<string, unknown>; value: unknown }) => React.ReactNode;
-      cellRenderer?: (params: { data: Record<string, unknown>; value: unknown }) => React.ReactNode;
-    }>;
-    emptyMessage: string;
-  }) => (
-    <section aria-label={ariaLabel}>
-      {rows.length ? (
-        <table>
-          <thead><tr>{columns.map((column) => <th key={column.colId}>{column.headerName}</th>)}</tr></thead>
-          <tbody>{rows.map((row, index) => <tr key={index}>{columns.map((column) => {
-            const value = column.valueGetter?.({ data: row }) ?? (column.field ? row[column.field] : undefined);
-            return <td key={column.colId}>{column.cellRenderer?.({ data: row, value }) ?? column.valueFormatter?.({ data: row, value }) ?? String(value ?? '')}</td>;
-          })}</tr>)}</tbody>
-        </table>
-      ) : <div role="status">{emptyMessage}</div>}
-    </section>
-  ),
-}));
+import { describe, expect, it } from 'vitest';
 import { CashSessionReportPanel } from './CashSessionReportPanel';
 import type { CashSessionReport } from '../../../lib/api/types';
 

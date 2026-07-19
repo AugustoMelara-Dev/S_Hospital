@@ -156,7 +156,7 @@ describe('ReportsView (sub-routes)', () => {
     renderReports('/reports', false, false, true);
 
     expect(screen.getByRole('link', { name: /auditoria/i })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('heading', { name: /auditoria/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^auditoría$/i })).toBeInTheDocument();
     expect(screen.queryByText(/reporte ejecutivo no disponible/i)).not.toBeInTheDocument();
   });
 

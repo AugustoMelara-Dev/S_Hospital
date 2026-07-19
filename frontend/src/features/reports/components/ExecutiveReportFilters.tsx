@@ -23,7 +23,7 @@ export function ExecutiveReportFilters({ filters, preset, onPresetChange, onChan
     <section className="rounded-xl border border-border bg-card p-4" aria-labelledby="executive-controls-title">
       <Heading id="executive-controls-title" className="text-lg font-semibold">Control ejecutivo</Heading>
       <p className="mt-1 text-sm text-muted-foreground">Ajuste el periodo y actualice los indicadores con los datos del cierre operativo. Puede consultar hasta 92 días.</p>
-      <FieldGroup className="mt-4 grid gap-3 lg:grid-cols-[minmax(11rem,1fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto] lg:items-end">
+      <FieldGroup className="mt-4 grid gap-3 lg:grid-cols-4 lg:items-end">
         <Field>
           <FieldLabel htmlFor="report-preset">Periodo rápido</FieldLabel>
           <Select value={preset} disabled={disabled} onValueChange={(value) => changePreset(value as PresetKey)}>

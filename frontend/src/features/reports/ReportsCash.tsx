@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Alert, Empty, Typography } from 'antd';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { PageHeader } from '@/design-system/components/PageHeader';
 import { apiClient, type CashSession, userSafeErrorMessage } from '@/lib/api';
 import { downloadBlob, openBlobInNewTab } from '@/lib/download';
 import { CashSessionReportPanel } from './components/CashSessionReportPanel';
@@ -214,13 +216,13 @@ export function ReportsCash({
 
   if (!canViewCash && !canViewManagerial) {
     return (
-      <Empty description={<><Typography.Title level={3}>Reporte de caja no disponible</Typography.Title><Typography.Text>Este usuario no tiene permiso para consultar cajas.</Typography.Text></>} />
+      <Empty><EmptyHeader><EmptyTitle>Reporte de caja no disponible</EmptyTitle><EmptyDescription>Este usuario no tiene permiso para consultar cajas.</EmptyDescription></EmptyHeader></Empty>
     );
   }
 
   return (
     <section className="flex flex-col gap-5" aria-label="Reporte de caja">
-      <header className="border-b border-border pb-4"><Typography.Text>Reporte de caja</Typography.Text><Typography.Title level={1}>Operación de caja</Typography.Title><Typography.Paragraph>Sesiones, cajeros, métodos de pago y diferencias de caja.</Typography.Paragraph></header>
+      <PageHeader eyebrow="Reporte de caja" title="Operación de caja" description="Sesiones, cajeros, métodos de pago y diferencias de caja." />
 
       {visibleCashSessionReport ? (
         <ReportScope
@@ -232,7 +234,7 @@ export function ReportsCash({
       ) : null}
 
       {cashExportError ? (
-        <Alert type="error" title={cashExportError.title} description={cashExportError.message} showIcon />
+        <Alert variant="destructive"><AlertTitle>{cashExportError.title}</AlertTitle><AlertDescription>{cashExportError.message}</AlertDescription></Alert>
       ) : null}
 
       <CashSessionReportPanel

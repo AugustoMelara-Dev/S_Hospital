@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { ReportsAudit } from './ReportsAudit';
 import { ReportsCash } from './ReportsCash';
 import { ReportsExecutive } from './ReportsExecutive';
-import { LineChartOutlined, SafetyCertificateOutlined, WalletOutlined } from '@ant-design/icons';
+import { ChartNoAxesCombinedIcon, ShieldCheckIcon, WalletCardsIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { PageHeader } from '@/design-system/components/PageHeader';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
@@ -21,19 +22,19 @@ const SUB_ROUTES = [
     id: 'executive',
     label: 'Ejecutivo',
     description: 'Cobros, pendientes, ticket promedio, tendencia y servicios.',
-    icon: LineChartOutlined,
+    icon: ChartNoAxesCombinedIcon,
   },
   {
     id: 'cash',
     label: 'Caja',
     description: 'Sesiones, cajeros, metodos y diferencias.',
-    icon: WalletOutlined,
+    icon: WalletCardsIcon,
   },
   {
     id: 'audit',
     label: 'Auditoria',
     description: 'Anulaciones, reversos, cambios de precio y fiscales.',
-    icon: SafetyCertificateOutlined,
+    icon: ShieldCheckIcon,
   },
 ] as const;
 
@@ -164,7 +165,7 @@ function ReportsNavigation({
             to={`${basePath}/${route.id}`}
             aria-current={isActive ? 'page' : undefined}
             aria-describedby={descriptionId}
-            className={`flex min-h-12 items-center justify-center gap-2 border px-2 py-2 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 sm:min-h-20 sm:justify-start sm:gap-3 sm:px-4 sm:py-3 sm:text-sm ${isActive ? 'border-primary bg-muted font-semibold' : 'border-border bg-surface hover:border-primary'}`}
+            className={cn('flex min-h-12 items-center justify-center gap-2 rounded-xl border px-2 py-2 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 sm:min-h-20 sm:justify-start sm:gap-3 sm:px-4 sm:py-3 sm:text-sm', isActive ? 'border-primary bg-muted font-semibold' : 'border-border bg-card hover:border-primary')}
           >
             <span className="flex size-6 shrink-0 items-center justify-center sm:size-10"><Icon aria-hidden="true" className="size-4 sm:size-5" /></span>
             <span className="min-w-0">
