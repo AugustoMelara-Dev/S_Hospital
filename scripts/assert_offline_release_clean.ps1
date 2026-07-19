@@ -295,9 +295,9 @@ if (Test-Path -LiteralPath $imagesDir -PathType Container) {
     }
 
     $expectedImages = @{
-        "s_hospital-backend:latest" = "backend.tar"
-        "s_hospital-queue-worker:latest" = "queue-worker.tar"
-        "s_hospital-scheduler:latest" = "scheduler.tar"
+        "s_hospital-prod-backend:latest" = "backend.tar"
+        "s_hospital-prod-queue-worker:latest" = "queue-worker.tar"
+        "s_hospital-prod-scheduler:latest" = "scheduler.tar"
         "nginx:1.25.4-alpine@sha256:31bad00311cb5eeb8a6648beadcf67277a175da89989f14727420a80e2e76742" = "nginx.tar"
         "mariadb:11.4.3@sha256:e3432369d4d432ec2a3d777ff84ffca11ec8c2188cf1b6a0551a393ae5d833bb" = "mariadb.tar"
         "quay.io/soketi/soketi:1.6-16-alpine@sha256:5e45fe1adbf2d4ef8022d0126a3c7e4371b7b08f35784b76a2dc353954ee885c" = "soketi.tar"

@@ -15,6 +15,29 @@ class ProductionDockerfileTest extends TestCase
         $this->assertStringNotContainsString('/var/www/qa', $compose);
     }
 
+    public function test_production_images_do_not_overwrite_development_build_tags(): void
+    {
+        $compose = file_get_contents(base_path('../docker-compose.prod.yml'));
+
+        $this->assertIsString($compose);
+
+        foreach ([
+            's_hospital-prod-backend:latest',
+            's_hospital-prod-queue-worker:latest',
+            's_hospital-prod-scheduler:latest',
+        ] as $releaseImage) {
+            $this->assertStringContainsString("image: {$releaseImage}", $compose);
+        }
+
+        foreach ([
+            'image: s_hospital-backend:latest',
+            'image: s_hospital-queue-worker:latest',
+            'image: s_hospital-scheduler:latest',
+        ] as $developmentImage) {
+            $this->assertStringNotContainsString($developmentImage, $compose);
+        }
+    }
+
     public function test_frontend_builder_uses_the_same_frozen_pnpm_lock_as_ci(): void
     {
         $dockerfile = file_get_contents(base_path('Dockerfile.prod'));

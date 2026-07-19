@@ -36,9 +36,9 @@ Assert-Contains $installer 'HOSPITAL_INITIAL_ADMIN_PASSWORD' "LAN installer"
 Assert-NotContains $installer '--password="$adminPassword"' "LAN installer"
 
 foreach ($image in @(
-    's_hospital-backend:latest',
-    's_hospital-queue-worker:latest',
-    's_hospital-scheduler:latest',
+    's_hospital-prod-backend:latest',
+    's_hospital-prod-queue-worker:latest',
+    's_hospital-prod-scheduler:latest',
     'nginx:1.25.4-alpine',
     'mariadb:11.4.3',
     'quay.io/soketi/soketi:1.6-16-alpine'

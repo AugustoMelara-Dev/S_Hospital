@@ -33,8 +33,9 @@ Para preparar el paquete de instalación, realice los siguientes pasos en una m�
 ### ¿Qué hace este script?
 * Compila las imágenes de producción locales utilizando Docker Compose.
 * Exporta en formato `.tar` las imágenes de:
-  * `s_hospital-backend` -> `backend.tar`
-  * `s_hospital-queue-worker` -> `queue-worker.tar`
+  * `s_hospital-prod-backend` -> `backend.tar`
+  * `s_hospital-prod-queue-worker` -> `queue-worker.tar`
+  * `s_hospital-prod-scheduler` -> `scheduler.tar`
   * `nginx:1.25-alpine` -> `nginx.tar`
   * `mariadb:11` -> `mariadb.tar`
 * Copia únicamente los archivos de configuración y scripts indispensables para correr en producción en la carpeta `offline-release/`.

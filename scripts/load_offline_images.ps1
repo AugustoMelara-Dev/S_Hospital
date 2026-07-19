@@ -66,9 +66,9 @@ Write-Host "[*] Validando disponibilidad en el registro local de Docker..." -For
 $localImages = docker images --format "{{.Repository}}:{{.Tag}}"
 
 $requiredImages = @(
-    "s_hospital-backend:latest",
-    "s_hospital-queue-worker:latest",
-    "s_hospital-scheduler:latest",
+    "s_hospital-prod-backend:latest",
+    "s_hospital-prod-queue-worker:latest",
+    "s_hospital-prod-scheduler:latest",
     "nginx:1.25.4-alpine",
     "mariadb:11.4.3",
     "quay.io/soketi/soketi:1.6-16-alpine"

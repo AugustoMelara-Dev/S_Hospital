@@ -84,9 +84,9 @@ Write-Host "[*] Detectando y exportando imágenes..." -ForegroundColor Yellow
 # Guardar todas las imagenes que docker-compose.prod.yml necesita. Los nombres
 # exactos conservan las etiquetas que Compose buscara en el servidor offline.
 $imagesToSave = @(
-    @{ Image = "s_hospital-backend:latest"; Target = "backend.tar" }
-    @{ Image = "s_hospital-queue-worker:latest"; Target = "queue-worker.tar" }
-    @{ Image = "s_hospital-scheduler:latest"; Target = "scheduler.tar" }
+    @{ Image = "s_hospital-prod-backend:latest"; Target = "backend.tar" }
+    @{ Image = "s_hospital-prod-queue-worker:latest"; Target = "queue-worker.tar" }
+    @{ Image = "s_hospital-prod-scheduler:latest"; Target = "scheduler.tar" }
     @{ Image = "nginx:1.25.4-alpine"; Target = "nginx.tar" }
     @{ Image = "mariadb:11.4.3"; Target = "mariadb.tar" }
     @{ Image = "quay.io/soketi/soketi:1.6-16-alpine"; Target = "soketi.tar" }

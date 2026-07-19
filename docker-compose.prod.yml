@@ -1,6 +1,6 @@
 services:
   backend:
-    image: s_hospital-backend:latest
+    image: s_hospital-prod-backend:latest
     build:
       context: .
       dockerfile: ./backend/Dockerfile.prod
@@ -127,7 +127,7 @@ services:
     pids_limit: 300
 
   queue-worker:
-    image: s_hospital-queue-worker:latest
+    image: s_hospital-prod-queue-worker:latest
     build:
       context: .
       dockerfile: ./backend/Dockerfile.prod
@@ -191,7 +191,7 @@ services:
         condition: service_started
 
   realtime-worker:
-    image: s_hospital-queue-worker:latest
+    image: s_hospital-prod-queue-worker:latest
     build:
       context: .
       dockerfile: ./backend/Dockerfile.prod
@@ -257,7 +257,7 @@ services:
   # is available inside the container. It runs the Laravel scheduler once
   # per minute and writes a local heartbeat for Docker health checks.
   scheduler:
-    image: s_hospital-scheduler:latest
+    image: s_hospital-prod-scheduler:latest
     build:
       context: .
       dockerfile: ./backend/Dockerfile.prod
