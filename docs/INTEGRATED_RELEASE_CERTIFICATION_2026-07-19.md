@@ -18,10 +18,11 @@ aceptacion desde una computadora cliente de la LAN hospitalaria.
 
 | Gate | Resultado |
 |---|---|
+| Suite Laravel completa posterior a integracion | 948 aprobadas; 0 fallos; 13 omitidas |
 | Suite Laravel sobre MariaDB aislada | 957 casos; 0 fallos, 0 errores, 12 omitidos |
 | Laravel Pint | PASS |
 | PHPStan | PASS, 0 errores |
-| Frontend unitario segmentado | 141 archivos; 1,082 pruebas; 12 segmentos |
+| Frontend unitario segmentado | 141 archivos; 1,083 pruebas; 12 segmentos |
 | TypeScript / ESLint | PASS / PASS |
 | Build y presupuesto de bundle | PASS |
 | E2E mock | 49/49 |
