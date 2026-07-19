@@ -13,6 +13,7 @@
         }
 
         body {
+            --institutional-accent: #0f766e;
             background: #fff;
             color: #111827;
             font-family: {{ $profile['font_family'] }};
@@ -444,6 +445,144 @@
         .custom-small .copy-legend {
             padding-top: 1px;
         }
+
+        /* Institutional visual hierarchy: optimized for grayscale and color printers. */
+        .receipt-layout {
+            border-top: 3px solid #0f766e;
+            padding-top: 6px;
+        }
+
+        .receipt-layout.profile-carta_horizontal {
+            font-size: {{ 10.4 * $profile['font_scale'] }}px;
+            line-height: 1.26;
+        }
+
+        .profile-carta_horizontal .document-header {
+            padding-bottom: 7px;
+        }
+
+        .profile-carta_horizontal .document-band {
+            margin: 7px 0;
+            padding: 7px 8px;
+        }
+
+        .profile-carta_horizontal .items-table th,
+        .profile-carta_horizontal .items-table td {
+            padding-bottom: 4px;
+            padding-top: 4px;
+        }
+
+        .document-band {
+            background: #ecfdf5;
+            border: 1px solid #99c8c1;
+            padding-left: 7px;
+            padding-right: 7px;
+        }
+
+        .receipt-meta-panel {
+            border: 1px solid #d1d5db;
+            table-layout: fixed;
+        }
+
+        .receipt-meta-panel td {
+            border-bottom: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+            padding-left: 6px;
+        }
+
+        .receipt-meta-panel tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .receipt-meta-panel td:last-child {
+            border-right: 0;
+        }
+
+        .section-title {
+            background: #0f766e;
+            border: 0;
+            color: #ffffff;
+            letter-spacing: 0.035em;
+            padding: 4px 6px;
+        }
+
+        .items-table {
+            border: 1px solid #d1d5db;
+        }
+
+        .items-table th {
+            background: #e7f3f1;
+            border-bottom-color: #99c8c1;
+            color: #1f2937;
+        }
+
+        .totals-table {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 4px 6px;
+        }
+
+        .totals-table .grand-total td {
+            border-top: 2px solid #0f766e;
+            color: #0b4f47;
+        }
+
+        .amount-words {
+            background: #f8fafc;
+            border-left: 3px solid #0f766e;
+        }
+
+        .thermal .receipt-layout {
+            border-top-color: #111827;
+            border-top-width: 1px;
+            padding-top: 3px;
+        }
+
+        .thermal .document-band,
+        .thermal .section-title,
+        .custom-small .document-band,
+        .custom-small .section-title {
+            background: transparent;
+            border-color: #9ca3af;
+            color: #111827;
+        }
+
+        .thermal .items-table th,
+        .custom-small .items-table th {
+            background: transparent;
+        }
+
+        .profile-media_carta_horizontal,
+        .profile-a5_horizontal {
+            font-size: {{ 8.9 * $profile['font_scale'] }}px;
+            line-height: 1.1;
+            padding-top: 3px;
+        }
+
+        .profile-media_carta_horizontal .document-band,
+        .profile-a5_horizontal .document-band {
+            margin: 3px 0;
+            padding: 2px 4px;
+        }
+
+        .profile-media_carta_horizontal .receipt-meta-panel td,
+        .profile-a5_horizontal .receipt-meta-panel td {
+            padding: 1px 3px;
+        }
+
+        .profile-media_carta_horizontal .section-title,
+        .profile-a5_horizontal .section-title {
+            margin: 3px 0 2px;
+            padding: 2px 4px;
+        }
+
+        .profile-media_carta_horizontal .items-table th,
+        .profile-media_carta_horizontal .items-table td,
+        .profile-a5_horizontal .items-table th,
+        .profile-a5_horizontal .items-table td {
+            padding-bottom: 1px;
+            padding-top: 1px;
+        }
     </style>
 </head>
 <body>
@@ -505,6 +644,7 @@
                 : $paymentLabel($displayPayments->first()['method'] ?? null));
     @endphp
     <section class="receipt-page {{ $isThermal ? 'thermal '.$paperClass : $paperClass }}{{ $isCustomSmall ? ' custom-small' : '' }}">
+        <div class="receipt-layout profile-{{ $profile['code'] }}">
         @if ($page['draft'])
             <div class="draft-watermark">{{ $page['watermark'] }}</div>
         @endif
@@ -602,7 +742,7 @@
                 @endif
             </div>
         @else
-            <table class="meta-table">
+            <table class="meta-table receipt-meta-panel">
                 <tr>
                     <td><span class="label">Factura</span><br>{{ $invoice['invoice_number'] ?: 'No registrada' }}</td>
                     <td><span class="label">Serie</span><br>{{ $page['series']['series'] ?: 'No registrada' }}</td>
@@ -669,7 +809,7 @@
                 @endif
             </div>
         @else
-            <table class="meta-table">
+            <table class="meta-table receipt-meta-panel">
                 <tr>
                     <td style="width: 34%;"><span class="label">Paciente / enterante</span><br>{{ $page['payer_name'] }}</td>
                     <td><span class="label">Cajero</span><br>{{ $cashier ?: 'No registrado' }}</td>
@@ -842,6 +982,7 @@
         @if ($profile['show_copy_legend'])
             <div class="copy-legend">{{ $page['copy_label'] }}@if (! empty($page['institution']['receipt_footer_text'])) - {{ $page['institution']['receipt_footer_text'] }}@endif</div>
         @endif
+        </div>
     </section>
 @endforeach
 </body>
