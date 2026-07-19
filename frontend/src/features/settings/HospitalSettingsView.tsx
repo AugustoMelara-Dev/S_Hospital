@@ -2,8 +2,15 @@ import { useCallback, useEffect, useRef, useState, type ComponentProps, type Rea
 import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { SaveOutlined as Save } from '@ant-design/icons';
-import { Alert, Button, Card, Form, Input, Modal, Typography } from 'antd';
+import { Save, TriangleAlert } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
@@ -46,20 +53,22 @@ function HospitalField({ children, error, id, label, required }: {
   hint?: ReactNode;
 }) {
   return (
-    <Form.Item label={label} htmlFor={id} required={required} validateStatus={error ? 'error' : undefined} help={error}>
+    <Field data-invalid={Boolean(error)}>
+      <FieldLabel htmlFor={id}>{label}{required ? ' *' : ''}</FieldLabel>
       {children({ id, invalid: Boolean(error), describedBy: error ? `${id}-error` : undefined })}
-    </Form.Item>
+      <FieldError id={`${id}-error`}>{error}</FieldError>
+    </Field>
   );
 }
 
 function RegisteredInput({ registration, ...props }: ComponentProps<typeof Input> & { registration: UseFormRegisterReturn }) {
   const { ref, ...field } = registration;
-  return <Input {...field} {...props} ref={(node) => ref(node?.input ?? null)} />;
+  return <Input {...field} {...props} ref={ref} />;
 }
 
-function RegisteredTextArea({ registration, ...props }: ComponentProps<typeof Input.TextArea> & { registration: UseFormRegisterReturn }) {
+function RegisteredTextArea({ registration, ...props }: ComponentProps<typeof Textarea> & { registration: UseFormRegisterReturn }) {
   const { ref, ...field } = registration;
-  return <Input.TextArea {...field} {...props} ref={(node) => ref(node?.resizableTextArea?.textArea ?? null)} />;
+  return <Textarea {...field} {...props} ref={ref} />;
 }
 
 export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsViewProps) {
@@ -191,21 +200,20 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
   }
 
   return (
-    <section>
-      <Typography.Title level={3}>Datos del hospital</Typography.Title>
-      <Typography.Paragraph type="secondary">Información legal y de contacto del hospital. Aparece en recibos y cabecera de la app.</Typography.Paragraph>
+    <section className="grid gap-4">
+      <header><h2 className="text-lg font-semibold">Datos del hospital</h2><p className="text-sm text-muted-foreground">Información legal y de contacto visible en recibos y en la aplicación.</p></header>
       {error ? (
-        <Alert type="error" showIcon title="No se pudo guardar" description={error} />
+        <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
       ) : null}
 
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4"
+        className="grid gap-4"
         aria-busy={form.formState.isSubmitting || saving}
       >
         <Card>
-          <Typography.Title level={3}>Identidad</Typography.Title>
-          <Typography.Paragraph type="secondary">Nombre legal y datos fiscales básicos.</Typography.Paragraph>
+          <CardHeader><CardTitle>Identidad</CardTitle><CardDescription>Nombre legal y datos fiscales básicos.</CardDescription></CardHeader>
+          <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <HospitalField id="hospital_name" label="Nombre del hospital" required error={form.formState.errors.hospital_name?.message}>
               {({ id, invalid, describedBy }) => (
@@ -246,11 +254,12 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
               </HospitalField>
             ) : null}
           </div>
+          </CardContent>
         </Card>
 
         <Card>
-          <Typography.Title level={3}>Encabezado institucional</Typography.Title>
-          <Typography.Paragraph type="secondary">Líneas opcionales que aparecen en el encabezado de recibos.</Typography.Paragraph>
+          <CardHeader><CardTitle>Encabezado institucional</CardTitle><CardDescription>Líneas opcionales que aparecen en el encabezado de recibos.</CardDescription></CardHeader>
+          <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <HospitalField id="government_line" label="Dependencia superior" hint="Encabezado autorizado." error={form.formState.errors.government_line?.message}>
               {({ id, invalid, describedBy }) => (
@@ -311,11 +320,12 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
               )}
             </HospitalField>
           </div>
+          </CardContent>
         </Card>
 
         <Card>
-          <Typography.Title level={3}>Pie de recibo</Typography.Title>
-          <Typography.Paragraph type="secondary">Textos opcionales que aparecen al pie del recibo.</Typography.Paragraph>
+          <CardHeader><CardTitle>Pie de recibo</CardTitle><CardDescription>Textos opcionales que aparecen al pie del recibo.</CardDescription></CardHeader>
+          <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <HospitalField id="receipt_location" label="Lugar del recibo" hint="Ciudad o lugar autorizado." error={form.formState.errors.receipt_location?.message}>
               {({ id, invalid, describedBy }) => (
@@ -341,6 +351,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
               )}
             </HospitalField>
           </div>
+          </CardContent>
         </Card>
 
         {canEdit && form.formState.isDirty ? (
@@ -349,28 +360,22 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
             className="sticky bottom-20 z-20 flex items-center justify-between gap-3 border-t border-operational-border bg-operational-surface p-3 lg:bottom-0"
           >
             <span className="text-xs text-muted-foreground">Hay cambios sin guardar.</span>
-            <Button htmlType="submit" type="primary" icon={<Save aria-hidden="true" />} disabled={form.formState.isSubmitting || saving}>
-              Guardar datos del hospital
+            <Button type="submit" disabled={form.formState.isSubmitting || saving}>
+              {saving ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}Guardar datos del hospital
             </Button>
           </div>
         ) : null}
       </form>
 
-      <Modal
-        open={pendingChange !== null}
-        title="Revisar cambio de RTN"
-        okText={saving ? 'Guardando...' : 'Confirmar y guardar'}
-        okButtonProps={{ disabled: saving }}
-        cancelButtonProps={{ disabled: saving }}
-        onCancel={() => setPendingChange(null)}
-        onOk={() => {
-          if (pendingChange) void saveHospital(pendingChange);
-        }}
-        modalRender={(node) => <div role="alertdialog" aria-label="Revisar cambio de RTN">{node}</div>}
-      >
+      <AlertDialog open={pendingChange !== null} onOpenChange={(next) => { if (!next && !saving) setPendingChange(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revisar cambio de RTN</AlertDialogTitle>
+            <AlertDialogDescription>Confirme el cambio fiscal antes de guardar.</AlertDialogDescription>
+          </AlertDialogHeader>
         {pendingChange ? (
           <div className="space-y-3">
-            {error ? <Alert type="error" showIcon title="No se pudo guardar" description={error} /> : null}
+            {error ? <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
             <p>El RTN se usará en recibos y documentos institucionales emitidos después del cambio.</p>
             <dl className="grid gap-3 border border-operational-border bg-muted/40 p-4 sm:grid-cols-2">
               <div>
@@ -385,7 +390,14 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
             <p className="font-medium text-foreground">El motivo se enviará al servidor para auditoría.</p>
           </div>
         ) : null}
-      </Modal>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={saving} onClick={() => { if (pendingChange) void saveHospital(pendingChange); }}>
+              {saving ? <Spinner data-icon="inline-start" /> : null}{saving ? 'Guardando…' : 'Confirmar y guardar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
