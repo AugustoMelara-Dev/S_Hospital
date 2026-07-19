@@ -1,6 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
-import { ReloadOutlined, WarningOutlined } from '@ant-design/icons';
-import { Alert, Button, Empty, Modal, Result, Spin, Tabs, Tag } from 'antd';
+import { RefreshCwIcon, TriangleAlertIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashClosingBreakdown, type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
@@ -27,6 +26,13 @@ import {
 } from './components/CashDenominationCounter';
 import { AccountingControlPanel } from '@/modules/accounting/components/AccountingControlPanel';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type CashView = 'summary' | 'movements' | 'reconciliation' | 'close';
 
@@ -48,9 +54,9 @@ function centsToFloat(cents: number): number {
   return toFloat(cents);
 }
 
-function LoadingState({ label }: { label: string }) { return <div role="status" aria-label={label} className="p-8 text-center"><Spin /><p>{label}</p></div>; }
-function EmptyState({ description, title }: { description: string; title: string }) { return <Empty description={<><strong>{title}</strong><br />{description}</>} />; }
-function ErrorState({ action, description, title }: { action?: ReactNode; description: string; title: string }) { return <Result status="error" title={title} subTitle={description} extra={action} />; }
+function LoadingState({ label }: { label: string }) { return <div role="status" aria-label={label} className="flex items-center justify-center gap-2 p-8 text-center"><Spinner /><p>{label}</p></div>; }
+function EmptyState({ description, title }: { description: string; title: string }) { return <Empty className="border"><EmptyHeader><EmptyTitle>{title}</EmptyTitle><EmptyDescription>{description}</EmptyDescription></EmptyHeader></Empty>; }
+function ErrorState({ action, description, title }: { action?: ReactNode; description: string; title: string }) { return <Alert variant="destructive"><AlertTitle>{title}</AlertTitle><AlertDescription>{description}</AlertDescription>{action}</Alert>; }
 
 export function CashBoxView({
   cashSession = null,
@@ -374,11 +380,9 @@ export function CashBoxView({
           actions={(
             <>
               {isOpen && isOwnSession && canCreateInvoices ? (
-                <Link to="/billing/new"><Button type="primary">Nueva factura</Button></Link>
+                <Button asChild><Link to="/billing/new">Nueva factura</Link></Button>
               ) : null}
-              <Button icon={<ReloadOutlined spin={isLoading} />} onClick={handleManualRefresh} disabled={isLoading}>
-                Actualizar
-              </Button>
+              <Button type="button" variant="outline" onClick={handleManualRefresh} disabled={isLoading}><RefreshCwIcon aria-hidden="true" className={isLoading ? 'animate-spin' : undefined} />Actualizar</Button>
             </>
           )}
         />
@@ -388,7 +392,7 @@ export function CashBoxView({
         >
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Tag color={isOpen ? 'green' : undefined}>{isOpen ? 'Caja abierta' : 'Caja cerrada'}</Tag>
+              <Badge variant={isOpen ? 'default' : 'secondary'}>{isOpen ? 'Caja abierta' : 'Caja cerrada'}</Badge>
               <p role="status" aria-live="polite" className="text-sm">
                 {isLoading
                   ? 'Actualizando estado de caja.'
@@ -419,7 +423,7 @@ export function CashBoxView({
         </section>
 
         {formAlert ? (
-          <Alert type="error" showIcon title="No se pudo completar la operación" description={formAlert} />
+          <Alert variant="destructive"><AlertTitle>No se pudo completar la operación</AlertTitle><AlertDescription>{formAlert}</AlertDescription></Alert>
         ) : null}
 
         {sessionLoadError ? (
@@ -427,7 +431,7 @@ export function CashBoxView({
             title="No se pudo cargar caja"
             description={sessionLoadError}
             action={(
-              <Button htmlType="button" onClick={() => void refetch()}>
+              <Button type="button" variant="outline" onClick={() => void refetch()}>
                 Reintentar
               </Button>
             )}
@@ -439,17 +443,13 @@ export function CashBoxView({
         ) : null}
 
         {canRenderOperationalState && isOpen && !isOwnSession ? (
-          <Alert type="warning" showIcon title="Caja abierta en supervisión" description="Esta sesión pertenece a otro cajero. Puede revisar y cerrar según sus permisos, pero no crear facturas desde esta caja." />
+          <Alert><AlertTitle>Caja abierta en supervisión</AlertTitle><AlertDescription>Esta sesión pertenece a otro cajero. Puede revisar y cerrar según sus permisos, pero no crear facturas desde esta caja.</AlertDescription></Alert>
         ) : canRenderOperationalState && isOpen && !canCreateInvoices ? (
-          <Alert type="info" showIcon title="Caja abierta en modo consulta" description="La sesión está activa, pero este usuario no tiene permiso para crear facturas." />
+          <Alert><AlertTitle>Caja abierta en modo consulta</AlertTitle><AlertDescription>La sesión está activa, pero este usuario no tiene permiso para crear facturas.</AlertDescription></Alert>
         ) : null}
 
         {canRenderOperationalState && isPOSBlocked ? (
-          <Alert type="warning" showIcon icon={<WarningOutlined aria-hidden="true" />} description={(
-            <div>
-              <strong>Pagos bloqueados.</strong> Abra caja antes de emitir y cobrar facturas.
-            </div>
-          )} />
+          <Alert><TriangleAlertIcon aria-hidden="true" /><AlertDescription><strong>Pagos bloqueados.</strong> Abra caja antes de emitir y cobrar facturas.</AlertDescription></Alert>
         ) : null}
 
         {canRenderOperationalState && !isOpen && closedSummarySession ? (
@@ -473,16 +473,7 @@ export function CashBoxView({
 
         {canRenderOperationalState && isOpen && activeSession ? (
           <>
-            <Tabs
-              activeKey={activeView}
-              onChange={(key) => setActiveView(key as CashView)}
-              items={[
-                { key: 'summary', label: 'Resumen' },
-                { key: 'movements', label: 'Movimientos' },
-                { key: 'reconciliation', label: 'Arqueo' },
-                { key: 'close', label: 'Cierre' },
-              ]}
-            />
+            <Tabs value={activeView} onValueChange={(key) => setActiveView(key as CashView)}><TabsList aria-label="Vistas de caja"><TabsTrigger value="summary" onClick={() => setActiveView('summary')}>Resumen</TabsTrigger><TabsTrigger value="movements" onClick={() => setActiveView('movements')}>Movimientos</TabsTrigger><TabsTrigger value="reconciliation" onClick={() => setActiveView('reconciliation')}>Arqueo</TabsTrigger><TabsTrigger value="close" onClick={() => setActiveView('close')}>Cierre</TabsTrigger></TabsList></Tabs>
 
             {activeView === 'summary' ? (
               <div className="grid min-w-0 gap-4">
@@ -547,7 +538,7 @@ export function CashBoxView({
                 title="No se pudieron cargar movimientos"
                 description={movementsLoadError}
                 action={(
-                  <Button htmlType="button" onClick={() => void refetchMovements()}>
+                  <Button type="button" variant="outline" onClick={() => void refetchMovements()}>
                     Reintentar
                   </Button>
                 )}
@@ -565,7 +556,7 @@ export function CashBoxView({
               <CashMovementsTable canViewInvoices={canViewInvoices} movements={movements} />
             ) : null}
             {activeView === 'movements' && !canViewCashSessionReport ? (
-              <Alert type="info" showIcon title="Movimientos no disponibles" description="Su rol no permite consultar el detalle auditado de esta caja." />
+              <Alert><AlertTitle>Movimientos no disponibles</AlertTitle><AlertDescription>Su rol no permite consultar el detalle auditado de esta caja.</AlertDescription></Alert>
             ) : null}
           </>
         ) : canRenderOperationalState && canOpenCash ? (
@@ -574,7 +565,7 @@ export function CashBoxView({
             onSubmit={handleOpenSession}
           />
         ) : canRenderOperationalState ? (
-          <Alert type="warning" showIcon title="Caja en modo consulta" description="Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesión." />
+          <Alert><AlertTitle>Caja en modo consulta</AlertTitle><AlertDescription>Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesión.</AlertDescription></Alert>
         ) : null}
       </div>
 
@@ -600,26 +591,18 @@ export function CashBoxView({
         onConfirm={handleCloseSession}
       />
 
-      <Modal
-        open={pendingOpening !== null}
-        title="Confirmar apertura de caja"
-        okText="Abrir caja"
-        confirmLoading={openSessionMutation.isPending}
-        okButtonProps={{ disabled: openSessionMutation.isPending }}
-        cancelButtonProps={{ disabled: openSessionMutation.isPending }}
-        onCancel={() => setPendingOpening(null)}
-        onOk={confirmOpenSession}
-      >
+      <Dialog open={pendingOpening !== null} onOpenChange={(open) => { if (!open && !openSessionMutation.isPending) setPendingOpening(null); }}>
+        <DialogContent showCloseButton={!openSessionMutation.isPending}>
+        <DialogHeader><DialogTitle>Confirmar apertura de caja</DialogTitle><DialogDescription>Revise el efectivo físico antes de iniciar el turno. Esta apertura quedará auditada.</DialogDescription></DialogHeader>
         <div className="grid gap-3">
-          <p>
-            Revise el efectivo fisico antes de iniciar el turno. Esta apertura quedara auditada.
-          </p>
           <div className="flex justify-between gap-4 border border-border bg-muted/40 p-4 text-sm">
             <span>Monto inicial</span>
             <strong>{formatLempirasUI(pendingOpening?.opening_amount ?? '0.00')}</strong>
           </div>
         </div>
-      </Modal>
+        <DialogFooter><Button type="button" variant="outline" disabled={openSessionMutation.isPending} onClick={() => setPendingOpening(null)}>Cancelar</Button><Button type="button" disabled={openSessionMutation.isPending} onClick={confirmOpenSession}>{openSessionMutation.isPending ? 'Abriendo...' : 'Abrir caja'}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

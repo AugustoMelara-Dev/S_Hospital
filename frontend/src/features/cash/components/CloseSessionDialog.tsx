@@ -1,6 +1,8 @@
-import { DownloadOutlined, PrinterOutlined, WarningOutlined } from '@ant-design/icons';
+import { DownloadIcon, PrinterIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { Button, Input, Modal } from 'antd';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { finiteNumber, formatLempirasUI } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
@@ -106,12 +108,12 @@ export function CashCloseSummaryPanel({
           </p>
         </div>
         <div className="print-hidden flex flex-wrap gap-2">
-          <Button onClick={printCloseSummary}>
-            <PrinterOutlined aria-hidden="true" />
+          <Button type="button" variant="outline" onClick={printCloseSummary}>
+            <PrinterIcon aria-hidden="true" />
             Imprimir resumen
           </Button>
-          <Button onClick={exportCloseSummary}>
-            <DownloadOutlined aria-hidden="true" />
+          <Button type="button" variant="outline" onClick={exportCloseSummary}>
+            <DownloadIcon aria-hidden="true" />
             Exportar resumen
           </Button>
         </div>
@@ -244,7 +246,9 @@ export function CloseSessionDialog({
   }
 
   return (
-    <Modal open={open} onCancel={() => onOpenChange(false)} footer={null} width={720} destroyOnHidden title="Cierre de caja">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-screen overflow-y-auto sm:max-w-3xl">
+      <DialogHeader><DialogTitle>Cierre de caja</DialogTitle><DialogDescription>Revise el resumen, el conteo físico y la diferencia antes de confirmar.</DialogDescription></DialogHeader>
       <div data-cash-close-print-root="">
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold">¿Cerrar caja?</h2>
@@ -324,8 +328,8 @@ export function CloseSessionDialog({
             <label className="text-sm font-semibold" htmlFor="closing_difference_notes">
               Nota sobre la diferencia *
             </label>
-            <Input.TextArea
-              ref={(control) => { closingNotesRef.current = control?.resizableTextArea?.textArea ?? null; }}
+            <Textarea
+              ref={(control) => { closingNotesRef.current = control; }}
               id="closing_difference_notes"
               value={closingNotes}
               onChange={(e) => onClosingNotesChange(e.target.value)}
@@ -347,28 +351,29 @@ export function CloseSessionDialog({
         </section>
 
         <div className="print-hidden mt-6 flex flex-wrap justify-end gap-2">
-          <Button onClick={printCloseSummary} disabled={isSubmitting}>
-            <PrinterOutlined aria-hidden="true" />
+          <Button type="button" variant="outline" onClick={printCloseSummary} disabled={isSubmitting}>
+            <PrinterIcon aria-hidden="true" />
             Imprimir resumen
           </Button>
-          <Button onClick={exportCloseSummary} disabled={isSubmitting}>
-            <DownloadOutlined aria-hidden="true" />
+          <Button type="button" variant="outline" onClick={exportCloseSummary} disabled={isSubmitting}>
+            <DownloadIcon aria-hidden="true" />
             Exportar resumen
           </Button>
-          <Button onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button type="primary" onClick={onConfirm} disabled={isSubmitting || hasPendingBalance || missingInstitutionalReceiptCount > 0 || !hasValidDifferenceNote}>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button type="button" onClick={onConfirm} disabled={isSubmitting || hasPendingBalance || missingInstitutionalReceiptCount > 0 || !hasValidDifferenceNote}>
             {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
           </Button>
         </div>
 
         {isDifference && !hasValidDifferenceNote && (
           <div id="closing-notes-error" role="alert" className="mt-2 flex items-center gap-2 text-sm text-destructive">
-            <WarningOutlined />
+            <TriangleAlertIcon aria-hidden="true" />
             <span>La nota es obligatoria y debe tener al menos 5 caracteres cuando hay diferencia.</span>
           </div>
         )}
       </div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }
 
