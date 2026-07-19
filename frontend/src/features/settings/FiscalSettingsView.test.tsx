@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { Grid } from 'antd';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FiscalSettingsView } from './FiscalSettingsView';
 import { apiClient, type FiscalSequence, type FiscalSettings } from '@/lib/api';
@@ -109,13 +108,10 @@ describe('FiscalSettingsView (separated sections)', () => {
   });
 
   it('keeps configuration tabs above the content on narrow screens', async () => {
-    vi.spyOn(Grid, 'useBreakpoint').mockReturnValue({ md: false });
-
     renderView();
 
     await screen.findByRole('tab', { name: /hospital/i });
     const tabList = screen.getByRole('tablist');
-    expect(tabList.closest('.ant-tabs')).toHaveClass('ant-tabs-top');
     expect(tabList).toHaveAttribute('aria-orientation', 'horizontal');
   });
 

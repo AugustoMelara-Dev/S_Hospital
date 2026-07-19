@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FileTextOutlined as FileText } from '@ant-design/icons';
+import { FileText, TriangleAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Alert, Button, Flex, Tabs, Tag } from 'antd';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type FiscalSequence, type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
@@ -64,37 +67,38 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
             Identidad hospitalaria, numeración fiscal, reglas operativas, marca y documentos institucionales.
           </p>
         </div>
-        <Tag className="w-fit" color={canEdit || canEditOperationalRules ? 'success' : 'default'}>
+        <Badge className="w-fit" variant={canEdit || canEditOperationalRules ? 'secondary' : 'outline'}>
           {canEdit ? 'Edición habilitada' : canEditOperationalRules ? 'Edición operativa' : 'Solo lectura'}
-        </Tag>
+        </Badge>
       </div>
 
       {error ? (
-        <Alert type="error" showIcon title="Error" description={error} />
+        <Alert variant="destructive"><TriangleAlert /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
       ) : null}
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        tabPlacement="top"
-        items={[
-          ...(canViewFiscalSettings ? [{ key: 'resumen', label: 'Resumen', children: (
-          <div className="min-w-0 space-y-3">
-            <Flex justify="space-between" align="center" wrap="wrap" className="border border-operational-border bg-operational-surface p-4">
-              <div>
-                <p className="text-sm font-semibold text-foreground">Documentos institucionales</p>
-                <p className="mt-1 text-xs text-muted-foreground">Configure papel, contenido y vista previa fuera de los datos fiscales.</p>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full justify-start overflow-x-auto" aria-label="Secciones de configuración">
+          {canViewFiscalSettings ? <><TabsTrigger value="resumen">Resumen</TabsTrigger><TabsTrigger value="hospital">Hospital</TabsTrigger><TabsTrigger value="numeracion">Numeración</TabsTrigger></> : null}
+          <TabsTrigger value="operativa">Operativa</TabsTrigger>
+          {canViewFiscalSettings ? <TabsTrigger value="marca">Marca</TabsTrigger> : null}
+        </TabsList>
+        {canViewFiscalSettings ? (
+          <>
+            <TabsContent value="resumen" className="grid gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
+                <div><p className="text-sm font-semibold">Documentos institucionales</p><p className="text-xs text-muted-foreground">Configure papel, contenido y vista previa fuera de los datos fiscales.</p></div>
+                <Button asChild variant="outline"><Link to="/settings/institutional-receipts"><FileText data-icon="inline-start" />Administrar recibos</Link></Button>
               </div>
-              <Link to="/settings/institutional-receipts"><Button icon={<FileText aria-hidden="true" />}>Administrar recibos</Button></Link>
-            </Flex>
-            <FiscalStatusCard settings={settings} sequence={sequence} />
-            <FiscalSummary settings={settings} sequence={sequence} />
-          </div>
-          ) }, { key: 'hospital', label: 'Hospital', children: <HospitalSettingsView canEdit={canEdit} onStatus={onStatus} /> }, { key: 'numeracion', label: 'Numeración', children: <FiscalNumerationView canEdit={canEdit} onStatus={onStatus} /> }] : []),
-          { key: 'operativa', label: 'Operativa', children: <OperationalRulesView canEdit={canEditOperationalRules} onStatus={onStatus} /> },
-          ...(canViewFiscalSettings ? [{ key: 'marca', label: 'Marca', children: <BrandingView canEdit={canEdit} onStatus={onStatus} /> }] : []),
-        ]}
-      />
+              <FiscalStatusCard settings={settings} sequence={sequence} />
+              <FiscalSummary settings={settings} sequence={sequence} />
+            </TabsContent>
+            <TabsContent value="hospital"><HospitalSettingsView canEdit={canEdit} onStatus={onStatus} /></TabsContent>
+            <TabsContent value="numeracion"><FiscalNumerationView canEdit={canEdit} onStatus={onStatus} /></TabsContent>
+            <TabsContent value="marca"><BrandingView canEdit={canEdit} onStatus={onStatus} /></TabsContent>
+          </>
+        ) : null}
+        <TabsContent value="operativa"><OperationalRulesView canEdit={canEditOperationalRules} onStatus={onStatus} /></TabsContent>
+      </Tabs>
     </div>
   );
 }
