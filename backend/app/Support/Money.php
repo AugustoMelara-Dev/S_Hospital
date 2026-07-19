@@ -112,8 +112,10 @@ class Money
     public function times(float|int $multiplier): self
     {
         $multiplierTimesThousand = (int) round($multiplier * 1000);
+        $product = $this->cents * $multiplierTimesThousand;
+        $roundingOffset = $product < 0 ? -500 : 500;
 
-        $productCents = intdiv($this->cents * $multiplierTimesThousand + 500, 1000);
+        $productCents = intdiv($product + $roundingOffset, 1000);
 
         return new self($productCents);
     }
@@ -153,8 +155,10 @@ class Money
         }
 
         $remainder = $this->cents - $allocatedCents;
-        for ($i = 0; $remainder !== 0 && $i < count($shares); $i++, $remainder--) {
-            $shares[$i]++;
+        for ($i = 0; $remainder !== 0 && $i < count($shares); $i++) {
+            $direction = $remainder > 0 ? 1 : -1;
+            $shares[$i] += $direction;
+            $remainder -= $direction;
         }
 
         return array_map(static fn (int $cents): self => new self($cents), $shares);

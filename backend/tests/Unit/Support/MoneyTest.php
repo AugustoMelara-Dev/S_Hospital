@@ -95,6 +95,12 @@ class MoneyTest extends TestCase
         $this->assertSame((int) round($product->toFloat() * 100), $product->toCents());
     }
 
+    public function test_times_rounds_negative_half_cents_away_from_zero(): void
+    {
+        $this->assertSame(-1, Money::fromCents(-1)->times(0.5)->toCents());
+        $this->assertSame(-2, Money::fromCents(-1)->times(1.5)->toCents());
+    }
+
     public function test_allocate_splits_evenly_when_no_remainder(): void
     {
         $shares = Money::fromCents(100)->allocate([1, 1, 1]);
@@ -144,6 +150,20 @@ class MoneyTest extends TestCase
             $sumCents += $share->toCents();
         }
         $this->assertSame(99, $sumCents);
+    }
+
+    public function test_allocate_negative_total_preserves_every_cent(): void
+    {
+        $shares = Money::fromCents(-100)->allocate([1, 1, 1]);
+
+        $this->assertSame([-34, -33, -33], array_map(
+            static fn (Money $share): int => $share->toCents(),
+            $shares,
+        ));
+        $this->assertSame(-100, array_sum(array_map(
+            static fn (Money $share): int => $share->toCents(),
+            $shares,
+        )));
     }
 
     public function test_equals_compares_by_cents(): void
