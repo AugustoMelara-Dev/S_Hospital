@@ -16,7 +16,7 @@ describe('AccountingPolicyPanel', () => {
     expect(screen.getByText(/anulaciones ya excluidas/i)).toBeInTheDocument();
     expect(screen.getByText(/reversos ya excluidos/i)).toBeInTheDocument();
     expect(screen.getByText(/no se restan otra vez/i)).toBeInTheDocument();
-    expect(screen.getByText(/egresos no estan modelados/i)).toBeInTheDocument();
+    expect(screen.getByText(/egresos no est[aá]n modelados/i)).toBeInTheDocument();
     expect(screen.queryByText(/facturado menos anulado/i)).not.toBeInTheDocument();
   });
 });
