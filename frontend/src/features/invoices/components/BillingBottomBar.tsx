@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { Button } from '@/components/ui/button';
 
 export type BillingBottomBarProps = {
   itemCount: number;
@@ -15,12 +15,11 @@ export function BillingBottomBar({ itemCount, total, onOpen }: BillingBottomBarP
       className="fixed inset-x-0 bottom-16 z-30 border-t border-operational-border bg-operational-surface p-3 lg:bottom-0 xl:hidden"
     >
       <Button
-        type="primary"
-        block
+        type="button"
         data-billing-account-trigger
         onClick={onOpen}
         aria-label={`Ver cuenta, ${serviceLabel}, total L ${total}`}
-        className="flex min-h-12 items-center gap-3"
+        className="flex min-h-12 w-full items-center gap-3"
       >
         <span>{serviceLabel}</span>
         <strong className="ml-auto font-mono tabular-nums">L {total}</strong>

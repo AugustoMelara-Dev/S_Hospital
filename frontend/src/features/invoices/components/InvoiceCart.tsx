@@ -1,6 +1,12 @@
-import { MinusOutlined as Minus, PlusOutlined as Plus, DeleteOutlined as Trash2 } from '@ant-design/icons';
-import { Alert, Button, Checkbox, Input, Table, Tag, type TableColumnsType } from 'antd';
+import { MinusIcon as Minus, PlusIcon as Plus, Trash2Icon as Trash2 } from 'lucide-react';
 import { useRef } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
 export type CartItem = {
@@ -65,94 +71,6 @@ export function InvoiceCart({
   const dialysisPrescription = canMarkDialysisPrescription && items.some(
     (item) => item.dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE,
   );
-  const columns: TableColumnsType<CartItem> = [
-    {
-      title: 'Servicio',
-      key: 'service',
-      rowScope: 'row',
-      render: (_value, item) => {
-        const isFree = dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE;
-        return (
-          <div className="min-w-0">
-            <p className="break-words text-sm font-semibold leading-tight">{item.service.name}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              <Tag className="m-0 px-1.5 py-0.5 text-xs">{item.service.category?.name ?? 'Sin categoría'}</Tag>
-              {item.service.area?.name && item.service.area.name.trim().toLocaleLowerCase('es') !== (item.service.category?.name ?? '').trim().toLocaleLowerCase('es') ? (
-                <Tag className="m-0 px-1.5 py-0.5 text-xs">{item.service.area.name}</Tag>
-              ) : null}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Precio registrado: <span className="font-mono tabular-nums">{moneyLabel(item.service.price)}</span>{' '}
-              {isFree ? <span className="font-semibold text-success">(Gratis - receta diálisis)</span> : null}
-            </p>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Cantidad',
-      key: 'quantity',
-      width: 176,
-      render: (_value, item, index) => (
-        <div className="flex items-center gap-1">
-          <Button
-            type="default"
-            className="size-11 p-0 sm:size-9"
-            onClick={() => onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)))}
-            aria-label={`Disminuir cantidad de ${item.service.name}`}
-            icon={<Minus className="size-3" aria-hidden="true" />}
-          />
-          <Input
-            value={item.quantity}
-            onChange={(event) => onUpdateQuantity(index, event.target.value)}
-            className="h-11 min-w-16 px-1 text-center font-mono text-sm tabular-nums sm:h-9"
-            inputMode="decimal"
-            name={`quantity-${item.service.id}`}
-            aria-label={`Cantidad de ${item.service.name}`}
-          />
-          <Button
-            type="default"
-            className="size-11 p-0 sm:size-9"
-            onClick={() => onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100))}
-            aria-label={`Aumentar cantidad de ${item.service.name}`}
-            icon={<Plus className="size-3" aria-hidden="true" />}
-          />
-        </div>
-      ),
-    },
-    {
-      title: 'Importe',
-      key: 'amount',
-      align: 'right',
-      width: 112,
-      render: (_value, item) => {
-        const isFree = dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE;
-        const estimatedLineTotal = isFree ? 0 : lineTotalCents(item.service.price, item.quantity);
-        return (
-          <span>
-            <span className="mr-2 text-xs font-semibold text-muted-foreground sm:sr-only">Importe</span>
-            <span className="font-mono text-sm font-semibold tabular-nums">{formatLempirasUIFromCents(estimatedLineTotal)}</span>
-          </span>
-        );
-      },
-    },
-    {
-      title: <span className="sr-only">Acciones</span>,
-      key: 'actions',
-      align: 'right',
-      width: 64,
-      render: (_value, item, index) => (
-        <Button
-          type="text"
-          onClick={() => onRemoveItem(index)}
-          className="size-11 p-0 text-muted-foreground hover:text-destructive sm:size-9"
-          aria-label={`Quitar ${item.service.name}`}
-          icon={<Trash2 className="size-4" aria-hidden="true" />}
-        />
-      ),
-    },
-  ];
-
   return (
     <section className="flex h-full min-h-0 min-w-0 flex-col" aria-labelledby="invoice-cart-title" aria-busy={submitting ? 'true' : undefined}>
       <div className="mb-3 flex items-start gap-3 border-b border-operational-border pb-3">
@@ -161,27 +79,29 @@ export function InvoiceCart({
           <p className="mt-1 text-sm text-muted-foreground">Revise servicios y cantidades antes de emitir.</p>
         </div>
         {items.length > 0 && (
-          <Tag color="processing" className="ml-auto shrink-0 font-mono tabular-nums" aria-label={`${items.length} ${items.length === 1 ? 'línea' : 'líneas'} en la cuenta`}>
+          <Badge variant="secondary" className="ml-auto shrink-0 font-mono tabular-nums" aria-label={`${items.length} ${items.length === 1 ? 'línea' : 'líneas'} en la cuenta`}>
             {items.length} {items.length === 1 ? 'línea' : 'líneas'}
-          </Tag>
+          </Badge>
         )}
       </div>
 
       {erythropoietinIndex >= 0 && canMarkDialysisPrescription ? (
         <div className="mb-3 border-l-2 border-secondary bg-secondary/8 px-3 py-2">
-          <Checkbox
+          <div className="flex items-start gap-3"><Checkbox
             id="patient-dialysis-prescription"
             checked={dialysisPrescription}
+            aria-labelledby="patient-dialysis-prescription-label"
             aria-describedby="patient-dialysis-prescription-help"
-            onChange={(event) => onUpdateDialysisPrescription(erythropoietinIndex, event.target.checked)}
-          >
+            onCheckedChange={(checked) => onUpdateDialysisPrescription(erythropoietinIndex, checked === true)}
+          />
+          <div id="patient-dialysis-prescription-label">
             <span className="grid gap-0.5 text-left">
               <strong className="text-sm text-foreground">Paciente con receta de diálisis</strong>
               <span id="patient-dialysis-prescription-help" className="text-xs text-muted-foreground">
                 Aplica la regla institucional a toda la eritropoyetina de la cuenta: L 25.00 → L 0.00.
               </span>
             </span>
-          </Checkbox>
+          </div></div>
         </div>
       ) : null}
 
@@ -192,16 +112,11 @@ export function InvoiceCart({
             <p className="mt-1 max-w-56 text-xs">Busque por nombre, area o categoria para comenzar.</p>
           </div>
         ) : (
-          <Table<CartItem>
-            aria-label="Cuenta actual"
-            className="w-full border border-operational-border"
-            columns={columns}
-            dataSource={items}
-            pagination={false}
-            rowKey={(item) => String(item.service.id)}
-            scroll={{ x: 720 }}
-            size="small"
-          />
+          <div className="overflow-x-auto rounded-lg border border-operational-border"><Table aria-label="Cuenta actual"><TableHeader><TableRow><TableHead>Servicio</TableHead><TableHead>Cantidad</TableHead><TableHead className="text-right">Importe</TableHead><TableHead><span className="sr-only">Acciones</span></TableHead></TableRow></TableHeader><TableBody>{items.map((item, index) => {
+            const isFree = dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE;
+            const estimatedLineTotal = isFree ? 0 : lineTotalCents(item.service.price, item.quantity);
+            return <TableRow key={item.service.id}><TableCell><p className="break-words text-sm font-semibold leading-tight">{item.service.name}</p><div className="mt-1 flex flex-wrap gap-1.5"><Badge variant="outline">{item.service.category?.name ?? 'Sin categoría'}</Badge>{item.service.area?.name && item.service.area.name.trim().toLocaleLowerCase('es') !== (item.service.category?.name ?? '').trim().toLocaleLowerCase('es') ? <Badge variant="outline">{item.service.area.name}</Badge> : null}</div><p className="mt-1 text-xs text-muted-foreground">Precio registrado: <span className="font-mono tabular-nums">{moneyLabel(item.service.price)}</span>{isFree ? <span className="font-semibold text-success"> (Gratis - receta diálisis)</span> : null}</p></TableCell><TableCell><div className="flex items-center gap-1"><Button type="button" variant="outline" size="icon" onClick={() => onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)))} aria-label={`Disminuir cantidad de ${item.service.name}`}><Minus aria-hidden="true" /></Button><Input value={item.quantity} onChange={(event) => onUpdateQuantity(index, event.target.value)} className="min-w-16 text-center font-mono tabular-nums" inputMode="decimal" name={`quantity-${item.service.id}`} aria-label={`Cantidad de ${item.service.name}`} /><Button type="button" variant="outline" size="icon" onClick={() => onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100))} aria-label={`Aumentar cantidad de ${item.service.name}`}><Plus aria-hidden="true" /></Button></div></TableCell><TableCell className="text-right font-mono font-semibold tabular-nums"><span className="mr-2 text-xs text-muted-foreground sm:sr-only">Importe</span>{formatLempirasUIFromCents(estimatedLineTotal)}</TableCell><TableCell><Button type="button" variant="ghost" size="icon" onClick={() => onRemoveItem(index)} className="text-muted-foreground hover:text-destructive" aria-label={`Quitar ${item.service.name}`}><Trash2 aria-hidden="true" /></Button></TableCell></TableRow>;
+          })}</TableBody></Table></div>
         )}
       </div>
 
@@ -226,7 +141,7 @@ export function InvoiceCart({
         </dl>
 
         <Button
-          type="primary"
+          type="button"
           className="w-full font-semibold h-11"
           disabled={disabled || isEmpty}
           aria-describedby={disabledReasonId}
@@ -242,7 +157,7 @@ export function InvoiceCart({
         >
           {submitting ? (
             <>
-              <span className="mr-2 inline-block size-4 bg-current/70 animate-spin" aria-hidden="true" />
+              <Spinner className="mr-2" aria-hidden="true" />
               Emitiendo...
             </>
           ) : disabled || isEmpty ? (
@@ -252,11 +167,7 @@ export function InvoiceCart({
           )}
         </Button>
         {disabledReasons.length > 0 && (
-          <Alert id="invoice-submit-blockers" type="warning" showIcon className="mt-2" title="Pendiente para emitir" description={
-            disabledReasons.map((reason) => (
-              <p key={reason} className="m-0 text-xs">{reason}</p>
-            ))
-          } />
+          <Alert id="invoice-submit-blockers" className="mt-2"><AlertTitle>Pendiente para emitir</AlertTitle><AlertDescription>{disabledReasons.map((reason) => <p key={reason} className="m-0 text-xs">{reason}</p>)}</AlertDescription></Alert>
         )}
       </div>
     </section>

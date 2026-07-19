@@ -1,6 +1,9 @@
-import { DollarOutlined as Banknote, PrinterOutlined as Printer, FileTextOutlined as ReceiptText } from '@ant-design/icons';
-import { Alert, Button, Input, Modal, Typography, type InputRef } from 'antd';
+import { BanknoteIcon as Banknote, PrinterIcon as Printer, ReceiptTextIcon as ReceiptText } from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasUIFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
 
@@ -57,8 +60,8 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [referenceError, setReferenceError] = useState<string | null>(null);
-  const amountInputRef = useRef<InputRef | null>(null);
-  const referenceInputRef = useRef<InputRef | null>(null);
+  const amountInputRef = useRef<HTMLInputElement | null>(null);
+  const referenceInputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitLockRef = useRef(false);
 
@@ -227,19 +230,9 @@ export function PaymentModal({
   }
 
   return (
-    <Modal
-      open={open}
-      onCancel={requestClose}
-      title="Registrar pago"
-      aria-describedby="payment-dialog-description"
-      footer={null}
-      width={720}
-      rootClassName="payment-modal-compact"
-      destroyOnHidden
-    >
-      <Typography.Paragraph id="payment-dialog-description" className="mb-3">
-        Factura {invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.
-      </Typography.Paragraph>
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) requestClose(); }}>
+      <DialogContent className="payment-modal-compact max-h-screen overflow-y-auto sm:max-w-2xl">
+      <DialogHeader><DialogTitle>Registrar pago</DialogTitle><DialogDescription id="payment-dialog-description">Factura {invoiceNumber} ya fue emitida. Si sale de este paso quedará pendiente de cobro.</DialogDescription></DialogHeader>
       <form
         ref={formRef}
         aria-busy={submitting ? 'true' : undefined}
@@ -296,28 +289,22 @@ export function PaymentModal({
 
         <div className="grid gap-3">
           {errorMessage ? (
-            <Alert
-              type="error"
-              showIcon
-              role="alert"
-              title="No se completó el cobro"
-              description={`${errorMessage} Revise los datos y vuelva a intentar.`}
-            />
+            <PaymentAlert destructive title="No se completó el cobro" description={`${errorMessage} Revise los datos y vuelva a intentar.`} />
           ) : null}
           {needsAmount && !error ? (
-            <Alert type="warning" showIcon className="py-3" title="Ingrese el monto recibido para registrar el cobro." />
+            <PaymentAlert title="Ingrese el monto recibido para registrar el cobro." />
           ) : null}
 
           {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
-            <Alert type="error" showIcon className="py-3" title="El monto recibido es menor al total." />
+            <PaymentAlert destructive title="El monto recibido es menor al total." />
           ) : null}
 
           {remainingBalanceCents !== null && partialPaymentsEnabled ? (
-            <Alert type="warning" showIcon className="py-3" title="Este pago quedara como abono parcial y mantendra saldo pendiente." />
+            <PaymentAlert title="Este pago quedará como abono parcial y mantendrá saldo pendiente." />
           ) : null}
 
           {submitting ? (
-            <Alert type="info" showIcon className="py-3" aria-live="polite" title="Registrando cobro, no repita la operacion." />
+            <PaymentAlert title="Registrando cobro, no repita la operación." />
           ) : null}
         </div>
 
@@ -335,12 +322,12 @@ export function PaymentModal({
               {paymentMethods.map((method) => (
                 <Button
                   key={method.value}
-                  htmlType="button"
+                  type="button"
                   role="radio"
                   aria-checked={paymentMethod === method.value}
                   aria-label={method.label}
                   tabIndex={paymentMethod === method.value ? 0 : -1}
-                  type={paymentMethod === method.value ? 'primary' : 'default'}
+                  variant={paymentMethod === method.value ? 'default' : 'outline'}
                   className="min-h-11"
                   disabled={submitting}
                   onClick={() => handlePaymentMethodChange(method.value)}
@@ -374,9 +361,9 @@ export function PaymentModal({
               />
             </div>
             <div className="grid grid-cols-4 gap-2" aria-label="Montos rápidos de efectivo">
-              <Button htmlType="button" disabled={submitting} onClick={() => applyCashPreset(balanceCents ?? 0)}>Exacto</Button>
+              <Button type="button" variant="outline" disabled={submitting} onClick={() => applyCashPreset(balanceCents ?? 0)}>Exacto</Button>
               {[100, 200, 500].map((amount) => (
-                <Button key={amount} htmlType="button" disabled={submitting} onClick={() => applyCashPreset(amount * 100)}>
+                <Button key={amount} type="button" variant="outline" disabled={submitting} onClick={() => applyCashPreset(amount * 100)}>
                   L {amount}
                 </Button>
               ))}
@@ -422,12 +409,11 @@ export function PaymentModal({
         </p>
 
         <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
-          <Button htmlType="button" className="sm:min-w-36" onClick={requestClose} disabled={submitting}>
+          <Button type="button" variant="outline" className="sm:min-w-36" onClick={requestClose} disabled={submitting}>
             Dejar pendiente
           </Button>
           <Button
-            htmlType="submit"
-            type="primary"
+            type="submit"
             className="min-h-11 sm:min-w-56"
             disabled={submitting || needsAmount}
             aria-label={`${actionLabel} de ${actionAmountLabel}`}
@@ -441,8 +427,13 @@ export function PaymentModal({
           </Button>
         </div>
       </form>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
+}
+
+function PaymentAlert({ title, description, destructive = false }: { title: string; description?: string; destructive?: boolean }) {
+  return <Alert variant={destructive ? 'destructive' : 'default'} className="py-3"><AlertTitle>{title}</AlertTitle>{description ? <AlertDescription>{description}</AlertDescription> : null}</Alert>;
 }
 
 function parseMoneyCents(value: string): number | null {

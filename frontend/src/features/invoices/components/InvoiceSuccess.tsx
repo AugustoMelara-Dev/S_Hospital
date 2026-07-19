@@ -1,7 +1,9 @@
-import { EyeOutlined, FilePdfOutlined, PrinterOutlined, PlusOutlined } from '@ant-design/icons';
-import { Alert, Button, Descriptions, Modal, Result, Space } from 'antd';
+import { CircleAlertIcon, CircleCheckIcon, EyeIcon, FileDownIcon, PlusIcon, PrinterIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
@@ -15,52 +17,24 @@ export function InvoiceSuccess({ open, onOpenChange, invoiceNumber, patientName,
   const canShowPaymentAction = needsPayment && canCollectPayment;
   const title = status === 'paid' ? 'Factura pagada' : needsPayment ? 'Factura pendiente' : 'Factura creada';
   const hasReceiptRecovery = Boolean(receiptRecoveryMessage?.trim());
-  const description = status === 'paid'
-    ? canPrintReceipt ? 'La factura ya fue pagada. Recibo listo para imprimir.' : 'La factura ya fue pagada. Solicite a caja imprimir el recibo institucional.'
-    : needsPayment ? 'La factura ya fue emitida y queda pendiente de cobro para caja.' : 'Factura creada.';
+  const description = status === 'paid' ? canPrintReceipt ? 'La factura ya fue pagada. Recibo listo para imprimir.' : 'La factura ya fue pagada. Solicite a caja imprimir el recibo institucional.' : needsPayment ? 'La factura ya fue emitida y queda pendiente de cobro para caja.' : 'Factura creada.';
   const primaryActionRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => { if (open) window.setTimeout(() => primaryActionRef.current?.focus(), 0); }, [open, canShowPaymentAction]);
 
-  const actions = needsPayment ? (
-    <Space orientation="vertical" className="w-full">
-      {canShowPaymentAction ? <Button block ref={primaryActionRef} type="primary" onClick={onCobrar}>Cobrar ahora</Button> : null}
-      <Button block ref={canShowPaymentAction ? undefined : primaryActionRef} icon={<PlusOutlined aria-hidden="true" />} onClick={onNuevaFactura}>Nueva factura</Button>
-    </Space>
-  ) : canPrintReceipt ? (
-    <Space orientation="vertical" className="w-full">
-      {onVerRecibo ? <Button block ref={primaryActionRef} type="primary" icon={<EyeOutlined aria-hidden="true" />} onClick={onVerRecibo}>Ver recibo</Button> : null}
-      <Button block ref={onVerRecibo ? undefined : primaryActionRef} icon={<PrinterOutlined aria-hidden="true" />} onClick={onImprimir}>Imprimir recibo</Button>
-      {canSavePdf && onGuardarPdf ? <Button block icon={<FilePdfOutlined aria-hidden="true" />} onClick={onGuardarPdf}>Guardar PDF</Button> : null}
-      <Button block icon={<PlusOutlined aria-hidden="true" />} onClick={onNuevaFactura}>Nueva factura</Button>
-    </Space>
-  ) : (
-    <Space orientation="vertical" className="w-full">
-      {hasReceiptRecovery ? <Link to={`/invoices?invoice_number=${encodeURIComponent(invoiceNumber)}`}><Button block type="primary">Resolver recibo en Historial</Button></Link> : null}
-      <Button block ref={primaryActionRef} icon={<PlusOutlined aria-hidden="true" />} onClick={onNuevaFactura}>Nueva factura</Button>
-    </Space>
-  );
-
+  const newInvoiceButton = <Button type="button" variant="outline" ref={!canShowPaymentAction ? primaryActionRef : undefined} onClick={onNuevaFactura}><PlusIcon aria-hidden="true" />Nueva factura</Button>;
   return (
-    <Modal getContainer={false} open={open} onCancel={() => onOpenChange(false)} title={title} footer={null} destroyOnHidden>
-      <Result status={status === 'paid' ? 'success' : needsPayment ? 'warning' : 'success'} title={title} />
-      <Descriptions bordered size="small" column={1}>
-        <Descriptions.Item label="Factura">{invoiceNumber}</Descriptions.Item>
-        <Descriptions.Item label="Paciente">{patientName}</Descriptions.Item>
-        <Descriptions.Item label="Total">{moneyLabel(total)}</Descriptions.Item>
-        <Descriptions.Item label="Estado">{STATUS_LABELS[status]}</Descriptions.Item>
-        {paymentMethod ? <Descriptions.Item label="Método">{PAYMENT_METHOD_LABELS[paymentMethod]}</Descriptions.Item> : null}
-        {paymentMethod === 'cash' && receivedAmount ? <Descriptions.Item label="Monto recibido">{moneyLabel(receivedAmount)}</Descriptions.Item> : null}
-        {paymentMethod === 'cash' && changeAmount ? <Descriptions.Item label="Cambio">{moneyLabel(changeAmount)}</Descriptions.Item> : null}
-        {formatPaymentDate(paymentDate) ? <Descriptions.Item label="Fecha de pago">{formatPaymentDate(paymentDate)}</Descriptions.Item> : null}
-      </Descriptions>
-      {receiptRecoveryMessage ? <Alert type="warning" showIcon title={receiptRecoveryMessage} /> : null}
-      <p>{description}</p>
-      {needsPayment ? <p>{canShowPaymentAction ? 'La factura ya fue emitida. El siguiente paso operativo es registrar el cobro.' : 'La factura ya fue emitida y queda pendiente de cobro para caja.'}</p> : null}
-      {actions}
-      {!hasReceiptRecovery || canPrintReceipt ? <Link to="/invoices"><Button block type="link">Ir al historial</Button></Link> : null}
-    </Modal>
+    <Dialog modal={false} open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader className="items-center text-center">{status === 'paid' || !needsPayment ? <CircleCheckIcon aria-hidden="true" className="size-12 text-success" /> : <CircleAlertIcon aria-hidden="true" className="size-12 text-warning" />}<DialogTitle>{title}</DialogTitle><DialogDescription>{description}</DialogDescription></DialogHeader>
+        <dl className="grid gap-2 rounded-lg border border-border p-3 text-sm"><Detail label="Factura" value={invoiceNumber} /><Detail label="Paciente" value={patientName} /><Detail label="Total" value={moneyLabel(total)} /><Detail label="Estado" value={STATUS_LABELS[status]} />{paymentMethod ? <Detail label="Método" value={PAYMENT_METHOD_LABELS[paymentMethod]} /> : null}{paymentMethod === 'cash' && receivedAmount ? <Detail label="Monto recibido" value={moneyLabel(receivedAmount)} /> : null}{paymentMethod === 'cash' && changeAmount ? <Detail label="Cambio" value={moneyLabel(changeAmount)} /> : null}{formatPaymentDate(paymentDate) ? <Detail label="Fecha de pago" value={formatPaymentDate(paymentDate) ?? ''} /> : null}</dl>
+        {receiptRecoveryMessage ? <Alert><CircleAlertIcon aria-hidden="true" /><AlertDescription>{receiptRecoveryMessage}</AlertDescription></Alert> : null}
+        {needsPayment ? <p className="text-sm text-muted-foreground">{canShowPaymentAction ? 'La factura ya fue emitida. El siguiente paso operativo es registrar el cobro.' : 'La factura ya fue emitida y queda pendiente de cobro para caja.'}</p> : null}
+        <div className="grid gap-2">{needsPayment ? <>{canShowPaymentAction ? <Button ref={primaryActionRef} type="button" onClick={onCobrar}>Cobrar ahora</Button> : null}{newInvoiceButton}</> : canPrintReceipt ? <>{onVerRecibo ? <Button ref={primaryActionRef} type="button" onClick={onVerRecibo}><EyeIcon aria-hidden="true" />Ver recibo</Button> : null}<Button ref={onVerRecibo ? undefined : primaryActionRef} type="button" variant="outline" onClick={onImprimir}><PrinterIcon aria-hidden="true" />Imprimir recibo</Button>{canSavePdf && onGuardarPdf ? <Button type="button" variant="outline" onClick={onGuardarPdf}><FileDownIcon aria-hidden="true" />Guardar PDF</Button> : null}{newInvoiceButton}</> : <>{hasReceiptRecovery ? <Button asChild><Link to={`/invoices?invoice_number=${encodeURIComponent(invoiceNumber)}`}>Resolver recibo en Historial</Link></Button> : null}{newInvoiceButton}</>}{!hasReceiptRecovery || canPrintReceipt ? <Button asChild variant="link"><Link to="/invoices">Ir al historial</Link></Button> : null}</div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
+function Detail({ label, value }: { label: string; value: string }) { return <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{label}</dt><dd className="text-right font-medium">{value}</dd></div>; }
 function moneyLabel(value: string | number | null | undefined) { return formatLempirasUIFromCents(parseCents(value)); }
 function formatPaymentDate(value?: string) { if (!value) return null; const date = new Date(value); return Number.isNaN(date.getTime()) ? null : new Intl.DateTimeFormat('es-HN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date); }

@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Button, Spin } from 'antd';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { institutionalReceipts } from '@/lib/api/institutionalReceipts';
 import { userSafeErrorMessage } from '@/lib/api';
 
@@ -21,20 +23,14 @@ export function InstitutionalReceiptPreviewFrame({
   if (preview.isLoading) {
     return (
       <div className="flex min-h-48 items-center justify-center" role="status" aria-label="Preparando vista previa del recibo">
-        <Spin description="Preparando vista previa del recibo…" />
+        <Spinner aria-hidden="true" /><span className="ml-2">Preparando vista previa del recibo…</span>
       </div>
     );
   }
 
   if (preview.isError || !preview.data) {
     return (
-      <Alert
-        type="error"
-        showIcon
-        title="No se pudo preparar la vista previa"
-        description={userSafeErrorMessage(preview.error, 'Revise el servidor local y vuelva a intentar.')}
-        action={<Button htmlType="button" onClick={() => void preview.refetch()}>Reintentar</Button>}
-      />
+      <Alert variant="destructive"><AlertTitle>No se pudo preparar la vista previa</AlertTitle><AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><span>{userSafeErrorMessage(preview.error, 'Revise el servidor local y vuelva a intentar.')}</span><Button type="button" variant="outline" onClick={() => void preview.refetch()}>Reintentar</Button></AlertDescription></Alert>
     );
   }
 

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { CloseOutlined } from '@ant-design/icons';
-import { Button, Drawer } from 'antd';
+import { XIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 export type BillingAccountDrawerProps = {
   open: boolean;
@@ -10,21 +11,23 @@ export type BillingAccountDrawerProps = {
 
 export function BillingAccountDrawer({ open, onClose, children }: BillingAccountDrawerProps) {
   return (
-    <Drawer
-      title="Cuenta actual"
+    <Sheet
+      modal={false}
       open={open}
-      onClose={onClose}
-      size="min(100vw, 480px)"
-      placement="right"
-      className="billing-account-drawer"
-      closable={false}
-      extra={(
-        <Button type="text" icon={<CloseOutlined aria-hidden="true" />} onClick={onClose}>
-          Cerrar cuenta
-        </Button>
-      )}
+      onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}
     >
-      <div data-billing-region="ticket">{children}</div>
-    </Drawer>
+      <SheetContent side="right" className="billing-account-drawer w-full gap-0 sm:max-w-lg" showCloseButton={false}>
+        <SheetHeader className="flex-row items-start justify-between border-b border-border">
+          <div>
+            <SheetTitle>Cuenta actual</SheetTitle>
+            <SheetDescription>Servicios e importe de la factura en curso.</SheetDescription>
+          </div>
+          <Button type="button" variant="ghost" onClick={onClose} aria-label="Cerrar cuenta">
+            <XIcon aria-hidden="true" /> Cerrar
+          </Button>
+        </SheetHeader>
+        <div data-billing-region="ticket" className="min-h-0 flex-1 overflow-y-auto p-4">{children}</div>
+      </SheetContent>
+    </Sheet>
   );
 }

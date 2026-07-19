@@ -1,5 +1,6 @@
 import { createRef, type ComponentProps, type FormEvent } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { ServiceSearch } from './ServiceSearch';
 import type { Service } from '../../../lib/api';
@@ -150,7 +151,8 @@ describe('ServiceSearch', () => {
     vi.useRealTimers();
   });
 
-  it('keeps category visible and reveals the secondary area filter with keyboard', () => {
+  it('keeps category visible and reveals the secondary area filter with keyboard', async () => {
+    const user = userEvent.setup();
     renderSearch({
       categories: [{ id: 2, name: 'Imagenes', slug: 'imagenes', active: true, sort_order: 2 }],
       serviceAreas: [{ id: 3, name: 'Radiologia', slug: 'radiologia', active: true }],
@@ -162,7 +164,7 @@ describe('ServiceSearch', () => {
 
     const moreFilters = screen.getByRole('button', { name: /más filtros/i });
     moreFilters.focus();
-    fireEvent.keyDown(moreFilters, { key: 'Enter', code: 'Enter' });
+    await user.keyboard('{Enter}');
 
     const areaGroup = screen.getByRole('radiogroup', { name: /area/i });
     expect(areaGroup).toBeVisible();

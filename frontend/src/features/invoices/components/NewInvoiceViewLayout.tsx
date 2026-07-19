@@ -1,7 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { type RefObject, useRef, useState } from 'react';
-import { ClearOutlined as Eraser, HistoryOutlined as History } from '@ant-design/icons';
-import { Alert, Button, Modal } from 'antd';
+import { EraserIcon as Eraser, HistoryIcon as History } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ReceiptPreview } from '../../receipts/ReceiptPreview';
 import { InstitutionalReceiptPreviewFrame } from '../../receipts/InstitutionalReceiptPreviewFrame';
 import { PatientStep } from './PatientStep';
@@ -164,11 +167,11 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           <p className="text-sm text-muted-foreground">Identifique al paciente, agregue servicios y cobre desde una sola estación.</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2" aria-label="Acciones de facturación">
-          <Button type="default" icon={<History aria-hidden="true" />} onClick={() => navigate('/invoices')}>
-            Historial
+          <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>
+            <History aria-hidden="true" />Historial
           </Button>
           {(state.patientName || state.cartItems.length > 0) ? (
-            <Button type="text" onClick={() => onClearConfirmChange(true)} className="flex items-center gap-2">
+            <Button type="button" variant="ghost" onClick={() => onClearConfirmChange(true)} className="flex items-center gap-2">
               <Eraser className="size-4" aria-hidden="true" />
               Limpiar borrador
             </Button>
@@ -178,40 +181,34 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
 
       <div role="status" aria-live="polite" aria-atomic="false" className="flex flex-col gap-3">
         {!state.loadedCashSession && !state.pointOfSaleLoadError && (
-          <Alert type="warning" showIcon title="Caja no abierta" description={
+          <Alert><AlertTitle>Caja no abierta</AlertTitle><AlertDescription>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <span className="flex-1">Debe abrir la caja antes de emitir facturas.</span>
               {canOpenCash && onOpenCash ? (
-                <Button type="default" onClick={onOpenCash}>
+                <Button type="button" variant="outline" onClick={onOpenCash}>
                   Abrir Caja
                 </Button>
               ) : (
                 <div className="flex flex-col gap-1 sm:items-end">
-                  <Button type="default" onClick={() => navigate('/cashbox')}>Ir a caja</Button>
+                  <Button type="button" variant="outline" onClick={() => navigate('/cashbox')}>Ir a caja</Button>
                   {!canOpenCash ? (
                     <span className="text-xs text-muted-foreground">Solicite apertura a un usuario autorizado.</span>
                   ) : null}
                 </div>
               )}
-            </div>
-          } />
+            </div></AlertDescription></Alert>
         )}
 
         {state.alertMessage && state.alertMessage !== state.pointOfSaleLoadError && (
-          <Alert type="error" showIcon title="Revise antes de continuar" description={state.alertMessage} />
+          <StatusAlert destructive title="Revise antes de continuar" description={state.alertMessage} />
         )}
 
         {state.warningMessage && (
-          <Alert type="warning" showIcon title="Factura pendiente" description={state.warningMessage} />
+          <StatusAlert title="Factura pendiente" description={state.warningMessage} />
         )}
 
         {state.successMessage && (
-          <Alert
-            type="success"
-            showIcon
-            className="py-2"
-            title={`Servicio agregado: ${state.successMessage.replace(/^Agregado: /, '')}`}
-          />
+          <StatusAlert title={`Servicio agregado: ${state.successMessage.replace(/^Agregado: /, '')}`} />
         )}
       </div>
 
@@ -338,14 +335,8 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         />
       )}
 
-      <Modal
-        open={state.showReceipt && Boolean(state.institutionalReceipt || state.receipt)}
-        onCancel={() => onReceiptOpenChange(false)}
-        title="Comprobante de factura"
-        footer={null}
-        width={760}
-        destroyOnHidden
-      >
+      <Dialog open={state.showReceipt && Boolean(state.institutionalReceipt || state.receipt)} onOpenChange={onReceiptOpenChange}>
+        <DialogContent className="max-h-screen overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>Comprobante de factura</DialogTitle><DialogDescription>Vista previa exacta del documento disponible para impresión.</DialogDescription></DialogHeader>
         {state.institutionalReceipt ? (
           <InstitutionalReceiptPreviewFrame
             receiptId={state.institutionalReceipt.id}
@@ -362,23 +353,14 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           />
           </>
         ) : null}
-      </Modal>
+        </DialogContent>
+      </Dialog>
 
-      <Modal
-        open={state.showClearConfirm}
-        title="Limpiar factura en curso"
-        okText="Limpiar"
-        cancelText="Seguir editando"
-        onCancel={() => onClearConfirmChange(false)}
-        onOk={() => {
-          onClearConfirmChange(false);
-          onClearCart();
-        }}
-      >
-        <p className="text-sm text-muted-foreground">
-          Se borraran paciente, busqueda y servicios agregados. Use esta accion solo si quiere empezar de nuevo.
-        </p>
-      </Modal>
+      <AlertDialog open={state.showClearConfirm} onOpenChange={onClearConfirmChange}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Limpiar factura en curso</AlertDialogTitle><AlertDialogDescription>Se borrarán paciente, búsqueda y servicios agregados. Use esta acción solo si quiere empezar de nuevo.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Seguir editando</AlertDialogCancel><AlertDialogAction onClick={() => { onClearConfirmChange(false); onClearCart(); }}>Limpiar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </section>
   );
+}
+
+function StatusAlert({ title, description, destructive = false }: { title: string; description?: string; destructive?: boolean }) {
+  return <Alert variant={destructive ? 'destructive' : 'default'} className="py-2"><AlertTitle>{title}</AlertTitle>{description ? <AlertDescription>{description}</AlertDescription> : null}</Alert>;
 }

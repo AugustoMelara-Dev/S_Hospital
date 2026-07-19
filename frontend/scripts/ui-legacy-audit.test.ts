@@ -64,6 +64,15 @@ describe('ui legacy audit', () => {
     expect(filterViolationsForMode(violations, 'strict')).toHaveLength(2);
   });
 
+  it('keeps migrated billing and receipt surfaces in strict mode', () => {
+    const violations = [
+      ...scanSource('src/features/invoices/components/LegacyPayment.tsx', "import 'antd';"),
+      ...scanSource('src/features/receipts/LegacyPreview.tsx', "import '@ant-design/icons';"),
+    ];
+
+    expect(filterViolationsForMode(violations, 'strict')).toHaveLength(2);
+  });
+
   it('keeps test fixtures out of runtime strict and final gates', () => {
     const violations = scanSource('src/components/ui/fixture.test.tsx', "import 'antd';");
 

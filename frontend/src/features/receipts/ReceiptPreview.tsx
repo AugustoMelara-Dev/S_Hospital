@@ -1,6 +1,8 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
-import { Alert, Button, Tag } from 'antd';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { type ReceiptData } from '../../lib/api';
 import { receiptPrintPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
@@ -60,11 +62,11 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
         <style data-receipt-custom-page>{customPaper.pageRule}</style>
       ) : null}
       <div className="receipt-preview-controls no-print border border-border bg-background p-3" role="group" aria-label="Acciones del comprobante histórico">
-        <Button htmlType="button" type="primary" className="min-h-11" onClick={handlePrintClick}>
+        <Button type="button" className="min-h-11" onClick={handlePrintClick}>
           Imprimir
         </Button>
         {onNewInvoice ? (
-          <Button htmlType="button" className="min-h-11" onClick={onNewInvoice}>
+          <Button type="button" variant="outline" className="min-h-11" onClick={onNewInvoice}>
             Nueva factura
           </Button>
         ) : null}
@@ -72,7 +74,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
 
       {printError ? (
         <div className="no-print mb-3">
-          <Alert type="warning" showIcon title="Impresión no completada" description={printError} />
+          <Alert><AlertTitle>Impresión no completada</AlertTitle><AlertDescription>{printError}</AlertDescription></Alert>
         </div>
       ) : null}
 
@@ -271,7 +273,7 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
       <span className="name">{item.service_name}</span>
       {Number(item.quantity) !== 1 ? <span className="qty"> x {item.quantity}</span> : null}
       {item.special_rule_applied ? (
-        <Tag color="processing" className="special-rule-badge">Regla</Tag>
+        <Badge variant="secondary" className="special-rule-badge">Regla</Badge>
       ) : null}
     </span>
   );

@@ -1,5 +1,7 @@
-import { CheckCircleOutlined, UserOutlined } from '@ant-design/icons';
-import { Alert, Button, Input } from 'antd';
+import { CheckCircleIcon, UserIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { forwardRef, useEffect, useRef, useState } from 'react';
@@ -37,12 +39,13 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
   return (
     <div className="min-w-0">
       <header className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
-        <UserOutlined aria-hidden="true" className="text-secondary" />
+        <UserIcon aria-hidden="true" className="text-secondary" />
         <h2 id="patient-step-title" className="text-base font-semibold text-foreground">Paciente</h2>
         <span className="text-sm text-muted-foreground">Solo el nombre es obligatorio.</span>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-3 text-sm">
           <Button
-            type="link"
+            type="button"
+            variant="link"
             className="h-auto min-h-9 px-0"
             aria-expanded={optionalDataOpen}
             aria-controls="patient-optional-data"
@@ -52,7 +55,7 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
           </Button>
           {patientName.trim() ? (
             <span role="status" className="inline-flex items-center gap-1.5 font-medium text-success">
-              <CheckCircleOutlined aria-hidden="true" />
+              <CheckCircleIcon aria-hidden="true" />
               Paciente identificado
             </span>
           ) : null}
@@ -60,17 +63,16 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
       </header>
 
       <div className="min-w-0">
-        {visibleError ? <div ref={errorSummaryRef} tabIndex={-1} role="alert" id="patient-name-error" className="mb-3"><Alert role="presentation" type="error" showIcon title="Revise el nombre del paciente" description={visibleError} /></div> : null}
+        {visibleError ? <div ref={errorSummaryRef} tabIndex={-1} role="alert" id="patient-name-error" className="mb-3"><Alert role="presentation" variant="destructive"><AlertTitle>Revise el nombre del paciente</AlertTitle><AlertDescription>{visibleError}</AlertDescription></Alert></div> : null}
 
         <form onSubmit={form.handleSubmit(() => onPatientSubmit?.())} noValidate>
           <label className="font-medium" htmlFor="patient-name">Nombre del paciente *</label>
           <Controller
             control={form.control}
             name="patient_name"
-            render={({ field }) => <Input
+            render={({ field }) => <div className="relative"><UserIcon aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" /><Input
               {...field}
-              ref={(control) => {
-                const input = control?.input ?? null;
+              ref={(input) => {
                 field.ref(input);
                 if (typeof ref === 'function') ref(input);
                 else if (ref) ref.current = input;
@@ -87,13 +89,13 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
               aria-describedby={visibleError ? 'patient-name-help patient-name-error' : 'patient-name-help'}
               autoComplete="name"
               placeholder="Ej. Maria Lopez…"
-              prefix={<UserOutlined aria-hidden="true" />}
+              className="pl-9"
               onKeyDown={(event) => {
                 if (event.key !== 'Enter') return;
                 event.preventDefault();
                 onPatientSubmit?.();
               }}
-            />}
+            /></div>}
           />
             <span id="patient-name-help" className="text-xs text-muted-foreground">{patientName.length}/{PATIENT_NAME_MAX_LENGTH} caracteres</span>
         </form>

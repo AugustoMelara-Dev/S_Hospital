@@ -21,6 +21,8 @@ export const strictModulePrefixes = [
   'src/shell/',
   'src/features/auth/',
   'src/features/onboarding/',
+  'src/features/invoices/components/',
+  'src/features/receipts/',
   'src/components/AppErrorBoundary.tsx',
   'src/components/PermissionGate.tsx',
   'src/components/keyboard-shortcuts-palette.tsx',

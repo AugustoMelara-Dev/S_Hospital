@@ -1,6 +1,12 @@
-import { BarcodeOutlined as Barcode, FilterOutlined as Filter, PlusOutlined as Plus, SearchOutlined as Search, CloseOutlined as X } from '@ant-design/icons';
+import { BarcodeIcon as Barcode, FilterIcon as Filter, PlusIcon as Plus, SearchIcon as Search, XIcon as X } from 'lucide-react';
 import { type KeyboardEvent, type RefObject, useCallback, useDeferredValue, useEffect, useRef, useState } from 'react';
-import { Alert, Button, Collapse, Input, Skeleton, Tag } from 'antd';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import type { Category, Service, ServiceArea } from '../../../lib/api';
 import type { CartItem } from './InvoiceCart';
 import { cn } from '../../../lib/utils';
@@ -207,9 +213,9 @@ export function ServiceSearch({
                 : 'Filtre por nombre, area o categoria para agregar servicios.'}
             </p>
           </div>
-          <Tag color={activeFilterCount > 0 ? 'processing' : 'default'} className="w-fit">
+          <Badge variant={activeFilterCount > 0 ? 'secondary' : 'outline'} className="w-fit">
             {activeFilterCount} filtro{activeFilterCount === 1 ? '' : 's'}
-          </Tag>
+          </Badge>
         </div>
         <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-2' : 'grid gap-3'}>
           <div className="flex min-w-0 flex-col gap-2">
@@ -221,7 +227,7 @@ export function ServiceSearch({
               <Input
                 ref={(node) => {
                   if (searchInputRef) {
-                    (searchInputRef as React.MutableRefObject<HTMLInputElement | null>).current = node?.input ?? null;
+                    (searchInputRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
                   }
                 }}
                 id="service-search"
@@ -260,7 +266,7 @@ export function ServiceSearch({
                   <Input
                     ref={(node) => {
                       if (scannerInputRef) {
-                        (scannerInputRef as React.MutableRefObject<HTMLInputElement | null>).current = node?.input ?? null;
+                        (scannerInputRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
                       }
                     }}
                     id="scanner-code"
@@ -281,7 +287,7 @@ export function ServiceSearch({
                     className="min-h-11 pl-9"
                   />
                 </div>
-                <Button type="default" className="min-h-11 shrink-0" disabled={scanningCode} onClick={handleAddByScanCode}>
+                <Button type="button" variant="outline" className="min-h-11 shrink-0" disabled={scanningCode} onClick={handleAddByScanCode}>
                   {scanningCode ? 'Buscando...' : 'Escanear'}
                 </Button>
               </div>
@@ -316,7 +322,8 @@ export function ServiceSearch({
             </div>
             {categories.length > COLLAPSED_CATEGORY_LIMIT ? (
               <Button
-                type="link"
+                type="button"
+                variant="link"
                 className="mt-1 min-h-11 px-0"
                 aria-expanded={categoriesExpanded}
                 onClick={() => setCategoriesExpanded((expanded) => !expanded)}
@@ -327,13 +334,9 @@ export function ServiceSearch({
           </div>
 
           {serviceAreas.length > 0 && (
-            <Collapse
-              size="small"
-              className="border-t border-border bg-transparent"
-              items={[{
-                key: 'area',
-                label: <span className="text-sm font-semibold">Más filtros</span>,
-                children: (
+            <Collapsible className="border-t border-border bg-transparent">
+              <CollapsibleTrigger asChild><Button type="button" variant="ghost" className="mt-2"><span className="text-sm font-semibold">Más filtros</span></Button></CollapsibleTrigger>
+              <CollapsibleContent>
                   <div className="min-w-0">
                     <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground" id="service-area-label">Area</span>
                     <div
@@ -350,9 +353,8 @@ export function ServiceSearch({
                       ))}
                     </div>
                   </div>
-                ),
-              }]}
-            />
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </div>
       </div>
@@ -366,7 +368,8 @@ export function ServiceSearch({
             </label>
           </div>
           <Button
-            type="text"
+            type="button"
+            variant="ghost"
             className="min-h-11 w-fit"
             onClick={() => {
               onSearchChange('');
@@ -380,22 +383,21 @@ export function ServiceSearch({
         </div>
 
         {error ? (
-          <Alert type="error" showIcon title="No se pudieron cargar los servicios" description={
+          <Alert variant="destructive"><AlertTitle>No se pudieron cargar los servicios</AlertTitle><AlertDescription>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <span className="min-w-0 flex-1">{error}</span>
               {onRetry ? (
-                <Button type="default" size="small" onClick={onRetry}>
+                <Button type="button" variant="outline" size="sm" onClick={onRetry}>
                   Reintentar
                 </Button>
               ) : null}
-            </div>
-          } />
+            </div></AlertDescription></Alert>
         ) : null}
 
         {loading ? (
           <div className="grid grid-cols-1 divide-y divide-border border border-operational-border" role="status" aria-busy="true" aria-label="Cargando servicios">
             {Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton.Input key={index} active={false} block className="h-16" />
+              <Skeleton key={index} className="h-16 w-full" />
             ))}
           </div>
         ) : !hasIntent ? (
@@ -433,9 +435,8 @@ export function ServiceSearch({
                 return (
                   <li key={service.id} className="min-w-0 list-none">
                     <Button
-                      htmlType="button"
-                      type="text"
-                      block
+                      type="button"
+                      variant="ghost"
                       aria-label={`Agregar ${service.name}, ${accountStatus}`}
                       data-service-row="compact"
                       className="flex min-h-16 w-full min-w-0 items-center gap-3 bg-operational-surface px-3 py-2 text-left hover:bg-accent/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
@@ -454,13 +455,13 @@ export function ServiceSearch({
                         </span>
                       </div>
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <Tag color="processing" className="px-1.5 py-0.5 text-xs">
+                        <Badge variant="secondary" className="px-1.5 py-0.5 text-xs">
                           {categoryName}
-                        </Tag>
+                        </Badge>
                         {showArea ? (
-                          <Tag className="px-1.5 py-0.5 text-xs">
+                          <Badge variant="outline" className="px-1.5 py-0.5 text-xs">
                             {areaName}
-                          </Tag>
+                          </Badge>
                         ) : null}
                         {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) ? (
                           <span className="text-xs text-muted-foreground">Disponible para lector</span>
@@ -482,8 +483,8 @@ export function ServiceSearch({
               })}
             </ul>
             {hasMore ? (
-              <Button block className="mt-3 min-h-11" loading={loadingMore} disabled={loadingMore} onClick={onLoadMore}>
-                {loadingMore ? 'Cargando servicios...' : 'Cargar más servicios'}
+              <Button type="button" className="mt-3 min-h-11 w-full" disabled={loadingMore} onClick={onLoadMore}>
+                {loadingMore ? <Spinner aria-hidden="true" /> : null}{loadingMore ? 'Cargando servicios...' : 'Cargar más servicios'}
               </Button>
             ) : null}
           </>
@@ -508,8 +509,8 @@ function CategoryButton({
 }) {
   return (
     <Button
-      htmlType="button"
-      type={active ? 'primary' : 'default'}
+      type="button"
+      variant={active ? 'default' : 'outline'}
       aria-checked={active}
       className={cn(
         'min-h-11 border px-3 py-2 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
