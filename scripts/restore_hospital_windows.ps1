@@ -201,6 +201,16 @@ function Test-DisposableDatabaseName {
     return $lower -match '(test|validation|restore|disposable|proof)'
 }
 
+function New-DisposableDatabaseRecreateCommand {
+    param([string]$Database)
+
+    if (-not (Test-DisposableDatabaseName -Database $Database)) {
+        throw "La base de datos '$Database' no es descartable y no puede recrearse."
+    }
+
+    return "DROP DATABASE IF EXISTS ``$Database``; CREATE DATABASE ``$Database`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+}
+
 function Test-SafeMysqlArgument {
     param([string]$Value)
 
@@ -285,6 +295,19 @@ function Invoke-SelfTest {
         Password = "ignored"
     }
     Assert-SafeConnectionConfig $safeConfig
+
+    $recreateCommandBuilder = Get-Command New-DisposableDatabaseRecreateCommand -ErrorAction SilentlyContinue
+    if (-not $recreateCommandBuilder) {
+        Write-Error "Self-test fallo: falta el comando seguro para recrear la base descartable."
+        exit 1
+    }
+
+    $recreateCommand = New-DisposableDatabaseRecreateCommand "hospital_restore_validation"
+    $expectedRecreateCommand = "DROP DATABASE IF EXISTS ``hospital_restore_validation``; CREATE DATABASE ``hospital_restore_validation`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    if ($recreateCommand -ne $expectedRecreateCommand) {
+        Write-Error "Self-test fallo: el comando de recreacion descartable no es determinista o seguro."
+        exit 1
+    }
 
     if (-not (Test-AllowedBackupFileFormat "C:\backups\hospital-backup.sql.gz.enc")) {
         Write-Error "Self-test fallo: .sql.gz.enc valido fue rechazado."
@@ -464,17 +487,17 @@ if ($BackupFile -and $BackupFile -match '\.sql(\.gz)?\.enc$') {
     Write-Success "Backup descifrado temporalmente para importacion controlada"
 }
 
-Write-Step "Creando base de datos '$($dbConfig.Database)' si no existe..."
-$createDbCmd = "CREATE DATABASE IF NOT EXISTS ``$($dbConfig.Database)`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+Write-Step "Recreando base de datos descartable '$($dbConfig.Database)'..."
+$createDbCmd = New-DisposableDatabaseRecreateCommand -Database ([string]$dbConfig.Database)
 $mysqlDefaultsFile = New-MySqlDefaultsFile $dbConfig
 
 try {
     & $mysqlExe --defaults-extra-file=$mysqlDefaultsFile -e $createDbCmd 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Error al crear base de datos"
+        Write-Error "Error al recrear la base de datos descartable"
         exit 1
     }
-    Write-Success "Base de datos lista"
+    Write-Success "Base de datos descartable recreada y lista"
 
     if ($BackupFile) {
         Write-Step "Restaurando backup desde: $BackupFile"

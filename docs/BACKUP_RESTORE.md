@@ -234,7 +234,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital
 El nombre de `-TargetDatabase` debe contener `test`, `restore`, `validation`,
 `disposable` o `proof`, y solo puede usar letras, numeros y `_`. El script
 rechaza `hospital_billing`, `hospital_billing_production` y bases del sistema.
-Los backups nuevos son `.sql.gz.enc`; el helper seguro los descifra a un SQL temporal con la clave local antes de alimentar `mysql`.
+El helper elimina y recrea la base descartable antes de importar, de modo que
+una validacion repetida nunca mezcle datos de una ejecucion anterior. Todos los
+datos que ya existan en esa base de prueba se perderan. Los backups nuevos son
+`.sql.gz.enc`; el helper seguro los descifra a un SQL temporal con la clave
+local antes de alimentar `mysql`.
 
 Pasos para MySQL/MariaDB:
 
@@ -252,10 +256,10 @@ cd backend
 php artisan hospital:decrypt-backup C:\backups\hospital-backup.sql.gz.enc C:\backups\hospital-backup.sql
 ```
 
-4. Crear base de prueba limpia:
+4. Recrear una base de prueba limpia:
 
 ```powershell
-mysql -u root -p -e "CREATE DATABASE hospital_restore_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p -e "DROP DATABASE IF EXISTS hospital_restore_test; CREATE DATABASE hospital_restore_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
 5. Restaurar en la base de prueba:
