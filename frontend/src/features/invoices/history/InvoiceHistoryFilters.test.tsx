@@ -32,7 +32,7 @@ describe('InvoiceHistoryFilters', () => {
       date_from: '2026-06-01',
       page: 1,
     })));
-    expect(screen.getByLabelText('Desde')).toHaveValue('01/06/2026');
+    expect(screen.getByLabelText('Desde')).toHaveTextContent('01/06/2026');
   });
 
   it('does not apply text filters while the cashier is still typing', async () => {

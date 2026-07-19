@@ -4,7 +4,7 @@ import type { Invoice } from '../../../lib/api';
 import { InvoiceDetailDrawer } from './InvoiceDetailDrawer';
 
 describe('InvoiceDetailDrawer', () => {
-  it('keeps authorized actions in the visible Drawer footer', () => {
+  it('keeps authorized actions in the visible Sheet footer', () => {
     const invoice = {
       id: 41,
       invoice_number: '000-001-01-00000041',
@@ -51,10 +51,10 @@ describe('InvoiceDetailDrawer', () => {
       />,
     );
 
-    const footer = document.querySelector('.ant-drawer-footer');
+    const footer = screen.getByLabelText('Pie de acciones de factura');
     expect(footer).not.toBeNull();
     expect(footer).toContainElement(screen.getByRole('button', { name: /anular factura/i }));
-    expect(document.querySelector('.ant-drawer-body')).not.toContainElement(
+    expect(document.querySelector('[data-slot="sheet-body"]')).not.toContainElement(
       screen.getByRole('button', { name: /anular factura/i }),
     );
   });

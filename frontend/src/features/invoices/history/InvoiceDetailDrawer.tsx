@@ -1,5 +1,9 @@
-import { DownloadOutlined as Download, PrinterOutlined as Printer, FileDoneOutlined as Receipt, FileTextOutlined as ReceiptText, CloseCircleOutlined as XCircle, CloseOutlined } from '@ant-design/icons';
-import { Button, Alert, Drawer, Skeleton, Tag } from 'antd';
+import { DownloadIcon as Download, PrinterIcon as Printer, ReceiptIcon as Receipt, FileTextIcon as ReceiptText, CircleXIcon as XCircle, XIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Invoice } from '../../../lib/api';
 import { formatDateTimeEs } from '../../../lib/format/formatDate';
 import {
@@ -57,32 +61,32 @@ export function InvoiceDetailDrawer({
         Acciones autorizadas
       </span>
       {actions.openReceipt ? (
-        <Button type="default" onClick={() => onOpenReceipt(invoice.id)}>
+        <Button type="button" variant="outline" onClick={() => onOpenReceipt(invoice.id)}>
           <Receipt aria-hidden="true" /> {actions.auditedOpen ? 'Reimprimir PDF' : 'Ver recibo'}
         </Button>
       ) : null}
       {actions.downloadInstitutionalReceipt && institutionalReceipt ? (
-        <Button type="default" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onDownloadInstitutionalReceipt(invoice)}>
+        <Button type="button" variant="outline" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onDownloadInstitutionalReceipt(invoice)}>
           <Download aria-hidden="true" /> Descargar
         </Button>
       ) : null}
       {actions.generateInstitutionalReceipt ? (
-        <Button type="default" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onGenerateInstitutionalReceipt(invoice.id)}>
+        <Button type="button" variant="outline" disabled={loadingActionInvoiceId === invoice.id} onClick={() => onGenerateInstitutionalReceipt(invoice.id)}>
           <ReceiptText aria-hidden="true" /> Generar PDF
         </Button>
       ) : null}
       {actions.reprint ? (
-        <Button type="default" onClick={() => onReprint(invoice)}>
+        <Button type="button" variant="outline" onClick={() => onReprint(invoice)}>
           <Printer aria-hidden="true" /> Reimprimir
         </Button>
       ) : null}
       {actions.reverse ? (
-        <Button type="default" danger onClick={() => onPrepareInvoiceAction(invoice.id, 'reverse')}>
+        <Button type="button" variant="destructive" onClick={() => onPrepareInvoiceAction(invoice.id, 'reverse')}>
           <XCircle aria-hidden="true" /> Reversar pago
         </Button>
       ) : null}
       {actions.void ? (
-        <Button type="default" danger onClick={() => onPrepareInvoiceAction(invoice.id, 'void')}>
+        <Button type="button" variant="destructive" onClick={() => onPrepareInvoiceAction(invoice.id, 'void')}>
           <XCircle aria-hidden="true" /> Anular factura
         </Button>
       ) : null}
@@ -90,38 +94,23 @@ export function InvoiceDetailDrawer({
   ) : undefined;
 
   return (
-    <Drawer
-      open={open}
-      afterOpenChange={(nextOpen) => { if (!nextOpen) onAfterClose(); }}
-      onClose={() => onOpenChange(false)}
-      title={`Factura ${invoice?.invoice_number ?? ''}`.trim()}
-      closable={false}
-      footer={actionButtons}
-      extra={
-        <Button
-          type="text"
-          icon={<CloseOutlined />}
-          onClick={() => onOpenChange(false)}
-          aria-label="Cerrar panel"
-          className="h-8 w-8 flex items-center justify-center p-0 border-0 bg-transparent hover:bg-muted"
-        />
-      }
-      {...{ role: 'dialog', 'aria-label': `Factura ${invoice?.invoice_number ?? ''}`.trim() } as Record<string, unknown>}
-    >
-      <p className="text-sm text-muted-foreground mb-4">Detalle histórico de la factura y sus acciones autorizadas.</p>
+    <Sheet open={open} onOpenChange={(nextOpen) => { onOpenChange(nextOpen); if (!nextOpen) onAfterClose(); }}>
+      <SheetContent showCloseButton={false} className="w-full overflow-y-auto sm:max-w-xl" aria-label={`Factura ${invoice?.invoice_number ?? ''}`.trim()}>
+      <SheetClose asChild><Button type="button" variant="ghost" size="icon-sm" className="absolute right-3 top-3" aria-label="Cerrar panel"><XIcon aria-hidden="true" /></Button></SheetClose>
+      <SheetHeader className="border-b border-border pr-12">
+        <SheetTitle>{`Factura ${invoice?.invoice_number ?? ''}`.trim()}</SheetTitle>
+        <SheetDescription>Detalle histórico de la factura y sus acciones autorizadas.</SheetDescription>
+      </SheetHeader>
+      <div data-slot="sheet-body" className="flex-1 px-4 pb-4">
       {loading ? (
         <div role="status">
-          <Skeleton active={false} />
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="mt-3 h-40 w-full" />
           <span>Cargando detalle de factura...</span>
         </div>
       ) : null}
       {!loading && error ? (
-        <Alert
-          type="error"
-          showIcon
-          title="No se pudo cargar el detalle"
-          description={error}
-        />
+        <Alert variant="destructive"><AlertTitle>No se pudo cargar el detalle</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
       ) : null}
       {!loading && !error && invoice ? (
         <div className="flex flex-col gap-6">
@@ -137,9 +126,9 @@ export function InvoiceDetailDrawer({
                   {formatDateTimeEs(invoice.issued_at)}
                 </p>
               </div>
-              <Tag color={invoice.status === 'paid' ? 'success' : invoice.status === 'void' ? 'error' : invoice.status === 'partial' ? 'warning' : 'processing'}>
+              <Badge variant={invoice.status === 'paid' ? 'default' : invoice.status === 'void' ? 'destructive' : 'secondary'}>
                 {invoice.status === 'paid' ? 'Pagada' : invoice.status === 'void' ? 'Anulada' : invoice.status === 'partial' ? 'Parcial' : 'Emitida'}
-              </Tag>
+              </Badge>
             </div>
           </section>
 
@@ -191,9 +180,9 @@ export function InvoiceDetailDrawer({
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-foreground">{paymentLabels[payment.method] ?? payment.method}</span>
-                        <Tag color={payment.status === 'void' ? 'error' : 'success'}>
+                        <Badge variant={payment.status === 'void' ? 'destructive' : 'default'}>
                           {payment.status === 'void' ? 'Pago anulado' : 'Pago registrado'}
-                        </Tag>
+                        </Badge>
                       </div>
                       <p className="mt-1 text-xs tabular-nums text-muted-foreground">
                         {formatDateTimeEs(payment.paid_at)} · Caja #{payment.cash_session_id}
@@ -222,7 +211,10 @@ export function InvoiceDetailDrawer({
 
         </div>
       ) : null}
-    </Drawer>
+      </div>
+      {actionButtons ? <SheetFooter className="border-t border-border" aria-label="Pie de acciones de factura">{actionButtons}</SheetFooter> : null}
+      </SheetContent>
+    </Sheet>
   );
 }
 

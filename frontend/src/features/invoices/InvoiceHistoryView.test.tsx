@@ -224,7 +224,7 @@ describe('InvoiceHistoryView', () => {
       expect(within(row).getByText('Parcial')).toBeInTheDocument();
       expect(within(row).getByRole('button', { name: /ver detalle de la factura/i })).toBeInTheDocument();
       expect(within(row).getByRole('button', { name: /acciones de la factura/i })).toBeInTheDocument();
-      expect(document.querySelectorAll('.ant-pagination')).toHaveLength(1);
+      expect(document.querySelectorAll('[data-slot="pagination"]')).toHaveLength(1);
       expect(list).toHaveClass('min-w-0');
       expect(row).toHaveClass('overflow-visible');
     } finally {

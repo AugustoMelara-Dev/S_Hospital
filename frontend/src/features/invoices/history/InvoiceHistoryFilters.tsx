@@ -1,7 +1,13 @@
-import { SearchOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
-import { Button, DatePicker, Form, Input, Select, Space } from 'antd';
-import dayjs from 'dayjs';
+import { ChevronDownIcon, ChevronUpIcon, SearchIcon } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Calendar, CalendarDayButton } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { InvoiceFilters } from '../../../lib/api';
 
 type Props = {
@@ -34,92 +40,65 @@ export function InvoiceHistoryFilters({ filters, hasActiveFilters, loading, onAp
   }
 
   return (
-    <Form component="form" layout="vertical" onSubmitCapture={handleSubmit} className="border border-border bg-surface p-4">
-      <Space wrap align="end" size="middle">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="patient" className="text-xs font-semibold text-foreground">Paciente</label>
-          <Input
-            id="patient"
-            allowClear
-            prefix={<SearchOutlined aria-hidden="true" />}
-            placeholder="Nombre del paciente..."
-            value={draft.patient ?? ''}
-            onChange={(event) => update({ patient: event.target.value })}
-            className="w-48"
-          />
-        </div>
+    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-4 shadow-xs">
+      <div className="flex flex-wrap items-end gap-4">
+        <SearchField id="patient" label="Paciente" placeholder="Nombre del paciente..." value={draft.patient ?? ''} onChange={(value) => update({ patient: value })} className="w-56" />
+        <SearchField id="invoice_number" label="Número de factura" placeholder="A-0001..." value={draft.invoice_number ?? ''} onChange={(value) => update({ invoice_number: value })} className="w-48" />
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="invoice_number" className="text-xs font-semibold text-foreground">Número de factura</label>
-          <Input
-            id="invoice_number"
-            allowClear
-            prefix={<SearchOutlined aria-hidden="true" />}
-            placeholder="A-0001..."
-            value={draft.invoice_number ?? ''}
-            onChange={(event) => update({ invoice_number: event.target.value })}
-            className="w-40"
-          />
-        </div>
+        <Button type="button" variant="outline" onClick={() => setShowAdvanced((current) => !current)} aria-expanded={showAdvanced}>
+          {showAdvanced ? <ChevronUpIcon aria-hidden="true" /> : <ChevronDownIcon aria-hidden="true" />}
+          Filtros avanzados
+        </Button>
 
-        <div>
-          <Button
-            type="default"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            aria-expanded={showAdvanced}
-            icon={showAdvanced ? <UpOutlined /> : <DownOutlined />}
-          >
-            Filtros avanzados
-          </Button>
-        </div>
-
-        {showAdvanced && (
+        {showAdvanced ? (
           <>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="date_from" className="text-xs font-semibold text-foreground">Desde</label>
-              <DatePicker
-                id="date_from"
-                format="DD/MM/YYYY"
-                value={draft.date_from ? dayjs(draft.date_from) : null}
-                onChange={(date) => update({ date_from: date ? date.format('YYYY-MM-DD') : '' })}
-                className="w-36"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="date_to" className="text-xs font-semibold text-foreground">Hasta</label>
-              <DatePicker
-                id="date_to"
-                format="DD/MM/YYYY"
-                value={draft.date_to ? dayjs(draft.date_to) : null}
-                onChange={(date) => update({ date_to: date ? date.format('YYYY-MM-DD') : '' })}
-                className="w-36"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="status" className="text-xs font-semibold text-foreground">Estado</label>
-              <Select
-                id="status"
-                aria-label="Estado de factura"
-                value={draft.status || 'all'}
-                options={[
-                  { value: 'all', label: 'Todos' },
-                  { value: 'issued', label: 'Emitida' },
-                  { value: 'partial', label: 'Parcial' },
-                  { value: 'paid', label: 'Pagada' },
-                  { value: 'void', label: 'Anulada' },
-                ]}
-                onChange={(value) => update({ status: value === 'all' ? '' : value as InvoiceFilters['status'] })}
-                className="w-36"
-              />
+            <DateFilter label="Desde" value={draft.date_from} onChange={(value) => update({ date_from: value })} />
+            <DateFilter label="Hasta" value={draft.date_to} onChange={(value) => update({ date_to: value })} />
+            <div className="grid gap-1.5">
+              <Label htmlFor="status">Estado</Label>
+              <Select value={draft.status || 'all'} onValueChange={(value) => update({ status: value === 'all' ? '' : value as InvoiceFilters['status'] })}>
+                <SelectTrigger id="status" aria-label="Estado de factura" className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="issued">Emitida</SelectItem>
+                  <SelectItem value="partial">Parcial</SelectItem>
+                  <SelectItem value="paid">Pagada</SelectItem>
+                  <SelectItem value="void">Anulada</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </>
-        )}
+        ) : null}
 
-        <Button htmlType="submit" type="primary" loading={loading}>Buscar</Button>
-        <Button disabled={(!hasActiveFilters && !hasDraftChanges) || loading} onClick={onClear}>Limpiar</Button>
-      </Space>
-    </Form>
+        <Button type="submit" disabled={loading}>{loading ? 'Buscando…' : 'Buscar'}</Button>
+        <Button type="button" variant="outline" disabled={(!hasActiveFilters && !hasDraftChanges) || loading} onClick={onClear}>Limpiar</Button>
+      </div>
+    </form>
+  );
+}
+
+function SearchField({ className, id, label, onChange, placeholder, value }: { className: string; id: string; label: string; onChange: (value: string) => void; placeholder: string; value: string }) {
+  return <div className="grid gap-1.5"><Label htmlFor={id}>{label}</Label><div className="relative"><SearchIcon aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input id={id} placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} className={`${className} pl-8`} /></div></div>;
+}
+
+function DateFilter({ label, onChange, value }: { label: string; onChange: (value: string) => void; value?: string }) {
+  const selected = value ? parseISO(value) : undefined;
+  return (
+    <div className="grid gap-1.5">
+      <Label>{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild><Button type="button" variant="outline" aria-label={label} className="w-40 justify-start font-normal">{selected ? format(selected, 'dd/MM/yyyy') : 'Seleccionar'}</Button></PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <Calendar
+            mode="single"
+            locale={es}
+            selected={selected}
+            defaultMonth={selected}
+            onSelect={(date) => onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+            components={{ DayButton: (props) => <CalendarDayButton {...props} title={format(props.day.date, 'yyyy-MM-dd')} /> }}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }

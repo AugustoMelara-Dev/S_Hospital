@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -13,23 +13,21 @@ import {
   userSafeErrorMessage,
 } from '../../lib/api';
 import { useInvoices } from '../../hooks/useInvoices';
-import { Alert, Button, Empty, Input, Modal, Pagination, Skeleton, Tag, type PaginationProps } from 'antd';
-import { FileTextOutlined } from '@ant-design/icons';
-import type { ReactNode } from 'react';
+import { FileTextIcon } from 'lucide-react';
+import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { InstitutionalReceiptPreviewFrame } from '../receipts/InstitutionalReceiptPreviewFrame';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { downloadBlob, institutionalReceiptPdfFilename, openBlobInNewTab } from '../../lib/download';
 import { formatLempirasUIFromCents, parseCents } from '../../lib/moneyCents';
 
-const accessiblePaginationItem: NonNullable<PaginationProps['itemRender']> = (_, type, originalElement) => {
-  if ((type === 'prev' || type === 'next') && isValidElement(originalElement)) {
-    return cloneElement(originalElement as ReactElement<Record<string, unknown>>, {
-      'aria-label': type === 'prev' ? 'Página anterior' : 'Página siguiente',
-    });
-  }
-  return originalElement;
-};
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { payloadScopedIdempotencyKey, resetPayloadScopedIdempotencyKey } from '../../lib/api/idempotency';
@@ -786,7 +784,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         eyebrow="Facturación"
         title="Historial de facturas"
         description="Consulta, reimpresión y acciones autorizadas sobre facturas emitidas."
-        actions={<Tag icon={<FileTextOutlined aria-hidden="true" />}>{meta.total} facturas</Tag>}
+        actions={<Badge variant="secondary"><FileTextIcon aria-hidden="true" />{meta.total} facturas</Badge>}
       />
       <InvoiceHistoryFilters
         filters={filters}
@@ -797,67 +795,30 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       />
 
       {reconciliationCriterion ? (
-        <Alert
-          type="warning"
-          showIcon
-          title={reconciliationCriterion.kind === 'pending_balance'
+        <Alert>
+          <AlertTitle>{reconciliationCriterion.kind === 'pending_balance'
             ? `Facturas pendientes o parciales de la caja #${reconciliationCriterion.cashSessionId}`
-            : `Recibos institucionales pendientes de la caja #${reconciliationCriterion.cashSessionId}`}
-          description={reconciliationCriterion.kind === 'pending_balance'
+            : `Recibos institucionales pendientes de la caja #${reconciliationCriterion.cashSessionId}`}</AlertTitle>
+          <AlertDescription>{reconciliationCriterion.kind === 'pending_balance'
             ? 'Incluye facturas asociadas a esta caja y facturas con un pago vigente aplicado en ella.'
-            : 'Incluye facturas pagadas de esta caja que todavía no tienen un recibo institucional emitido.'}
-        />
+            : 'Incluye facturas pagadas de esta caja que todavía no tienen un recibo institucional emitido.'}</AlertDescription>
+        </Alert>
       ) : null}
 
       {loadError ? (
-        <Alert
-          type="error"
-          showIcon
-          title="No se pudo cargar el historial"
-          description={loadError}
-          action={
-            <Button type="default" onClick={() => void invoicesQuery.refetch()}>
-              Reintentar
-            </Button>
-          }
-        />
+        <Alert variant="destructive"><AlertTitle>No se pudo cargar el historial</AlertTitle><AlertDescription>{loadError}</AlertDescription><AlertAction><Button type="button" variant="outline" onClick={() => void invoicesQuery.refetch()}>Reintentar</Button></AlertAction></Alert>
       ) : null}
 
       {refreshError ? (
-        <Alert
-          type="warning"
-          showIcon
-          title="No se pudo actualizar el historial"
-          description={refreshError}
-          action={
-            <Button type="default" onClick={() => void invoicesQuery.refetch()}>
-              Reintentar
-            </Button>
-          }
-        />
+        <Alert><AlertTitle>No se pudo actualizar el historial</AlertTitle><AlertDescription>{refreshError}</AlertDescription><AlertAction><Button type="button" variant="outline" onClick={() => void invoicesQuery.refetch()}>Reintentar</Button></AlertAction></Alert>
       ) : null}
 
       {isEmpty && !loading && !loadError ? (
-        <Empty
-          description={
-            <>
-              <strong>No hay facturas</strong>
-              <p>
-                {hasActiveFilters
-                  ? 'No se encontraron facturas con los filtros seleccionados.'
-                  : 'No hay facturas registradas aún.'}
-              </p>
-              {hasActiveFilters ? (
-                <Button type="default" onClick={clearFilters} className="mt-2">
-                  Limpiar filtros
-                </Button>
-              ) : null}
-            </>
-          }
-        />
+        <Empty className="border"><EmptyHeader><EmptyTitle>No hay facturas</EmptyTitle><EmptyDescription>{hasActiveFilters ? 'No se encontraron facturas con los filtros seleccionados.' : 'No hay facturas registradas aún.'}</EmptyDescription></EmptyHeader>{hasActiveFilters ? <EmptyContent><Button type="button" variant="outline" onClick={clearFilters}>Limpiar filtros</Button></EmptyContent> : null}</Empty>
       ) : loading ? (
         <div role="status">
-          <Skeleton active={false} />
+          <Skeleton className="h-10 w-2/3" />
+          <Skeleton className="mt-3 h-48 w-full" />
           <span>Cargando facturas...</span>
         </div>
       ) : !loadError ? (
@@ -900,15 +861,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           <span className="text-sm text-muted-foreground">
             {meta.total} registro{meta.total !== 1 ? 's' : ''} en total
           </span>
-          <Pagination
-            current={meta.current_page}
-            pageSize={meta.per_page}
-            total={meta.total}
-            disabled={loading}
-            showSizeChanger={false}
-            onChange={(nextPage) => void changePage(nextPage)}
-            itemRender={accessiblePaginationItem}
-          />
+          <InvoicePagination meta={meta} disabled={loading} onChange={(nextPage) => void changePage(nextPage)} />
         </div>
       )}
 
@@ -964,35 +917,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         />
       ) : null}
 
-      <Modal
-        open={receiptModalOpen}
-        zIndex={1200}
-        onCancel={() => setReceiptModalOpen(false)}
-        title={`Comprobante de factura - ${selectedInvoice?.invoice_number ?? ''}`}
-        footer={selectedInstitutionalReceipt ? [
-          <Button key="close" onClick={() => setReceiptModalOpen(false)}>Cerrar</Button>,
-          <Button
-            key="save"
-            loading={loadingActionInvoiceId === selectedInvoice?.id}
-            onClick={() => selectedInvoice && void downloadInstitutionalReceipt(selectedInvoice)}
-          >
-            Guardar PDF
-          </Button>,
-          <Button
-            key="print"
-            type="primary"
-            loading={loadingActionInvoiceId === selectedInvoice?.id}
-            onClick={() => void printInstitutionalReceiptFromPreview()}
-          >
-            {hasInstitutionalPrintEvents(selectedInstitutionalReceipt) ? 'Reimprimir' : 'Imprimir recibo'}
-          </Button>,
-        ] : null}
-        width={760}
-        destroyOnHidden
-      >
-        <p className="text-sm text-muted-foreground mb-4">
-          Recibo disponible para esta factura. Usa el perfil de papel configurado.
-        </p>
+      <Dialog open={receiptModalOpen} onOpenChange={setReceiptModalOpen}>
+        <DialogContent className="max-h-screen overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{`Comprobante de factura - ${selectedInvoice?.invoice_number ?? ''}`}</DialogTitle>
+          <DialogDescription>Recibo disponible para esta factura. Usa el perfil de papel configurado.</DialogDescription>
+        </DialogHeader>
         {selectedInstitutionalReceipt ? (
           <InstitutionalReceiptPreviewFrame
             receiptId={selectedInstitutionalReceipt.id}
@@ -1024,7 +954,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             />
           </div>
         ) : null}
-      </Modal>
+        {selectedInstitutionalReceipt ? <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setReceiptModalOpen(false)}>Cerrar</Button>
+          <Button type="button" variant="outline" disabled={loadingActionInvoiceId === selectedInvoice?.id} onClick={() => selectedInvoice && void downloadInstitutionalReceipt(selectedInvoice)}>Guardar PDF</Button>
+          <Button type="button" disabled={loadingActionInvoiceId === selectedInvoice?.id} onClick={() => void printInstitutionalReceiptFromPreview()}>{hasInstitutionalPrintEvents(selectedInstitutionalReceipt) ? 'Reimprimir' : 'Imprimir recibo'}</Button>
+        </DialogFooter> : null}
+        </DialogContent>
+      </Dialog>
 
       <LocalConfirmDialog
           confirmLabel={reprintingReceipt ? 'Reimprimiendo...' : 'Reimprimir'}
@@ -1066,7 +1002,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             </p>
             <div className="space-y-2">
               <label htmlFor="voidReason" className="block text-sm font-semibold text-foreground">Motivo de anulación *</label>
-              <Input.TextArea
+              <Textarea
                 id="voidReason"
                 aria-describedby={voidReasonError ? 'voidReason-help voidReason-error' : 'voidReason-help'}
                 aria-invalid={Boolean(voidReasonError)}
@@ -1114,7 +1050,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             </p>
             <div className="space-y-2">
               <label htmlFor="reverseReason" className="block text-sm font-semibold text-foreground">Motivo de reversa *</label>
-              <Input.TextArea
+              <Textarea
                 id="reverseReason"
                 aria-describedby={reverseReasonError ? 'reverseReason-help reverseReason-error' : 'reverseReason-help'}
                 aria-invalid={Boolean(reverseReasonError)}
@@ -1143,6 +1079,27 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       </LocalConfirmDialog>
 
     </section>
+  );
+}
+
+function InvoicePagination({ disabled, meta, onChange }: { disabled: boolean; meta: PaginatedMeta; onChange: (page: number) => void }) {
+  const totalPages = Math.max(1, Math.ceil(meta.total / meta.per_page));
+  const pages = Array.from(new Set([1, meta.current_page - 1, meta.current_page, meta.current_page + 1, totalPages]))
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((first, second) => first - second);
+  const goTo = (event: MouseEvent<HTMLAnchorElement>, page: number) => {
+    event.preventDefault();
+    if (!disabled && page !== meta.current_page && page >= 1 && page <= totalPages) onChange(page);
+  };
+
+  return (
+    <Pagination aria-label="Paginación de facturas" className="mx-0 w-auto">
+      <PaginationContent>
+        <PaginationItem><PaginationPrevious href="#" text="Anterior" aria-label="Página anterior" aria-disabled={disabled || meta.current_page === 1} tabIndex={disabled || meta.current_page === 1 ? -1 : undefined} onClick={(event) => goTo(event, meta.current_page - 1)} /></PaginationItem>
+        {pages.map((page) => <PaginationItem key={page}><PaginationLink href="#" aria-label={`Página ${page}`} isActive={page === meta.current_page} aria-disabled={disabled} tabIndex={disabled ? -1 : undefined} onClick={(event) => goTo(event, page)}>{page}</PaginationLink></PaginationItem>)}
+        <PaginationItem><PaginationNext href="#" text="Siguiente" aria-label="Página siguiente" aria-disabled={disabled || meta.current_page === totalPages} tabIndex={disabled || meta.current_page === totalPages ? -1 : undefined} onClick={(event) => goTo(event, meta.current_page + 1)} /></PaginationItem>
+      </PaginationContent>
+    </Pagination>
   );
 }
 
@@ -1183,21 +1140,9 @@ function LocalConfirmDialog({
   }, [open]);
 
   return (
-    <Modal
-      open={open}
-      zIndex={1200}
-      title={title}
-      okText={confirmLabel}
-      cancelText={cancelLabel}
-      onCancel={onCancel}
-      onOk={() => onConfirm(reason)}
-      okButtonProps={{
-        disabled: confirmDisabled || (requireReasonTextarea && reason.trim().length < requireReasonMinLength),
-        danger,
-      }}
-      cancelButtonProps={{ disabled: cancelDisabled }}
-      destroyOnHidden
-    >
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen && !cancelDisabled) onCancel(); }}>
+      <DialogContent showCloseButton={!cancelDisabled}>
+      <DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription className="sr-only">Confirmación de una acción sobre la factura seleccionada.</DialogDescription></DialogHeader>
       <div className="space-y-4 py-4">
         {children}
         {requireReasonTextarea ? (
@@ -1205,7 +1150,7 @@ function LocalConfirmDialog({
             <label htmlFor="confirm-reason" className="block text-sm font-semibold text-foreground">
               Motivo *
             </label>
-            <Input.TextArea
+            <Textarea
               id="confirm-reason"
               value={reason}
               onChange={(event) => setReason(event.target.value)}
@@ -1218,7 +1163,12 @@ function LocalConfirmDialog({
           </div>
         ) : null}
       </div>
-    </Modal>
+      <DialogFooter>
+        <Button type="button" variant="outline" disabled={cancelDisabled} onClick={onCancel}>{cancelLabel}</Button>
+        <Button type="button" variant={danger ? 'destructive' : 'default'} disabled={confirmDisabled || (requireReasonTextarea && reason.trim().length < requireReasonMinLength)} onClick={() => onConfirm(reason)}>{confirmLabel}</Button>
+      </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
