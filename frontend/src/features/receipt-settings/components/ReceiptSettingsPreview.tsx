@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
-import { Tag } from 'antd';
+import { Badge } from '@/components/ui/badge';
 import { PrintPreviewFrame } from '@/design-system/components/InstitutionalComponents';
 import { formatDate } from '@/lib/format/formatDate';
 import type { InstitutionalReceiptSeries, ReceiptPrintProfile } from '@/lib/api';
@@ -118,9 +118,13 @@ export function ReceiptSettingsPreview({
                 <div>
                   <span className="font-semibold">Próximo estimado</span>{' '}
                   {series ? (
-                    <Tag color={receiptColor} className="text-lg font-bold">
+                    <Badge
+                      variant="outline"
+                      className="text-lg font-bold"
+                      style={receiptColor ? { borderColor: receiptColor, color: receiptColor } : undefined}
+                    >
                       {nextReceiptNumber(series)}
-                    </Tag>
+                    </Badge>
                   ) : (
                     <span className="text-lg font-bold text-receipt-muted">{nextReceiptNumber(series)}</span>
                   )}
