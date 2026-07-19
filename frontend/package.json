@@ -41,6 +41,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-query": "^5.100.10",
+    "@tanstack/react-table": "^8.21.3",
     "ag-grid-community": "36.0.0",
     "ag-grid-react": "36.0.0",
     "antd": "6.5.0",

@@ -1,8 +1,9 @@
-import { DollarOutlined, DownloadOutlined as Download, PrinterOutlined as Printer, FileDoneOutlined as Receipt, FileTextOutlined as ReceiptText, UserOutlined as User, CloseCircleOutlined as XCircle, MoreOutlined } from '@ant-design/icons';
-import { Button, Dropdown, Tag } from 'antd';
-import type { MenuProps } from 'antd';
+import { BanknoteIcon, DownloadIcon as Download, PrinterIcon as Printer, ReceiptIcon as Receipt, FileTextIcon as ReceiptText, UserIcon as User, CircleXIcon as XCircle, MoreHorizontalIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
-import { InstitutionalDataGrid, type InstitutionalColumn } from '@/design-system/ag-grid/InstitutionalDataGrid';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DataTable, type InstitutionalColumn } from '@/design-system/patterns/DataTable';
 import type { Invoice } from '../../../lib/api';
 import {
   getIssuedInstitutionalReceipt,
@@ -50,22 +51,8 @@ export type ActionMenuGroup = {
 };
 
 export function ActionMenu({ ariaLabel, groups }: { ariaLabel: string; groups: ActionMenuGroup[] }) {
-  const items: MenuProps['items'] = groups.flatMap((group, index) => [
-    ...group.items.map((item) => ({
-      key: `${group.key}-${item.key}`,
-      label: item.label,
-      icon: item.icon,
-      disabled: item.disabled,
-      danger: item.destructive,
-      onClick: item.onSelect,
-    })),
-    ...(index < groups.length - 1 ? [{ type: 'divider' as const }] : []),
-  ]);
-
   return (
-    <Dropdown menu={{ items }} trigger={['click']}>
-      <Button className="min-h-11 min-w-11" aria-label={ariaLabel} icon={<MoreOutlined aria-hidden="true" />} />
-    </Dropdown>
+    <DropdownMenu><DropdownMenuTrigger asChild><Button type="button" variant="ghost" size="icon" className="min-h-11 min-w-11" aria-label={ariaLabel}><MoreHorizontalIcon aria-hidden="true" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">{groups.map((group, index) => <div key={group.key}>{index > 0 ? <DropdownMenuSeparator /> : null}{group.items.map((item) => <DropdownMenuItem key={item.key} disabled={item.disabled} variant={item.destructive ? 'destructive' : 'default'} onSelect={item.onSelect}>{item.icon}{item.label}</DropdownMenuItem>)}</div>)}</DropdownMenuContent></DropdownMenu>
   );
 }
 
@@ -96,119 +83,24 @@ export function InvoiceHistoryTable(props: InvoiceHistoryTableProps) {
     { key: 'receipt', label: 'Recibo' },
   ];
 
-  const menuItems: MenuProps['items'] = hideableColumns.map((column) => ({
-    key: column.key,
-    label: column.label,
-  }));
-
   const setColumnVisible = (columnKey: string, visible: boolean) => {
     setVisibleKeys((current) => visible
       ? Array.from(new Set([...current, columnKey]))
       : current.filter((key) => key !== columnKey));
   };
 
-  const allColumns: InstitutionalColumn<Invoice>[] = [
-    {
-      colId: 'invoice_number',
-      headerName: 'Factura',
-      width: 205,
-      cellRenderer: ({ data }: { data?: Invoice }) => {
-        if (!data) return null;
-        return (
-          <div className="flex items-start gap-2">
-            <ReceiptText data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-secondary" />
-            <Button
-              htmlType="button"
-              type="link"
-              data-invoice-detail-trigger={data.id}
-              className="min-h-11 text-left font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-9"
-              aria-label={`Ver detalle de la factura ${data.invoice_number}`}
-              onClick={(event) => onOpenDetail(data, event.currentTarget as HTMLButtonElement)}
-            >
-              {data.invoice_number}
-            </Button>
-          </div>
-        );
-      },
-    },
-    {
-      colId: 'issued_at',
-      headerName: 'Fecha',
-      width: 160,
-      cellRenderer: ({ data }: { data?: Invoice }) => data ? formatDate(data.issued_at) : null,
-    },
-    {
-      colId: 'patient_name',
-      headerName: 'Paciente',
-      flex: 1,
-      minWidth: 160,
-      cellRenderer: ({ data }: { data?: Invoice }) => {
-        if (!data) return null;
-        return (
-          <div className="flex items-start gap-2">
-            <User data-icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            <span>{patientNameLabel(data)}</span>
-          </div>
-        );
-      },
-    },
-    {
-      colId: 'total',
-      headerName: 'Total',
-      width: 105,
-      cellClass: 'tabular-nums',
-      type: 'rightAligned',
-      cellRenderer: ({ data }: { data?: Invoice }) => data ? moneyLabel(data.total) : null,
-    },
-    {
-      colId: 'paid_amount',
-      headerName: 'Pagado',
-      width: 105,
-      cellClass: 'tabular-nums',
-      type: 'rightAligned',
-      cellRenderer: ({ data }: { data?: Invoice }) => data ? moneyLabel(data.paid_amount) : null,
-    },
-    {
-      colId: 'balance_due',
-      headerName: 'Saldo',
-      width: 105,
-      cellClass: 'tabular-nums',
-      type: 'rightAligned',
-      cellRenderer: ({ data }: { data?: Invoice }) => {
-        if (!data) return null;
-        return (
-          <span className={data.status === 'partial' || data.status === 'issued' ? 'font-semibold text-warning' : undefined}>
-            {moneyLabel(data.balance_due)}
-          </span>
-        );
-      },
-    },
-    {
-      colId: 'status',
-      headerName: 'Estado',
-      width: 90,
-      cellRenderer: ({ data }: { data?: Invoice }) => data ? <InvoiceStatusBadge status={data.status} /> : null,
-    },
-    {
-      colId: 'receipt',
-      headerName: 'Recibo',
-      width: 180,
-      cellRenderer: ({ data }: { data?: Invoice }) => data ? <ReceiptTrace invoice={data} /> : null,
-    },
-    {
-      colId: 'actions',
-      headerName: 'Acciones',
-      width: 90,
-      minWidth: 90,
-      maxWidth: 90,
-      sortable: false,
-      filter: false,
-      cellRenderer: ({ data }: { data?: Invoice }) => {
-        if (!data) return null;
-        return <InvoiceRowActions invoice={data} tableProps={props} />;
-      },
-    },
+  const allColumns: Array<InstitutionalColumn<Invoice>> = [
+    { id: 'invoice_number', accessorKey: 'invoice_number', header: 'Factura', cell: ({ row }) => <div className="flex items-start gap-2"><ReceiptText aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-secondary" /><Button type="button" variant="link" data-invoice-detail-trigger={row.original.id} className="min-h-9 px-0 text-left font-semibold text-foreground" aria-label={`Ver detalle de la factura ${row.original.invoice_number}`} onClick={(event) => onOpenDetail(row.original, event.currentTarget)}>{row.original.invoice_number}</Button></div> },
+    { id: 'issued_at', accessorKey: 'issued_at', header: 'Fecha', cell: ({ row }) => formatDate(row.original.issued_at) },
+    { id: 'patient_name', accessorKey: 'patient_name', header: 'Paciente', cell: ({ row }) => <div className="flex items-start gap-2"><User aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><span>{patientNameLabel(row.original)}</span></div> },
+    { id: 'total', accessorKey: 'total', header: 'Total', meta: { numeric: true }, cell: ({ row }) => <span className="font-mono tabular-nums">{moneyLabel(row.original.total)}</span> },
+    { id: 'paid_amount', accessorKey: 'paid_amount', header: 'Pagado', meta: { numeric: true }, cell: ({ row }) => <span className="font-mono tabular-nums">{moneyLabel(row.original.paid_amount)}</span> },
+    { id: 'balance_due', accessorKey: 'balance_due', header: 'Saldo', meta: { numeric: true }, cell: ({ row }) => <span className={`font-mono tabular-nums ${row.original.status === 'partial' || row.original.status === 'issued' ? 'font-semibold text-warning' : ''}`}>{moneyLabel(row.original.balance_due)}</span> },
+    { id: 'status', accessorKey: 'status', header: 'Estado', cell: ({ row }) => <InvoiceStatusBadge status={row.original.status} /> },
+    { id: 'receipt', header: 'Recibo', enableSorting: false, cell: ({ row }) => <ReceiptTrace invoice={row.original} /> },
+    { id: 'actions', header: 'Acciones', enableSorting: false, cell: ({ row }) => <InvoiceRowActions invoice={row.original} tableProps={props} /> },
   ];
+  const columns = allColumns.filter((column) => ['invoice_number', 'patient_name', 'actions'].includes(String(column.id)) || visibleKeys.includes(String(column.id)));
 
   if (isMobile) {
     return <InvoiceHistoryMobileList tableProps={props} />;
@@ -217,41 +109,17 @@ export function InvoiceHistoryTable(props: InvoiceHistoryTableProps) {
   return (
     <div className="space-y-2">
       {hideableColumns.length > 0 && (
-        <Dropdown
-          menu={{
-            'aria-label': 'Visibilidad de columnas del historial',
-            items: menuItems,
-            multiple: true,
-            selectable: true,
-            selectedKeys: visibleKeys.filter((key) => hideableColumns.some((column) => column.key === key)),
-            onSelect: ({ key }) => setColumnVisible(key, true),
-            onDeselect: ({ key }) => setColumnVisible(key, false),
-          }}
-          trigger={['click']}
-        >
-          <Button aria-label="Configurar columnas de facturas">
-            Columnas
-          </Button>
-        </Dropdown>
+        <DropdownMenu><DropdownMenuTrigger asChild><Button type="button" variant="outline" aria-label="Configurar columnas de facturas">Columnas</Button></DropdownMenuTrigger><DropdownMenuContent aria-label="Visibilidad de columnas del historial">{hideableColumns.map((column) => <DropdownMenuCheckboxItem key={column.key} checked={visibleKeys.includes(column.key)} onCheckedChange={(checked) => setColumnVisible(column.key, checked === true)}>{column.label}</DropdownMenuCheckboxItem>)}</DropdownMenuContent></DropdownMenu>
       )}
-      <InstitutionalDataGrid
-        ariaLabel="Listado de facturas"
-        regionAriaLabel="Tabla de facturas"
-        gridAriaLabel="Facturas filtradas"
-        caption="Facturas filtradas"
-        description="Resultados del historial con acciones y columnas configurables."
-        rows={invoices}
-        columns={allColumns}
-        getRowId={(invoice) => String(invoice.id)}
-        columnVisibility={{
-          visibleColumnIds: visibleKeys,
-          requiredColumnIds: ['invoice_number', 'patient_name', 'actions'],
-        }}
-        state={invoices.length ? 'ready' : 'empty'}
-        emptyMessage="No hay registros para mostrar."
-        loadingMessage="Cargando facturas..."
-        errorMessage="No se pudo cargar el historial de facturas."
-      />
+      <section aria-label="Tabla de facturas">
+        <DataTable
+          ariaLabel="Facturas filtradas"
+          data={invoices}
+          columns={columns}
+          getRowId={(invoice) => String(invoice.id)}
+          emptyTitle="No hay registros para mostrar."
+        />
+      </section>
     </div>
   );
 }
@@ -281,8 +149,8 @@ function InvoiceHistoryMobileList({ tableProps }: { tableProps: InvoiceHistoryTa
         <li key={invoice.id} className="min-w-0 overflow-visible p-4">
           <div className="flex min-w-0 items-start justify-between gap-3">
             <Button
-              htmlType="button"
-              type="link"
+              type="button"
+              variant="link"
               data-invoice-detail-trigger={invoice.id}
               className="min-h-11 min-w-0 break-all text-left font-semibold text-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               aria-label={`Ver detalle de la factura ${invoice.invoice_number}`}
@@ -360,7 +228,7 @@ function InvoiceRowActions({ invoice, tableProps }: { invoice: Invoice; tablePro
     primaryGroup.items.push({
       key: 'collect',
       label: 'Cobrar',
-      icon: <DollarOutlined aria-hidden="true" className="size-4" />,
+      icon: <BanknoteIcon aria-hidden="true" className="size-4" />,
       onSelect: () => onCollectPayment(invoice),
     });
   }
@@ -431,9 +299,8 @@ export function issuedInstitutionalReceipt(invoice: Invoice): NonNullable<Invoic
 }
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
-  const color = status === 'paid' ? 'success' : status === 'void' ? 'error' : status === 'partial' ? 'warning' : 'processing';
   const label = status === 'paid' ? 'Pagada' : status === 'void' ? 'Anulada' : status === 'partial' ? 'Parcial' : 'Emitida';
-  return <Tag color={color}>{label}</Tag>;
+  return <Badge variant={status === 'void' ? 'destructive' : status === 'paid' ? 'default' : 'secondary'}>{label}</Badge>;
 }
 
 function ReceiptTrace({ invoice }: { invoice: Invoice }) {

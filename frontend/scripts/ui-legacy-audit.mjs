@@ -22,6 +22,7 @@ export const strictModulePrefixes = [
   'src/features/auth/',
   'src/features/onboarding/',
   'src/features/invoices/components/',
+  'src/features/invoices/history/InvoiceHistoryTable.tsx',
   'src/features/receipts/',
   'src/components/AppErrorBoundary.tsx',
   'src/components/PermissionGate.tsx',

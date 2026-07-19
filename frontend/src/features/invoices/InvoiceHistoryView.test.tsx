@@ -181,7 +181,7 @@ describe('InvoiceHistoryView', () => {
     expect(screen.queryByRole('menuitem', { name: /^Factura$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /^Paciente$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /^Acciones$/i })).not.toBeInTheDocument();
-    expect(await screen.findByRole('menuitem', { name: /^Total$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('menuitemcheckbox', { name: /^Total$/i })).toBeInTheDocument();
   });
 
   it('renders a complete mobile invoice list instead of the desktop grid', async () => {
