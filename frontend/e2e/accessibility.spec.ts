@@ -395,8 +395,9 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     const overflowFailures: Array<{ route: string; matrix: string; metrics: unknown }> = [];
     const radiusFailures: Array<{ route: string; matrix: string; details: unknown[] }> = [];
     const radiusCoverage = Object.fromEntries(modernSurfaceSelectors.map((selector) => [selector, 0]));
-    const screenshotDirectory = resolve('test-results/frontend-final/screenshots');
-    const accessibilityDirectory = resolve('test-results/frontend-final/accessibility');
+    const evidenceRoot = resolve(process.env.A11Y_EVIDENCE_ROOT ?? 'test-results/frontend-final');
+    const screenshotDirectory = resolve(evidenceRoot, 'screenshots');
+    const accessibilityDirectory = resolve(evidenceRoot, 'accessibility');
     if (process.env.A11Y_PRESERVE_OUTPUT !== '1') {
       rmSync(screenshotDirectory, { force: true, recursive: true });
       rmSync(accessibilityDirectory, { force: true, recursive: true });

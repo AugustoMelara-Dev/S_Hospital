@@ -522,7 +522,7 @@ function CategoryButton({
       role="radio"
       tabIndex={active ? 0 : -1}
     >
-      <span className="line-clamp-2 leading-tight">{label}</span>
+      <span className="w-full whitespace-normal text-center leading-tight">{label}</span>
     </Button>
   );
 }
