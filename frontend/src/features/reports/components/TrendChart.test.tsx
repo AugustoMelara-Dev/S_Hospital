@@ -1,16 +1,13 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { ExecutiveReport } from '@/lib/api';
-vi.mock('@/design-system/echarts', () => ({ formatHnl: (value: number) => `L ${value.toFixed(2)}`, InstitutionalChart: ({ ariaLabel, summary, alternativeTable, option, state }: { ariaLabel: string; summary: string; alternativeTable: React.ReactNode; option: unknown; state: string }) => <figure aria-label={ariaLabel} data-state={state} data-option={JSON.stringify(option)}><figcaption>{summary}</figcaption>{alternativeTable}</figure> }));
 import { TrendChart } from './TrendChart';
 
 describe('TrendChart', () => {
-  it('provides ECharts options, summary and an exact alternative table', () => {
+  it('provides a Recharts visualization, summary and an exact alternative table', () => {
     const report = fixture([{ date: '2026-07-12', billed: '100.00', collected: '75.00', pending: '25.00' }]);
     render(<TrendChart report={report} />);
-    const chart = screen.getByLabelText(/gráfico de tendencia/i);
-    expect(chart).toHaveAttribute('data-option', expect.stringContaining('line'));
-    expect(chart).toHaveAttribute('data-option', expect.stringContaining('"bottom":0'));
+    expect(screen.getByRole('img', { name: /gráfico de tendencia/i })).toBeInTheDocument();
     expect(screen.getByText(/1 día con actividad/i)).toBeInTheDocument();
     expect(screen.getByRole('table', { name: /tendencia diaria/i })).toHaveTextContent('L 100.00');
   });
