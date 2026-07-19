@@ -65,7 +65,8 @@ describe('PermissionMatrix', () => {
     expect(screen.getByRole('heading', { name: /matriz de permisos/i })).toBeInTheDocument();
     openPermissionMatrix();
 
-    expect(container.querySelector('.ant-table')).toBeInTheDocument();
+    expect(container.querySelector('.ant-table')).not.toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /matriz de permisos/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /cajero/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /^auditor$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /facturacion/i })).toBeInTheDocument();
