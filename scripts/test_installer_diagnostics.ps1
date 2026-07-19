@@ -40,11 +40,11 @@ $testsFailed = 0
 function Assert-Equal($Actual, $Expected, $TestName) {
     if ($Actual -eq $Expected) {
         Write-Host "  [PASS] $TestName" -ForegroundColor Green
-        $global:testsPassed++
+        $script:testsPassed++
     } else {
         Write-Host "  [FAIL] $TestName" -ForegroundColor Red
         Write-Host "         Esperado: '$Expected' | Obtenido: '$Actual'" -ForegroundColor Yellow
-        $global:testsFailed++
+        $script:testsFailed++
     }
 }
 
