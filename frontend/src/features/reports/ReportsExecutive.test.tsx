@@ -213,10 +213,10 @@ describe('ReportsExecutive', () => {
     const panelIds = [
       'executive-summary',
       'executive-alerts',
-      'pending-aging-panel',
-      'payment-method-panel',
       'trend-chart',
+      'payment-method-panel',
       'service-ranking',
+      'pending-aging-panel',
     ];
     const panels = panelIds.map((id) => screen.getByTestId(id));
 

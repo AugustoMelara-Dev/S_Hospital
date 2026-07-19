@@ -49,4 +49,23 @@ describe('ExecutiveSummary', () => {
     expect(screen.getByText('L 125.00')).toBeInTheDocument();
     expect(document.body.textContent).not.toContain('NaN');
   });
+
+  it('renders operational counts as counts instead of currency', () => {
+    render(
+      <ExecutiveSummary
+        report={buildExecutiveReport({
+          summary: {
+            ...buildExecutiveReport().summary,
+            paid_count: 12,
+            partial_count: 3,
+            voided_count: 2,
+          },
+        })}
+      />,
+    );
+
+    const paidMetric = screen.getByText('Facturas pagadas').closest('article');
+    expect(paidMetric).toHaveTextContent('12');
+    expect(paidMetric).not.toHaveTextContent('L 12.00');
+  });
 });

@@ -240,12 +240,14 @@ export function ReportsExecutive({
       {report ? (
         <div className="flex flex-col gap-5">
           <ExecutiveSummary report={report} />
-          <AccountingPolicyPanel policy={report.accounting_policy} />
           <ExecutiveAlerts report={report} />
-          <PendingAgingPanel report={report} />
-          <PaymentMethodPanel report={report} />
-          <TrendChart report={report} />
+          <div className="grid items-start gap-5 xl:grid-cols-2">
+            <TrendChart report={report} />
+            <PaymentMethodPanel report={report} />
+          </div>
           <ServiceRanking report={report} />
+          <PendingAgingPanel report={report} />
+          <AccountingPolicyPanel policy={report.accounting_policy} />
         </div>
       ) : null}
     </section>
