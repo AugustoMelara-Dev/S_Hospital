@@ -49,8 +49,8 @@ describe('ExecutiveReportFilters', () => {
       />,
     );
 
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /periodo rápido/i }));
-    fireEvent.click(screen.getByText(PRESET_LABELS.last7));
+    fireEvent.click(screen.getByRole('combobox', { name: /periodo rápido/i }));
+    fireEvent.click(screen.getByRole('option', { name: PRESET_LABELS.last7 }));
 
     expect(onPresetChange).toHaveBeenCalledWith('last7');
     expect(onChange).toHaveBeenCalledWith({
@@ -95,8 +95,8 @@ describe('ExecutiveReportFilters', () => {
       />,
     );
 
-    const actionGroup = screen.getByRole('button', { name: /excel ejecutivo/i }).closest('.ant-space');
-    expect(actionGroup).toHaveStyle({ flexWrap: 'wrap' });
+    const actionGroup = screen.getByRole('button', { name: /excel ejecutivo/i }).closest('[data-report-actions]');
+    expect(actionGroup).toHaveClass('flex-wrap');
   });
 
   it('describes the real 92 day limit and blocks stale-scope exports', () => {
