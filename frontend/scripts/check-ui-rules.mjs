@@ -23,6 +23,18 @@ export function scanUiRuleSource(relative, source) {
   return violations;
 }
 
+export function scanAppSemanticRules(relative, source) {
+  const violations = [];
+
+  source.split(/\r?\n/).forEach((line, index) => {
+    if (/\btext-secondary(?!-)/.test(line)) {
+      violations.push(`${relative}:${index + 1}: secondary es una superficie; usar text-primary o secondary-foreground para contenido`);
+    }
+  });
+
+  return violations;
+}
+
 function collectUiFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const absolute = resolve(directory, entry.name);
@@ -33,12 +45,18 @@ function collectUiFiles(directory) {
 
 export function checkUiRules() {
   const files = [resolve(root, 'src/styles.css'), ...collectUiFiles(uiRoot)];
-  const violations = files.flatMap((absolute) => {
+  const foundationViolations = files.flatMap((absolute) => {
     const relative = absolute.slice(root.length + 1).replaceAll('\\', '/');
     return scanUiRuleSource(relative, readFileSync(absolute, 'utf8'));
   });
+  const appFiles = collectUiFiles(resolve(root, 'src'));
+  const semanticViolations = appFiles.flatMap((absolute) => {
+    const relative = absolute.slice(root.length + 1).replaceAll('\\', '/');
+    return scanAppSemanticRules(relative, readFileSync(absolute, 'utf8'));
+  });
+  const violations = [...foundationViolations, ...semanticViolations];
 
-  return { files, violations };
+  return { files: appFiles, violations };
 }
 
 if (fileURLToPath(import.meta.url) === resolve(process.argv[1])) {

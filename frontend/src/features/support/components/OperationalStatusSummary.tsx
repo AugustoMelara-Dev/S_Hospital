@@ -152,7 +152,7 @@ export function OperationalStatusSummary({ loading, summary, status, canViewAdva
 
         {!canViewAdvanced ? (
           <div className="flex items-start gap-2 border border-border bg-card p-4 text-sm text-muted-foreground">
-            <Server aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-secondary" />
+            <Server aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
             <p>El diagnostico tecnico detallado se mantiene reservado para usuarios autorizados.</p>
           </div>
         ) : null}
@@ -164,7 +164,7 @@ export function OperationalStatusSummary({ loading, summary, status, canViewAdva
 function OperationalMetric({ helper, icon, label, value, variant }: { helper: ReactNode; icon: ReactNode; label: string; value: ReactNode; variant?: string }) {
   return (
     <div className="border border-border bg-surface p-4" data-tone={variant}>
-      <div aria-hidden="true" className="mb-2 text-secondary">{icon}</div>
+      <div aria-hidden="true" className="mb-2 text-primary">{icon}</div>
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 font-semibold tabular-nums">{value}</p><p className="mt-1 text-xs text-muted-foreground">{helper}</p>
     </div>
   );

@@ -11,7 +11,7 @@ export function SupportPlaybookList() {
           <Card key={playbook.title}>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex size-11 items-center justify-center bg-accent text-secondary">
+                <div className="flex size-11 items-center justify-center bg-accent text-primary">
                   <Icon className="size-5" aria-hidden="true" />
                 </div>
                 <CardTitle><h2>{playbook.title}</h2></CardTitle>

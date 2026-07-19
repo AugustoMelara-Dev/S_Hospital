@@ -170,7 +170,7 @@ function formatDelta(percentage: number | null): { label: string; icon: typeof A
   return {
     label: `${positive ? '+' : ''}${safePercentage.toFixed(2)}%`,
     icon: positive ? ArrowUpRight : ArrowDownRight,
-    tone: positive ? 'text-secondary' : 'text-destructive',
+    tone: positive ? 'text-primary' : 'text-destructive',
   };
 }
 

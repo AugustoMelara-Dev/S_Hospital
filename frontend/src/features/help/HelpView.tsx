@@ -264,7 +264,7 @@ function SupportEvidenceCard() {
             </Button>
           </div>
         </div>
-        {copyStatus ? <p role="status" aria-live="polite" className="text-sm font-medium text-secondary">{copyStatus}</p> : null}
+        {copyStatus ? <p role="status" aria-live="polite" className="text-sm font-medium text-primary">{copyStatus}</p> : null}
 
         {showSummary ? (
           <Textarea
@@ -326,7 +326,7 @@ export function HelpView() {
               </li>
             ))}
           </ol>
-          <a href="#help-task-index" className="text-sm font-semibold text-secondary">Volver al índice</a>
+          <a href="#help-task-index" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">Volver al índice</a>
         </div>
       ),
     };
@@ -365,7 +365,7 @@ export function HelpView() {
         <h2 className="mb-3 text-base font-semibold">Índice de tareas</h2>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
           {visibleGuides.map((guide) => (
-            <a key={guide.title} href={`#${helpGuideId(guide.title)}`} className="text-sm font-semibold text-secondary">
+            <a key={guide.title} href={`#${helpGuideId(guide.title)}`} className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
               {guide.title}
             </a>
           ))}
@@ -381,7 +381,7 @@ export function HelpView() {
       <Card>
         <div className="mb-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Keyboard aria-hidden="true" className="size-5 text-secondary" />
+            <Keyboard aria-hidden="true" className="size-5 text-primary" />
             Atajos de teclado
           </h2>
           <p className="text-sm text-muted-foreground">Referencia para operar con teclado sin memorizar comandos externos.</p>
@@ -409,7 +409,7 @@ export function HelpView() {
       <Card>
         <div className="mb-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <WifiOff aria-hidden="true" className="size-5 text-secondary" />
+            <WifiOff aria-hidden="true" className="size-5 text-primary" />
             Incidentes durante el turno
           </h2>
           <p className="text-sm text-muted-foreground">Acciones seguras antes de continuar facturando.</p>
@@ -439,7 +439,7 @@ export function HelpView() {
       <Card>
         <div className="mb-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <ClipboardCheck aria-hidden="true" className="size-5 text-secondary" />
+            <ClipboardCheck aria-hidden="true" className="size-5 text-primary" />
             Checklist diario por rol
           </h2>
           <p className="text-sm text-muted-foreground">Pasos cortos para iniciar, cerrar y revisar el turno sin depender de soporte técnico.</p>

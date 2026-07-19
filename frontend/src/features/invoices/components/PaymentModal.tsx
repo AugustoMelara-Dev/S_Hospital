@@ -247,7 +247,7 @@ export function PaymentModal({
           <div className="grid gap-2 sm:grid-cols-2">
             <div className="min-w-0">
               <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-foreground">
-                <ReceiptText className="size-3.5 text-secondary" aria-hidden="true" />
+                <ReceiptText className="size-3.5 text-primary" aria-hidden="true" />
                 Factura
               </p>
               <p className="break-words font-semibold tabular-nums text-foreground">{invoiceNumber}</p>
@@ -344,7 +344,7 @@ export function PaymentModal({
           {cashCanReturnChange ? <div className="grid gap-1.5">
             <label htmlFor="payment-amount">Monto recibido (L.)</label>
             <div className="relative">
-              <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-secondary" aria-hidden="true" />
+              <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary" aria-hidden="true" />
               <Input
                 ref={amountInputRef}
                 id="payment-amount"

@@ -39,7 +39,7 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
   return (
     <div className="min-w-0">
       <header className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
-        <UserIcon aria-hidden="true" className="text-secondary" />
+        <UserIcon aria-hidden="true" className="text-primary" />
         <h2 id="patient-step-title" className="text-base font-semibold text-foreground">Paciente</h2>
         <span className="text-sm text-muted-foreground">Solo el nombre es obligatorio.</span>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-3 text-sm">

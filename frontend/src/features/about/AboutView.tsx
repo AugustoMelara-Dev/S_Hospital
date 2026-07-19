@@ -68,7 +68,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card className="overflow-hidden md:col-span-2">
           <div className="mb-4 flex flex-row items-start gap-4 pb-4">
-            <div className="flex size-12 items-center justify-center bg-secondary/10 text-secondary">
+            <div className="flex size-12 items-center justify-center bg-secondary/10 text-primary">
               <Building2 aria-hidden="true" className="h-6 w-6" />
             </div>
             <div>
@@ -145,7 +145,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
         <Card>
           <div className="mb-4">
             <h2 className="flex items-center gap-2 text-base font-bold">
-              <MonitorCheck aria-hidden="true" className="h-5 w-5 text-secondary" /> Diagnostico administrativo
+              <MonitorCheck aria-hidden="true" className="h-5 w-5 text-primary" /> Diagnostico administrativo
             </h2>
             <p className="text-sm text-muted-foreground">Lectura resumida para soporte local, sin claves ni rutas internas.</p>
           </div>
@@ -170,15 +170,15 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
 
                 <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
                   <div className="flex items-start gap-2 border border-border bg-card p-4">
-                    <Clock3 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                    <Clock3 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span className="break-words">Hora del servidor: {formatServerTime(systemStatus.environment.server_time, systemStatus.environment.timezone)}</span>
                   </div>
                   <div className="flex items-start gap-2 border border-border bg-card p-4">
-                    <HardDrive aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                    <HardDrive aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span className="break-words">Espacio libre para respaldos: {formatBytes(systemStatus.backups.storage.free_bytes)}</span>
                   </div>
                   <div className="flex items-start gap-2 border border-border bg-card p-4">
-                    <Network aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                    <Network aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span className="break-words">{networkAccessLabel(systemStatus)}: {networkAccessUrl(systemStatus)}</span>
                   </div>
                 </div>
@@ -195,7 +195,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
       <Card>
         <div className="mb-4">
           <h2 className="flex items-center gap-2 text-base font-bold">
-            <HeartHandshake aria-hidden="true" className="h-5 w-5 text-secondary" /> Soporte
+            <HeartHandshake aria-hidden="true" className="h-5 w-5 text-primary" /> Soporte
           </h2>
           <p className="text-sm text-muted-foreground">Información para continuidad operativa.</p>
         </div>

@@ -223,7 +223,7 @@ export function ServiceSearch({
               Buscar por nombre, area o categoria
             </label>
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-secondary" aria-hidden="true" />
+              <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-primary" aria-hidden="true" />
               <Input
                 ref={(node) => {
                   if (searchInputRef) {
@@ -262,7 +262,7 @@ export function ServiceSearch({
               </label>
               <div className="flex items-center gap-2">
                 <div className="relative min-w-0 flex-1">
-                  <Barcode className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-secondary" aria-hidden="true" />
+                  <Barcode className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary" aria-hidden="true" />
                   <Input
                     ref={(node) => {
                       if (scannerInputRef) {
@@ -362,7 +362,7 @@ export function ServiceSearch({
       <div className="min-h-0 flex-1">
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" aria-live="polite">
           <div className="flex min-w-0 items-center gap-2">
-            <Filter className="size-4 text-secondary" aria-hidden="true" />
+            <Filter className="size-4 text-primary" aria-hidden="true" />
             <label className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               Servicios ({hasIntent ? filteredServices.length : 0})
             </label>
@@ -450,7 +450,7 @@ export function ServiceSearch({
                       <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                         <p className="min-w-0 break-words text-sm font-semibold leading-tight text-foreground">{service.name}</p>
-                        <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-secondary">
+                        <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-primary">
                           {moneyLabel(service.price)}
                         </span>
                       </div>
@@ -473,7 +473,7 @@ export function ServiceSearch({
                         </p>
                       ) : null}
                       </div>
-                      <span className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 border-l border-secondary pl-3 text-sm font-semibold text-secondary">
+                      <span className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 border-l border-secondary pl-3 text-sm font-semibold text-primary">
                         {accountItem ? null : <Plus className="size-4" aria-hidden="true" />}
                         {accountStatus}
                       </span>
