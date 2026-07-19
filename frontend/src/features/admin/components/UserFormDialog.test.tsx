@@ -299,13 +299,9 @@ describe('UserFormDialog', () => {
       />,
     );
 
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /rol operativo/i }));
-    await screen.findByRole('option', { name: /^Admin/i });
-    const adminOption = Array.from(document.querySelectorAll<HTMLElement>('.ant-select-item-option')).find(
-      (option) => option.textContent?.startsWith('Admin'),
-    );
-    expect(adminOption).toBeDefined();
-    fireEvent.click(adminOption!);
+    fireEvent.click(screen.getByRole('combobox', { name: /rol operativo/i }));
+    const adminOption = await screen.findByRole('option', { name: /^Admin/i });
+    fireEvent.click(adminOption);
 
     await waitFor(() => expect(screen.getByText(/rol critico/i)).toBeInTheDocument());
 
@@ -354,7 +350,7 @@ describe('UserFormDialog', () => {
       />,
     );
 
-    fireEvent.mouseDown(screen.getByRole('combobox', { name: /rol operativo/i }));
+    fireEvent.click(screen.getByRole('combobox', { name: /rol operativo/i }));
 
     expect(await screen.findByRole('option', { name: /^Cajero/i })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /^Backup Operator/i })).not.toBeInTheDocument();

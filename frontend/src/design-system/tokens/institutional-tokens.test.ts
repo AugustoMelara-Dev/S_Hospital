@@ -11,8 +11,8 @@ describe('institutional CSS tokens', () => {
     expect(css).not.toMatch(selfReferentialColorToken);
   });
 
-  it('keeps radii flat and exposes no parallel shadow token surface', () => {
-    expect(css).toMatch(/--radius-card:\s*0px/);
+  it('exposes modern rounded surfaces without a parallel shadow token surface', () => {
+    expect(css).toMatch(/--radius-card:\s*0\.75rem/);
     expect(css).not.toMatch(/--shadow-/);
   });
 });

@@ -345,7 +345,7 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
       </form>
 
       <AlertDialog open={pendingChange !== null} onOpenChange={(next) => { if (!next && !saving) setPendingChange(null); }}>
-        <AlertDialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
+        <AlertDialogContent className="max-h-svh overflow-y-auto sm:max-w-2xl">
           <AlertDialogHeader><AlertDialogTitle>Revisar cambio fiscal</AlertDialogTitle><AlertDialogDescription>Confirme la numeración autorizada antes de guardar.</AlertDialogDescription></AlertDialogHeader>
         {pendingChange ? (
           <div className="space-y-3">

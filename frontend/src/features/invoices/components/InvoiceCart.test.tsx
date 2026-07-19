@@ -17,7 +17,6 @@ describe('InvoiceCart', () => {
     const { container } = renderCart({ actionLabel: 'Emitir y cobrar' });
 
     expect(container.querySelector('[data-slot="table"]')).toBeInTheDocument();
-    expect(container.querySelector('.ant-list')).not.toBeInTheDocument();
     expect(screen.getByRole('table', { name: /cuenta actual/i })).toBeVisible();
     expect(screen.getByText('Subtotal')).toBeVisible();
     expect(screen.getByText(/ISV/)).toBeVisible();

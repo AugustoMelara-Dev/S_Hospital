@@ -109,7 +109,7 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
               const active = colorTheme === themeKey;
               return (
                 <Button key={themeKey} type="button" variant={active ? 'default' : 'outline'} onClick={() => handleSaveColor(themeKey)} disabled={!canEdit} className="h-auto w-full justify-between p-3 text-left">
-                  <span className="flex items-center gap-3"><span aria-hidden="true" className="size-5 rounded-full border shadow-sm" style={{ backgroundColor: theme.light.secondary }} /><span>{theme.name}</span></span>
+                  <span className="flex items-center gap-3"><span aria-hidden="true" className="brand-theme-swatch size-5 rounded-full border shadow-sm" data-theme-swatch={themeKey} /><span>{theme.name}</span></span>
                   {active ? <Check data-icon="inline-end" /> : null}
                 </Button>
               );

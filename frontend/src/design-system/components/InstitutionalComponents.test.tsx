@@ -11,7 +11,6 @@ describe('shared design system components', () => {
     );
 
     expect(container.querySelector('[data-slot="stat-grid-item"]')).toHaveAttribute('data-slot', 'stat-grid-item');
-    expect(container.querySelector('.ant-card')).not.toBeInTheDocument();
     expect(screen.getByText('12')).toHaveClass('tabular-nums');
   });
 
@@ -24,7 +23,6 @@ describe('shared design system components', () => {
 
     const preview = container.querySelector('[data-slot="print-preview-frame"]');
     expect(preview).toHaveAttribute('data-slot', 'print-preview-frame');
-    expect(preview).not.toHaveClass('ant-card');
     expect(preview).toHaveClass('bg-muted');
     expect(within(preview as HTMLElement).getByText('Paciente: Maria Lopez')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Imprimir vista' })).toBeInTheDocument();

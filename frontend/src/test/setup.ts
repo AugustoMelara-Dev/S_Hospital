@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import '@testing-library/jest-dom/vitest';
 
 if (!HTMLElement.prototype.hasPointerCapture) {
@@ -15,69 +14,8 @@ import { QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
 import * as matchers from 'vitest-axe/matchers';
 
-import React from 'react';
 expect.extend(matchers);
 
-// JSDOM cannot run AG Grid's layout engine. The institutional adapter remains
-// real; only the third-party renderer is replaced at the test boundary.
-vi.mock('ag-grid-react', () => ({
-  AgGridProvider: ({ children }: { children: React.ReactNode }) => children,
-  AgGridReact: ({
-    'aria-label': ariaLabel,
-    columnDefs = [],
-    rowData = [],
-  }: {
-    'aria-label'?: string;
-    columnDefs?: Array<Record<string, any>>;
-    rowData?: Array<Record<string, any>>;
-  }) => React.createElement(
-    'table',
-    { 'aria-label': ariaLabel },
-    React.createElement(
-      'thead',
-      null,
-      React.createElement(
-        'tr',
-        null,
-        columnDefs.map((column) => React.createElement(
-          'th',
-          {
-            key: column.colId ?? column.field ?? column.headerName,
-            'data-numeric': column.type === 'rightAligned' ? 'true' : undefined,
-          },
-          column.headerName,
-        )),
-      ),
-    ),
-    React.createElement(
-      'tbody',
-      null,
-      rowData.map((row, rowIndex) => React.createElement(
-        'tr',
-        { key: row.id ?? rowIndex },
-        columnDefs.map((column) => {
-          const value = column.field ? row[column.field] : undefined;
-          const params = { data: row, value };
-          const renderedValue = column.cellRenderer
-            ? column.cellRenderer(params)
-            : column.valueFormatter
-              ? column.valueFormatter(params)
-              : column.valueGetter
-                ? column.valueGetter({ data: row })
-                : value;
-          return React.createElement(
-            'td',
-            {
-              key: column.colId ?? column.field ?? column.headerName,
-              'data-numeric': column.type === 'rightAligned' ? 'true' : undefined,
-            },
-            renderedValue == null ? '' : renderedValue,
-          );
-        }),
-      )),
-    ),
-  ),
-}));
 
 // Bump the default async-util timeout from 1s to 10s. AppRoutes code-
 // splits the 9 heavy views (Reports, Backups, Fiscal Settings, etc.)

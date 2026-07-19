@@ -110,7 +110,7 @@ export function RoleFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!isSaving) onOpenChange(next); }}>
-      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-3xl" onInteractOutside={(event) => { if (isSaving) event.preventDefault(); }}>
+      <DialogContent className="max-h-svh overflow-y-auto sm:max-w-3xl" onInteractOutside={(event) => { if (isSaving) event.preventDefault(); }}>
         <DialogHeader>
           <DialogTitle>{editingRole ? 'Editar rol' : 'Nuevo rol'}</DialogTitle>
           <DialogDescription>Seleccione los permisos exactos que tendrá este rol operativo.</DialogDescription>

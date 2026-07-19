@@ -148,7 +148,6 @@ describe('FiscalSettingsView (separated sections)', () => {
     expect(screen.queryByText(/CAI y prefijo fiscal/i)).not.toBeInTheDocument();
     const summary = screen.getByRole('region', { name: /resumen fiscal/i });
     expect(within(summary).getAllByTestId('fiscal-summary-field')).toHaveLength(6);
-    expect(summary.querySelector('.ant-card')).not.toBeInTheDocument();
   });
 
   it('allows editing only operational rules with the operational settings permission', async () => {

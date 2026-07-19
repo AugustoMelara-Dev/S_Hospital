@@ -26,6 +26,6 @@ describe('OperationalStatusSummary', () => {
       />,
     );
 
-    expect(container.querySelectorAll('.ant-card .ant-card')).toHaveLength(0);
+    expect(container.querySelectorAll('[data-slot="card"] [data-slot="card"]')).toHaveLength(0);
   });
 });

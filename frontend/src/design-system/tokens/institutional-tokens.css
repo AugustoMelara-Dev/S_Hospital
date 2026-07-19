@@ -30,6 +30,19 @@
   --institutional-sidebar-ring: #0f766e;
 }
 
+/* Vista previa de las opciones de marca; los valores viven junto a los tokens. */
+.brand-theme-swatch[data-theme-swatch="teal"] { background-color: #0f766e; }
+.brand-theme-swatch[data-theme-swatch="blue"] { background-color: #0369a1; }
+.brand-theme-swatch[data-theme-swatch="green"] { background-color: #047857; }
+.brand-theme-swatch[data-theme-swatch="indigo"] { background-color: #4338ca; }
+.brand-theme-swatch[data-theme-swatch="rose"] { background-color: #be123c; }
+
+.dark .brand-theme-swatch[data-theme-swatch="teal"] { background-color: #2dd4bf; }
+.dark .brand-theme-swatch[data-theme-swatch="blue"] { background-color: #7dd3fc; }
+.dark .brand-theme-swatch[data-theme-swatch="green"] { background-color: #34d399; }
+.dark .brand-theme-swatch[data-theme-swatch="indigo"] { background-color: #a5b4fc; }
+.dark .brand-theme-swatch[data-theme-swatch="rose"] { background-color: #fda4af; }
+
 .dark {
   --institutional-background: #0f172a;
   --institutional-surface: #1e293b;
@@ -103,69 +116,13 @@
   --font-sans: "IBM Plex Sans Variable", system-ui, -apple-system, sans-serif;
   --font-mono: "Cascadia Code", ui-monospace, monospace;
 
-  /* Geometría institucional estricta (borderRadius: 0) */
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-panel: 0px;
-  --radius-card: 0px;
+  /* Geometría shadcn moderna */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-panel: 0.75rem;
+  --radius-card: 0.75rem;
 
   /* Eliminación de sombras decorativas flotantes */
-}
-
-/* AG Grid v33 Institutional Theme configuration via CSS variables */
-.ag-theme-custom {
-  --ag-background-color: var(--color-surface);
-  --ag-foreground-color: var(--color-foreground);
-  --ag-border-color: var(--color-border);
-  --ag-header-background-color: var(--color-background);
-  --ag-header-foreground-color: var(--color-foreground);
-  --ag-row-border-color: var(--color-border);
-  --ag-selected-row-background-color: var(--color-accent);
-  --ag-row-hover-background-color: var(--color-muted);
-  --ag-font-family: var(--font-sans);
-  --ag-font-size: 13px;
-  --ag-grid-size: 8px;
-  --ag-border-radius: 0px;
-  --ag-card-radius: 0px;
-  --ag-header-cell-hover-background-color: var(--color-muted);
-  --ag-header-cell-moving-background-color: var(--color-muted);
-  
-  width: 100%;
-  height: 100%;
-}
-
-.ag-theme-custom .ag-header {
-  border-bottom: 1px solid var(--color-border) !important;
-  font-weight: 600;
-}
-
-.ag-theme-custom .ag-row {
-  border-bottom: 1px solid var(--color-border) !important;
-}
-
-.ag-theme-custom .ag-cell-focus {
-  outline: 2px solid var(--color-primary) !important;
-  outline-offset: -2px;
-}
-
-/* Ant Design assigns colorLink to every anchor. Navigation has its own
-   semantic foreground because it is rendered on the dark institutional rail. */
-.ant-app [data-testid="institutional-rail"] a {
-  color: var(--institutional-sidebar-foreground);
-}
-
-.ant-app [data-testid="institutional-rail"] a[aria-current="page"],
-.ant-app [data-testid="institutional-rail"] a:hover {
-  color: var(--institutional-sidebar-accent-foreground);
-}
-
-.ant-app nav[aria-label="Accesos móviles"] a {
-  color: var(--institutional-sidebar-foreground);
-}
-
-.ant-app nav[aria-label="Accesos móviles"] a[aria-current="page"],
-.ant-app nav[aria-label="Accesos móviles"] a:hover {
-  color: var(--institutional-sidebar-accent-foreground);
 }

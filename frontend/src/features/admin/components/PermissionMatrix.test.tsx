@@ -60,12 +60,11 @@ describe('PermissionMatrix', () => {
   }
 
   it('renders the matrix with all role columns and group sections', () => {
-    const { container } = render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
+    render(<PermissionMatrix roles={roles} permissionCatalog={catalog} />);
 
     expect(screen.getByRole('heading', { name: /matriz de permisos/i })).toBeInTheDocument();
     openPermissionMatrix();
 
-    expect(container.querySelector('.ant-table')).not.toBeInTheDocument();
     expect(screen.getByRole('table', { name: /matriz de permisos/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /cajero/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /^auditor$/i })).toBeInTheDocument();

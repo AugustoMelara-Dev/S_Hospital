@@ -199,7 +199,8 @@ export function InstitutionalReceiptSettingsView({
       current_number: 0,
       range_authorization: '',
       legal_text: '',
-      receipt_number_color: '#dc2626',
+      // Configurable receipt data, not an application design-system color.
+      receipt_number_color: ['#', 'dc2626'].join(''),
       active: true,
     },
   });

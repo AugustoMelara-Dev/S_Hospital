@@ -140,7 +140,7 @@ export function UserFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!isSubmitting) onOpenChange(next); }}>
-      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl" onInteractOutside={(event) => { if (isSubmitting) event.preventDefault(); }}>
+      <DialogContent className="max-h-svh overflow-y-auto sm:max-w-2xl" onInteractOutside={(event) => { if (isSubmitting) event.preventDefault(); }}>
         <DialogHeader>
           <DialogTitle>{editingUser ? 'Editar usuario' : 'Crear usuario'}</DialogTitle>
           <DialogDescription>Configure nombre, acceso y rol operativo.</DialogDescription>
