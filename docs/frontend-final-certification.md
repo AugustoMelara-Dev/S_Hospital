@@ -1,5 +1,10 @@
 # Certificación final del nuevo frontend
 
+> **Documento histórico sustituido.** Describe la implementación Ant/AG Grid/
+> ECharts eliminada posteriormente. La certificación vigente es
+> `docs/INTEGRATED_RELEASE_CERTIFICATION_2026-07-19.md` y confirma shadcn/ui,
+> TanStack Table y Recharts sin imports legacy.
+
 Fecha: 2026-07-14 (`America/Tegucigalpa`).
 
 ## Resultado

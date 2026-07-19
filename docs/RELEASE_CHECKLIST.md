@@ -5,6 +5,9 @@ una sola PC. No declarar `PRODUCTION_READY` hasta cerrar configuracion final del
 servidor real, backup worker, restore, impresion institucional y, si aplica,
 validacion fisica de clientes LAN.
 
+Certificacion integrada vigente: `docs/INTEGRATED_RELEASE_CERTIFICATION_2026-07-19.md`.
+Procedimiento de actualizacion/rollback: `docs/SAFE_UPDATE_ROLLBACK.md`.
+
 ## Quality gate seguro
 
 - `powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-checks.ps1`
@@ -57,6 +60,18 @@ reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni
 hardware. El full matrix historico de Playwright puede exceder el tiempo del
 contenedor; usar estos specs divididos como gate operativo hasta resolver ese
 timeout.
+
+El gate real adicional usa Laravel y MariaDB (sin API simulada):
+
+```powershell
+$env:E2E_RELEASE_PASSWORD = '<secreto-efimero-seguro>'
+powershell.exe -ExecutionPolicy Bypass -File scripts\run_release_e2e_mariadb.ps1
+Remove-Item Env:E2E_RELEASE_PASSWORD
+```
+
+Debe ejecutarse solo contra una base `local/testing` preparada y no productiva.
+La evidencia 2026-07-19 paso 2/2 specs sobre una MariaDB aislada creada desde
+cero.
 
 ## Reset dev/testing con base descartable
 
@@ -186,10 +201,11 @@ Validacion local/LAN fisica:
 - Confirmar que no se ejecutaron seeders demo en el servidor real.
 - Confirmar que `.env` production queda fuera de Git y no reemplaza secretos durante actualizaciones.
 - Confirmar dominios/IP LAN explicitos para `APP_URL`, CORS y `SANCTUM_STATEFUL_DOMAINS`.
-- Confirmar worker local de backups:
+- Confirmar workers locales de backups y eventos de tiempo real:
 
 ```powershell
 php artisan queue:work --queue=backups --tries=1 --timeout=600
+php artisan queue:work --queue=default --tries=3 --timeout=60
 ```
 
 En Windows, asegurar que la tarea/servicio del worker herede la ruta de `mysqldump.exe` o `mariadb-dump.exe` en PATH. En Fase 11 el worker `--once` proceso jobs; sin dump en PATH fallo de forma controlada, y con PATH de XAMPP el backup usado para restore fue `success`.
