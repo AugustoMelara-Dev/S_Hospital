@@ -27,6 +27,7 @@ export const strictModulePrefixes = [
   'src/features/reports/',
   'src/features/support/',
   'src/modules/reports/',
+  'src/modules/accounting/',
   'src/features/onboarding/',
   'src/features/invoices/components/',
   'src/features/invoices/InvoiceHistoryView.tsx',

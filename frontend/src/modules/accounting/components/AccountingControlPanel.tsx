@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Alert, Button } from 'antd';
+import { CircleCheck, TriangleAlert } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { finiteNumber, formatLempirasUI } from '../../../lib/money';
 import { cn } from '../../../lib/utils';
 import {
@@ -32,20 +35,10 @@ export function AccountingControlPanel({
         : 'Faltante de caja';
 
   return (
-    <section
-      aria-labelledby="accounting-control-title"
-      className="overflow-hidden border border-operational-border bg-operational-surface"
-    >
-      <div className="border-b border-border bg-muted/40 px-4 pb-4 pt-5 sm:px-5">
-        <h2 id="accounting-control-title" className="text-lg font-semibold tracking-tight text-foreground">
-          Control contable de caja
-        </h2>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          Ingresos, pendientes, anulaciones y estado del cierre, sin mezclar conceptos.
-        </p>
-      </div>
+    <Card aria-labelledby="accounting-control-title">
+      <CardHeader><CardTitle><h2 id="accounting-control-title">Control contable de caja</h2></CardTitle><CardDescription>Ingresos, pendientes, anulaciones y estado del cierre, sin mezclar conceptos.</CardDescription></CardHeader>
 
-      <dl className="divide-y divide-border">
+      <CardContent><dl className="divide-y divide-border">
         <Fact
           label="Ingresos cobrados"
           value={reconciliation.payments_total === undefined
@@ -90,41 +83,33 @@ export function AccountingControlPanel({
             hasDifference && difference === 0 && 'text-success-foreground',
           )}
         />
-      </dl>
+      </dl></CardContent>
 
       <div className="grid gap-3 border-t border-border p-4 sm:p-5">
         {status.state === 'blocked' ? (
-          <Alert
-            type="warning"
-            showIcon
-            title="Cierre bloqueado por conciliación pendiente"
-            description={<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Alert>
+            <TriangleAlert aria-hidden="true" />
+            <AlertTitle>Cierre bloqueado por conciliación pendiente</AlertTitle>
+            <AlertDescription><div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <span className="flex-1">Resuelva las facturas o recibos indicados antes de cerrar la caja.</span>
               {canViewInvoices ? (
-                <Button size="small">
-                  <Link to={historyHref}>Resolver en Historial</Link>
-                </Button>
+                <Button asChild size="sm"><Link to={historyHref}>Resolver en Historial</Link></Button>
               ) : (
                 <span className="text-xs font-medium">
                   Solicite apoyo a un usuario con acceso al Historial.
                 </span>
               )}
-            </div>}
-          />
+            </div></AlertDescription>
+          </Alert>
         ) : (
-          <Alert
-            type="success"
-            showIcon
-            title="Conciliación operativa lista"
-            description="Sin pendientes que bloqueen el cierre. Verifique el efectivo contado antes de confirmar."
-          />
+          <Alert><CircleCheck aria-hidden="true" /><AlertTitle>Conciliación operativa lista</AlertTitle><AlertDescription>Sin pendientes que bloqueen el cierre. Verifique el efectivo contado antes de confirmar.</AlertDescription></Alert>
         )}
 
         <p className="text-xs leading-relaxed text-muted-foreground">
           Los egresos operativos no están modelados en esta versión. Por eso no se muestra un valor cero ni una acción que pueda confundirse con registro de gastos.
         </p>
       </div>
-    </section>
+    </Card>
   );
 }
 
