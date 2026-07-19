@@ -115,7 +115,7 @@ type ReceiptTab = { key: string; label: string; children: ReactNode };
 function ReceiptTabs({ defaultValue, items }: { defaultValue: string; items: ReceiptTab[] }) {
   return (
     <Tabs defaultValue={defaultValue}>
-      <TabsList className="w-full justify-start overflow-x-auto" aria-label="Secciones de recibos">
+      <TabsList className="h-auto w-full flex-wrap justify-start" aria-label="Secciones de recibos">
         {items.map((item) => <TabsTrigger key={item.key} value={item.key}>{item.label}</TabsTrigger>)}
       </TabsList>
       {items.map((item) => <TabsContent key={item.key} value={item.key}>{item.children}</TabsContent>)}
@@ -730,7 +730,12 @@ export function InstitutionalReceiptSettingsView({
                             : 'border-operational-border bg-operational-surface'
                         }`}
                       >
-                        <RadioGroupItem id={`receipt-paper-${choice.value}`} value={choice.value} disabled={profileControlsDisabled} />
+                        <RadioGroupItem
+                          id={`receipt-paper-${choice.value}`}
+                          value={choice.value}
+                          disabled={profileControlsDisabled}
+                          aria-label={choice.label}
+                        />
                         <span className="min-w-0">
                           <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                             {choice.label}

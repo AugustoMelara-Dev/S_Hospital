@@ -32,7 +32,7 @@ export function PermissionMatrix({ roles, permissionCatalog, className }: Permis
   };
 
   return (
-    <Card className={className} aria-labelledby={titleId}>
+    <Card className={className} role="region" aria-labelledby={titleId}>
       <CardHeader className="sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle id={titleId} role="heading" aria-level={2}>Matriz de permisos</CardTitle>

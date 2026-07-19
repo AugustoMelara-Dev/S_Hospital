@@ -234,12 +234,12 @@ export function ExecutiveSummary({ report }: ExecutiveSummaryProps) {
           {report.summary.pending_count} factura{report.summary.pending_count === 1 ? '' : 's'} con saldo abierto
         </p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores financieros principales">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" role="group" aria-label="Indicadores financieros principales">
         {primaryMetrics.map((spec) => <KpiCard key={spec.key} report={report} spec={spec} />)}
       </div>
       <div>
         <h3 className="mb-3 text-sm font-semibold text-foreground">Indicadores operativos</h3>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Indicadores operativos complementarios">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" role="group" aria-label="Indicadores operativos complementarios">
           {operationalMetrics.map((spec) => <KpiCard key={spec.key} compact report={report} spec={spec} />)}
         </div>
       </div>

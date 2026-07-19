@@ -254,7 +254,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         ) : null}
 
         {showHistory ? (
-          <Card aria-label="Historial de respaldos locales">
+          <Card role="group" aria-label="Historial de respaldos locales">
             <CardHeader><CardTitle><h2>Historial de respaldos</h2></CardTitle><CardDescription>Ejecuciones locales, estado y descarga autorizada.</CardDescription></CardHeader>
             <CardContent className="flex flex-col gap-4">
             <BackupHistoryTable

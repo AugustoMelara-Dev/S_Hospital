@@ -37,7 +37,7 @@ export function TrendChart({ report }: TrendChartProps) {
         </CardHeader>
         <CardContent>
           <Chart ariaLabel="Gráfico de tendencia diaria de facturación y cobros" summary={`${data.length} ${data.length === 1 ? 'día' : 'días'} con actividad en el periodo.`} alternativeTable={table} state={data.length ? 'ready' : 'empty'} config={chartConfig}>
-            <RechartsLineChart data={data} accessibilityLayer margin={{ left: 12, right: 12 }}>
+            <RechartsLineChart data={data} accessibilityLayer={false} margin={{ left: 12, right: 12 }}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value: string) => value === 'Fecha no disponible' ? value : value.slice(5)} />
               <YAxis tickLine={false} axisLine={false} tickFormatter={(value: number) => `L ${value}`} width={64} />

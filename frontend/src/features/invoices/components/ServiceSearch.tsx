@@ -217,7 +217,7 @@ export function ServiceSearch({
             {activeFilterCount} filtro{activeFilterCount === 1 ? '' : 's'}
           </Badge>
         </div>
-        <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-2' : 'grid gap-3'}>
+        <div className={scannerEnabled ? 'grid gap-3 2xl:grid-cols-2' : 'grid gap-3'}>
           <div className="flex min-w-0 flex-col gap-2">
             <label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Buscar por nombre, area o categoria
@@ -513,7 +513,7 @@ function CategoryButton({
       variant={active ? 'default' : 'outline'}
       aria-checked={active}
       className={cn(
-        'min-h-11 border px-3 py-2 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'min-h-11 whitespace-normal border px-3 py-2 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
           ? 'border-secondary bg-secondary text-secondary-foreground'
           : 'border-border bg-surface text-muted-foreground hover:border-secondary/30 hover:bg-accent/45 hover:text-foreground',

@@ -379,6 +379,16 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
   test('critical protected routes satisfy the complete visual and axe matrix', async ({ page }, testInfo) => {
     test.setTimeout(1_200_000);
     await installAccessibilityMocks(page, { authenticated: true });
+    const requestedRoutes = process.env.A11Y_ROUTES?.split(',').map((route) => route.trim()).filter(Boolean);
+    const requestedMatrices = process.env.A11Y_MATRICES?.split(',').map((matrix) => matrix.trim()).filter(Boolean);
+    const selectedRoutes = requestedRoutes?.length
+      ? routeExpectations.filter((route) => requestedRoutes.includes(route.path))
+      : routeExpectations;
+    const selectedMatrices = requestedMatrices?.length
+      ? visualMatrix.filter((matrix) => requestedMatrices.includes(matrix.id))
+      : visualMatrix;
+    expect(selectedRoutes.length, 'A11Y_ROUTES must select at least one known route').toBeGreaterThan(0);
+    expect(selectedMatrices.length, 'A11Y_MATRICES must select at least one known matrix').toBeGreaterThan(0);
     const unclassifiedIncomplete: Array<{ route: string; details: unknown[] }> = [];
     const routeViolations: Array<{ route: string; details: unknown[] }> = [];
     const unnamedControls: Array<{ route: string; details: unknown[] }> = [];
@@ -387,19 +397,21 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     const radiusCoverage = Object.fromEntries(modernSurfaceSelectors.map((selector) => [selector, 0]));
     const screenshotDirectory = resolve('test-results/frontend-final/screenshots');
     const accessibilityDirectory = resolve('test-results/frontend-final/accessibility');
-    rmSync(screenshotDirectory, { force: true, recursive: true });
-    rmSync(accessibilityDirectory, { force: true, recursive: true });
+    if (process.env.A11Y_PRESERVE_OUTPUT !== '1') {
+      rmSync(screenshotDirectory, { force: true, recursive: true });
+      rmSync(accessibilityDirectory, { force: true, recursive: true });
+    }
     mkdirSync(screenshotDirectory, { recursive: true });
     mkdirSync(accessibilityDirectory, { recursive: true });
 
-    for (const matrix of visualMatrix) {
+    for (const matrix of selectedMatrices) {
       await page.setViewportSize({ width: matrix.width, height: matrix.height });
-      await page.goto(routeExpectations[0].path);
+      await page.goto(selectedRoutes[0].path);
       await page.evaluate((mode) => {
         localStorage.setItem('hospital-billing-theme', mode);
       }, matrix.mode);
 
-      for (const route of routeExpectations) {
+      for (const route of selectedRoutes) {
         await page.goto(route.path);
         await waitForScreen(page, route.heading);
         if (matrix.zoom !== 1) {
@@ -606,6 +618,8 @@ async function shellAxeReport(page: Page, contextSelector?: string) {
               opacity: computed.opacity,
               visibility: computed.visibility,
             } : null,
+            insideChart: Boolean(element?.closest('[data-chart]')),
+            chartHasAlternativeTable: Boolean(element?.closest('figure')?.querySelector('table')),
           };
         }),
       })),
@@ -630,6 +644,8 @@ async function shellAxeReport(page: Page, contextSelector?: string) {
               opacity: computed.opacity,
               visibility: computed.visibility,
             } : null,
+            insideChart: Boolean(element?.closest('[data-chart]')),
+            chartHasAlternativeTable: Boolean(element?.closest('figure')?.querySelector('table')),
           };
         }),
       })),
@@ -647,9 +663,14 @@ async function expectShellAxeReport(page: Page, state: string, testInfo: TestInf
       && node.computed.contrastRatio >= 4.5;
     const isPseudoElementProbe = entry.id === 'color-contrast' && /due to a pseudo element/i.test(node.failure ?? '');
     const isShortDataProbe = entry.id === 'color-contrast' && /content is too short to determine/i.test(node.failure ?? '');
+    const isAccessibleChartProbe = entry.id === 'color-contrast'
+      && node.insideChart
+      && node.chartHasAlternativeTable
+      && /contains an image node/i.test(node.failure ?? '');
     const hasVerifiedContrast = typeof node.computed?.contrastRatio === 'number'
       && node.computed.contrastRatio >= 4.5;
-    const classifiedManually = isVerifiedOverlapContrast
+    const classifiedManually = isAccessibleChartProbe
+      || isVerifiedOverlapContrast
       || ((isPseudoElementProbe || isShortDataProbe) && hasVerifiedContrast);
     return {
       id: entry.id,
@@ -658,7 +679,9 @@ async function expectShellAxeReport(page: Page, state: string, testInfo: TestInf
       html: node.html,
       classification: classifiedManually ? 'manual-false-positive' : 'unclassified',
       analysis: classifiedManually
-        ? isVerifiedOverlapContrast
+        ? isAccessibleChartProbe
+          ? 'Axe no calcula contraste dentro del SVG de Recharts; el contenedor expone un nombre accesible y la tabla HTML contigua conserva todos los valores exactos.'
+          : isVerifiedOverlapContrast
           ? `Contraste manual ${node.computed?.contrastRatio}:1 calculado entre ${node.computed?.color} y el ancestro opaco ${node.computed?.effectiveBackgroundColor}; cumple 4.5:1.`
           : isShortDataProbe
           ? 'El nodo es un valor numérico visible y significativo; Axe lo deja incompleto únicamente por la longitud del contenido.'

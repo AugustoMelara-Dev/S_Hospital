@@ -48,7 +48,7 @@ export function PaymentMethodPanel({ report }: PaymentMethodPanelProps) {
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <Chart ariaLabel="Participación por método de pago" summary={`${methods.length} métodos con pagos publicados.`} alternativeTable={table} state={methods.length ? 'ready' : 'empty'} config={chartConfig}>
-            <BarChart data={methods} accessibilityLayer layout="vertical" margin={{ left: 12, right: 24 }}>
+            <BarChart data={methods} accessibilityLayer={false} layout="vertical" margin={{ left: 12, right: 24 }}>
               <CartesianGrid horizontal={false} />
               <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={(value: number) => `L ${value}`} />
               <YAxis dataKey="label" type="category" tickLine={false} axisLine={false} width={96} />

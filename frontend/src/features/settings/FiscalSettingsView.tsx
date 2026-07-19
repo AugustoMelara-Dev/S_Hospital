@@ -77,7 +77,7 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
       ) : null}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start overflow-x-auto" aria-label="Secciones de configuración">
+        <TabsList className="h-auto w-full flex-wrap justify-start" aria-label="Secciones de configuración">
           {canViewFiscalSettings ? <><TabsTrigger value="resumen">Resumen</TabsTrigger><TabsTrigger value="hospital">Hospital</TabsTrigger><TabsTrigger value="numeracion">Numeración</TabsTrigger></> : null}
           <TabsTrigger value="operativa">Operativa</TabsTrigger>
           {canViewFiscalSettings ? <TabsTrigger value="marca">Marca</TabsTrigger> : null}

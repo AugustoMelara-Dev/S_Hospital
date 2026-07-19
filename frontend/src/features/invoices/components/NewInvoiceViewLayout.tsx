@@ -166,7 +166,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Nueva factura</h1>
           <p className="text-sm text-muted-foreground">Identifique al paciente, agregue servicios y cobre desde una sola estación.</p>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2" aria-label="Acciones de facturación">
+        <div className="flex flex-wrap items-center justify-end gap-2" role="group" aria-label="Acciones de facturación">
           <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>
             <History aria-hidden="true" />Historial
           </Button>

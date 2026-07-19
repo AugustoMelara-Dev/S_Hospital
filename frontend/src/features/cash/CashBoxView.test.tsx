@@ -16,24 +16,24 @@ describe('CashBoxView', () => {
 
     renderCashBox(<CashBoxView canViewCashSessionReport onStatus={vi.fn()} />);
 
-    const summaryTab = await screen.findByRole('tab', { name: /^resumen$/i });
-    expect(summaryTab).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: /^movimientos$/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /^arqueo$/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /^cierre$/i })).toBeInTheDocument();
+    const summaryTab = await screen.findByRole('radio', { name: /^resumen$/i });
+    expect(summaryTab).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /^movimientos$/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^arqueo$/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^cierre$/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/monto contado/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /control contable de caja/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /cierre guiado/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: /Conciliaci.n de caja/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: /^cierre$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^cierre$/i }));
 
     const countedAmount = await screen.findByLabelText(/monto contado/i);
     await waitFor(() => expect(countedAmount).toHaveFocus());
 
-    fireEvent.click(screen.getByRole('tab', { name: /^resumen$/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^resumen$/i }));
     expect(screen.queryByLabelText(/monto contado/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /^resumen$/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('radio', { name: /^resumen$/i })).toHaveAttribute('aria-checked', 'true');
   });
 
   it('reports the manual refresh as a typed user action', async () => {
@@ -41,7 +41,7 @@ describe('CashBoxView', () => {
     const onStatus = vi.fn();
 
     renderCashBox(<CashBoxView onStatus={onStatus} />);
-    await screen.findByRole('tab', { name: /^resumen$/i });
+    await screen.findByRole('radio', { name: /^resumen$/i });
     onStatus.mockClear();
 
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
@@ -821,7 +821,7 @@ describe('CashBoxView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /continuar al cierre/i }));
 
-    expect(screen.getByRole('tab', { name: /^cierre$/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('radio', { name: /^cierre$/i })).toHaveAttribute('aria-checked', 'true');
     expect(await screen.findByLabelText(/monto contado/i)).toHaveValue('125.50');
     expect(screen.getByLabelText(/monto contado/i)).toHaveAttribute('readonly');
     expect(screen.getByText(/calculado desde el arqueo por denominaciones/i)).toBeInTheDocument();
@@ -909,7 +909,7 @@ function renderCashBox(node: ReactNode) {
 }
 
 async function activateCashView(name: 'Resumen' | 'Movimientos' | 'Arqueo' | 'Cierre') {
-  fireEvent.click(await screen.findByRole('tab', { name: new RegExp(`^${name}$`, 'i') }));
+  fireEvent.click(await screen.findByRole('radio', { name: new RegExp(`^${name}$`, 'i') }));
 }
 
 function cashSessionFixture(overrides: Partial<CashSession> = {}): CashSession {

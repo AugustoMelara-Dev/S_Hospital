@@ -32,7 +32,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { Spinner } from '@/components/ui/spinner';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 type CashView = 'summary' | 'movements' | 'reconciliation' | 'close';
 
@@ -473,7 +473,21 @@ export function CashBoxView({
 
         {canRenderOperationalState && isOpen && activeSession ? (
           <>
-            <Tabs value={activeView} onValueChange={(key) => setActiveView(key as CashView)}><TabsList aria-label="Vistas de caja"><TabsTrigger value="summary" onClick={() => setActiveView('summary')}>Resumen</TabsTrigger><TabsTrigger value="movements" onClick={() => setActiveView('movements')}>Movimientos</TabsTrigger><TabsTrigger value="reconciliation" onClick={() => setActiveView('reconciliation')}>Arqueo</TabsTrigger><TabsTrigger value="close" onClick={() => setActiveView('close')}>Cierre</TabsTrigger></TabsList></Tabs>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              spacing={0}
+              value={activeView}
+              aria-label="Vista activa de caja"
+              onValueChange={(key) => {
+                if (key) setActiveView(key as CashView);
+              }}
+            >
+              <ToggleGroupItem value="summary">Resumen</ToggleGroupItem>
+              <ToggleGroupItem value="movements">Movimientos</ToggleGroupItem>
+              <ToggleGroupItem value="reconciliation">Arqueo</ToggleGroupItem>
+              <ToggleGroupItem value="close">Cierre</ToggleGroupItem>
+            </ToggleGroup>
 
             {activeView === 'summary' ? (
               <div className="grid min-w-0 gap-4">
