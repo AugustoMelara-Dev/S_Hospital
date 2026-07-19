@@ -267,6 +267,8 @@ class BackupWorkflowTest extends TestCase
         $decryptedSql = (string) file_get_contents($decryptedPath);
         $this->assertStringContainsString('CREATE TABLE', $decryptedSql);
         $this->assertStringContainsString('INSERT INTO', $decryptedSql);
+        $this->assertStringContainsString("UPDATE backup_logs SET status = 'failed'", $decryptedSql);
+        $this->assertStringContainsString("WHERE status = 'pending';", $decryptedSql);
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,

@@ -97,6 +97,8 @@ class DatabaseDumpWriter
         } finally {
             $this->removeDefaultsFile($defaultsFile);
         }
+
+        $this->appendRestoreReconciliation($absolutePath);
     }
 
     private function createMysqlDefaultsFile(string $password): string
@@ -194,6 +196,7 @@ class DatabaseDumpWriter
                 }
             }
 
+            $this->writeDumpLine($handle, $this->restoreReconciliationSql());
             $this->writeDumpLine($handle, 'COMMIT;');
         } finally {
             fclose($handle);
@@ -215,6 +218,24 @@ class DatabaseDumpWriter
 
             $offset += $written;
         }
+    }
+
+    private function appendRestoreReconciliation(string $absolutePath): void
+    {
+        $written = file_put_contents(
+            $absolutePath,
+            PHP_EOL.$this->restoreReconciliationSql().PHP_EOL,
+            FILE_APPEND | LOCK_EX,
+        );
+
+        if ($written === false) {
+            throw new RuntimeException('No se pudo completar la reconciliacion del dump para restauracion.');
+        }
+    }
+
+    private function restoreReconciliationSql(): string
+    {
+        return "UPDATE backup_logs SET status = 'failed', completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP), error_message = 'Operacion pendiente reconciliada durante restauracion.' WHERE status = 'pending';";
     }
 
     private function findDumpBinary(): ?string
