@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircleOutlined, PrinterOutlined, SaveOutlined } from '@ant-design/icons';
+import { CheckCircle, Printer, Save, TriangleAlert } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Checkbox, Collapse, Form, Input, InputNumber, Radio, Select, Spin, Tabs, theme as antdTheme } from 'antd';
-import { ReactNode, useRef } from 'react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Field as UiField, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { type ComponentProps, type ReactNode, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { SectionCard, StatCard } from '@/design-system/components/InstitutionalComponents';
@@ -99,7 +109,42 @@ type ProfileDraft = {
 type ProfileMutationData = ProfileDraft & {
   profileId: number;
 };
-const { TextArea } = Input;
+
+type ReceiptTab = { key: string; label: string; children: ReactNode };
+
+function ReceiptTabs({ defaultValue, items }: { defaultValue: string; items: ReceiptTab[] }) {
+  return (
+    <Tabs defaultValue={defaultValue}>
+      <TabsList className="w-full justify-start overflow-x-auto" aria-label="Secciones de recibos">
+        {items.map((item) => <TabsTrigger key={item.key} value={item.key}>{item.label}</TabsTrigger>)}
+      </TabsList>
+      {items.map((item) => <TabsContent key={item.key} value={item.key}>{item.children}</TabsContent>)}
+    </Tabs>
+  );
+}
+
+function ReceiptSelect({ id, value, onChange, options, disabled, ariaLabel }: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  disabled?: boolean;
+  ariaLabel?: string;
+}) {
+  return (
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger id={id} aria-label={ariaLabel}><SelectValue /></SelectTrigger>
+      <SelectContent>{options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+    </Select>
+  );
+}
+
+function NumberInput({ value, onChange, ...props }: Omit<ComponentProps<typeof Input>, 'onChange' | 'value' | 'type'> & {
+  value?: number;
+  onChange: (value: number | null) => void;
+}) {
+  return <Input type="number" value={value ?? ''} onChange={(event) => onChange(Number.isNaN(event.target.valueAsNumber) ? null : event.target.valueAsNumber)} {...props} />;
+}
 export function InstitutionalReceiptSettingsView({
   canEdit,
   canEditAdvanced = false,
@@ -154,7 +199,7 @@ export function InstitutionalReceiptSettingsView({
       current_number: 0,
       range_authorization: '',
       legal_text: '',
-      receipt_number_color: String(antdTheme.getDesignToken().colorError),
+      receipt_number_color: '#dc2626',
       active: true,
     },
   });
@@ -431,7 +476,7 @@ export function InstitutionalReceiptSettingsView({
           description="Papel, copias, logo y firma. El sistema prepara la impresión según el perfil seleccionado."
         />
         <div className="flex min-h-48 items-center justify-center" role="status" aria-label="Cargando ajustes de recibos...">
-          <Spin size="large" description="Cargando ajustes de recibos..." />
+          <Spinner /><span className="sr-only">Cargando ajustes de recibos...</span>
         </div>
       </div>
     );
@@ -444,13 +489,8 @@ export function InstitutionalReceiptSettingsView({
           title="Recibos institucionales"
           description="Configuración del recibo clásico, serie, papel y copias para impresora normal."
         />
-        <Alert
-          type="error"
-          showIcon
-          title="No se pudieron cargar los ajustes de recibos"
-          description={userSafeErrorMessage(settingsQuery.error, 'Revise el servidor local y vuelva a intentar.')}
-        />
-        <Button htmlType="button" onClick={() => void settingsQuery.refetch()}>
+        <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudieron cargar los ajustes de recibos</AlertTitle><AlertDescription>{userSafeErrorMessage(settingsQuery.error, 'Revise el servidor local y vuelva a intentar.')}</AlertDescription></Alert>
+        <Button type="button" onClick={() => void settingsQuery.refetch()}>
           Reintentar
         </Button>
       </>
@@ -518,21 +558,15 @@ export function InstitutionalReceiptSettingsView({
       </div>
 
       {!canEdit && (
-        <Alert
-          type="warning"
-          showIcon
-          title="Modo solo lectura"
-          description="Solo usuarios autorizados pueden cambiar serie, perfiles o textos institucionales."
-        />
+        <Alert><TriangleAlert /><AlertTitle>Modo solo lectura</AlertTitle><AlertDescription>Solo usuarios autorizados pueden cambiar serie, perfiles o textos institucionales.</AlertDescription></Alert>
       )}
 
       {error && (
-        <Alert type="error" showIcon title="Error" description={error} />
+        <Alert variant="destructive"><TriangleAlert /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
       )}
 
-      <Tabs
-        defaultActiveKey="papel"
-        destroyOnHidden={false}
+      <ReceiptTabs
+        defaultValue="papel"
         items={[
           {
             key: 'institucion',
@@ -578,11 +612,11 @@ export function InstitutionalReceiptSettingsView({
                 </Field>
               </div>
               <Field label="Leyenda de copias o pie" id="receipt_footer_text">
-                <Controller name="receipt_footer_text" control={institutionForm.control} render={({ field }) => <TextArea id="receipt_footer_text" disabled={!canEdit} {...field} />} />
+                <Controller name="receipt_footer_text" control={institutionForm.control} render={({ field }) => <Textarea id="receipt_footer_text" disabled={!canEdit} {...field} />} />
               </Field>
               <div className="flex justify-end">
-                <Button htmlType="submit" type="primary" loading={institutionMutation.isPending} disabled={!canEdit} icon={<SaveOutlined />}>
-                  Guardar institución
+                <Button type="submit" disabled={!canEdit || institutionMutation.isPending}>
+                  {institutionMutation.isPending ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}Guardar institución
                 </Button>
               </div>
             </form>
@@ -610,12 +644,7 @@ export function InstitutionalReceiptSettingsView({
                     })(),
               )}
             >
-              <Alert
-                type="warning"
-                showIcon
-                title="Correlativo sensible"
-                description="Cambie el correlativo solo con autorización documentada. No lo use para corregir recibos ya emitidos."
-              />
+              <Alert><TriangleAlert /><AlertTitle>Correlativo sensible</AlertTitle><AlertDescription>Cambie el correlativo solo con autorización documentada. No lo use para corregir recibos ya emitidos.</AlertDescription></Alert>
               <div className="grid gap-4 md:grid-cols-3">
                 <Field label="Serie" id="series" error={seriesForm.formState.errors.series?.message}>
                   <Controller name="series" control={seriesForm.control} render={({ field }) => <Input id="series" disabled={!canEdit} {...field} />} />
@@ -627,10 +656,10 @@ export function InstitutionalReceiptSettingsView({
                   <Controller name="number_format" control={seriesForm.control} render={({ field }) => <Input id="number_format" disabled={!canEdit} {...field} />} />
                 </Field>
                 <Field label="Número inicial" id="min_number">
-                  <Controller name="min_number" control={seriesForm.control} render={({ field }) => <InputNumber id="min_number" disabled={!canEdit} className="w-full" {...field} />} />
+                  <Controller name="min_number" control={seriesForm.control} render={({ field }) => <NumberInput id="min_number" disabled={!canEdit} className="w-full" {...field} />} />
                 </Field>
                 <Field label="Número final" id="max_number" error={seriesForm.formState.errors.max_number?.message}>
-                  <Controller name="max_number" control={seriesForm.control} render={({ field }) => <InputNumber id="max_number" disabled={!canEdit} className="w-full" {...field} />} />
+                  <Controller name="max_number" control={seriesForm.control} render={({ field }) => <NumberInput id="max_number" disabled={!canEdit} className="w-full" {...field} />} />
                 </Field>
                 <Field
                   label="Correlativo actual"
@@ -638,7 +667,7 @@ export function InstitutionalReceiptSettingsView({
                   error={seriesForm.formState.errors.current_number?.message}
                   hint="El próximo recibo usará este valor + 1."
                 >
-                  <Controller name="current_number" control={seriesForm.control} render={({ field }) => <InputNumber id="current_number" disabled={!canEdit} className="w-full" {...field} />} />
+                  <Controller name="current_number" control={seriesForm.control} render={({ field }) => <NumberInput id="current_number" disabled={!canEdit} className="w-full" {...field} />} />
                 </Field>
                 <Field label="Color del número" id="receipt_number_color">
                   <Controller name="receipt_number_color" control={seriesForm.control} render={({ field }) => <Input id="receipt_number_color" type="color" disabled={!canEdit} {...field} />} />
@@ -651,18 +680,17 @@ export function InstitutionalReceiptSettingsView({
                     id="active"
                     checked={seriesForm.watch('active')}
                     disabled={!canEdit}
-                    onChange={(event) => seriesForm.setValue('active', event.target.checked)}
-                  >
-                    Serie activa
-                  </Checkbox>
+                    onCheckedChange={(checked) => seriesForm.setValue('active', Boolean(checked), { shouldDirty: true })}
+                  />
+                  <FieldLabel htmlFor="active">Serie activa</FieldLabel>
                 </div>
               </div>
               <Field label="Texto legal del recibo" id="legal_text">
-                <Controller name="legal_text" control={seriesForm.control} render={({ field }) => <TextArea id="legal_text" disabled={!canEdit} {...field} />} />
+                <Controller name="legal_text" control={seriesForm.control} render={({ field }) => <Textarea id="legal_text" disabled={!canEdit} {...field} />} />
               </Field>
               <div className="flex justify-end">
-                <Button htmlType="submit" type="primary" loading={seriesMutation.isPending} disabled={!canEdit} icon={<SaveOutlined />}>
-                  Guardar serie
+                <Button type="submit" disabled={!canEdit || seriesMutation.isPending}>
+                  {seriesMutation.isPending ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}Guardar serie
                 </Button>
               </div>
             </form>
@@ -682,40 +710,40 @@ export function InstitutionalReceiptSettingsView({
             >
               <fieldset disabled={profileControlsDisabled} className="min-w-0 space-y-3">
                 <legend className="text-sm font-semibold text-foreground">Formatos institucionales</legend>
-                <Radio.Group
-                  name="institutional-receipt-paper"
+                <RadioGroup
                   aria-label="Formatos institucionales: tipo de papel del recibo"
                   value={paper}
                   disabled={profileControlsDisabled}
-                  onChange={(event) => selectPaper(event.target.value as InstitutionalPaper)}
+                  onValueChange={(value) => selectPaper(value as InstitutionalPaper)}
                   className="grid gap-3 sm:grid-cols-3"
                 >
                   {PAPER_CHOICES.map((choice) => {
                     const selected = choice.value === paper;
                     return (
-                      <Radio
+                      <label
                         key={choice.value}
-                        value={choice.value}
-                        className={`min-h-11 border p-3 text-left ${
+                        htmlFor={`receipt-paper-${choice.value}`}
+                        className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border p-3 text-left ${
                           selected
                             ? 'border-hospital-primary bg-hospital-primary/5'
                             : 'border-operational-border bg-operational-surface'
                         }`}
                       >
+                        <RadioGroupItem id={`receipt-paper-${choice.value}`} value={choice.value} disabled={profileControlsDisabled} />
                         <span className="min-w-0">
                           <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                             {choice.label}
-                            {selected ? <CheckCircleOutlined aria-hidden="true" /> : null}
+                            {selected ? <CheckCircle aria-hidden="true" /> : null}
                           </span>
                           <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                             {choice.description}
                           </span>
                           {selected ? <span className="mt-1 block text-xs font-semibold">Seleccionado</span> : null}
                         </span>
-                      </Radio>
+                      </label>
                     );
                   })}
-                </Radio.Group>
+                </RadioGroup>
               </fieldset>
 
               <fieldset className="mt-5 min-w-0 border border-dashed border-operational-border p-3">
@@ -751,9 +779,9 @@ export function InstitutionalReceiptSettingsView({
               >
                 <div className="grid gap-4 md:grid-cols-3">
                   <Field label="Copias" id="copies_mode">
-                    <Select
+                    <ReceiptSelect
                       id="copies_mode"
-                      aria-label="Copias"
+                      ariaLabel="Copias"
                       value={profileForm.watch('copies_mode')}
                       onChange={(value) => profileForm.setValue('copies_mode', value as ProfileFormData['copies_mode'], { shouldDirty: true })}
                       disabled={profileControlsDisabled}
@@ -781,11 +809,10 @@ export function InstitutionalReceiptSettingsView({
                 </div>
 
                 {canEditAdvanced ? (
-                  <Collapse
-                    items={[{
-                      key: 'advanced',
-                      label: 'Ajustes técnicos avanzados',
-                      children: (
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value="advanced">
+                      <AccordionTrigger>Ajustes técnicos avanzados</AccordionTrigger>
+                      <AccordionContent>
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                           {([
                             ['width_mm', 'Ancho mm'],
@@ -801,7 +828,7 @@ export function InstitutionalReceiptSettingsView({
                               name={name}
                               render={({ field, fieldState }) => (
                                 <Field id={`advanced_${name}`} label={label} error={fieldState.error?.message}>
-                                  <InputNumber
+                                  <NumberInput
                                     id={`advanced_${name}`}
                                     min={0}
                                     step={0.1}
@@ -819,7 +846,7 @@ export function InstitutionalReceiptSettingsView({
                             name="orientation"
                             render={({ field }) => (
                               <Field id="advanced_orientation" label="Orientación">
-                                <Select
+                                <ReceiptSelect
                                   id="advanced_orientation"
                                   value={field.value}
                                   onChange={field.onChange}
@@ -839,7 +866,7 @@ export function InstitutionalReceiptSettingsView({
                             name="font_scale"
                             render={({ field, fieldState }) => (
                               <Field id="advanced_font_scale" label="Escala" error={fieldState.error?.message}>
-                                <InputNumber
+                                <NumberInput
                                   id="advanced_font_scale"
                                   min={0.5}
                                   max={2}
@@ -852,21 +879,21 @@ export function InstitutionalReceiptSettingsView({
                           />
                           <div className="md:col-span-2 xl:col-span-3">
                             <Field id="advanced_support_reason" label="Motivo de soporte" error={advancedProfileForm.formState.errors.support_reason?.message}>
-                              <TextArea id="advanced_support_reason" rows={3} {...advancedProfileForm.register('support_reason')} />
+                              <Textarea id="advanced_support_reason" rows={3} {...advancedProfileForm.register('support_reason')} />
                             </Field>
                           </div>
                         </div>
-                      ),
-                    }]}
-                  />
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 ) : null}
 
                 <div className="flex flex-wrap justify-end gap-2">
-                  <Button htmlType="button" disabled={profileControlsDisabled} loading={testPrintMutation.isPending} onClick={() => testPrintMutation.mutate()} icon={<PrinterOutlined />}>
-                    Imprimir prueba
+                  <Button type="button" disabled={profileControlsDisabled || testPrintMutation.isPending} onClick={() => testPrintMutation.mutate()} variant="outline">
+                    {testPrintMutation.isPending ? <Spinner data-icon="inline-start" /> : <Printer data-icon="inline-start" />}Imprimir prueba
                   </Button>
-                  <Button htmlType="submit" type="primary" loading={profileMutation.isPending} disabled={!canEdit || !selectedProfile} icon={<SaveOutlined />}>
-                    Guardar perfil
+                  <Button type="submit" disabled={!canEdit || !selectedProfile || profileMutation.isPending}>
+                    {profileMutation.isPending ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}Guardar perfil
                   </Button>
                 </div>
               </form>
@@ -943,15 +970,11 @@ function Field({
   label: string;
 }) {
   return (
-    <Form.Item
-      label={label}
-      htmlFor={id}
-      validateStatus={error ? 'error' : undefined}
-      help={error ?? hint}
-      className="mb-0"
-    >
+    <UiField data-invalid={Boolean(error)}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {children}
-    </Form.Item>
+      {error ? <FieldError>{error}</FieldError> : hint ? <FieldDescription>{hint}</FieldDescription> : null}
+    </UiField>
   );
 }
 
@@ -975,10 +998,9 @@ function CheckboxField({
         aria-label={label}
         checked={checked}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.checked)}
-      >
-        {label}
-      </Checkbox>
+        onCheckedChange={(checked) => onChange(Boolean(checked))}
+      />
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
     </div>
   );
 }

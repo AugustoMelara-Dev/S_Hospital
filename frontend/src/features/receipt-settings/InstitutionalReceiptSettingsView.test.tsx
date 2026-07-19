@@ -133,16 +133,16 @@ async function activateTab(name: string | RegExp) {
 
 async function chooseCopies(label: string) {
   const copies = screen.getByRole('combobox', { name: /copias/i });
-  fireEvent.mouseDown(copies);
-  fireEvent.click(await screen.findByText(label));
+  fireEvent.click(copies);
+  fireEvent.click(await screen.findByRole('option', { name: label }));
   await waitFor(() => {
-    expect(within(copies.closest('.ant-select') as HTMLElement).getByText(label)).toBeInTheDocument();
+    expect(copies).toHaveTextContent(label);
   });
 }
 
 function expectSelectedCopies(label: string) {
   const copies = screen.getByRole('combobox', { name: /copias/i });
-  expect(within(copies.closest('.ant-select') as HTMLElement).getByText(label)).toBeInTheDocument();
+  expect(copies).toHaveTextContent(label);
 }
 
 describe('InstitutionalReceiptSettingsView', () => {
@@ -647,7 +647,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     await activateTab('Serie');
 
     const minimum = screen.getByLabelText(/n.mero inicial/i);
-    await waitFor(() => expect(minimum).toHaveValue('1'));
+    await waitFor(() => expect(minimum).toHaveValue(1));
     await user.clear(minimum);
     await user.type(minimum, '100');
     const maximum = screen.getByLabelText(/n.mero final/i);
@@ -668,7 +668,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     await activateTab('Serie');
 
     const maximum = screen.getByLabelText(/n.mero final/i);
-    await waitFor(() => expect(maximum).toHaveValue('100'));
+    await waitFor(() => expect(maximum).toHaveValue(100));
     const current = screen.getByLabelText(/correlativo actual/i);
     await user.clear(current);
     await user.type(current, '150');
@@ -687,7 +687,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     await activateTab('Serie');
 
     const maximum = screen.getByLabelText(/n.mero final/i);
-    await waitFor(() => expect(maximum).toHaveValue('100'));
+    await waitFor(() => expect(maximum).toHaveValue(100));
     const current = screen.getByLabelText(/correlativo actual/i);
     await user.clear(current);
     await user.type(current, '100');
