@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
-import { operationalEvidencePath } from './fixtures/operational-evidence-path';
+import { operationalEvidencePath } from '../src/test-support/operational-evidence-path';
 
 test.beforeEach(async ({ page }) => installStrictMockGuard(page));
 test.afterEach(async ({ page }) => assertStrictMockGuard(page));

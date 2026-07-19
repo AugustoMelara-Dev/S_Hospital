@@ -5,6 +5,7 @@ $setup = Get-Content -LiteralPath (Join-Path $projectRoot "setup.bat") -Raw
 $installer = Get-Content -LiteralPath (Join-Path $PSScriptRoot "deploy_hospital_lan.ps1") -Raw
 $releaseBuilder = Get-Content -LiteralPath (Join-Path $PSScriptRoot "make_offline_release.ps1") -Raw
 $imageLoader = Get-Content -LiteralPath (Join-Path $PSScriptRoot "load_offline_images.ps1") -Raw
+$releaseValidator = Get-Content -LiteralPath (Join-Path $PSScriptRoot "assert_offline_release_clean.ps1") -Raw
 $productionCompose = Get-Content -LiteralPath (Join-Path $projectRoot "docker-compose.prod.yml") -Raw
 
 function Assert-Contains([string] $content, [string] $needle, [string] $label) {
@@ -55,5 +56,10 @@ foreach ($pinnedImage in @(
 }
 Assert-Contains $releaseBuilder '".env.example"' "offline release builder"
 Assert-Contains $releaseBuilder '"README.md"' "offline release builder"
+Assert-NotContains $releaseBuilder 'frontend\.env.production' "offline release builder"
+Assert-NotContains $releaseBuilder 'docs\*' "offline release builder"
+Assert-Contains $releaseBuilder '$releaseDocs' "offline release builder"
+Assert-NotContains $releaseValidator 'validate_support_packet_safety.ps1' "offline release validator"
+Assert-Contains $releaseValidator '@sha256:' "offline release validator"
 
 Write-Host "[ OK ] offline release contract is complete and secure"

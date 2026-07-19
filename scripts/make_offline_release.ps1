@@ -138,16 +138,36 @@ $destBackendDir = Join-Path $releaseDir "backend"
 $null = New-Item -ItemType Directory -Force -Path $destBackendDir
 Copy-Item -Path (Join-Path $projectRoot "backend\Dockerfile.prod") -Destination (Join-Path $destBackendDir "Dockerfile.prod") -Force
 
-# Copiar selectivamente .env.production de frontend
-$destFrontendDir = Join-Path $releaseDir "frontend"
-$null = New-Item -ItemType Directory -Force -Path $destFrontendDir
-Copy-Item -Path (Join-Path $projectRoot "frontend\.env.production") -Destination (Join-Path $destFrontendDir ".env.production") -Force
+# Copiar solo documentacion operativa; los planes, evidencias y reportes QA
+# permanecen en el repositorio y no forman parte del artefacto de produccion.
 
 # Copiar documentación
+$releaseDocs = @(
+    "00_README.md",
+    "BACKUP_RESTORE.md",
+    "backup-restore-runbook.md",
+    "DISASTER_RECOVERY.md",
+    "HTTPS_OPTIONAL.md",
+    "INSTALL_SUMMARY.md",
+    "MAINTENANCE_ROUTINE.md",
+    "OFFLINE_INSTALL.md",
+    "OFFLINE_LAN_INSTALL.md",
+    "PHYSICAL_SECURITY.md",
+    "print-profiles.md",
+    "RELEASE_CHECKLIST.md",
+    "SAFE_UPDATE_ROLLBACK.md",
+    "SECRETS.md",
+    "SECURITY_SUPPLY_CHAIN_RUNBOOK.md"
+)
 $destDocsDir = Join-Path $releaseDir "docs"
 $null = New-Item -ItemType Directory -Force -Path $destDocsDir
-if (Test-Path (Join-Path $projectRoot "docs")) {
-    Copy-Item -Path (Join-Path $projectRoot "docs\*") -Destination $destDocsDir -Recurse -Force
+foreach ($doc in $releaseDocs) {
+    $sourceDoc = Join-Path $projectRoot ("docs\" + $doc)
+    if (-not (Test-Path -LiteralPath $sourceDoc -PathType Leaf)) {
+        throw "Falta documentacion operativa requerida para el release: docs/$doc"
+    }
+
+    Copy-Item -LiteralPath $sourceDoc -Destination (Join-Path $destDocsDir $doc) -Force
 }
 
 # 5. Generar Checksums SHA256 para cada imagen

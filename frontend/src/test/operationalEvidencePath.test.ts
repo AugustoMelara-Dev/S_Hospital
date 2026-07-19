@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { operationalEvidencePath } from '../../e2e/fixtures/operational-evidence-path';
+import { operationalEvidencePath } from '../test-support/operational-evidence-path';
 
 const temporaryRoots: string[] = [];
 

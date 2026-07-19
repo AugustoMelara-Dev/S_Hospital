@@ -147,7 +147,7 @@ function Invoke-ComposeImages([string] $composePath) {
         }
 
         return @($rawOutput |
-            Where-Object { $_ -match '^[A-Za-z0-9._/-]+:[A-Za-z0-9._-]+$' } |
+            Where-Object { $_ -match '^[A-Za-z0-9._/-]+(?::[A-Za-z0-9._-]+)?(?:@sha256:[a-fA-F0-9]{64})?$' } |
             Sort-Object -Unique)
     } finally {
         foreach ($key in $savedEnv.Keys) {
@@ -185,14 +185,12 @@ Test-RequiredPath "scripts\deploy_hospital_lan.ps1" "file"
 Test-RequiredPath "scripts\load_offline_images.ps1" "file"
 Test-RequiredPath "scripts\install_hospital_startup_shortcut.ps1" "file"
 Test-RequiredPath "scripts\install_backup_tasks_windows.ps1" "file"
-Test-RequiredPath "scripts\validate_support_packet_safety.ps1" "file"
 Test-RequiredPath "scripts\run_backup_worker.cmd" "file"
 Test-RequiredPath "scripts\run_scheduled_backup.cmd" "file"
 
 Test-ReleaseFileMatchesSource "docker-compose.prod.yml"
 Test-ReleaseFileMatchesSource "backend\Dockerfile.prod"
 Test-ReleaseFileMatchesSource "nginx\default.conf"
-Test-ReleaseFileMatchesSource "scripts\collect_support_packet.ps1"
 Test-ReleaseFileMatchesSource "scripts\deploy_hospital_lan.ps1"
 Test-ReleaseFileMatchesSource "scripts\install_hospital_startup_shortcut.ps1"
 Test-ReleaseFileMatchesSource "scripts\install_backup_tasks_windows.ps1"
@@ -200,7 +198,6 @@ Test-ReleaseFileMatchesSource "scripts\lib\operational_url_safety.ps1"
 Test-ReleaseFileMatchesSource "scripts\open_hospital_system.ps1"
 Test-ReleaseFileMatchesSource "scripts\repair_hospital_system.ps1"
 Test-ReleaseFileMatchesSource "scripts\start_hospital_services.ps1"
-Test-ReleaseFileMatchesSource "scripts\validate_support_packet_safety.ps1"
 Test-ReleaseFileMatchesSource "scripts\run_backup_worker.cmd"
 Test-ReleaseFileMatchesSource "scripts\run_scheduled_backup.cmd"
 
