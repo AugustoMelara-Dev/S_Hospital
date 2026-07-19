@@ -14,15 +14,25 @@ export type FeedbackApi = {
 
 const FeedbackContext = createContext<FeedbackApi | null>(null);
 
+const feedbackDuration: Record<OperationalStatusEvent['level'], number> = {
+  error: Number.POSITIVE_INFINITY,
+  info: 8_000,
+  success: 6_000,
+  warning: 12_000,
+};
+
 export function FeedbackProvider({ children }: { children: ReactNode }) {
   const { isDark } = useThemeContext();
   const value = useMemo<FeedbackApi>(() => ({
-    error: (content) => { toast.error(content); },
-    info: (content) => { toast.info(content); },
-    success: (content) => { toast.success(content); },
-    warning: (content) => { toast.warning(content); },
+    error: (content) => { toast.error(content, { duration: feedbackDuration.error }); },
+    info: (content) => { toast.info(content, { duration: feedbackDuration.info }); },
+    success: (content) => { toast.success(content, { duration: feedbackDuration.success }); },
+    warning: (content) => { toast.warning(content, { duration: feedbackDuration.warning }); },
     notify: (event) => {
-      toast[event.level](event.message, { id: event.key ?? `${event.level}:${event.message}` });
+      toast[event.level](event.message, {
+        duration: feedbackDuration[event.level],
+        id: event.key ?? `${event.level}:${event.message}`,
+      });
     },
   }), []);
   return (

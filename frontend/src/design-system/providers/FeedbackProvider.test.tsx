@@ -42,11 +42,11 @@ describe('FeedbackProvider', () => {
     fireEvent.click(screen.getByRole('button', { name: 'error' }));
     fireEvent.click(screen.getByRole('button', { name: 'notify' }));
 
-    expect(toast.success).toHaveBeenCalledWith('Guardado');
-    expect(toast.info).toHaveBeenCalledWith('Informacion');
-    expect(toast.warning).toHaveBeenCalledWith('Advertencia');
-    expect(toast.error).toHaveBeenCalledWith('Error');
-    expect(toast.success).toHaveBeenCalledWith('Caja abierta', { id: 'cash:open' });
+    expect(toast.success).toHaveBeenCalledWith('Guardado', { duration: 6_000 });
+    expect(toast.info).toHaveBeenCalledWith('Informacion', { duration: 8_000 });
+    expect(toast.warning).toHaveBeenCalledWith('Advertencia', { duration: 12_000 });
+    expect(toast.error).toHaveBeenCalledWith('Error', { duration: Number.POSITIVE_INFINITY });
+    expect(toast.success).toHaveBeenCalledWith('Caja abierta', { duration: 6_000, id: 'cash:open' });
     expect(screen.getByTestId('toaster')).toBeInTheDocument();
   });
 });
