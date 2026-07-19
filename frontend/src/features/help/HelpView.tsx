@@ -1,28 +1,14 @@
 import { useMemo, useState } from 'react';
-import {
-  AlertOutlined as AlertTriangle,
-  BankOutlined as Archive,
-  CheckSquareOutlined as ClipboardCheck,
-  CopyOutlined as ClipboardList,
-  CustomerServiceOutlined as LifeBuoy,
-  DesktopOutlined as Monitor,
-  DollarOutlined as Banknote,
-  FileTextOutlined as ReceiptText,
-  LoginOutlined as LogIn,
-  PrinterOutlined as Printer,
-  QuestionCircleOutlined as HelpCircle,
-  ReloadOutlined as RefreshCw,
-  SearchOutlined as Search,
-  WalletOutlined as WalletCards,
-  WifiOutlined as WifiOff,
-  WindowsOutlined as Keyboard,
-} from '@ant-design/icons';
-import { Button, Card, Collapse, Flex, Input, Typography } from 'antd';
+import { AlertTriangle, Archive, Banknote, ClipboardCheck, ClipboardList, HelpCircle, Keyboard, LifeBuoy, LogIn, Monitor, Printer, ReceiptText, RefreshCw, Search, WalletCards, WifiOff } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { PageHeader } from '@/design-system/components/PageHeader';
 import { type ShortcutScope, shortcutLabel, shortcutsByScope } from '../../lib/shortcuts';
 import { buildClientIssueSupportSummary, getClientIssues } from '../../lib/support/clientIssueLog';
 
-const Textarea = Input.TextArea;
 
 const guides = [
   {
@@ -254,29 +240,29 @@ function SupportEvidenceCard() {
   return (
     <Card>
       <div className="mb-4">
-        <Typography.Title level={2}>Evidencia local para soporte</Typography.Title>
-        <Typography.Text type="secondary">Mensajes seguros guardados en este navegador cuando una pantalla o conexión falla.</Typography.Text>
+        <h2 className="text-lg font-semibold">Evidencia local para soporte</h2>
+        <p className="text-sm text-muted-foreground">Mensajes seguros guardados en este navegador cuando una pantalla o conexión falla.</p>
       </div>
       <div className="space-y-4">
         <div className="flex flex-col gap-3">
           <p className="text-sm leading-6 text-muted-foreground">
             Incidentes guardados: <span className="font-semibold text-foreground">{issues.length}</span>. No incluye contraseñas, tokens ni claves.
           </p>
-          <Flex gap="small" wrap>
-            <Button htmlType="button" size="small" onClick={handlePrepareSummary}>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" onClick={handlePrepareSummary}>
               <ClipboardList aria-hidden="true" className="size-4" />
               Preparar resumen
             </Button>
             <Button
-              htmlType="button"
-              size="small"
+              type="button"
+              size="sm"
               aria-controls={detailsId}
               aria-expanded={showDetails}
               onClick={() => setShowDetails((current) => !current)}
             >
               {showDetails ? 'Ocultar evidencia' : 'Ver evidencia'}
             </Button>
-          </Flex>
+          </div>
         </div>
         {copyStatus ? <p role="status" aria-live="polite" className="text-sm font-medium text-secondary">{copyStatus}</p> : null}
 
@@ -328,7 +314,7 @@ export function HelpView() {
 
     return {
       key: guideId,
-      label: <h2 id={guideId}>{guide.title}</h2>,
+      label: <span id={guideId}>{guide.title}</span>,
       forceRender: true,
       children: (
         <div className="space-y-3">
@@ -387,16 +373,18 @@ export function HelpView() {
       </nav>
 
       <section aria-label="Guías por tarea" className="border border-border">
-        <Collapse accordion items={guideItems} />
+        <Accordion type="single" collapsible>
+          {guideItems.map((item) => <AccordionItem key={item.key} value={item.key}><AccordionTrigger>{item.label}</AccordionTrigger><AccordionContent forceMount>{item.children}</AccordionContent></AccordionItem>)}
+        </Accordion>
       </section>
 
       <Card>
         <div className="mb-4">
-          <Typography.Title level={2} className="flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Keyboard aria-hidden="true" className="size-5 text-secondary" />
             Atajos de teclado
-          </Typography.Title>
-          <Typography.Text type="secondary">Referencia para operar con teclado sin memorizar comandos externos.</Typography.Text>
+          </h2>
+          <p className="text-sm text-muted-foreground">Referencia para operar con teclado sin memorizar comandos externos.</p>
         </div>
         <div className="grid gap-3">
           {shortcutSections.map((section) => (
@@ -420,24 +408,23 @@ export function HelpView() {
 
       <Card>
         <div className="mb-4">
-          <Typography.Title level={2} className="flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
             <WifiOff aria-hidden="true" className="size-5 text-secondary" />
             Incidentes durante el turno
-          </Typography.Title>
-          <Typography.Text type="secondary">Acciones seguras antes de continuar facturando.</Typography.Text>
+          </h2>
+          <p className="text-sm text-muted-foreground">Acciones seguras antes de continuar facturando.</p>
         </div>
         <div>
-          <Collapse
-            accordion
-            items={visibleIncidents.map((item) => ({ key: item.title, label: <h3>{item.title}</h3>, children: <p className="leading-6 text-muted-foreground">{item.answer}</p>, forceRender: true }))}
-          />
+          <Accordion type="single" collapsible>
+            {visibleIncidents.map((item) => <AccordionItem key={item.title} value={item.title}><AccordionTrigger>{item.title}</AccordionTrigger><AccordionContent forceMount><p className="leading-6 text-muted-foreground">{item.answer}</p></AccordionContent></AccordionItem>)}
+          </Accordion>
         </div>
       </Card>
 
       <Card>
         <div className="mb-4">
-          <Typography.Title level={2}>Responsabilidades por rol</Typography.Title>
-          <Typography.Text type="secondary">Referencia corta para saber quién debe actuar en cada caso.</Typography.Text>
+          <h2 className="text-lg font-semibold">Responsabilidades por rol</h2>
+          <p className="text-sm text-muted-foreground">Referencia corta para saber quién debe actuar en cada caso.</p>
         </div>
         <div className="grid gap-3">
           {roleGuides.map((item) => (
@@ -451,11 +438,11 @@ export function HelpView() {
 
       <Card>
         <div className="mb-4">
-          <Typography.Title level={2} className="flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
             <ClipboardCheck aria-hidden="true" className="size-5 text-secondary" />
             Checklist diario por rol
-          </Typography.Title>
-          <Typography.Text type="secondary">Pasos cortos para iniciar, cerrar y revisar el turno sin depender de soporte técnico.</Typography.Text>
+          </h2>
+          <p className="text-sm text-muted-foreground">Pasos cortos para iniciar, cerrar y revisar el turno sin depender de soporte técnico.</p>
         </div>
         <div className="grid gap-3">
           {dailyChecklists.map((checklist) => (
@@ -476,11 +463,11 @@ export function HelpView() {
 
       <Card>
         <div className="mb-4">
-          <Typography.Title level={2} className="flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
             <AlertTriangle aria-hidden="true" className="size-5 text-warning" />
             Acciones delicadas
-          </Typography.Title>
-          <Typography.Text type="secondary">Advertencias antes de tocar datos, caja, respaldos o configuración de red.</Typography.Text>
+          </h2>
+          <p className="text-sm text-muted-foreground">Advertencias antes de tocar datos, caja, respaldos o configuración de red.</p>
         </div>
         <div className="grid gap-3">
           {delicateActions.map((item) => (
@@ -494,8 +481,8 @@ export function HelpView() {
 
       <Card>
         <div className="mb-4">
-          <Typography.Title level={2}>Capacitación segura</Typography.Title>
-          <Typography.Text type="secondary">Practique sin afectar facturas, caja ni respaldos reales.</Typography.Text>
+          <h2 className="text-lg font-semibold">Capacitación segura</h2>
+          <p className="text-sm text-muted-foreground">Practique sin afectar facturas, caja ni respaldos reales.</p>
         </div>
         <div className="grid gap-3">
           <div className="border border-border p-4">

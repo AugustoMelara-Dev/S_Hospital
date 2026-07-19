@@ -103,7 +103,7 @@ describe('HelpView', () => {
     expect(document.querySelector('#help-guide-cobrar')).not.toBeNull();
 
     fireEvent.click(chargeLink);
-    const chargeTopic = screen.getByRole('tab', { name: /cobrar/i });
+    const chargeTopic = screen.getByRole('button', { name: /cobrar/i });
     fireEvent.click(chargeTopic);
     expect(screen.getByText(/seleccione el m.todo de pago/i)).toBeVisible();
     expect(screen.getAllByRole('link', { name: /volver al .ndice/i }).length).toBeGreaterThan(0);
