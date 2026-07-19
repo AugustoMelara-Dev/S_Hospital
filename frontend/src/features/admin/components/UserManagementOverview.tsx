@@ -1,28 +1,18 @@
-import { TeamOutlined, UserAddOutlined, UserSwitchOutlined } from '@ant-design/icons';
-import { Button, Card, Statistic, Tag } from 'antd';
+import { ShieldCheck, UserPlus, Users, UsersRound } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/design-system/components/PageHeader';
 
-type UserManagementOverviewProps = {
-  activeUsersCount: number;
-  editableRolesCount: number;
-  onCreateUser: () => void;
-  pendingPasswordUsersCount: number;
-  showCreateAction: boolean;
-  totalRolesCount: number;
-  totalUsersCount: number;
-};
+type Props = { activeUsersCount: number; editableRolesCount: number; onCreateUser: () => void; pendingPasswordUsersCount: number; showCreateAction: boolean; totalRolesCount: number; totalUsersCount: number };
 
-export function UserManagementOverview({ activeUsersCount, editableRolesCount, onCreateUser, pendingPasswordUsersCount, showCreateAction, totalRolesCount, totalUsersCount }: UserManagementOverviewProps) {
-  return <>
-    <PageHeader
-      title="Usuarios y funciones"
-      description="Administre cuentas individuales, roles operativos y permisos por módulo sin cambiar la política de acceso del servidor."
-      actions={<><Tag color="processing" icon={<TeamOutlined aria-hidden="true" />}>RBAC activo</Tag>{showCreateAction ? <Button type="primary" icon={<UserAddOutlined aria-hidden="true" />} onClick={onCreateUser}>Crear usuario</Button> : null}</>}
-    />
-    <div className="grid gap-3 sm:grid-cols-3">
-      <Card title="Usuarios activos" extra={<TeamOutlined aria-hidden="true" />}><Statistic value={activeUsersCount} /><p>{totalUsersCount} cuenta{totalUsersCount === 1 ? '' : 's'} registrada{totalUsersCount === 1 ? '' : 's'}</p></Card>
-      <Card title="Cambio pendiente"><Statistic value={pendingPasswordUsersCount} /><p>Usuarios que deberan cambiar clave al ingresar.</p></Card>
-      <Card title="Roles editables" extra={<UserSwitchOutlined aria-hidden="true" />}><Statistic value={editableRolesCount} /><p>{totalRolesCount} rol{totalRolesCount === 1 ? '' : 'es'} disponible{totalRolesCount === 1 ? '' : 's'} en total.</p></Card>
-    </div>
+export function UserManagementOverview({ activeUsersCount, editableRolesCount, onCreateUser, pendingPasswordUsersCount, showCreateAction, totalRolesCount, totalUsersCount }: Props) {
+  const stats = [
+    { title: 'Usuarios activos', value: activeUsersCount, description: `${totalUsersCount} cuenta${totalUsersCount === 1 ? '' : 's'} registrada${totalUsersCount === 1 ? '' : 's'}`, icon: Users },
+    { title: 'Cambio pendiente', value: pendingPasswordUsersCount, description: 'Usuarios que deberán cambiar clave al ingresar.', icon: ShieldCheck },
+    { title: 'Roles editables', value: editableRolesCount, description: `${totalRolesCount} rol${totalRolesCount === 1 ? '' : 'es'} disponible${totalRolesCount === 1 ? '' : 's'} en total.`, icon: UsersRound },
+  ];
+  return <><PageHeader title="Usuarios y funciones" description="Administre cuentas individuales, roles operativos y permisos por módulo sin cambiar la política de acceso del servidor." actions={<div className="flex flex-wrap items-center gap-2"><Badge variant="secondary"><ShieldCheck />RBAC activo</Badge>{showCreateAction ? <Button onClick={onCreateUser}><UserPlus data-icon="inline-start" />Crear usuario</Button> : null}</div>} />
+    <div className="grid gap-3 sm:grid-cols-3">{stats.map(({ title, value, description, icon: Icon }) => <Card key={title} size="sm"><CardHeader className="flex-row items-center justify-between"><CardDescription>{title}</CardDescription><Icon aria-hidden="true" /></CardHeader><CardContent><CardTitle className="text-2xl tabular-nums">{value}</CardTitle><p className="mt-2 text-sm text-muted-foreground">{description}</p></CardContent></Card>)}</div>
   </>;
 }

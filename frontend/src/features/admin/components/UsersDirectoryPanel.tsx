@@ -1,7 +1,8 @@
-import { SearchOutlined as Search } from '@ant-design/icons';
+import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { type AuthUser } from '@/lib/api';
-import { Card, Input } from 'antd';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { UsersTable } from './UsersTable';
 import { UserDetailDialog } from './UserDetailDialog';
 
@@ -42,24 +43,24 @@ export function UsersDirectoryPanel({
         <p className="text-sm text-muted-foreground">Solo lectura</p>
       )}
 
-      <Card className="overflow-hidden border border-operational-border bg-operational-surface">
-        <div className="flex flex-col gap-4 border-b border-border bg-muted/40 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <Card>
+        <CardHeader className="flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight">Directorio de usuarios</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Identidades, acceso y estado operativo de cada cuenta.</p>
+            <CardTitle><h2>Directorio de usuarios</h2></CardTitle>
+            <CardDescription>Identidades, acceso y estado operativo de cada cuenta.</CardDescription>
           </div>
           <div className="relative w-full sm:max-w-md">
             <Input
-              prefix={<Search aria-hidden="true" />}
               aria-label="Buscar usuarios"
               placeholder="Buscar por nombre, correo o usuario..."
               className="min-h-12 pl-10"
               value={searchTerm}
               onChange={(event) => onSearchTermChange(event.target.value)}
             />
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           </div>
-        </div>
-        <div className="p-4 sm:p-5">
+        </CardHeader>
+        <CardContent>
           <UsersTable
             canAssignAdminRole={canAssignAdminRole}
             canDisableUsers={canDisableUsers}
@@ -73,7 +74,7 @@ export function UsersDirectoryPanel({
             searchTerm={searchTerm}
             users={users}
           />
-        </div>
+        </CardContent>
       </Card>
       <UserDetailDialog
         user={detailUser}
