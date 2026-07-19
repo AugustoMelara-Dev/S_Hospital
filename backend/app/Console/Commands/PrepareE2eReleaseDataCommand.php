@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Actions\Billing\VoidInvoiceAction;
+use App\Actions\Cash\BuildCashReconciliationAction;
+use App\Actions\Cash\CloseCashSessionAction;
 use App\Actions\Cash\OpenCashSessionAction;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
@@ -11,6 +14,8 @@ use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\Service;
 use App\Models\User;
+use Database\Seeders\InstitutionalReceiptSeriesSeeder;
+use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Console\Command;
@@ -22,8 +27,12 @@ class PrepareE2eReleaseDataCommand extends Command
 
     protected $description = 'Prepara datos idempotentes no productivos para el gate E2E de release.';
 
-    public function handle(OpenCashSessionAction $openCashSession): int
-    {
+    public function handle(
+        OpenCashSessionAction $openCashSession,
+        VoidInvoiceAction $voidInvoice,
+        BuildCashReconciliationAction $buildCashReconciliation,
+        CloseCashSessionAction $closeCashSession,
+    ): int {
         if ($this->laravel->environment('production')) {
             $this->error('Refusing to prepare E2E data while APP_ENV=production.');
 
@@ -53,6 +62,14 @@ class PrepareE2eReleaseDataCommand extends Command
         ]);
         $this->callSilent('db:seed', [
             '--class' => ServiceCatalogSeeder::class,
+            '--force' => true,
+        ]);
+        $this->callSilent('db:seed', [
+            '--class' => ReceiptPrintProfileSeeder::class,
+            '--force' => true,
+        ]);
+        $this->callSilent('db:seed', [
+            '--class' => InstitutionalReceiptSeriesSeeder::class,
             '--force' => true,
         ]);
 
@@ -127,6 +144,35 @@ class PrepareE2eReleaseDataCommand extends Command
             ->where('status', CashRegisterSession::STATUS_OPEN)
             ->latest('opened_at')
             ->first();
+
+        if ($cashSession !== null) {
+            Invoice::query()
+                ->where('cash_session_id', $cashSession->id)
+                ->where('issued_by', $cashier->id)
+                ->where('status', Invoice::STATUS_ISSUED)
+                ->where('patient_name', 'like', 'E2E Release Gate %')
+                ->eachById(function (Invoice $invoice) use ($admin, $voidInvoice): void {
+                    $voidInvoice->execute(
+                        $invoice,
+                        $admin,
+                        'Limpieza segura de ejecucion E2E interrumpida.',
+                    );
+                });
+
+            $hasOtherOpenSession = CashRegisterSession::query()
+                ->where('status', CashRegisterSession::STATUS_OPEN)
+                ->whereKeyNot($cashSession->id)
+                ->exists();
+
+            if (! $hasOtherOpenSession && Invoice::query()->where('cash_session_id', $cashSession->id)->exists()) {
+                $reconciliation = $buildCashReconciliation->execute($cashSession);
+                $closeCashSession->execute($cashSession, [
+                    'closing_amount' => $reconciliation['expected_cash_amount'],
+                    'notes' => 'Cierre seguro entre ejecuciones E2E.',
+                ], $admin);
+                $cashSession = null;
+            }
+        }
 
         if ($cashSession === null) {
             $cashSession = $openCashSession->execute([

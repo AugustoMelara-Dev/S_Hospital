@@ -109,6 +109,31 @@ describe('UserFormDialog', () => {
     }));
   });
 
+  it('preserves typed identity fields when role data refreshes while the dialog remains open', () => {
+    const commonProps = {
+      open: true,
+      onOpenChange: vi.fn(),
+      editingUser: null,
+      canManageRoles: false,
+      selectedUserPermissions: ['invoices.create'],
+      onToggleUserPermission: vi.fn(),
+      permissionCatalog,
+      globalError: null,
+      onSubmit: vi.fn(),
+    };
+    const { rerender } = render(<UserFormDialog {...commonProps} roles={roles} />);
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), { target: { value: 'Caja Turno' } });
+    fireEvent.change(screen.getByLabelText(/correo electr/i), { target: { value: 'caja.turno@hospital.org' } });
+    fireEvent.change(screen.getByLabelText(/nombre de usuario/i), { target: { value: 'caja_turno' } });
+
+    rerender(<UserFormDialog {...commonProps} roles={[...roles]} />);
+
+    expect(screen.getByLabelText(/nombre completo/i)).toHaveValue('Caja Turno');
+    expect(screen.getByLabelText(/correo electr/i)).toHaveValue('caja.turno@hospital.org');
+    expect(screen.getByLabelText(/nombre de usuario/i)).toHaveValue('caja_turno');
+  });
+
   it('renders password field only when creating a new user', () => {
     const { rerender } = render(
       <UserFormDialog

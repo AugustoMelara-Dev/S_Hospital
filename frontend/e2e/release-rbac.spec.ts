@@ -142,11 +142,11 @@ async function login(page: Page, username: string, password: string, expectedHea
     await expect(page.getByRole('heading', { name: expectedHeading })).toBeVisible({ timeout: 30_000 });
     return;
   }
-  await expect(page.getByRole('button', { name: /menu de usuario/i })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('button', { name: /abrir men. de usuario/i })).toBeVisible({ timeout: 30_000 });
 }
 
 async function logout(page: Page) {
-  await page.getByRole('button', { name: /menu de usuario/i }).click();
+  await page.getByRole('button', { name: /abrir men. de usuario/i }).click();
   await Promise.all([
     page.waitForResponse((response) => response.url().includes('/api/auth/logout') && response.ok()),
     page.getByRole('menuitem', { name: /cerrar sesi/i }).click(),

@@ -217,7 +217,7 @@ async function capture(
 
 async function save(page: Page, filename: string) {
   if (!page.url().endsWith('/login')) {
-    await expect(page.getByRole('button', { name: /abrir menu de usuario/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /abrir men. de usuario/i })).toBeVisible();
   }
   await page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
   const geometry = await page.locator('html').evaluate((root) => ({

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -79,6 +79,7 @@ export function UserFormDialog({
   onSubmit,
 }: UserFormDialogProps) {
   const [criticalAccessConfirmed, setCriticalAccessConfirmed] = useState(false);
+  const initializedFormRef = useRef<string | null>(null);
   const schema = editingUser ? editUserSchema : createUserSchema;
   const editingRoleName = editingUser?.roles[0] ?? null;
   const assignableRoles = useMemo(() => {
@@ -116,12 +117,21 @@ export function UserFormDialog({
   const requiresCriticalAccessConfirmation = hasSelectedCriticalPermission || hasSelectedElevatedRole;
 
   useLayoutEffect(() => {
-    if (open) {
-      setCriticalAccessConfirmed(false);
-      reset(defaultValuesFor(editingUser, assignableRoles));
-      if (editingUser) {
-        unregister('password');
-      }
+    if (!open) {
+      initializedFormRef.current = null;
+      return;
+    }
+
+    const formIdentity = editingUser ? `edit:${editingUser.id}` : 'create';
+    if (initializedFormRef.current === formIdentity) {
+      return;
+    }
+
+    initializedFormRef.current = formIdentity;
+    setCriticalAccessConfirmed(false);
+    reset(defaultValuesFor(editingUser, assignableRoles));
+    if (editingUser) {
+      unregister('password');
     }
   }, [open, editingUser, assignableRoles, reset, unregister]);
 
