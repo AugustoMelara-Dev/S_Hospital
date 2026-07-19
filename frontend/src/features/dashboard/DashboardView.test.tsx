@@ -548,11 +548,12 @@ describe('DashboardView', () => {
     expect(document.querySelector('[data-slot="stat-grid"]')).not.toBeInTheDocument();
   });
 
-  it('renderiza Ver historial completo como control Ant Design dentro del enlace', async () => {
+  it('renderiza Ver historial completo como control shadcn sin clases legacy', async () => {
     renderDashboard(makeBaseProps());
 
     const link = await screen.findByRole('link', { name: 'Ver historial completo' });
     expect(link).toHaveAttribute('href', '/invoices');
-    expect(link.querySelector('.ant-btn')).toBeInTheDocument();
+    expect(link).toHaveAttribute('data-slot', 'button');
+    expect(link.className).not.toContain('ant-');
   });
 });

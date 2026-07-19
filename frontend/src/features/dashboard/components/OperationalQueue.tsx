@@ -1,5 +1,8 @@
-import { CheckCircleOutlined, ExclamationCircleOutlined, RightOutlined } from '@ant-design/icons';
-import { Button, Flex, Space, Tag, Typography } from 'antd';
+import { ArrowRight, CircleAlert, CircleCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export type OperationalQueueItem = {
   id: string;
@@ -12,41 +15,40 @@ export type OperationalQueueItem = {
 
 const priorityLabel = { normal: 'Normal', attention: 'Atención', danger: 'Urgente' } as const;
 
-// Colors sourced from Ant Design design token palette — no ad-hoc hex values.
-const PRIORITY_TAG_COLOR: Record<OperationalQueueItem['priority'], string> = {
-  normal:    'default',
-  attention: 'warning',
-  danger:    'error',
-};
-
 export function OperationalQueue({ items }: { items: OperationalQueueItem[] }) {
   return (
-    <section aria-labelledby="operational-queue-title" className="min-w-0 border border-border bg-surface">
-      <header className="border-b border-border px-5 py-4">
-        <Typography.Text type="secondary">Prioridad del turno</Typography.Text>
-        <Typography.Title id="operational-queue-title" level={2} className="m-0">Próxima acción</Typography.Title>
-      </header>
-      <Flex vertical role="list" className="px-5">
-        {items.map((item) => (
-          <Flex key={item.id} role="listitem" justify="space-between" align="start" gap="middle" className="border-b border-border py-4 last:border-b-0">
-            <Flex align="start" gap="middle">
-              {item.priority === 'normal'
-                ? <CheckCircleOutlined aria-hidden="true" className="mt-1 text-lg text-success" />
-                : <ExclamationCircleOutlined aria-hidden="true" className="mt-1 text-lg" />}
-              <Flex vertical gap="small">
-                <Space>
-                  <Typography.Text strong>{item.title}</Typography.Text>
-                  <Tag color={PRIORITY_TAG_COLOR[item.priority]}>{priorityLabel[item.priority]}</Tag>
-                </Space>
-                <Typography.Text type="secondary">{item.description}</Typography.Text>
-              </Flex>
-            </Flex>
-            {item.href && item.actionLabel ? (
-              <Button type="link" href={item.href} icon={<RightOutlined />} iconPlacement="end">{item.actionLabel}</Button>
-            ) : null}
-          </Flex>
-        ))}
-      </Flex>
-    </section>
+    <Card className="min-w-0">
+      <CardHeader>
+        <CardDescription>Prioridad del turno</CardDescription>
+        <CardTitle><h2 id="operational-queue-title">Próxima acción</h2></CardTitle>
+      </CardHeader>
+      <CardContent aria-labelledby="operational-queue-title" role="list" className="flex flex-col p-0">
+        {items.map((item) => {
+          const StatusIcon = item.priority === 'normal' ? CircleCheck : CircleAlert;
+          return (
+            <div key={item.id} role="listitem" className="flex flex-col gap-3 border-t p-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <StatusIcon
+                  aria-hidden="true"
+                  className={cn('mt-0.5 shrink-0', item.priority === 'normal' ? 'text-success' : item.priority === 'danger' ? 'text-destructive' : 'text-warning-foreground')}
+                />
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <strong>{item.title}</strong>
+                    <Badge variant={item.priority === 'danger' ? 'destructive' : 'secondary'}>{priorityLabel[item.priority]}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                </div>
+              </div>
+              {item.href && item.actionLabel ? (
+                <Button asChild variant="ghost" className="shrink-0 self-start">
+                  <a href={item.href}>{item.actionLabel}<ArrowRight data-icon="inline-end" /></a>
+                </Button>
+              ) : null}
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }
