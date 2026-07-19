@@ -23,6 +23,7 @@ export const strictModulePrefixes = [
   'src/features/cash/components/CashClosingPanel.tsx',
   'src/features/cash/components/CashDenominationCounter.tsx',
   'src/features/cash/components/CashMethodSummary.tsx',
+  'src/features/cash/components/CashMovementsTable.tsx',
   'src/features/cash/components/OpenSessionForm.tsx',
   'src/features/cash/components/SessionSummary.tsx',
   'src/features/onboarding/',
