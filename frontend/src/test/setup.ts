@@ -45,7 +45,7 @@ Object.defineProperty(window, 'scrollTo', {
   value: vi.fn(),
 });
 
-// Ant Design measures scrollbars and focus styles through computed styles.
+// Radix overlays measure scrollbars and focus styles through computed styles.
 // Keep JSDOM's stylesheet-derived values (notably display/visibility for
 // closing overlays) and fall back only when its CSS parser rejects a selector.
 const jsdomGetComputedStyle = window.getComputedStyle.bind(window);

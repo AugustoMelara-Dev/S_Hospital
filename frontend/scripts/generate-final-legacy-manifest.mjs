@@ -24,7 +24,7 @@ const rows = violations.map((violation, index) => {
   const action = violation.kind === 'legacy-import'
     ? 'migrar consumidor y eliminar import/dependencia'
     : violation.kind === 'legacy-motion'
-      ? 'sustituir motion por transición institucional/Ant Design'
+      ? 'sustituir motion por transición institucional shadcn'
       : violation.kind === 'inline-radius'
         ? 'usar geometría global borderRadius: 0'
         : 'eliminar clase visual y usar token/componente institucional';

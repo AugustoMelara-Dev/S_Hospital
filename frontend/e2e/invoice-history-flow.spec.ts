@@ -71,20 +71,18 @@ const paidInvoice = invoiceFixture({
 });
 
 test.describe('Invoice history - critical mocked e2e', () => {
-  test('uses one Spanish pagination and a content-height grid at 1366px', async ({ page }, testInfo) => {
+  test('uses one Spanish pagination and a content-height TanStack table at 1366px', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await installInvoiceHistoryMocks(page);
     await page.goto('/invoices');
 
     await expect(page.getByRole('row', { name: /A-0001.*Maria Lopez/i })).toBeVisible();
-    await expect(page.locator('.ag-paging-panel')).toBeHidden();
-    await expect(page.getByText(/Page Size/i)).toHaveCount(0);
-    await expect(page.locator('.ant-pagination')).toHaveCount(1);
+    await expect(page.getByRole('navigation', { name: /paginaci.n de facturas/i })).toHaveCount(1);
     await expect(page.getByText(/2\/7\/26.*9:30/i).first()).toBeVisible();
 
-    const metrics = await page.locator('.institutional-grid').evaluate((grid) => ({
-      height: grid.getBoundingClientRect().height,
-      horizontalOverflow: Math.max(0, grid.scrollWidth - grid.clientWidth),
+    const metrics = await page.getByRole('region', { name: /facturas filtradas/i }).evaluate((tableRegion) => ({
+      height: tableRegion.getBoundingClientRect().height,
+      horizontalOverflow: Math.max(0, tableRegion.scrollWidth - tableRegion.clientWidth),
       pageOverflow: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
     }));
     expect(metrics.height).toBeLessThan(180);
@@ -114,7 +112,7 @@ test.describe('Invoice history - critical mocked e2e', () => {
     await expect(issued).toContainText('Emitida');
     await expect(issued.getByRole('button', { name: /ver detalle de la factura A-0001/i })).toBeVisible();
     await expect(issued.getByRole('button', { name: /acciones de la factura A-0001/i })).toBeVisible();
-    await expect(page.locator('.ant-pagination')).toHaveCount(1);
+    await expect(page.getByRole('navigation', { name: /paginaci.n de facturas/i })).toHaveCount(1);
     await expectNoPageOverflow(page);
 
     await page.setViewportSize({ width: 320, height: 720 });
@@ -122,13 +120,13 @@ test.describe('Invoice history - critical mocked e2e', () => {
     await expectNoPageOverflow(page);
   });
 
-  test('keeps AG Grid, column menu, DatePicker and Drawer keyboard behavior real', async ({ page }) => {
+  test('keeps TanStack columns, Calendar and Sheet keyboard behavior real', async ({ page }) => {
     await installInvoiceHistoryMocks(page);
     await page.goto('/invoices');
 
     const columnsButton = page.getByRole('button', { name: /configurar columnas de facturas/i });
     await columnsButton.click();
-    const statusColumnItem = page.getByRole('menuitem', { name: /^estado$/i });
+    const statusColumnItem = page.getByRole('menuitemcheckbox', { name: /^estado$/i });
     await expect(statusColumnItem).toBeVisible();
     await statusColumnItem.click();
     await expect(page.getByRole('columnheader', { name: /^estado$/i })).toHaveCount(0);
@@ -138,7 +136,7 @@ test.describe('Invoice history - critical mocked e2e', () => {
     const firstOfJuly = page.locator('[title="2026-07-01"]');
     await expect(firstOfJuly).toBeVisible();
     await firstOfJuly.click();
-    await expect(page.getByLabel(/^desde$/i)).toHaveValue('01/07/2026');
+    await expect(page.getByRole('button', { name: /^desde$/i })).toHaveText('01/07/2026');
 
     const detailTrigger = page.getByRole('button', { name: /ver detalle de la factura A-0001/i });
     await detailTrigger.click();

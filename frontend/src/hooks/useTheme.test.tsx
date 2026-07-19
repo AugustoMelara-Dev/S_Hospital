@@ -21,7 +21,7 @@ describe('institutional color themes', () => {
     expect(contrastRatio(palette.dark.secondary, DARK_BACKGROUND)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('applies the local dark class and semantic variables without Ant Design', async () => {
+  it('applies the local dark class and semantic variables', async () => {
     const { result } = renderHook(() => useTheme());
 
     act(() => result.current.setTheme('dark'));

@@ -120,7 +120,7 @@ test.describe('Catalog - critical mocked e2e', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('keeps URL continuity and real Drawer keyboard behavior', async ({ page }) => {
+  test('keeps URL continuity and real shadcn Sheet keyboard behavior', async ({ page }) => {
     await installCatalogMocks(page);
     await page.goto('/catalog?q=glucosa');
 
@@ -175,14 +175,11 @@ test.describe('Catalog - critical mocked e2e', () => {
     const desktopMetrics = await page.evaluate(() => ({
       tableTop: document.querySelector('[aria-label="Listado de servicios del catálogo"]')?.getBoundingClientRect().top ?? 9999,
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      paginations: document.querySelectorAll('.ant-pagination').length,
-      agPaginations: Array.from(document.querySelectorAll<HTMLElement>('.ag-paging-panel'))
-        .filter((element) => element.getBoundingClientRect().height > 0 && getComputedStyle(element).display !== 'none').length,
+      paginations: document.querySelectorAll('[data-slot="pagination"]').length,
     }));
     expect(desktopMetrics.tableTop).toBeLessThan(768);
     expect(desktopMetrics.overflow).toBe(0);
     expect(desktopMetrics.paginations).toBe(1);
-    expect(desktopMetrics.agPaginations).toBe(0);
     await settleForScreenshot(page);
     await page.screenshot({ path: operationalEvidencePath(testInfo, 'catalog-1366.png'), fullPage: true });
 
@@ -192,7 +189,7 @@ test.describe('Catalog - critical mocked e2e', () => {
     await expect(mobileList.getByRole('listitem')).toHaveCount(2);
     await expect(mobileList.getByRole('listitem').nth(0)).toContainText(/Laboratorio.*Código CON-EXT/s);
     await expect(mobileList.getByRole('listitem').nth(1)).toContainText(/Emergencia.*Urgencias.*Código CON-EME/s);
-    await expect(page.getByRole('grid', { name: /listado de servicios/i })).toHaveCount(0);
+    await expect(page.getByRole('table', { name: /listado de servicios/i })).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
     await settleForScreenshot(page);
     await page.screenshot({ path: operationalEvidencePath(testInfo, 'catalog-390.png'), fullPage: true });

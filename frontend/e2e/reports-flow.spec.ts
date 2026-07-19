@@ -73,7 +73,7 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
     await expect.poll(() => requestedCashSessionId).toBe('7');
     await expect(page.getByRole('cell', { name: 'Administradora Hospital' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Pagos registrados', exact: true })).toContainText('Maria Lopez');
-    await expect(page.getByRole('gridcell', { name: 'Efectivo' }).first()).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Efectivo' }).first()).toBeVisible();
   });
 
   test('audit sub-route exposes institutional audit counters', async ({ page }) => {

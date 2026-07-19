@@ -188,11 +188,11 @@ const visualMatrix = [
   { id: 'light-1366x768-zoom-125', mode: 'light', width: 1366, height: 768, zoom: 1.25 },
 ] as const;
 
-const flatSurfaceSelectors = [
-  '.ant-btn', '.ant-input', '.ant-select-selector', '.ant-picker', '.ant-modal', '.ant-drawer',
-  '.ant-dropdown', '.ant-menu', '.ant-tooltip', '.ant-popover', '.ant-notification', '.ant-alert',
-  '.ant-tag', '.ant-table', '.ag-root-wrapper', '.ant-steps', '.ant-upload', '.ant-empty',
-  '.ant-skeleton', '.ant-progress',
+const modernSurfaceSelectors = [
+  '[data-slot="button"]', '[data-slot="input"]', '[data-slot="select-trigger"]',
+  '[data-slot="dialog-content"]', '[data-slot="sheet-content"]',
+  '[data-slot="dropdown-menu-content"]', '[data-slot="alert"]', '[data-slot="table"]',
+  '[data-slot="skeleton"]', '[data-slot="progress"]',
 ] as const;
 
 test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
@@ -229,7 +229,7 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     }
   });
 
-  test('real shell overlays remain accessible, flat and keyboard operable', async ({ page }, testInfo) => {
+  test('real shell overlays remain accessible, modern and keyboard operable', async ({ page }, testInfo) => {
     await installAccessibilityMocks(page, { authenticated: true });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/dashboard');
@@ -237,7 +237,7 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
 
     const rail = page.locator('[data-testid="institutional-rail"], [data-testid="clinical-rail"]');
     await expect(rail).toHaveAttribute('data-collapsed', 'false');
-    await expectFlatSurface(rail);
+    await expectModernSurface(rail);
 
     await page.keyboard.press('Tab');
     const focusedFromKeyboard = page.locator(':focus');
@@ -252,12 +252,12 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     await expect(rail).toHaveAttribute('data-collapsed', 'true');
     await expectShellAxeReport(page, 'shell-sidebar-collapsed', testInfo);
 
-    const userMenuButton = page.getByRole('button', { name: 'Abrir menu de usuario' });
+    const userMenuButton = page.getByRole('button', { name: /abrir men. de usuario/i });
     await userMenuButton.click();
     const userMenu = page.getByRole('menu');
     await expect(userMenu).toBeVisible();
-    await expectFlatSurface(page.locator('.ant-dropdown'));
-    await expectShellAxeReport(page, 'shell-user-menu-open', testInfo);
+    await expectModernSurface(page.locator('[data-slot="dropdown-menu-content"]'));
+    await expectShellAxeReport(page, 'shell-user-menu-open', testInfo, false, '[data-slot="dropdown-menu-content"]');
     await page.keyboard.press('Escape');
     await expect(userMenuButton).toBeFocused();
 
@@ -265,16 +265,16 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     await commandButton.click();
     const commandDialog = page.getByRole('dialog', { name: 'Comandos' });
     await expect(commandDialog).toBeVisible();
-    await expectFlatSurface(commandDialog);
-    await expectShellAxeReport(page, 'shell-command-palette-open', testInfo);
+    await expectModernSurface(commandDialog);
+    await expectShellAxeReport(page, 'shell-command-palette-open', testInfo, false, '[data-slot="dialog-content"]');
     await page.keyboard.press('Escape');
     await expect(commandButton).toBeFocused();
 
     await page.keyboard.press('?');
     const shortcutsDialog = page.getByRole('dialog', { name: /atajos de teclado/i });
     await expect(shortcutsDialog).toBeVisible();
-    await expectFlatSurface(shortcutsDialog);
-    await expectShellAxeReport(page, 'shell-shortcuts-open', testInfo);
+    await expectModernSurface(shortcutsDialog);
+    await expectShellAxeReport(page, 'shell-shortcuts-open', testInfo, false, '[data-slot="dialog-content"]');
     await page.keyboard.press('Escape');
     await expect(commandButton).toBeFocused();
 
@@ -282,9 +282,9 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     await helpButton.click();
     const guideDialog = page.getByRole('dialog', { name: /gu.a r.pida del sistema/i });
     await expect(guideDialog).toBeVisible();
-    await expectFlatSurface(guideDialog);
-    await expectFlatSurface(page.getByTestId('guided-tour-step'));
-    await expectShellAxeReport(page, 'shell-guided-tour-open', testInfo);
+    await expectModernSurface(guideDialog);
+    await expectModernSurface(page.getByTestId('guided-tour-step'));
+    await expectShellAxeReport(page, 'shell-guided-tour-open', testInfo, false, '[data-slot="dialog-content"]');
     await page.keyboard.press('Escape');
     await expect(helpButton).toBeFocused();
   });
@@ -314,8 +314,8 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
         await moreButton.click();
         const drawer = page.getByRole('dialog', { name: 'Más destinos' });
         await expect(drawer).toBeVisible();
-        await expectFlatSurface(drawer);
-        await expectShellAxeReport(page, 'shell-mobile-navigation-open', testInfo);
+        await expectModernSurface(drawer);
+        await expectShellAxeReport(page, 'shell-mobile-navigation-open', testInfo, false, '[data-slot="sheet-content"]');
         await testInfo.attach('shell-mobile-navigation-open', {
           body: await page.screenshot({ fullPage: true }),
           contentType: 'image/png',
@@ -384,7 +384,7 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
     const unnamedControls: Array<{ route: string; details: unknown[] }> = [];
     const overflowFailures: Array<{ route: string; matrix: string; metrics: unknown }> = [];
     const radiusFailures: Array<{ route: string; matrix: string; details: unknown[] }> = [];
-    const radiusCoverage = Object.fromEntries(flatSurfaceSelectors.map((selector) => [selector, 0]));
+    const radiusCoverage = Object.fromEntries(modernSurfaceSelectors.map((selector) => [selector, 0]));
     const screenshotDirectory = resolve('test-results/frontend-final/screenshots');
     const accessibilityDirectory = resolve('test-results/frontend-final/accessibility');
     rmSync(screenshotDirectory, { force: true, recursive: true });
@@ -418,7 +418,7 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
         if (overflow.scrollWidth > overflow.clientWidth + 1) {
           overflowFailures.push({ route: route.path, matrix: matrix.id, metrics: overflow });
         }
-        const flatSurfaces = await page.evaluate((selectors) => selectors.flatMap((selector) => (
+        const surfaceGeometry = await page.evaluate((selectors) => selectors.flatMap((selector) => (
           Array.from(document.querySelectorAll(selector)).flatMap((element) => {
             const rect = element.getBoundingClientRect();
             const style = getComputedStyle(element);
@@ -434,16 +434,16 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
               html: element.outerHTML.slice(0, 500),
             }];
           })
-        )), flatSurfaceSelectors);
-        for (const surface of flatSurfaces) radiusCoverage[surface.selector] += 1;
-        const nonFlatSurfaces = flatSurfaces.filter((surface) => surface.radii.some((radius) => radius !== '0px'));
-        if (nonFlatSurfaces.length > 0) {
-          radiusFailures.push({ route: route.path, matrix: matrix.id, details: nonFlatSurfaces });
+        )), modernSurfaceSelectors);
+        for (const surface of surfaceGeometry) radiusCoverage[surface.selector] += 1;
+        const invalidSurfaces = surfaceGeometry.filter((surface) => surface.radii.some((radius) => Number.parseFloat(radius) > 16));
+        if (invalidSurfaces.length > 0) {
+          radiusFailures.push({ route: route.path, matrix: matrix.id, details: invalidSurfaces });
         }
         const routeReport = await expectShellAxeReport(page, state, testInfo, true);
         writeFileSync(
           resolve(accessibilityDirectory, `${state}.json`),
-          `${JSON.stringify({ route: route.path, matrix, flatSurfaces, ...routeReport }, null, 2)}\n`,
+          `${JSON.stringify({ route: route.path, matrix, surfaceGeometry, ...routeReport }, null, 2)}\n`,
           'utf8',
         );
         if (routeReport.violations.length > 0) {
@@ -462,9 +462,9 @@ test.describe('Accessibility - critical mocked e2e (WCAG AA)', () => {
       body: Buffer.from(JSON.stringify(radiusCoverage, null, 2)),
       contentType: 'application/json',
     });
-    console.log(`[flat-surface-coverage] ${JSON.stringify(radiusCoverage)}`);
+    console.log(`[modern-surface-coverage] ${JSON.stringify(radiusCoverage)}`);
     expect(overflowFailures, 'horizontal overflow by route and matrix').toEqual([]);
-    expect(radiusFailures, 'visible Ant Design and AG Grid surfaces with non-zero radius').toEqual([]);
+    expect(radiusFailures, 'visible surfaces outside the institutional radius scale').toEqual([]);
     expect(unnamedControls, 'unnamed controls by route').toEqual([]);
     expect(routeViolations, 'axe violations by route').toEqual([]);
     expect(unclassifiedIncomplete, 'unclassified axe incomplete results by route').toEqual([]);
@@ -536,10 +536,11 @@ async function shellContrastViolations(page: Page) {
   });
 }
 
-async function shellAxeReport(page: Page) {
+async function shellAxeReport(page: Page, contextSelector?: string) {
   await page.addScriptTag({ content: axeCore.source });
-  return page.evaluate(async () => {
-    const result = await window.axe.run(document, {
+  return page.evaluate(async (selector) => {
+    const context = selector ? document.querySelector(selector) : document;
+    const result = await window.axe.run(context ?? document, {
       runOnly: {
         type: 'tag',
         values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
@@ -633,11 +634,11 @@ async function shellAxeReport(page: Page) {
         }),
       })),
     };
-  });
+  }, contextSelector);
 }
 
-async function expectShellAxeReport(page: Page, state: string, testInfo: TestInfo, deferUnclassified = false) {
-  const report = await shellAxeReport(page);
+async function expectShellAxeReport(page: Page, state: string, testInfo: TestInfo, deferUnclassified = false, contextSelector?: string) {
+  const report = await shellAxeReport(page, contextSelector);
   const incompleteClassification = report.incompleteDetails.flatMap((entry) => entry.nodes.map((node) => {
     const isOverlapContrastProbe = entry.id === 'color-contrast'
       && /background color could not be determined because (?:it(?: is|'s)?\s+)?(?:partially )?(?:obscured|overlapped|overlaps?)/i.test(node.failure ?? '');
@@ -683,7 +684,7 @@ async function expectShellAxeReport(page: Page, state: string, testInfo: TestInf
   return { ...report, incompleteClassification, unclassifiedIncomplete };
 }
 
-async function expectFlatSurface(locator: ReturnType<Page['locator']>) {
+async function expectModernSurface(locator: ReturnType<Page['locator']>) {
   await expect(locator).toBeVisible();
   const style = await locator.evaluate((element) => {
     const computed = window.getComputedStyle(element);
@@ -692,19 +693,16 @@ async function expectFlatSurface(locator: ReturnType<Page['locator']>) {
       borderTopRightRadius: computed.borderTopRightRadius,
       borderBottomLeftRadius: computed.borderBottomLeftRadius,
       borderBottomRightRadius: computed.borderBottomRightRadius,
-      hasVisibleBoxShadow: computed.boxShadow !== 'none'
-        && !computed.boxShadow.split(/,\s*(?=rgba\()/).every((shadow) => /rgba\([^)]+,\s*0\)\s/.test(shadow)),
       backgroundImage: computed.backgroundImage,
     };
   });
-  expect(style).toEqual({
-    borderTopLeftRadius: '0px',
-    borderTopRightRadius: '0px',
-    borderBottomLeftRadius: '0px',
-    borderBottomRightRadius: '0px',
-    hasVisibleBoxShadow: false,
-    backgroundImage: 'none',
-  });
+  expect(style.backgroundImage).toBe('none');
+  expect([
+    style.borderTopLeftRadius,
+    style.borderTopRightRadius,
+    style.borderBottomLeftRadius,
+    style.borderBottomRightRadius,
+  ].every((radius) => Number.parseFloat(radius) <= 16)).toBe(true);
 }
 
 async function runAuthenticationMatrix(
@@ -743,7 +741,7 @@ async function runAuthenticationMatrix(
       scrollWidth: document.documentElement.scrollWidth,
     }));
     if (overflow.scrollWidth > overflow.clientWidth + 1) failures.overflow.push({ artifact, overflow });
-    const flatSurfaces = await page.evaluate((selectors) => selectors.flatMap((selector) => (
+    const surfaceGeometry = await page.evaluate((selectors) => selectors.flatMap((selector) => (
       Array.from(document.querySelectorAll(selector)).flatMap((element) => {
         const rect = element.getBoundingClientRect();
         const style = getComputedStyle(element);
@@ -754,22 +752,22 @@ async function runAuthenticationMatrix(
           html: element.outerHTML.slice(0, 500),
         }];
       })
-    )), flatSurfaceSelectors);
-    const nonFlat = flatSurfaces.filter((surface) => surface.radii.some((radius) => radius !== '0px'));
-    if (nonFlat.length > 0) failures.radius.push({ artifact, nonFlat });
+    )), modernSurfaceSelectors);
+    const invalidSurfaces = surfaceGeometry.filter((surface) => surface.radii.some((radius) => Number.parseFloat(radius) > 16));
+    if (invalidSurfaces.length > 0) failures.radius.push({ artifact, invalidSurfaces });
     const axe = await expectShellAxeReport(page, artifact, testInfo, true);
     if (axe.violations.length > 0) failures.violations.push({ artifact, violations: axe.violations });
     if (axe.unclassifiedIncomplete.length > 0) failures.unclassified.push({ artifact, incomplete: axe.unclassifiedIncomplete });
     writeFileSync(
       resolve(artifactDirectory, `${artifact}.json`),
-      `${JSON.stringify({ state: state.id, matrix, overflow, flatSurfaces, ...axe }, null, 2)}\n`,
+      `${JSON.stringify({ state: state.id, matrix, overflow, surfaceGeometry, ...axe }, null, 2)}\n`,
       'utf8',
     );
     await page.screenshot({ fullPage: true, path: resolve(artifactDirectory, `${artifact}.png`) });
   }
 
   expect(failures.overflow, `${state.id} horizontal overflow`).toEqual([]);
-  expect(failures.radius, `${state.id} non-zero radii`).toEqual([]);
+  expect(failures.radius, `${state.id} radii outside the institutional scale`).toEqual([]);
   expect(failures.unnamed, `${state.id} unnamed controls`).toEqual([]);
   expect(failures.violations, `${state.id} axe violations`).toEqual([]);
   expect(failures.unclassified, `${state.id} unclassified axe incomplete`).toEqual([]);

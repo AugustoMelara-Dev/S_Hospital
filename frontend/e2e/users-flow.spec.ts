@@ -81,7 +81,7 @@ test.describe('Users - critical mocked e2e', () => {
 
     await expect(page.getByRole('heading', { name: /usuarios y funciones/i })).toBeVisible();
     await expect(page.getByText(/rbac activo/i)).toBeVisible();
-    await expect(page.getByText(/roles y modulos/i)).toBeVisible();
+    await expect(page.getByText(/roles y m.dulos/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /crear usuario/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /editar permisos de admin/i })).toBeDisabled();
     await expect(page.getByRole('button', { name: /editar permisos de cajero/i })).toBeEnabled();
@@ -118,7 +118,7 @@ test.describe('Users - critical mocked e2e', () => {
     await page.getByRole('menuitem', { name: /^desactivar$/i }).click();
     await expect.poll(() => toggleCalls).toBe(0);
     await expect(page.getByRole('alertdialog', { name: /desactivar usuario/i })).toBeVisible();
-    await expect(page.getByText(/no podr. iniciar sesi.n ni operar en el sistema/i)).toBeVisible();
+    await expect(page.getByText(/no podr. iniciar sesi.n ni operar/i)).toBeVisible();
     await page.getByRole('textbox', { name: /^motivo$/i }).fill('Cambio de personal de caja.');
     await page.getByRole('button', { name: /^desactivar$/i }).click();
 

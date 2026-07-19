@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { InvoiceHistoryFilters } from './InvoiceHistoryFilters';
 
 describe('InvoiceHistoryFilters', () => {
-  it('keeps DatePicker changes as a draft until Buscar applies the API date format', async () => {
+  it('keeps Calendar changes as a draft until Buscar applies the API date format', async () => {
     const user = userEvent.setup();
     const onApply = vi.fn();
 

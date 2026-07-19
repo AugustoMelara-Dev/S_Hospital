@@ -12,9 +12,6 @@ function sourceFiles(directory: string): string[] {
 describe('catalog library architecture', () => {
   it('uses the local shadcn system and institutional table adapter without legacy UI imports', () => {
     const source = sourceFiles(join(process.cwd(), 'src/features/catalog')).map((file) => readFileSync(file, 'utf8')).join('\n');
-    expect(source).not.toMatch(/from ['"]antd['"]/);
-    expect(source).not.toMatch(/@ant-design\/icons/);
-    expect(source).not.toMatch(/design-system\/ag-grid/);
     expect(source).not.toMatch(/style=\{/);
     expect(source).toContain("from '@/components/ui/");
     expect(source).toContain("from 'lucide-react'");

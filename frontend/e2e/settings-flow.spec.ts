@@ -60,7 +60,7 @@ test.describe('Settings - critical mocked e2e', () => {
     await expect(receiptsLink).toHaveAttribute('href', '/settings/institutional-receipts');
     const summary = page.getByRole('region', { name: /resumen fiscal/i });
     await expect(summary.getByTestId('fiscal-summary-field')).toHaveCount(6);
-    await expect(summary.locator('.ant-card')).toHaveCount(0);
+    await expect(summary.locator('[data-slot="card"] [data-slot="card"]')).toHaveCount(0);
     await expect(page.getByText(/prueba de impresi.n|pdf de prueba|perfil de impresi.n|serie de recibo/i)).toHaveCount(0);
     await expect(page.getByLabel(/papel del recibo|tipo de papel|margen|escala|fuente|ancho|alto/i)).toHaveCount(0);
 

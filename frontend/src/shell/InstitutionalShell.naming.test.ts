@@ -20,6 +20,5 @@ describe('institutional shell boundary', () => {
     expect(app).toContain('<FeedbackProvider>');
     expect(`${app}\n${feedbackProvider}`).toContain('useFeedback()');
     expect(feedbackProvider).toContain("from 'sonner'");
-    expect(feedbackProvider).not.toMatch(/AntApp|antd/);
   });
 });

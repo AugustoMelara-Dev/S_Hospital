@@ -46,7 +46,7 @@ test.describe('Backups - critical mocked e2e', () => {
     await expect(primaryIndicators.getByText(/ultimo exitoso/i)).toBeVisible();
     await expect(primaryIndicators.getByText(/^pendientes$/i)).toBeVisible();
     await expect(primaryIndicators.getByText(/^fallidos$/i)).toBeVisible();
-    await expect(page.getByRole('gridcell', { name: /administradora hospital/i })).toBeVisible();
+    await expect(page.getByRole('cell', { name: /administradora hospital/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /crear respaldo/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /descargar respaldo/i })).toBeVisible();
     await expect(page.getByText(/sha256|checksum|storage\/|\.env|sqlstate/i)).toHaveCount(0);

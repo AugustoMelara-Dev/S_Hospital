@@ -15,9 +15,6 @@ export async function installStrictMockGuard(page: Page): Promise<void> {
     // boundary; it is not an application console failure.
     if (message.type() === 'error' && /Blocked script execution in 'about:srcdoc'.*sandboxed.*allow-scripts/i.test(text)) return;
     if (message.type() === 'error') state.issues.push(`console.error: ${text}`);
-    if (message.type() === 'warning' && /\[antd:.*(?:deprecated|will be removed)/i.test(text)) {
-      state.issues.push(`antd.deprecation: ${text}`);
-    }
   });
   page.on('pageerror', (error) => state.issues.push(`pageerror: ${error.message}`));
   page.on('request', (request) => {
