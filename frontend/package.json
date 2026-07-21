@@ -57,7 +57,6 @@
     "react-hook-form": "^7.76.0",
     "react-router-dom": "^7.15.1",
     "recharts": "3.8.0",
-    "shadcn": "^4.13.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.0",
@@ -93,6 +92,7 @@
     "globals": "^15.0.0",
     "jsdom": "^25.0.0",
     "playwright": "^1.61.1",
+    "shadcn": "^4.13.0",
     "storybook": "10.5.0",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.0.0",
@@ -102,6 +102,7 @@
   },
   "overrides": {
     "@valibot/to-json-schema": "1.5.0",
+    "js-yaml": "4.3.0",
     "ws": "8.21.0"
   }
 }
