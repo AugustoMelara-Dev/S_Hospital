@@ -118,8 +118,11 @@ test('real cashier can issue and collect an invoice against Laravel DB', async (
     const openCashButton = main.getByRole('button', { name: /^abrir caja$/i });
     await expect(openCashButton).toBeVisible();
     await openCashButton.click();
+    const openDialog = page.getByRole('dialog', { name: /confirmar apertura de caja/i });
+    await expect(openDialog).toBeVisible();
+    await openDialog.getByRole('button', { name: /^abrir caja$/i }).click();
   }
-  await expect(openSessionHeading).toBeVisible();
+  await expect(openSessionHeading).toBeVisible({ timeout: 30_000 });
 
   await page.getByRole('link', { name: /nueva factura/i }).first().click();
   await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
@@ -217,26 +220,32 @@ async function loginToRealApp(page: Page, username: string | undefined, userPass
     await expect(usernameInput).toBeVisible();
     await usernameInput.fill(username ?? '');
     await page.getByRole('textbox', { name: /contrase(?:ñ|n)a|password/i }).fill(userPassword ?? '');
+    const loginResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/auth/login')
+        && response.request().method() === 'POST'
+        && response.status() !== 419,
+      { timeout: 35_000 },
+    );
     await page.getByRole('button', { name: /entrar|iniciar/i }).click();
+    const loginResponse = await loginResponsePromise;
 
-    await page.waitForTimeout(1_000);
     const lockoutMessage = page.getByText(/demasiados intentos|bloqueado/i).first();
-    if (attempt < 2 && await lockoutMessage.isVisible().catch(() => false)) {
+    if (attempt < 2 && [423, 429].includes(loginResponse.status())) {
+      await expect(lockoutMessage).toBeVisible();
       await page.waitForTimeout(70_000);
       continue;
     }
 
-    if (await appLink.isVisible({ timeout: 7_500 }).catch(() => false)) {
-      return;
-    }
-
-    if (attempt < 2 && await lockoutMessage.isVisible().catch(() => false)) {
-      await page.waitForTimeout(70_000);
-      continue;
-    }
-
-    await expect(appLink).toBeVisible();
+    expect(
+      loginResponse.ok(),
+      `real login failed with HTTP ${loginResponse.status()}`,
+    ).toBe(true);
+    await expect(appLink).toBeVisible({ timeout: 30_000 });
+    return;
   }
+
+  throw new Error('Real login remained locked after the allowed retries.');
 }
 
 async function expectFirstAssetLoadsAsJavaScript(page: Page) {

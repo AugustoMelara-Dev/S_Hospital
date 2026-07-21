@@ -22,6 +22,9 @@ x-backend-environment: &backend-environment
   CACHE_STORE: file
   QUEUE_CONNECTION: database
   SESSION_DRIVER: database
+  # The PHP CLI server is development-only. Multiple workers prevent Docker's
+  # health probe from serializing browser and API requests during local QA.
+  PHP_CLI_SERVER_WORKERS: ${PHP_CLI_SERVER_WORKERS:-4}
 
 services:
   backend:

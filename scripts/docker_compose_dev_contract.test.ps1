@@ -68,4 +68,8 @@ Assert-Contains `
     'curl --max-time 4 -fsS http://127.0.0.1:8000/up' `
     "Development health probes must stop before Docker starts another probe."
 
+Assert-Contains `
+    'PHP_CLI_SERVER_WORKERS: ${PHP_CLI_SERVER_WORKERS:-4}' `
+    "Development PHP must serve concurrent browser, API, and health-check requests."
+
 Write-Host "[ OK ] development compose keeps backups recoverable and frontend installs reproducible"

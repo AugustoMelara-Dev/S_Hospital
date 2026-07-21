@@ -10,6 +10,9 @@ export default defineConfig({
     timeout: 7_500,
   },
   fullyParallel: false,
+  // Real authentication rotates other sessions for the same operator. Keep
+  // these infrastructure tests serial so they never invalidate one another.
+  workers: 1,
   reporter: [['list']],
   use: {
     launchOptions: chromiumExecutablePath

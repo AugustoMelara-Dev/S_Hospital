@@ -67,7 +67,9 @@ test('critical requests are unique and complete below two seconds', async ({ pag
   await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
   await page.getByLabel(/buscar por nombre/i).fill('glucosa');
   await expect.poll(
-    () => attempts.some((request) => request.path === '/api/services'),
+    () => completed.some(
+      (request) => request.path === '/api/services' && request.query.includes('search=glucosa'),
+    ),
     { timeout: 20_000 },
   ).toBe(true);
 
