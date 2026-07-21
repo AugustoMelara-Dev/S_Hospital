@@ -82,7 +82,7 @@ class BroadcastingWiringTest extends TestCase
         );
 
         $this->assertNotNull($route);
-        $this->assertContains('throttle:120,1', $route->middleware());
+        $this->assertContains('throttle:public-read', $route->middleware());
     }
 
     public function test_private_invoice_channel_requires_invoice_view_permission(): void

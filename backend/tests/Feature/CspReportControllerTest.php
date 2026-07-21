@@ -148,7 +148,7 @@ class CspReportControllerTest extends TestCase
         }
 
         $this->assertNotNull($route, 'api/system/csp-report route must exist');
-        $this->assertContains('throttle:30,1', $route->middleware(), 'csp-report must be rate limited');
+        $this->assertContains('throttle:csp-report', $route->middleware(), 'csp-report must have an isolated rate limit');
     }
 
     public function test_csp_report_endpoint_only_accepts_post(): void

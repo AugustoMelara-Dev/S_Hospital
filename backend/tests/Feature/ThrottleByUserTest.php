@@ -90,11 +90,12 @@ class ThrottleByUserTest extends TestCase
         $this->assertContains('throttle.user:30,1', $invoiceVoid->gatherMiddleware());
     }
 
-    public function test_login_route_keeps_lan_safe_ip_throttle_with_failed_attempt_lockout(): void
+    public function test_login_route_keeps_an_isolated_lan_safe_ip_throttle_with_failed_attempt_lockout(): void
     {
         $route = Route::getRoutes()->match(Request::create('/api/auth/login', 'POST'));
 
-        $this->assertContains('throttle:30,1', $route->gatherMiddleware());
+        $this->assertContains('throttle:auth-login', $route->gatherMiddleware());
+        $this->assertNotContains('throttle:30,1', $route->gatherMiddleware());
         $this->assertContains(LoginLockout::class, $route->gatherMiddleware());
     }
 

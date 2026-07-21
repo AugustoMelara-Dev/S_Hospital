@@ -36,19 +36,19 @@ Route::get('/health', function () {
     ]);
 })
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
-    ->middleware('throttle:120,1');
+    ->middleware('throttle:public-read');
 
 Route::post('/system/csp-report', [CspReportController::class, 'store'])
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
-    ->middleware('throttle:30,1');
+    ->middleware('throttle:csp-report');
 
 Route::get('/system/health', [HealthController::class, 'show'])
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
-    ->middleware('throttle:120,1');
+    ->middleware('throttle:public-read');
 
 Route::get('/system/echo-config', [EchoConfigController::class, 'show'])
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
-    ->middleware('throttle:120,1');
+    ->middleware('throttle:public-read');
 
 Route::get('/system/openapi', function () {
     $document = app(OpenApiExporter::class)->document(app('router'));
@@ -58,21 +58,21 @@ Route::get('/system/openapi', function () {
 
 Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus'])
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
-    ->middleware('throttle:120,1');
+    ->middleware('throttle:public-read');
 
 Route::get('/settings/logo', [LogoController::class, 'show'])
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
-    ->middleware('throttle:120,1');
+    ->middleware('throttle:public-read');
 Route::get('/settings/logo/file', [LogoController::class, 'file'])
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
-    ->middleware('throttle:120,1');
+    ->middleware('throttle:public-read');
 
 Route::get('/settings/branding', [FiscalSettingsController::class, 'publicBranding'])
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
-    ->middleware('throttle:120,1');
+    ->middleware('throttle:public-read');
 
 Route::post('/auth/login', [AuthController::class, 'login'])
-    ->middleware(['web', LoginLockout::class, 'throttle:30,1']);
+    ->middleware(['web', LoginLockout::class, 'throttle:auth-login']);
 Route::get('/auth/session', [AuthController::class, 'session'])
     ->middleware(['web', 'throttle.user:30,1']);
 
@@ -203,7 +203,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
         Route::get('/system/audit-logs', [AuditLogController::class, 'index'])
             ->middleware('throttle.user:60,1');
         Route::post('/system/client-errors', [ClientErrorLogController::class, 'store'])
-            ->middleware('throttle:30,1');
+            ->middleware('throttle.user:30,1');
 
         Route::get('/admin/users', [UserController::class, 'index']);
         Route::post('/admin/users', [UserController::class, 'store'])

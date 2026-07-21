@@ -23,9 +23,12 @@ use App\Policies\InvoicePolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\ServicePolicy;
 use App\Policies\UserPolicy;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Events\PermissionAttached;
 use Spatie\Permission\Events\PermissionDetached;
@@ -50,8 +53,26 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Model::preventLazyLoading(! $this->app->isProduction());
+        $this->registerRateLimiters();
         $this->registerPermissionAudit();
         $this->registerPolicies();
+    }
+
+    /**
+     * Keep unauthenticated traffic in independent buckets. Laravel's numeric
+     * throttle middleware otherwise keys every guest route on the same host
+     * and IP, so health/CSP requests can exhaust the login allowance.
+     */
+    private function registerRateLimiters(): void
+    {
+        RateLimiter::for('public-read', fn (Request $request): Limit => Limit::perMinute(120)
+            ->by('public-read:'.(string) $request->ip()));
+
+        RateLimiter::for('csp-report', fn (Request $request): Limit => Limit::perMinute(30)
+            ->by('csp-report:'.(string) $request->ip()));
+
+        RateLimiter::for('auth-login', fn (Request $request): Limit => Limit::perMinute(30)
+            ->by('auth-login:'.(string) $request->ip()));
     }
 
     private function registerPermissionAudit(): void

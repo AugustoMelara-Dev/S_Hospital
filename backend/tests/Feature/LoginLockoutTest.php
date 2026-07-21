@@ -43,6 +43,26 @@ class LoginLockoutTest extends TestCase
         ]);
     }
 
+    public function test_public_security_traffic_does_not_consume_the_login_rate_limit(): void
+    {
+        User::factory()->create([
+            'username' => 'cajero-public-traffic',
+            'email' => 'cajero-public-traffic@hospital.local',
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => false,
+            'active' => true,
+        ])->assignRole('cajero');
+
+        for ($i = 0; $i < 30; $i++) {
+            $this->postJson('/api/system/csp-report', [])->assertStatus(415);
+        }
+
+        $this->postJson('/api/auth/login', [
+            'login' => 'cajero-public-traffic',
+            'password' => 'Password123!',
+        ])->assertOk();
+    }
+
     public function test_login_lockout_engages_after_five_failed_attempts(): void
     {
         User::factory()->create([
