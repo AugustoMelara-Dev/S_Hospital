@@ -373,6 +373,8 @@ class AuthTest extends TestCase
 
     public function test_required_password_change_rotates_and_rebinds_the_browser_session(): void
     {
+        config()->set('session.driver', 'database');
+
         $this->seed(RolesAndPermissionsSeeder::class);
 
         $user = User::factory()->create([
@@ -404,6 +406,9 @@ class AuthTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.username', 'rotation.local')
             ->assertJsonPath('data.must_change_password', false);
+
+        $this->getJson('/api/admin/users')
+            ->assertForbidden();
     }
 
     public function test_change_password_rejects_wrong_current_password(): void
