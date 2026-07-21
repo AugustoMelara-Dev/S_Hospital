@@ -22,6 +22,8 @@ No es un expediente clinico electronico ni una contabilidad financiera de partid
 - Produccion LAN: Nginx, PHP-FPM, MariaDB, worker, scheduler y Soketi dentro de Docker Compose.
 - Operacion: no requiere internet despues de instalar el paquete offline.
 
+La auditoria integral del 2026-07-21, sus comandos reproducibles, E2E con MariaDB real, restauracion cifrada y riesgos residuales se documentan en [`docs/refactor-migration/12-final-result.md`](docs/refactor-migration/12-final-result.md).
+
 ## Requisitos
 
 ### Desarrollo

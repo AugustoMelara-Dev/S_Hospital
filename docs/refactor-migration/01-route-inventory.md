@@ -44,5 +44,4 @@ Laravel registra 115 rutas: 71 `GET|HEAD`, 30 `POST`, 8 `PATCH`, 4 `PUT`, 1 `DEL
 
 Cada ruta visible debe demostrar: autorización de servidor, loading, vacío, error y éxito cuando aplique; teclado/foco; 320, 360, 390, 768, 1024, 1366, 1440 y 1920 px; ausencia de overflow y errores de consola/red. La evidencia final se indexará en `08-responsive-evidence.md` y `evidence/screenshots/`.
 
-Estado inicial: las 15 rutas frontend están implementadas y usan la shell/shadcn. Aún no se consideran certificadas bajo este goal hasta repetir E2E real, axe, zoom, teclado y capturas en todos los viewports.
-
+Estado final: las 15 rutas frontend están implementadas sobre la shell/shadcn. La matriz visible certificó 14 rutas y estados representativos —incluidos acceso denegado, ruta inexistente y modo oscuro— en seis viewports; `/verify-email` conserva sus pruebas de componente y flujo de autenticación. La evidencia reproducible está en `08-responsive-evidence.md` y `evidence/`.

@@ -1,0 +1,77 @@
+{
+  "viewport": {
+    "width": 1366,
+    "height": 768
+  },
+  "document": {
+    "scrollWidth": 1366,
+    "clientWidth": 1366,
+    "horizontalOverflow": 0
+  },
+  "panels": {
+    "navigation": {
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 768
+    },
+    "content": {
+      "x": 256,
+      "y": 0,
+      "width": 1110,
+      "height": 950
+    },
+    "context-bar": {
+      "x": 256,
+      "y": 0,
+      "width": 1110,
+      "height": 64
+    },
+    "billing-main": {
+      "x": 288,
+      "y": 188,
+      "width": 610,
+      "height": 706
+    },
+    "billing-account": {
+      "x": 914,
+      "y": 188,
+      "width": 420,
+      "height": 560
+    }
+  },
+  "scrollContainers": [
+    {
+      "selector": "div",
+      "overflowY": "auto",
+      "scrollHeight": 672,
+      "clientHeight": 627
+    },
+    {
+      "selector": "div",
+      "overflowY": "auto",
+      "scrollHeight": 138,
+      "clientHeight": 113
+    }
+  ],
+  "stickyElements": [
+    {
+      "text": "Nueva factura\n\nMi caja #7\nConexión local disponible\nBuscar\nCtrl K\nA\nAdministrado",
+      "top": 0,
+      "bottom": 64
+    },
+    {
+      "text": "Cuenta actual\n\nRevise servicios y cantidades antes de emitir.\n\nNo hay servicios ",
+      "top": 188,
+      "bottom": 748
+    }
+  ],
+  "primaryAction": {
+    "visible": true,
+    "inViewport": true,
+    "covered": true
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}

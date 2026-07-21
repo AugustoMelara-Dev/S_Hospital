@@ -1,0 +1,50 @@
+{
+  "viewport": {
+    "width": 1366,
+    "height": 768
+  },
+  "document": {
+    "scrollWidth": 1366,
+    "clientWidth": 1366,
+    "horizontalOverflow": 0
+  },
+  "panels": {
+    "navigation": {
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 768
+    },
+    "content": {
+      "x": 256,
+      "y": 0,
+      "width": 1110,
+      "height": 768
+    },
+    "context-bar": {
+      "x": 256,
+      "y": 0,
+      "width": 1110,
+      "height": 64
+    }
+  },
+  "scrollContainers": [
+    {
+      "selector": "div",
+      "overflowY": "auto",
+      "scrollHeight": 672,
+      "clientHeight": 627
+    }
+  ],
+  "stickyElements": [
+    {
+      "text": "Historial\n\nMi caja cerrada\nConexión local disponible\nBuscar\nCtrl K\nA\nAdministrad",
+      "top": 0,
+      "bottom": 64
+    }
+  ],
+  "primaryAction": null,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}

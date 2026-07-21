@@ -1,0 +1,43 @@
+{
+  "viewport": {
+    "width": 1366,
+    "height": 768
+  },
+  "document": {
+    "scrollWidth": 1366,
+    "clientWidth": 1366,
+    "horizontalOverflow": 0
+  },
+  "panels": {
+    "navigation": {
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 768
+    },
+    "content": {
+      "x": 256,
+      "y": 0,
+      "width": 1110,
+      "height": 1188.5
+    },
+    "context-bar": {
+      "x": 256,
+      "y": 0,
+      "width": 1110,
+      "height": 64
+    }
+  },
+  "scrollContainers": [],
+  "stickyElements": [
+    {
+      "text": "Recibos institucionales\n\nMi caja cerrada\nConexión local disponible\nBuscar\nCtrl K",
+      "top": 0,
+      "bottom": 64
+    }
+  ],
+  "primaryAction": null,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}
