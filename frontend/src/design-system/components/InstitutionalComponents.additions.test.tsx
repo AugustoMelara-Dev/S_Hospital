@@ -21,7 +21,10 @@ describe('StatCard', () => {
   it('shows label and value with optional helper', () => {
     const { container } = render(<StatCard label="Sesiones" value="3" helper="hoy" tone="success" />);
 
-    expect(container.querySelector('[data-slot="stat-card"]')).toHaveAttribute('data-slot', 'stat-card');
+    const card = container.querySelector('[data-slot="stat-card"]');
+    expect(card).toHaveAttribute('data-slot', 'stat-card');
+    expect(card).toHaveClass('bg-card', 'before:bg-success');
+    expect(card).not.toHaveClass('bg-success/10');
     expect(screen.getByText('Sesiones')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('hoy')).toBeInTheDocument();

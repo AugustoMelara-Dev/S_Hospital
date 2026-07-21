@@ -101,8 +101,9 @@
   --color-receipt-paper: #ffffff;
   --color-receipt-ink: #111827;
   --color-receipt-muted: #374151;
-  --color-receipt-accent: #274c56;
-  --color-receipt-accent-foreground: #153d48;
+  --color-receipt-panel: #f3f4f6;
+  --color-receipt-accent: #334155;
+  --color-receipt-accent-foreground: #0f172a;
 
   --color-sidebar: var(--institutional-sidebar);
   --color-sidebar-foreground: var(--institutional-sidebar-foreground);

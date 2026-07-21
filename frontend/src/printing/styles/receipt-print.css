@@ -84,7 +84,7 @@
     font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
     line-height: 1.35;
-    border: 1px solid var(--color-receipt-accent);
+    border: 1px solid var(--color-receipt-border);
     padding: 0.42in;
   }
 
@@ -132,6 +132,8 @@
   .receipt-header {
     color: var(--color-receipt-accent-foreground);
     letter-spacing: 0.025em;
+    border-bottom: 2px solid var(--color-receipt-ink);
+    padding-bottom: 0.12in;
   }
 
   .receipt-header .hospital-name {
@@ -143,7 +145,7 @@
   .receipt-rule {
     height: 1px;
     margin: 0.14in 0;
-    background: var(--color-receipt-accent);
+    background: var(--color-receipt-border-soft);
   }
 
   .receipt-title-row,
@@ -244,6 +246,7 @@
   }
 
   .receipt-items-table th {
+    background: var(--color-receipt-panel);
     color: var(--color-receipt-muted);
     font-size: 0.82em;
     text-align: left;
@@ -298,7 +301,7 @@
 
   .receipt-totals-table .strong th,
   .receipt-totals-table .strong td {
-    border-top: 1px solid var(--color-receipt-ink);
+    border-top: 2px solid var(--color-receipt-ink);
     color: var(--color-receipt-ink);
     font-weight: 700;
     padding-top: 0.04in;

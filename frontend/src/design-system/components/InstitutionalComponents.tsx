@@ -13,11 +13,11 @@ import { cn } from '@/lib/utils';
 type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'destructive';
 
 const toneStyles: Record<Tone, string> = {
-  neutral: 'bg-card text-card-foreground',
-  info: 'bg-info/10 text-info-foreground ring-info/35',
-  success: 'bg-success/10 text-success-foreground ring-success/35',
-  warning: 'bg-warning/10 text-warning-foreground ring-warning/40',
-  destructive: 'bg-destructive/10 text-destructive ring-destructive/40',
+  neutral: 'bg-card text-card-foreground before:bg-primary/60',
+  info: 'bg-card text-card-foreground before:bg-info',
+  success: 'bg-card text-card-foreground before:bg-success',
+  warning: 'bg-card text-card-foreground before:bg-warning',
+  destructive: 'bg-card text-card-foreground before:bg-destructive',
 };
 
 type StatGridItem = {
@@ -55,7 +55,7 @@ export function StatGrid({ children, className, items, ...props }: StatGridProps
           key={index}
           data-slot="stat-grid-item"
           className={cn(
-            'relative gap-0 overflow-hidden py-0 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-primary/70',
+            'relative gap-0 overflow-hidden py-0 before:absolute before:inset-y-0 before:left-0 before:w-1',
             item.tone && toneStyles[item.tone],
           )}
         >
@@ -85,7 +85,7 @@ export function StatCard({
     <Card
       data-slot="stat-card"
       className={cn(
-        'relative gap-0 overflow-hidden py-0 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-primary/70',
+        'relative gap-0 overflow-hidden py-0 before:absolute before:inset-y-0 before:left-0 before:w-1',
         toneStyles[tone],
         className,
       )}

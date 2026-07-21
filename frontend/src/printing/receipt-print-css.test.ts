@@ -33,6 +33,14 @@ describe('receipt print css boundary', () => {
       expect(printCss).toMatch(new RegExp(`\\.institutional-receipt\\.${profile}\\s*\\{[^}]*width:\\s*${width};`, 's'));
     }
   });
+
+  it('uses a restrained grayscale-friendly document hierarchy', () => {
+    const printCss = readFileSync(join(process.cwd(), 'src/printing/styles/receipt-print.css'), 'utf8');
+
+    expect(printCss).toMatch(/\.receipt-header\s*\{[^}]*border-bottom:\s*2px solid var\(--color-receipt-ink\);/s);
+    expect(printCss).toMatch(/\.receipt-items-table th\s*\{[^}]*background:\s*var\(--color-receipt-panel\);/s);
+    expect(printCss).toMatch(/\.receipt-totals-table \.strong th,[\s\S]*?border-top:\s*2px solid var\(--color-receipt-ink\);/s);
+  });
 });
 
 function pageRule(css: string, profile: string): string {
