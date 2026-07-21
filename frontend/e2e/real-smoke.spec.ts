@@ -242,10 +242,15 @@ async function loginToRealApp(page: Page, username: string | undefined, userPass
 async function expectFirstAssetLoadsAsJavaScript(page: Page) {
   const loginResponse = await page.request.get(`${realBaseUrl}/login`);
   const html = await loginResponse.text();
-  const assetMatch = html.match(/<script[^>]+src="(?<src>\/assets\/[^"]+\.js)"/i);
-  expect(assetMatch?.groups?.src, 'login HTML should reference a built JS asset').toBeTruthy();
+  const entryMatch = html.match(
+    /<script[^>]+src="(?<src>\/(?:assets\/[^"]+\.js|src\/[^"]+\.(?:ts|tsx|js|jsx)))"/i,
+  );
+  expect(
+    entryMatch?.groups?.src,
+    'login HTML should reference a production bundle or Vite application entry',
+  ).toBeTruthy();
 
-  const assetResponse = await page.request.get(`${realBaseUrl}${assetMatch?.groups?.src}`);
+  const assetResponse = await page.request.get(`${realBaseUrl}${entryMatch?.groups?.src}`);
   expect(assetResponse.ok()).toBe(true);
   expect(assetResponse.headers()['content-type'] ?? '').toContain('javascript');
 }
