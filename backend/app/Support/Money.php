@@ -61,13 +61,6 @@ class Money
         return new self($cents);
     }
 
-    public static function fromFloat(float $value): self
-    {
-        $cents = (int) round($value * 100);
-
-        return new self($cents);
-    }
-
     public static function zero(): self
     {
         return new self(0);
@@ -94,11 +87,6 @@ class Money
         return $this->cents;
     }
 
-    public function toFloat(): float
-    {
-        return $this->cents / 100.0;
-    }
-
     public function plus(self $other): self
     {
         return new self($this->cents + $other->cents);
@@ -107,17 +95,6 @@ class Money
     public function minus(self $other): self
     {
         return new self($this->cents - $other->cents);
-    }
-
-    public function times(float|int $multiplier): self
-    {
-        $multiplierTimesThousand = (int) round($multiplier * 1000);
-        $product = $this->cents * $multiplierTimesThousand;
-        $roundingOffset = $product < 0 ? -500 : 500;
-
-        $productCents = intdiv($product + $roundingOffset, 1000);
-
-        return new self($productCents);
     }
 
     /**

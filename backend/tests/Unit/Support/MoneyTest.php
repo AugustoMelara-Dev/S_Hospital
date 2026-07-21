@@ -32,31 +32,20 @@ class MoneyTest extends TestCase
         $this->assertSame(-50, Money::fromCents(-50)->toCents());
     }
 
-    public function test_from_float_rounds_half_up_to_cents(): void
-    {
-        $this->assertSame(101, Money::fromFloat(1.005)->toCents());
-        $this->assertSame(100, Money::fromFloat(1.00)->toCents());
-        $this->assertSame(1, Money::fromFloat(0.01)->toCents());
-        $this->assertSame(0, Money::fromFloat(0.0)->toCents());
-    }
-
-    public function test_from_float_does_not_drift_for_repeating_decimals(): void
-    {
-        $this->assertSame(30, Money::fromFloat(0.1)->plus(Money::fromFloat(0.2))->toCents());
-        $this->assertSame(0.3, Money::fromFloat(0.1)->plus(Money::fromFloat(0.2))->toFloat());
-    }
-
     public function test_zero_factory_returns_zero_cents(): void
     {
         $this->assertSame(0, Money::zero()->toCents());
-        $this->assertSame(0.0, Money::zero()->toFloat());
     }
 
-    public function test_to_float_returns_division_by_hundred(): void
+    public function test_public_api_does_not_accept_or_return_float_money(): void
     {
-        $this->assertSame(1.5, Money::fromCents(150)->toFloat());
-        $this->assertSame(0.0, Money::fromCents(0)->toFloat());
-        $this->assertSame(-0.25, Money::fromCents(-25)->toFloat());
+        $methods = collect((new \ReflectionClass(Money::class))->getMethods(\ReflectionMethod::IS_PUBLIC));
+
+        $this->assertFalse($methods->contains(fn (\ReflectionMethod $method): bool => in_array(
+            $method->getName(),
+            ['fromFloat', 'toFloat', 'times'],
+            true,
+        )));
     }
 
     public function test_plus_adds_integer_cents_without_drift(): void
@@ -72,33 +61,6 @@ class MoneyTest extends TestCase
         $b = Money::fromCents(250);
         $this->assertSame(750, $a->minus($b)->toCents());
         $this->assertSame(-250, $a->minus($b)->minus(Money::fromCents(1000))->toCents());
-    }
-
-    public function test_times_multiplies_by_integer_factor(): void
-    {
-        $money = Money::fromFloat(1.50);
-        $this->assertSame(450, $money->times(3)->toCents());
-        $this->assertSame(0, $money->times(0)->toCents());
-    }
-
-    public function test_times_multiplies_by_float_factor(): void
-    {
-        $money = Money::fromFloat(10.00);
-        $this->assertSame(150, $money->times(0.15)->toCents());
-        $this->assertSame(1500, Money::fromFloat(100.00)->times(0.15)->toCents());
-    }
-
-    public function test_times_keeps_integer_cents(): void
-    {
-        $money = Money::fromFloat(2.99);
-        $product = $money->times(3);
-        $this->assertSame((int) round($product->toFloat() * 100), $product->toCents());
-    }
-
-    public function test_times_rounds_negative_half_cents_away_from_zero(): void
-    {
-        $this->assertSame(-1, Money::fromCents(-1)->times(0.5)->toCents());
-        $this->assertSame(-2, Money::fromCents(-1)->times(1.5)->toCents());
     }
 
     public function test_allocate_splits_evenly_when_no_remainder(): void
@@ -168,7 +130,7 @@ class MoneyTest extends TestCase
 
     public function test_equals_compares_by_cents(): void
     {
-        $this->assertTrue(Money::fromCents(100)->equals(Money::fromFloat(1.0)));
+        $this->assertTrue(Money::fromCents(100)->equals(Money::fromCents(100)));
         $this->assertTrue(Money::fromCents(0)->equals(Money::zero()));
         $this->assertFalse(Money::fromCents(100)->equals(Money::fromCents(101)));
     }
