@@ -170,6 +170,33 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
         $this->assertSame(CashRegisterSession::STATUS_OPEN, $otherSession->refresh()->status);
     }
 
+    public function test_it_closes_a_stale_e2e_supervisor_session_before_opening_the_cashier_session(): void
+    {
+        $password = 'TestPassword@E2E!';
+        $this->artisan('hospital:prepare-e2e-release-data', ['--password' => $password])
+            ->assertSuccessful();
+
+        $cashier = User::query()->where('username', 'cajero.e2e')->firstOrFail();
+        $supervisor = User::query()->where('username', 'supervisor.e2e')->firstOrFail();
+        $staleSession = CashRegisterSession::query()
+            ->where('user_id', $cashier->id)
+            ->where('status', CashRegisterSession::STATUS_OPEN)
+            ->firstOrFail();
+        $staleSession->forceFill([
+            'user_id' => $supervisor->id,
+            'open_user_id' => $supervisor->id,
+        ])->save();
+
+        $this->artisan('hospital:prepare-e2e-release-data', ['--password' => $password])
+            ->assertSuccessful();
+
+        $this->assertSame(CashRegisterSession::STATUS_CLOSED, $staleSession->refresh()->status);
+        $this->assertDatabaseHas('cash_register_sessions', [
+            'user_id' => $cashier->id,
+            'status' => CashRegisterSession::STATUS_OPEN,
+        ]);
+    }
+
     public function test_command_fails_without_password(): void
     {
         $this->artisan('hospital:prepare-e2e-release-data', ['--json' => true])

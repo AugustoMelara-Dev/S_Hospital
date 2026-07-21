@@ -175,6 +175,47 @@ class PrepareE2eReleaseDataCommand extends Command
         }
 
         if ($cashSession === null) {
+            $blockingSession = CashRegisterSession::query()
+                ->where('status', CashRegisterSession::STATUS_OPEN)
+                ->first();
+
+            if ($blockingSession !== null) {
+                $e2eUserIds = [$admin->id, $supervisor->id, $cashier->id];
+                if (! in_array($blockingSession->user_id, $e2eUserIds, true)) {
+                    $this->error('A non-E2E cash session is open. Use an isolated non-production database or close it explicitly.');
+
+                    return self::FAILURE;
+                }
+
+                Invoice::query()
+                    ->where('cash_session_id', $blockingSession->id)
+                    ->where('status', Invoice::STATUS_ISSUED)
+                    ->where('patient_name', 'like', 'E2E Release Gate %')
+                    ->eachById(function (Invoice $invoice) use ($admin, $voidInvoice): void {
+                        $voidInvoice->execute(
+                            $invoice,
+                            $admin,
+                            'Limpieza segura de ejecucion E2E interrumpida.',
+                        );
+                    });
+
+                $hasPendingInvoices = Invoice::query()
+                    ->where('cash_session_id', $blockingSession->id)
+                    ->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL])
+                    ->exists();
+                if ($hasPendingInvoices) {
+                    $this->error('The stale E2E cash session has pending non-release invoices and cannot be closed safely.');
+
+                    return self::FAILURE;
+                }
+
+                $reconciliation = $buildCashReconciliation->execute($blockingSession);
+                $closeCashSession->execute($blockingSession, [
+                    'closing_amount' => $reconciliation['expected_cash_amount'],
+                    'notes' => 'Cierre seguro de caja E2E bloqueante.',
+                ], $admin);
+            }
+
             $cashSession = $openCashSession->execute([
                 'opening_amount' => '100.00',
                 'notes' => 'Caja abierta por gate E2E no productivo.',
