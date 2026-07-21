@@ -14,6 +14,7 @@ export function useHospitalSession() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [loginSubmitting, setLoginSubmitting] = useState(false);
   const loginSubmitInFlightRef = useRef(false);
+  const sessionRevisionRef = useRef(0);
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
   const passwordSubmitInFlightRef = useRef(false);
   const queryClient = useQueryClient();
@@ -52,6 +53,7 @@ export function useHospitalSession() {
 
   useEffect(() => {
     const unsubscribe = apiClient.onSessionExpired(() => {
+      sessionRevisionRef.current += 1;
       apiClient.invalidateSession();
       // Tear down realtime and the query cache so a stale Echo socket
       // and cached data from the previous user do not leak into the
@@ -76,6 +78,7 @@ export function useHospitalSession() {
 
   useEffect(() => {
     const unsubscribe = apiClient.onForceLogout(() => {
+      sessionRevisionRef.current += 1;
       apiClient.invalidateSession();
       disconnectEcho();
       queryClient.clear();
@@ -98,9 +101,14 @@ export function useHospitalSession() {
   // The remaining session synchronization runs in a separate effect to
   // avoid running on every state change.
   useEffect(() => {
+    const bootstrapRevision = sessionRevisionRef.current;
+    let active = true;
+    const isCurrentBootstrap = () => active && bootstrapRevision === sessionRevisionRef.current;
+
     apiClient
       .session()
       .then((currentUser) => {
+        if (!isCurrentBootstrap()) return;
         setUser(currentUser);
         if (currentUser) {
           setStatus(
@@ -112,17 +120,28 @@ export function useHospitalSession() {
         }
       })
       .catch(() => {
+        if (!isCurrentBootstrap()) return;
         setUser(null);
         setSessionExpired(false);
         setStatus('Listo para iniciar sesión local.');
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (isCurrentBootstrap()) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loginSubmitInFlightRef.current) return;
 
+    // Any bootstrap response that started before this explicit login is stale.
+    // Without this revision guard, a late `data: null` can erase a successful
+    // login and flash "Sesión vencida" immediately after authentication.
+    sessionRevisionRef.current += 1;
     loginSubmitInFlightRef.current = true;
     setLoginSubmitting(true);
     setStatus('Validando credenciales...');
@@ -142,10 +161,12 @@ export function useHospitalSession() {
     } finally {
       loginSubmitInFlightRef.current = false;
       setLoginSubmitting(false);
+      setLoading(false);
     }
   }
 
   async function handleLogout() {
+    sessionRevisionRef.current += 1;
     await apiClient.logout().catch(() => undefined);
     // Drop the cached CSRF promise so the next login fetches a token
     // for the current browser session before posting credentials.

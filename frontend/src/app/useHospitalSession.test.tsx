@@ -53,6 +53,25 @@ function LoginProbe() {
   );
 }
 
+function SessionRaceProbe() {
+  const session = useHospitalSession();
+
+  return (
+    <div>
+      <output>{session.user?.username ?? 'anonymous'}:{session.status}</output>
+      <button
+        type="button"
+        onClick={() => {
+          const event = { preventDefault: vi.fn() } as unknown as FormEvent<HTMLFormElement>;
+          void session.handleLogin(event);
+        }}
+      >
+        login
+      </button>
+    </div>
+  );
+}
+
 function PermissionProbe() {
   const session = useHospitalSession();
 
@@ -168,6 +187,35 @@ describe('useHospitalSession', () => {
         must_change_password: false,
       });
     });
+  });
+
+  it('does not let a stale bootstrap response erase a newer successful login', async () => {
+    let resolveBootstrap!: (value: Awaited<ReturnType<typeof apiClient.session>>) => void;
+    vi.spyOn(apiClient, 'session').mockReturnValue(new Promise((resolve) => {
+      resolveBootstrap = resolve;
+    }));
+    vi.spyOn(apiClient, 'login').mockResolvedValue({
+      id: 1,
+      name: 'Cajero',
+      email: 'cajero@hospital.local',
+      username: 'cajero',
+      active: true,
+      roles: ['cajero'],
+      permissions: ['invoices.create'],
+      must_change_password: false,
+    });
+
+    render(<SessionRaceProbe />, { wrapper: makeWrapper() });
+    await act(async () => {
+      screen.getByRole('button', { name: 'login' }).click();
+    });
+    await waitFor(() => expect(screen.getByText(/cajero:Sesi.n iniciada/i)).toBeInTheDocument());
+
+    await act(async () => {
+      resolveBootstrap(null);
+    });
+
+    expect(screen.getByText(/cajero:Sesi.n iniciada/i)).toBeInTheDocument();
   });
 
   it('does not treat generic reports.view as a usable report permission', async () => {
