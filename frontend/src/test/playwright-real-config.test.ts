@@ -33,4 +33,10 @@ describe('real Playwright configuration', () => {
       /completed\.some\(\s*\(request\) => request\.path === '\/api\/services' && request\.query\.includes\('search=glucosa'\),?\s*\)/,
     );
   });
+
+  it('gives the complete release transaction enough aggregate time on mounted Docker workspaces', () => {
+    const source = readFileSync('e2e/release-gate.spec.ts', 'utf8');
+
+    expect(source).toContain('test.setTimeout(240_000)');
+  });
 });

@@ -38,7 +38,10 @@ test.afterAll(() => {
 });
 
 test('release gate cashier can issue, collect, show receipt, surface reports and close cash', async ({ page, browser }) => {
-  test.setTimeout(120_000);
+  // The full gate intentionally includes two logins, PDF generation, report
+  // aggregation and cash reconciliation. Keep action-level waits bounded,
+  // while allowing their aggregate on Docker Desktop bind mounts.
+  test.setTimeout(240_000);
   const consoleIssues: string[] = [];
   const patientName = `E2E Release Gate ${Date.now()}`;
 
