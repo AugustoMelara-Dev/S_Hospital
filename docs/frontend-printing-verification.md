@@ -1,6 +1,6 @@
 # Verificación final de impresión del frontend
 
-Fecha: 2026-07-14.
+Fecha de evidencia automatizada: 2026-07-14. Preflight fisico: 2026-07-21.
 
 ## Evidencia automatizada
 
@@ -21,6 +21,18 @@ Fecha: 2026-07-14.
 Los recorridos verifican orientación, márgenes, una página, salto, escalado, shell/acciones ocultos, encabezado, pie, correlativo, RTN, monto, monto en letras, firma, sello y leyenda de copia.
 
 ## VALIDACIÓN FÍSICA EN IMPRESORA PENDIENTE POR HARDWARE EXTERNO
+
+Preflight disponible:
+
+- Impresora detectada: `L15150 Series(Network)`.
+- Driver: `EPSON L15150 Series`; estado reportado por Windows: `Normal`.
+- Direccion descubierta en EpsonNet: `192.168.1.6`.
+- Configuracion activa: A4, color, una cara, 600 dpi.
+- Capacidades relevantes: Carta, Statement/Media Carta y tamaño personalizado;
+  A5 requiere confirmar o crear el perfil exacto en el driver.
+- ICMP responde, pero 515/631/9100 no aceptaron conexion durante el preflight.
+  No se envio papel porque el tamaño activo no coincide y la cola de red no
+  estaba verificablemente disponible.
 
 1. Registrar modelo, driver, sistema operativo, fecha y operador.
 2. Configurar el tamaño exacto de cada perfil y escala 100 %, sin “ajustar a página”.

@@ -4,7 +4,7 @@ Estado: `LOCAL_RELEASE_CANDIDATE`. La aplicacion no debe declararse
 `PRODUCTION_READY` hasta completar la evidencia fisica de impresoras y la
 aceptacion desde una computadora cliente de la LAN hospitalaria.
 
-HEAD de codigo certificado: `0fc27450`. El commit documental que contiene este
+HEAD de codigo certificado: `a5d1dc90`. El commit documental que contiene este
 registro no se usa como identificador autorreferencial.
 
 ## Alcance certificado
@@ -47,6 +47,27 @@ descartable con MariaDB nueva. `APP_ENV=production`, `APP_DEBUG=false`, Nginx,
 backend, MariaDB, workers, scheduler, assets, rutas y Soketi aprobaron. Al usar
 `-AllowMissingPhysicalProof`, el unico bloqueo restante fue precisamente la
 evidencia fisica omitida; no aparecieron bloqueantes locales adicionales.
+
+## Preflight de sitio 2026-07-21
+
+- El smoke Chromium real contra `http://192.168.1.4:5174` aprobo login y todas
+  las superficies operativas sin errores de consola. Las rutas `/up`, `/login`,
+  `/verify-email` y `/api/system/echo-config` respondieron HTTP 200 usando la
+  direccion LAN en lugar de loopback.
+- Windows detecta la impresora fisica `L15150 Series(Network)`, con driver
+  `EPSON L15150 Series` y estado `Normal`.
+- La configuracion activa de la impresora es A4. El driver anuncia Carta,
+  Statement/Media Carta y papel personalizado, pero no un perfil A5 explicito.
+- La impresora responde a ICMP en `192.168.1.6`, pero durante el preflight no
+  acepto conexiones en 515, 631 ni 9100. No se enviaron trabajos: imprimir con
+  A4 activo o sin canal de datos verificable no produciria evidencia valida.
+- Una prueba desde la red aislada de Docker hacia la IP Wi-Fi del host agoto el
+  tiempo de conexion. Es una limitacion de hairpin del host y no sustituye ni
+  contradice la prueba requerida desde una segunda computadora fisica.
+
+Este preflight demuestra que la aplicacion funciona usando su direccion LAN y
+que el hardware/driver existe. No se promueve el estado a `PRODUCTION_READY`
+hasta inspeccionar el papel impreso y ejecutar el flujo desde el cliente fisico.
 
 ## Hallazgos corregidos
 
