@@ -12,6 +12,11 @@ class EncryptBackupFileAction
 
     public function __construct(private readonly BackupFileCipher $cipher) {}
 
+    public function keyIdentifier(): string
+    {
+        return $this->cipher->keyIdentifier();
+    }
+
     public function execute(string $plainPath, string $encryptedPath): void
     {
         $input = @fopen($plainPath, 'rb');

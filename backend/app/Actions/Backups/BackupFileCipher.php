@@ -11,6 +11,15 @@ class BackupFileCipher
 
     private const IV_BYTES = 12;
 
+    /**
+     * Non-reversible fingerprint used to identify which configured key
+     * protected a backup without persisting the key itself.
+     */
+    public function keyIdentifier(): string
+    {
+        return hash('sha256', $this->key());
+    }
+
     public function encryptString(string $plainText): string
     {
         $iv = random_bytes(self::IV_BYTES);

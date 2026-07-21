@@ -99,6 +99,10 @@ class CreateBackupAction
             $backupLog->forceFill([
                 'size_bytes' => filesize($absolutePath),
                 'checksum_sha256' => hash_file('sha256', $absolutePath),
+                'format' => 'sql',
+                'compression' => 'gzip',
+                'encrypted' => true,
+                'encryption_key_id' => $this->encryptBackupFile->keyIdentifier(),
                 'status' => BackupLog::STATUS_SUCCESS,
                 'completed_at' => now(),
                 'error_message' => null,

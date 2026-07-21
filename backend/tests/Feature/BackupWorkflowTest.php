@@ -243,6 +243,10 @@ class BackupWorkflowTest extends TestCase
         $this->assertNotNull($backup->checksum_sha256);
         $this->assertSame(64, strlen((string) $backup->checksum_sha256));
         $this->assertGreaterThan(0, $backup->size_bytes);
+        $this->assertSame('sql', $backup->format);
+        $this->assertSame('gzip', $backup->compression);
+        $this->assertTrue($backup->encrypted);
+        $this->assertMatchesRegularExpression('/\A[a-f0-9]{64}\z/', (string) $backup->encryption_key_id);
         $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
         $this->assertStringEndsWith('.sql.gz.enc', $backup->filename);
 
