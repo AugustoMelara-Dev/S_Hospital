@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const chromiumExecutablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+
 export default defineConfig({
   testDir: './e2e',
   testMatch: /(real-smoke|critical-lan-performance)\.spec\.ts/,
@@ -10,6 +12,12 @@ export default defineConfig({
   fullyParallel: false,
   reporter: [['list']],
   use: {
+    launchOptions: chromiumExecutablePath
+      ? {
+          executablePath: chromiumExecutablePath,
+          args: ['--no-sandbox'],
+        }
+      : undefined,
     trace: 'retain-on-failure',
   },
   projects: [

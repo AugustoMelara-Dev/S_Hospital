@@ -65,7 +65,7 @@ Assert-Contains `
     "Development scheduler must persist an operational heartbeat."
 
 Assert-Contains `
-    'curl -fsS http://127.0.0.1:8000/up' `
-    "Development workers must wait for a healthy backend with installed dependencies."
+    'curl --max-time 4 -fsS http://127.0.0.1:8000/up' `
+    "Development health probes must stop before Docker starts another probe."
 
 Write-Host "[ OK ] development compose keeps backups recoverable and frontend installs reproducible"
