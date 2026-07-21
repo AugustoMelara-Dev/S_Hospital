@@ -21,10 +21,14 @@ type ContextBarProps = {
   user: AuthUser;
 };
 
+export function cashSessionLabel(cashSession: Pick<CashSession, 'id' | 'status'> | null): string {
+  return cashSession?.status === 'open' ? `Mi caja #${cashSession.id}` : 'Mi caja cerrada';
+}
+
 export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName, onLogout, onOpenCommands, onOpenGuide, status, user }: ContextBarProps) {
   const { isOnline } = useServerStatus();
   const currentTitle = crumbs.at(-1)?.label ?? 'Inicio';
-  const cashLabel = cashSession?.status === 'open' ? `Caja #${cashSession.id}` : 'Caja cerrada';
+  const cashLabel = cashSessionLabel(cashSession);
 
   return (
     <header data-audit-panel="context-bar" className="print-hidden sticky top-0 z-20 flex min-h-16 items-center gap-2 border-b border-border bg-surface px-3 text-foreground lg:px-5">

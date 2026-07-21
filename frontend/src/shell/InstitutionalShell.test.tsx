@@ -153,8 +153,8 @@ describe('InstitutionalShell', () => {
   it('muestra una sola vez caja y hospital', () => {
     renderShell({ cashSession: openCashSession });
 
-    expect(screen.getAllByText(/Caja #12/)).toHaveLength(1);
-    expect(screen.getByText(/Caja #12/).parentElement).not.toHaveClass('hidden');
+    expect(screen.getAllByText(/Mi caja #12/)).toHaveLength(1);
+    expect(screen.getByText(/Mi caja #12/).parentElement).not.toHaveClass('hidden');
     const identities = screen.getAllByText('Hospital General San Isidro');
     const mobileIdentity = screen.getByTestId('institutional-mobile-identity');
     const desktopIdentity = screen.getByTestId('institutional-desktop-identity');
