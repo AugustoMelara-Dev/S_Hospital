@@ -18,6 +18,7 @@ $ErrorActionPreference = "Stop"
 
 $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 . (Join-Path $scriptRoot "lib\operational_url_safety.ps1")
+. (Join-Path $scriptRoot "lib\lan_asset_discovery.ps1")
 
 function Protect-LanText([string] $value) {
     if ([string]::IsNullOrWhiteSpace($value)) {
@@ -201,18 +202,13 @@ function New-WebSocketCheckResult([string] $ClientHost, [int] $ClientPort, [stri
     }
 }
 
-function Get-FirstAssetPath([string] $BaseUrl) {
+function Get-LanAssetPaths([string] $BaseUrl) {
     try {
         $loginResponse = Invoke-WebRequest -Uri "$($BaseUrl.TrimEnd('/'))/login" -UseBasicParsing -TimeoutSec 20
-        $matches = [regex]::Matches($loginResponse.Content, 'src="(?<path>/assets/[^"]+\.js)"')
-        if ($matches.Count -gt 0) {
-            return $matches[0].Groups["path"].Value
-        }
+        return Get-HospitalLanAssetPaths -Html $loginResponse.Content
     } catch {
-        return $null
+        return [pscustomobject] @{ JavaScript = ""; Css = "" }
     }
-
-    return $null
 }
 
 $base = Test-HospitalOperationalUrlInput $BaseUrl
@@ -245,14 +241,14 @@ if ($base -match "localhost|127\.0\.0\.1|::1") {
     Write-Host "[WARN] BaseUrl uses localhost. For production proof, run this from a second LAN client using the server IP or LAN name." -ForegroundColor Yellow
 }
 
-$assetPath = Get-FirstAssetPath $base
+$assetPaths = Get-LanAssetPaths $base
 $checks = New-Object System.Collections.Generic.List[object]
 $checks.Add((New-CheckResult "/up" "$base/up")) | Out-Null
 $checks.Add((New-CheckResult "/login" "$base/login")) | Out-Null
 $checks.Add((New-CheckResult "/verify-email" "$base/verify-email" @(200, 302))) | Out-Null
 
-if ($assetPath) {
-    $checks.Add((New-CheckResult "/assets/*.js" "$base$assetPath" @(200) "javascript")) | Out-Null
+if ($assetPaths.JavaScript) {
+    $checks.Add((New-CheckResult "/assets/*.js" "$base$($assetPaths.JavaScript)" @(200) "javascript")) | Out-Null
 } else {
     $checks.Add([ordered] @{
         Label = "/assets/*.js"
@@ -261,6 +257,19 @@ if ($assetPath) {
         ContentType = ""
         Passed = $false
         Detail = "Could not discover a JS asset from /login"
+    }) | Out-Null
+}
+
+if ($assetPaths.Css) {
+    $checks.Add((New-CheckResult "/assets/*.css" "$base$($assetPaths.Css)" @(200) "text/css")) | Out-Null
+} else {
+    $checks.Add([ordered] @{
+        Label = "/assets/*.css"
+        Url = "$base/assets/*.css"
+        StatusCode = $null
+        ContentType = ""
+        Passed = $false
+        Detail = "Could not discover a production CSS asset from /login"
     }) | Out-Null
 }
 
@@ -304,6 +313,7 @@ if ($EvidencePath -ne "") {
         $mark = if ($check.Passed) { "x" } else { " " }
         $label = switch ($check.Label) {
             "/assets/*.js" { "/assets/*.js loads as JavaScript" }
+            "/assets/*.css" { "/assets/*.css loads as CSS" }
             "Realtime WebSocket" { "Realtime WebSocket handshake succeeds through the configured LAN endpoint" }
             default { "$($check.Label) responds from the client computer" }
         }
