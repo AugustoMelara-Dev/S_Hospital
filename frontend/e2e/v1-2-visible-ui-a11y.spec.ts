@@ -407,9 +407,9 @@ test('dangerous history actions open a confirmation path that can be cancelled',
 
 test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   test.setTimeout(300_000);
-  const screenshotDir = resolve(
-    process.env.E2E_FINAL_SCREENSHOT_DIR ?? '../qa/operational-ux/before/canonical',
-  );
+  const screenshotDir = process.env.E2E_FINAL_SCREENSHOT_DIR
+    ? resolve(process.env.E2E_FINAL_SCREENSHOT_DIR)
+    : testInfo.outputPath('canonical-evidence');
   mkdirSync(screenshotDir, { recursive: true });
   const consoleIssues: string[] = [];
   const auditObserver = observeOperationalPage(page);
@@ -552,7 +552,9 @@ test('refactor final screenshots evidence', async ({ page }, testInfo) => {
 
 test('billing responsive baseline exposes operational defects', async ({ page }, testInfo) => {
   test.setTimeout(300_000);
-  const beforeDir = resolve('../qa/operational-ux/before/billing');
+  const beforeDir = process.env.E2E_BILLING_SCREENSHOT_DIR
+    ? resolve(process.env.E2E_BILLING_SCREENSHOT_DIR)
+    : testInfo.outputPath('billing-evidence');
   mkdirSync(beforeDir, { recursive: true });
   const matrices = [
     { name: '1920x1080', width: 1920, height: 1080 },
@@ -574,6 +576,10 @@ test('billing responsive baseline exposes operational defects', async ({ page },
     await page.setViewportSize({ width: matrix.width, height: matrix.height });
     await page.goto('/billing/new');
     await waitForScreen(page, /nueva factura/i);
+    await page.getByLabel(/nombre del paciente/i).fill('Paciente QA adaptable');
+    const serviceSearch = page.getByLabel(/buscar por nombre/i);
+    await serviceSearch.fill('glucosa');
+    await serviceSearch.press('Enter');
 
     const audit = await auditObserver.capture({
       routeName: `billing-${matrix.name}`,
@@ -652,12 +658,14 @@ async function auditCurrentPage(page: Page, viewportName: string, path: string) 
   const axeViolations = await seriousAxeViolations(page);
   const h1Count = await visibleH1Count(page);
   const overflow = await horizontalOverflow(page);
+  const clippedTableText = await visibleClippedTableText(page);
   const focus = await tabFocusProbe(page);
 
   expect(unnamedControls, `${viewportName} ${path} unnamed controls`).toEqual([]);
   expect(axeViolations, `${viewportName} ${path} serious axe violations`).toEqual([]);
   expect(h1Count, `${viewportName} ${path} must expose exactly one visible h1`).toBe(1);
   expect(overflow, `${viewportName} ${path} horizontal overflow`).toEqual([]);
+  expect(clippedTableText, `${viewportName} ${path} clipped table text`).toEqual([]);
   expect(focus.focused, `${viewportName} ${path} Tab should move focus from body`).toBe(true);
   expect(focus.visible, `${viewportName} ${path} focused element should expose a visible focus style`).toBe(true);
 }
@@ -1078,6 +1086,24 @@ async function horizontalOverflow(page: Page) {
         return `${element.tagName.toLowerCase()}${id}${dataSlot} right=${Math.round(rect.right)} viewport=${viewportWidth}`;
       });
   });
+}
+
+async function visibleClippedTableText(page: Page) {
+  return page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('th, td'))
+    .filter((element) => {
+      const style = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      if (style.display === 'none' || style.visibility === 'hidden' || rect.width <= 0 || rect.height <= 0) return false;
+      if (!element.textContent?.trim()) return false;
+      return element.scrollWidth > element.clientWidth + 2;
+    })
+    .slice(0, 8)
+    .map((element) => ({
+      cell: element.tagName.toLowerCase(),
+      text: element.textContent?.trim().replace(/\s+/g, ' ').slice(0, 100) ?? '',
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    })));
 }
 
 async function tabFocusProbe(page: Page) {

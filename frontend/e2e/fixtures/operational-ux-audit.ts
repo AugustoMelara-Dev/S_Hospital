@@ -58,13 +58,17 @@ export function observeOperationalPage(page: Page) {
         const scrollContainers = [...document.querySelectorAll<HTMLElement>('body *')]
           .map((element) => ({ element, style: getComputedStyle(element) }))
           .filter(({ element, style }) => (
-            /(auto|scroll)/.test(style.overflowY)
+            !element.closest('[data-slot="sidebar-content"]')
+            && /(auto|scroll)/.test(style.overflowY)
             && element.scrollHeight > element.clientHeight + 1
           ))
           .map(({ element, style }) => ({
             selector: element.id
               ? `#${element.id}`
-              : element.getAttribute('data-audit-panel') ?? element.tagName.toLowerCase(),
+              : element.getAttribute('data-audit-panel')
+                ?? (element.hasAttribute('data-billing-cart-lines') ? '[data-billing-cart-lines]' : undefined)
+                ?? (element.hasAttribute('data-billing-workspace') ? '[data-billing-workspace]' : undefined)
+                ?? `${element.tagName.toLowerCase()}.${[...element.classList].slice(0, 3).join('.')}`,
             overflowY: style.overflowY,
             scrollHeight: element.scrollHeight,
             clientHeight: element.clientHeight,
