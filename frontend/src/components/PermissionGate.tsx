@@ -20,7 +20,7 @@ export function PermissionGate({ allowed, children, fallback, reason }: Permissi
   return (
     <RouteState
       kind="denied"
-      headingLevel={2}
+      headingLevel={1}
       title="Sin permisos"
       description={`${reason ?? 'Su usuario no tiene permisos para abrir este módulo.'} Si cree que debe usar esta pantalla, pida a un supervisor que revise su rol.`}
       action={{ href: '/help', label: 'Ver guía de ayuda' }}

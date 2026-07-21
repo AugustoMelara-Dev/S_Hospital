@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import axeCore from 'axe-core';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 import {
@@ -289,17 +289,18 @@ const executiveReport = {
   audit_summary: { critical_events: 0, reprints: 1, fiscal_changes: 0, cash_differences: 0, backup_events: 1 },
 };
 const routeExpectations = [
-  { path: '/dashboard', heading: /centro de mando/i },
+  { path: '/dashboard', heading: /continuar operación/i },
   { path: '/billing/new', heading: /nueva factura/i },
   { path: '/cashbox', heading: /^caja$/i },
-  { path: '/catalog', heading: /catalogo|cat.logo/i },
-  { path: '/invoices', heading: /historial/i },
-  { path: '/reports', heading: /control ejecutivo/i },
-  { path: '/backups', heading: /respaldos|backups/i },
-  { path: '/settings/fiscal', heading: /configuracion|configuraci.n/i },
+  { path: '/catalog', heading: /catálogo institucional/i },
+  { path: '/invoices', heading: /historial de facturas/i },
+  { path: '/reports', heading: /informes y auditoría/i },
+  { path: '/backups', heading: /protección y recuperación/i },
+  { path: '/settings/fiscal', heading: /configuración hospitalaria/i },
   { path: '/settings/institutional-receipts', heading: /recibos institucionales|recibos/i },
-  { path: '/admin/users', heading: /usuarios/i },
-  { path: '/help', heading: /ayuda/i },
+  { path: '/admin/users', heading: /usuarios y funciones/i },
+  { path: '/help', heading: /ayuda institucional/i },
+  { path: '/support', heading: /asistencia operativa/i },
   { path: '/about', heading: /informacion del sistema|informaci.n del sistema/i },
   { path: '/does-not-exist', heading: /pagina no encontrada|no encontrada/i },
 ];
@@ -317,10 +318,23 @@ test.afterAll(() => {
   if (smokeResults.length === 0) return;
 
   mkdirSync(dirname(reportPath), { recursive: true });
+  let previousResults: Array<Record<string, unknown>> = [];
+  if (existsSync(reportPath)) {
+    try {
+      const previous = JSON.parse(readFileSync(reportPath, 'utf8')) as { results?: Array<Record<string, unknown>> };
+      previousResults = previous.results ?? [];
+    } catch {
+      previousResults = [];
+    }
+  }
+  const mergedResults = new Map<string, Record<string, unknown>>();
+  for (const result of [...previousResults, ...smokeResults]) {
+    mergedResults.set(JSON.stringify([result.name, result.viewport, result.path]), result);
+  }
   writeFileSync(reportPath, `${JSON.stringify({
     generated_at: new Date().toISOString(),
     mode: 'mocked-non-mutating-playwright',
-    results: smokeResults,
+    results: [...mergedResults.values()],
   }, null, 2)}\n`);
 });
 
@@ -332,12 +346,12 @@ for (const viewport of smokeViewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
 
     await page.goto('/login');
-    await waitForScreen(page, /hospital san isidro/i);
+    await waitForScreen(page, /iniciar sesión/i);
     await auditCurrentPage(page, viewport.name, '/login');
 
     await login(page, 'admin.validacion');
     for (const route of routeExpectations) {
-      await page.goto(route.path);
+      await navigateTo(page, route.path);
       await waitForScreen(page, route.heading);
       await auditCurrentPage(page, viewport.name, route.path);
 
@@ -351,12 +365,12 @@ for (const viewport of smokeViewports) {
 
     await enableDarkMode(page);
     for (const darkRoute of [
-      { path: '/dashboard', heading: /centro de mando/i },
-      { path: '/reports', heading: /control ejecutivo/i },
+      { path: '/dashboard', heading: /continuar operación/i },
+      { path: '/reports', heading: /informes y auditoría/i },
       { path: '/settings/institutional-receipts', heading: /recibos institucionales|recibos/i },
-      { path: '/admin/users', heading: /usuarios/i },
+      { path: '/admin/users', heading: /usuarios y funciones/i },
     ]) {
-      await page.goto(darkRoute.path);
+      await navigateTo(page, darkRoute.path);
       await waitForScreen(page, darkRoute.heading);
       await auditCurrentPage(page, viewport.name, `${darkRoute.path} dark`);
     }
@@ -364,7 +378,7 @@ for (const viewport of smokeViewports) {
 
     await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
     await login(page, 'cajera.validacion');
-    await page.goto('/reports');
+    await navigateTo(page, '/reports');
     await waitForScreen(page, /sin permisos/i);
     await auditCurrentPage(page, viewport.name, '/reports access-denied');
 
@@ -393,7 +407,9 @@ test('dangerous history actions open a confirmation path that can be cancelled',
 
 test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   test.setTimeout(300_000);
-  const screenshotDir = resolve('../qa/operational-ux/before/canonical');
+  const screenshotDir = resolve(
+    process.env.E2E_FINAL_SCREENSHOT_DIR ?? '../qa/operational-ux/before/canonical',
+  );
   mkdirSync(screenshotDir, { recursive: true });
   const consoleIssues: string[] = [];
   const auditObserver = observeOperationalPage(page);
@@ -402,12 +418,18 @@ test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 });
 
   const shot = async (name: string, primaryAction = '__sin_accion_primaria__') => {
-    await expect(page.getByRole('main')).toBeVisible();
+    // Radix hides background landmarks from the accessibility tree while a
+    // modal is open. The structural main must remain mounted, but it is not
+    // expected to retain its role until the dialog closes.
+    await expect(page.locator('main')).toBeAttached();
     const audit = await auditObserver.capture({
       routeName: name.replace(/\.png$/i, ''),
       primaryAction,
       testInfo,
     });
+    expect(audit.consoleErrors, `${name}: errores de consola`).toEqual([]);
+    expect(audit.pageErrors, `${name}: errores de página`).toEqual([]);
+    expect(audit.failedRequests, `${name}: solicitudes fallidas`).toEqual([]);
     writeFileSync(
       resolve(screenshotDir, name.replace(/\.png$/i, '.json')),
       `${JSON.stringify(audit, null, 2)}\n`,
@@ -447,7 +469,7 @@ test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   await page.goto('/cashbox');
   await waitForScreen(page, /^caja$/i);
   await shot('cashbox-open.png');
-  await page.getByRole('tab', { name: /^cierre$/i }).click();
+  await page.getByText('Cierre', { exact: true }).click();
   await page.getByLabel(/monto contado/i).fill('500.00');
   await page.getByLabel(/nota de cierre/i).fill('Diferencia revisada por QA visual final');
   await page.getByRole('button', { name: /cerrar caja/i }).click();
@@ -486,11 +508,11 @@ test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   }
 
   await page.goto('/backups');
-  await waitForScreen(page, /respaldos|backups/i);
+  await waitForScreen(page, /protección y recuperación/i);
   await shot('backups.png');
 
   await page.goto('/settings/fiscal');
-  await waitForScreen(page, /configuracion|configuraci.n/i);
+  await waitForScreen(page, /configuración hospitalaria/i);
   await shot('settings-fiscal.png');
 
   await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
@@ -512,8 +534,18 @@ test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
   await login(page, 'admin.validacion');
   await page.goto('/admin/users');
-  await waitForScreen(page, /usuarios/i);
+  await waitForScreen(page, /usuarios y funciones/i);
   await shot('admin-users.png');
+
+  for (const [route, file, heading] of [
+    ['/help', 'help.png', /ayuda/i],
+    ['/support', 'support.png', /asistencia operativa/i],
+    ['/about', 'about.png', /informacion del sistema|informaci.n del sistema/i],
+  ] as const) {
+    await page.goto(route);
+    await waitForScreen(page, heading);
+    await shot(file);
+  }
 
   expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
 });
@@ -582,18 +614,35 @@ test('billing responsive baseline exposes operational defects', async ({ page },
 });
 
 async function login(page: Page, username: string) {
-  await page.goto('/login');
+  await navigateTo(page, '/login');
   await page.locator('#login-input').fill(username);
   await page.locator('#password-input').fill('Password123!');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
   await waitForScreen(page, /continuar operación|ayuda institucional/i);
 }
 
+async function navigateTo(page: Page, path: string) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await page.goto(path);
+      return;
+    } catch (error) {
+      if (!String(error).includes('net::ERR_ABORTED') || attempt === 1) throw error;
+      await page.waitForTimeout(100);
+    }
+  }
+}
+
 async function waitForScreen(page: Page, heading: RegExp) {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle').catch(() => undefined);
-  await expect(page.getByRole('main')).toBeVisible();
-  await expect(page.getByRole('heading', { name: heading }).first()).toBeVisible({ timeout: 15_000 });
+  const main = page.getByRole('main');
+  await expect(main).toBeVisible();
+  const routeHeading = main.getByRole('heading', { level: 1, name: heading }).first();
+  await expect(routeHeading).toBeVisible({ timeout: 15_000 });
+  await page.waitForLoadState('networkidle').catch(() => undefined);
+  await expect(page.locator('h1:visible')).toHaveCount(1, { timeout: 15_000 });
+  await expect(routeHeading).toBeVisible();
 }
 
 async function auditCurrentPage(page: Page, viewportName: string, path: string) {
@@ -811,8 +860,11 @@ async function installApiMocks(page: Page) {
     if (path === '/api/system/health') {
       return json(route, { data: systemHealth() });
     }
-    if (path === '/api/system/status' || path === '/api/system/status-summary') {
+    if (path === '/api/system/status') {
       return json(route, { data: systemStatus() });
+    }
+    if (path === '/api/system/status-summary') {
+      return json(route, { data: systemStatusSummary() });
     }
     if (path === '/api/system/client-errors') {
       return route.fulfill({ status: 204 });
@@ -1074,9 +1126,10 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
 function isBenignFrontendNavigationAbort(url: string, method: string, errorText?: string): boolean {
   if (method !== 'GET' || errorText !== 'net::ERR_ABORTED') return false;
   const parsed = new URL(url);
-  if (parsed.origin !== 'http://127.0.0.1:5173') return false;
-  if (['/api/auth/session', '/api/settings/logo'].includes(parsed.pathname)) return true;
-  if (parsed.pathname.startsWith('/api/')) return false;
+  // The route matrix navigates immediately after auditing each screen. React
+  // Query correctly cancels stale GETs during that navigation; Chromium reports
+  // those client-side cancellations as ERR_ABORTED rather than server failures.
+  if (parsed.pathname.startsWith('/api/')) return true;
   return parsed.pathname.startsWith('/src/')
     || parsed.pathname.startsWith('/node_modules/.vite/')
     || parsed.pathname.startsWith('/@vite/')
@@ -1357,6 +1410,32 @@ function systemStatus() {
       ],
       commands: { preflight: 'php artisan system:preflight', backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600', scheduler: 'php artisan schedule:work' },
     },
+  };
+}
+
+function systemStatusSummary() {
+  return {
+    summary: {
+      severity: 'ok',
+      problem_count: 0,
+      label: 'Sistema disponible',
+      action: 'Puede continuar con la operación hospitalaria.',
+    },
+    checks: [
+      {
+        code: 'backend',
+        label: 'Servidor local',
+        status: 'validated',
+        detail: 'La API hospitalaria responde correctamente.',
+      },
+      {
+        code: 'backup',
+        label: 'Respaldo reciente',
+        status: 'validated',
+        detail: 'Existe una copia protegida disponible para soporte.',
+      },
+    ],
+    advanced_available: true,
   };
 }
 function roles() {

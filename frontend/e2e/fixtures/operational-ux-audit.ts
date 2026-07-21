@@ -33,14 +33,17 @@ export function observeOperationalPage(page: Page) {
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('requestfailed', (request) => {
-    failedRequests.push(`${request.method()} ${request.url()}`);
+    const failure = request.failure()?.errorText ?? 'unknown';
+    if (request.method() === 'GET' && failure === 'net::ERR_ABORTED') return;
+    if (new URL(request.url()).pathname === '/api/auth/logout' && failure === 'net::ERR_ABORTED') return;
+    failedRequests.push(`${request.method()} ${request.url()} ${failure}`);
   });
 
   return {
     async capture(options: CaptureOptions): Promise<OperationalPageAudit> {
       await page.waitForLoadState('networkidle');
 
-      const geometry = await page.evaluate(() => {
+      const readGeometry = () => page.evaluate(() => {
         const rect = (element: Element) => {
           const value = element.getBoundingClientRect();
 
@@ -93,6 +96,15 @@ export function observeOperationalPage(page: Page) {
           stickyElements,
         };
       });
+      let geometry: Awaited<ReturnType<typeof readGeometry>>;
+      try {
+        geometry = await readGeometry();
+      } catch (error) {
+        if (!String(error).includes('Execution context was destroyed')) throw error;
+        await page.waitForLoadState('domcontentloaded');
+        await page.waitForLoadState('networkidle');
+        geometry = await readGeometry();
+      }
       const primary = page
         .getByRole('button', { name: options.primaryAction })
         .or(page.getByRole('link', { name: options.primaryAction }))
@@ -126,9 +138,9 @@ export function observeOperationalPage(page: Page) {
       const audit: OperationalPageAudit = {
         ...geometry,
         primaryAction,
-        consoleErrors,
-        pageErrors,
-        failedRequests,
+        consoleErrors: [...consoleErrors],
+        pageErrors: [...pageErrors],
+        failedRequests: [...failedRequests],
       };
 
       await options.testInfo.attach(`${options.routeName}-audit`, {
@@ -139,6 +151,9 @@ export function observeOperationalPage(page: Page) {
         path: options.testInfo.outputPath(`${options.routeName}.png`),
         fullPage: true,
       });
+      consoleErrors.length = 0;
+      pageErrors.length = 0;
+      failedRequests.length = 0;
 
       return audit;
     },
