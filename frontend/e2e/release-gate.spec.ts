@@ -223,7 +223,7 @@ test('release gate cashier can issue, collect, show receipt, surface reports and
   expect(cashSession.missing_institutional_receipt_count).toBe(0);
 
   const closingBreakdown = physicalCashBreakdown(cashSession.expected_cash_amount);
-  await page.getByRole('tab', { name: /^arqueo$/i }).click();
+  await page.getByRole('radio', { name: /^arqueo$/i }).click();
   for (const [denomination, count] of Object.entries(closingBreakdown.bills)) {
     if (count > 0) {
       await page.getByLabel(new RegExp(`cantidad de billetes de L ${denomination}$`, 'i')).fill(String(count));
@@ -236,12 +236,12 @@ test('release gate cashier can issue, collect, show receipt, surface reports and
     .toContainText(cashSession.expected_cash_amount);
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.screenshot({
-    path: resolve(process.cwd(), '..', 'qa', 'operational-ux', 'after', 'cashbox-denominations-1366.png'),
+    path: resolve(process.cwd(), 'test-results', 'release-e2e-artifacts', 'cashbox-denominations-1366.png'),
     fullPage: true,
   });
 
   await page.getByRole('button', { name: /continuar al cierre/i }).click();
-  await expect(page.getByRole('tab', { name: /^cierre$/i })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('radio', { name: /^cierre$/i })).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByLabel(/monto contado/i)).toHaveValue(cashSession.expected_cash_amount);
   await page.getByRole('button', { name: /^cerrar caja$/i }).click();
   const closeDialog = page.getByRole('dialog', { name: /cierre de caja/i });
