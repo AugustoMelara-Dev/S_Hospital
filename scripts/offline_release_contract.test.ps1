@@ -63,5 +63,6 @@ Assert-NotContains $releaseValidator 'validate_support_packet_safety.ps1' "offli
 Assert-Contains $releaseValidator '@sha256:' "offline release validator"
 Assert-Contains $releaseValidator 'Missing versioned source file required by offline release contract' "offline release validator"
 Assert-Contains $releaseValidator 'Missing release file required by offline release contract' "offline release validator"
+Assert-Contains $releaseValidator 'scripts\lib\lan_asset_discovery.ps1' "offline release validator"
 
 Write-Host "[ OK ] offline release contract is complete and secure"
