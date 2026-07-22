@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-10T05:09:39.121Z",
+  "generated_at": "2026-07-21T23:16:29.397Z",
   "mode": "mocked-non-mutating-playwright",
   "results": [
     {
@@ -472,6 +472,42 @@
     },
     {
       "name": "history reverse cancel path",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "320x640",
+      "path": "/support",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "375x667",
+      "path": "/support",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "768x1024",
+      "path": "/support",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1024x768",
+      "path": "/support",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1366x768",
+      "path": "/support",
+      "status": "passed"
+    },
+    {
+      "name": "full route accessibility matrix",
+      "viewport": "1920x1080",
+      "path": "/support",
       "status": "passed"
     }
   ]
