@@ -43,7 +43,7 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
         <Badge
           variant={cashSession?.status === 'open' ? 'outline' : 'secondary'}
           className={cashSession?.status === 'open'
-            ? 'border-success/25 bg-success/10 px-3 py-1 text-xs font-bold text-success'
+            ? 'border-success/25 bg-success/10 px-3 py-1 text-xs font-bold text-success-foreground'
             : 'px-3 py-1 text-xs font-bold'}
         >
           {cashLabel}

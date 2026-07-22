@@ -89,7 +89,7 @@
     font-size: 12px;
     line-height: 1.35;
     border: 1px solid var(--color-receipt-border);
-    box-shadow: 0 1px 3px rgb(15 23 42 / 0.08), 0 8px 24px rgb(15 23 42 / 0.06);
+    box-shadow: var(--shadow-sm);
     padding: 0.42in;
   }
 

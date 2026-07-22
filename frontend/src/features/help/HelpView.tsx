@@ -451,7 +451,7 @@ export function HelpView() {
               <ul className="mt-3 space-y-2">
                 {checklist.items.map((item) => (
                   <li key={item} className="flex gap-2 text-sm leading-6 text-muted-foreground">
-                    <span aria-hidden="true" className="mt-[0.45rem] size-1.5 shrink-0 rounded-full bg-primary/40" />
+                    <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-primary/40" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -517,7 +517,7 @@ function helpGuideId(title: string): string {
 
 function HelpAccordionItem({ children, trigger, value }: { children: ReactNode; trigger: ReactNode; value: string }) {
   return (
-    <AccordionItem value={value} className="rounded-lg border border-border bg-background px-4 last:border-b data-[state=open]:bg-muted/35">
+    <AccordionItem value={value} className="rounded-lg border border-border bg-background px-4 last:border-b data-open:bg-muted/35">
       <AccordionTrigger className="py-4 text-left font-semibold hover:no-underline">{trigger}</AccordionTrigger>
       <AccordionContent forceMount className="pb-4">{children}</AccordionContent>
     </AccordionItem>

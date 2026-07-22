@@ -111,6 +111,14 @@
   }
 
   @media (min-width: 64rem) {
+    .auth-split-layout {
+      grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
+    }
+
+    .auth-identity-panel {
+      min-height: 40rem;
+    }
+
     .catalog-toolbar-grid {
       grid-template-columns: minmax(16rem, 2fr) minmax(10rem, 1fr) minmax(8rem, 0.8fr) auto;
     }

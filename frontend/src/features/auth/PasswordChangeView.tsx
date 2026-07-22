@@ -36,8 +36,8 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
   return (
     <main className="flex min-h-dvh items-center overflow-x-hidden bg-muted/30 p-3 text-foreground sm:p-6 lg:p-10">
       <Card className="mx-auto w-full max-w-6xl py-0 shadow-sm">
-        <CardContent className="grid min-h-0 p-0 lg:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)]">
-          <aside className="border-b border-border bg-muted/35 p-5 sm:p-8 lg:min-h-[40rem] lg:border-r lg:border-b-0 lg:p-10">
+        <CardContent className="auth-split-layout grid min-h-0 p-0">
+          <aside className="auth-identity-panel border-b border-border bg-muted/35 p-5 sm:p-8 lg:border-r lg:border-b-0 lg:p-10">
           <span className="flex size-11 items-center justify-center rounded-lg border border-primary/20 bg-background text-primary"><ShieldCheckIcon aria-hidden="true" /></span>
           <p className="mt-8 text-xs font-semibold uppercase tracking-wider text-primary">Seguridad de cuenta</p>
           <h1 className="mt-3 max-w-lg text-3xl font-semibold tracking-tight text-balance">Cambio obligatorio de contraseña</h1>

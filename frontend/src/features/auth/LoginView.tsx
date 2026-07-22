@@ -58,8 +58,8 @@ export function LoginView({ login, onLoginChange, onPasswordChange, onSubmit, pa
   return (
     <main className="flex min-h-dvh items-center overflow-x-hidden bg-muted/30 p-3 text-foreground sm:p-6 lg:p-10">
       <Card className="mx-auto w-full max-w-6xl py-0 shadow-sm">
-        <CardContent className="grid min-h-0 p-0 lg:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)]">
-          <aside className="flex min-w-0 flex-col border-b border-border bg-muted/35 p-5 lg:min-h-[40rem] lg:border-r lg:border-b-0 lg:p-10">
+        <CardContent className="auth-split-layout grid min-h-0 p-0">
+          <aside className="auth-identity-panel flex min-w-0 flex-col border-b border-border bg-muted/35 p-5 lg:border-r lg:border-b-0 lg:p-10">
             <InstitutionalIdentity hospitalName={hospitalName} location="Tocoa, Colón, Honduras" logoUrl={logoUrl} />
             <div className="hidden max-w-xl flex-1 flex-col justify-center lg:flex">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary">Acceso institucional</p>

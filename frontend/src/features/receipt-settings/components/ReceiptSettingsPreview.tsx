@@ -85,7 +85,7 @@ export function ReceiptSettingsPreview({
       description={`${paperChoice.label}. El contenido de muestra no genera ni modifica recibos.`}
       className="overflow-hidden border border-border bg-muted"
     >
-      <div className="space-y-4">
+      <div className="w-full min-w-0 space-y-4" data-receipt-preview-pages>
         {labels.map((label) => (
           <ReceiptDocumentPreview
             key={label}
