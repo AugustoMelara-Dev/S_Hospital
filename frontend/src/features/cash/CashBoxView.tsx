@@ -9,6 +9,7 @@ import { getVisibleRefetchInterval } from '@/lib/query/polling';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { PageHeader } from '@/design-system/components/PageHeader';
+import { WrapText } from '@/design-system/components/InstitutionalComponents';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
 import { OpenSessionForm } from './components/OpenSessionForm';
 import { CashCloseSummaryPanel, CloseSessionDialog } from './components/CloseSessionDialog';
@@ -404,9 +405,9 @@ export function CashBoxView({
               </p>
             </div>
             {isOpen && cashier ? (
-              <p className="mt-1 truncate text-xs text-muted-foreground">
+              <WrapText as="p" className="mt-1 text-xs text-muted-foreground">
                 <strong className="text-foreground">{cashier}</strong> · {isOwnSession ? 'Caja propia' : canCloseAnyCash ? 'Supervisión habilitada' : 'Sesión de otro cajero'}
-              </p>
+              </WrapText>
             ) : null}
           </div>
           <OperationalMetric label="Apertura" value={isOpen && activeSession ? formatLempirasUI(activeSession.opening_amount) : '—'} />

@@ -12,6 +12,15 @@ import { cn } from '@/lib/utils';
 
 type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'destructive';
 
+type WrapTextProps = HTMLAttributes<HTMLElement> & {
+  as?: 'div' | 'p' | 'span';
+};
+
+/** Keeps operational identifiers and descriptive text readable at every width. */
+export function WrapText({ as: Component = 'span', className, ...props }: WrapTextProps) {
+  return <Component className={cn('min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]', className)} {...props} />;
+}
+
 const toneStyles: Record<Tone, string> = {
   neutral: 'bg-card text-card-foreground before:bg-primary/60',
   info: 'bg-card text-card-foreground before:bg-info',

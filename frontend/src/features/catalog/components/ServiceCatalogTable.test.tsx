@@ -26,6 +26,14 @@ describe('ServiceCatalogTable', () => {
     expect(screen.getAllByText(/código LAB-1/i).length).toBeGreaterThan(0);
   });
 
+  it('wraps long service metadata instead of truncating it in the operational table', () => {
+    const longCode = 'CODIGO-OPERATIVO-EXCEPCIONALMENTE-LARGO-SIN-ESPACIOS-123456789';
+    render(<ServiceCatalogTable {...baseProps()} services={[serviceFixture({ scan_code: longCode })]} />);
+
+    expect(screen.getByText(`Código ${longCode}`)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(screen.getByText(`Código ${longCode}`)).not.toHaveClass('truncate');
+  });
+
   it('uses a mobile list that distinguishes same-name services by category, area and code', () => {
     mediaState.isMobile = true;
     render(<ServiceCatalogTable {...baseProps()} services={[

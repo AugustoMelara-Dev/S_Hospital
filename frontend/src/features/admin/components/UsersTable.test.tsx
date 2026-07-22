@@ -75,6 +75,15 @@ describe('UsersTable', () => {
     expect(screen.getByRole('button', { name: /acciones de usuario caja principal/i })).toBeInTheDocument();
   });
 
+  it('keeps long mobile identity values readable instead of truncating them', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({ matches: query.includes('max-width'), media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }));
+    const user = { ...activeUser, name: 'Paciente administrativo con nombre excepcionalmente largo', email: 'cuenta.operativa.extremadamente.larga@hospital-institucional.local' };
+    render(<UsersTable canAssignAdminRole={false} canDisableUsers canUpdateUsers onEdit={vi.fn()} onResetPassword={vi.fn()} onToggleActive={vi.fn()} onViewDetail={vi.fn()} searchTerm="" users={[user]} />);
+
+    expect(screen.getByText(user.name)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(screen.getByText(user.email)).not.toHaveClass('truncate');
+  });
+
   it('renders authorized row actions through the shared action menu', async () => {
     render(
       <UsersTable

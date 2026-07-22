@@ -2,9 +2,16 @@ import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SearchIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PrintPreviewFrame, StatGrid } from './InstitutionalComponents';
+import { PrintPreviewFrame, StatGrid, WrapText } from './InstitutionalComponents';
 
 describe('shared design system components', () => {
+  it('wraps operational text instead of clipping it', () => {
+    render(<WrapText as="p">Identificador operativo extraordinariamente largo sin espacios</WrapText>);
+
+    expect(screen.getByText(/identificador operativo/i)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(screen.getByText(/identificador operativo/i)).not.toHaveClass('truncate');
+  });
+
   it('keeps statistics presentational', () => {
     const { container } = render(
       <StatGrid items={[{ label: 'Facturas', value: '12', helper: 'Emitidas hoy', icon: <SearchIcon /> }]} />,

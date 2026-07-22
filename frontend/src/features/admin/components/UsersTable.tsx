@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/design-system/patterns/DataTable';
+import { WrapText } from '@/design-system/components/InstitutionalComponents';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { AuthUser } from '@/lib/api';
 import { roleLabel } from '@/lib/role-labels';
@@ -24,7 +25,7 @@ export function UsersTable(props: UsersTableProps) {
     { id: 'actions', header: 'Acciones', enableSorting: false, cell: ({ row }) => actions(row.original) },
   ];
 
-  if (isMobile) return <ul className="grid gap-3" aria-label="Usuarios autorizados">{users.map((user) => <li key={user.id} className="flex flex-col gap-3 rounded-lg border bg-card p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold">{user.name}</p><p className="truncate text-sm text-muted-foreground">{user.email}</p><p className="mt-1 font-mono text-xs text-muted-foreground">{user.username}</p></div><Badge variant={user.active ? 'default' : 'secondary'}>{user.active ? 'Activo' : 'Inactivo'}</Badge></div><RoleBadges user={user} />{actions(user, true)}</li>)}</ul>;
+  if (isMobile) return <ul className="grid gap-3" aria-label="Usuarios autorizados">{users.map((user) => <li key={user.id} className="flex flex-col gap-3 rounded-lg border bg-card p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><WrapText as="p" className="font-semibold">{user.name}</WrapText><WrapText as="p" className="text-sm text-muted-foreground">{user.email}</WrapText><WrapText as="p" className="mt-1 font-mono text-xs text-muted-foreground">{user.username}</WrapText></div><Badge variant={user.active ? 'default' : 'secondary'}>{user.active ? 'Activo' : 'Inactivo'}</Badge></div><RoleBadges user={user} />{actions(user, true)}</li>)}</ul>;
 
   return <DataTable ariaLabel="Usuarios autorizados" caption="Directorio de usuarios autorizados" columns={columns} data={users} getRowId={(user) => String(user.id)} emptyTitle={searchTerm ? 'Sin coincidencias' : 'No hay usuarios cargados'} emptyDescription={searchTerm ? 'Ajuste la búsqueda por nombre, correo o usuario.' : 'Los usuarios autorizados aparecerán aquí.'} />;
 }
