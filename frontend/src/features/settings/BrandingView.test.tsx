@@ -36,13 +36,14 @@ describe('BrandingView', () => {
     localStorage.clear();
   });
 
-  it('shows a replaceable provisional wordmark while no official logo is loaded', async () => {
+  it('shows a direct logo setup hint while no official logo is loaded', async () => {
     render(<BrandingView canEdit onStatus={vi.fn()} />);
 
     expect(await screen.findByText('Hospital General San Isidro')).toBeVisible();
     expect(screen.getByText('Tocoa, Colón, Honduras')).toBeVisible();
-    expect(screen.getByText('Identidad provisional')).toBeVisible();
-    expect(screen.getByText(/wordmark tipográfico provisional/i)).toBeVisible();
+    expect(screen.getByText('Agregue el logotipo oficial')).toBeVisible();
+    expect(screen.getByText(/puede usar PNG o JPG/i)).toBeVisible();
+    expect(screen.queryByText(/identidad provisional|wordmark/i)).not.toBeInTheDocument();
   });
 
   it('uses the same stable identity box for an uploaded logo', async () => {

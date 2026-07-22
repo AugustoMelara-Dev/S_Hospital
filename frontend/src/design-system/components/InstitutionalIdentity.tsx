@@ -4,6 +4,7 @@ export type InstitutionalIdentityProps = {
   logoUrl?: string | null;
   provisional?: boolean;
   compact?: boolean;
+  showSetupHint?: boolean;
 };
 
 export function InstitutionalIdentity({
@@ -12,6 +13,7 @@ export function InstitutionalIdentity({
   logoUrl,
   provisional = !logoUrl,
   compact = false,
+  showSetupHint = false,
 }: InstitutionalIdentityProps) {
   return (
     <div
@@ -35,8 +37,8 @@ export function InstitutionalIdentity({
       <div className="min-w-0 leading-tight">
         <strong className={`block text-current ${compact ? 'text-xs leading-snug' : 'truncate'}`}>{hospitalName}</strong>
         {!compact ? <span className="mt-1 block text-sm text-muted-foreground">{location}</span> : null}
-        {provisional ? (
-          <span className="mt-1 block text-xs font-medium text-warning">Identidad provisional</span>
+        {provisional && showSetupHint ? (
+          <span className="mt-1 block text-xs font-medium text-muted-foreground">Agregue el logotipo oficial</span>
         ) : null}
       </div>
     </div>

@@ -32,8 +32,11 @@ describe('LoginView', () => {
   it('renders local institutional reassurance without changing the login controls', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
-    expect(screen.getByText(/identidad provisional/i)).toBeVisible();
-    expect(screen.getByText(/conexión local/i)).toBeInTheDocument();
+    expect(screen.queryByText(/identidad provisional/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Acceso seguro')).toBeVisible();
+    expect(screen.getByText('Disponible en la red del hospital')).toBeVisible();
+    expect(screen.getByText('Sus datos permanecen en el hospital.')).toBeVisible();
+    expect(screen.queryByText(/infraestructura|módulos autorizados|administración/i)).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/clientes LAN|sistema hospitalario LAN|offline\/LAN/i);
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveAttribute('autocomplete', 'username');
     expect(screen.getByLabelText(/^contrase/i)).toHaveAttribute('autocomplete', 'current-password');

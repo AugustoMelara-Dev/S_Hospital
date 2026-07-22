@@ -140,15 +140,27 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
     return 'El servidor local no pudo completar la operación. Revise el servidor local e intente de nuevo.';
   }
 
+  if (error instanceof Error && isRequestTimeoutMessage(error.message)) {
+    return 'La respuesta está tardando más de lo esperado. Intente nuevamente.';
+  }
+
   if (
     error instanceof Error &&
     error.message.trim() !== '' &&
-    !/unauthenticated|sql|exception|stack|trace|laravel/i.test(error.message)
+    !containsInternalRequestDetails(error.message)
   ) {
     return error.message;
   }
 
   return fallback;
+}
+
+function isRequestTimeoutMessage(message: string): boolean {
+  return /\b(timeout|timed out)\b|excedi[oó]\s+\d+(?:\.\d+)?\s*(?:ms|s)\b|sin respuesta del servidor/i.test(message);
+}
+
+function containsInternalRequestDetails(message: string): boolean {
+  return /unauthenticated|sql|exception|stack|trace|laravel|\b(?:GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+\/?|\/api\/|\bqueue\b|[A-Z]:\\|\/var\/www\/|\.php(?::\d+)?\b/i.test(message);
 }
 
 function formatValidationMessage(error: ApiError): string {

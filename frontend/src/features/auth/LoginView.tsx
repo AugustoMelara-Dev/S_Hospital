@@ -1,4 +1,4 @@
-import { CircleCheckIcon, EyeIcon, EyeOffIcon, LockIcon, ServerIcon, ShieldCheckIcon, UserIcon } from 'lucide-react';
+import { CircleCheckIcon, EyeIcon, EyeOffIcon, LockIcon, ShieldCheckIcon, UserIcon } from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useEffect, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -68,12 +68,9 @@ export function LoginView({ login, onLoginChange, onPasswordChange, onSubmit, pa
               <div className="mt-10 grid max-w-lg gap-3">
                 <div className="flex items-start gap-3 border-l-2 border-primary pl-4">
                   <ShieldCheckIcon aria-hidden="true" className="mt-0.5 shrink-0 text-primary" />
-                  <div><p className="font-medium">Acceso según su rol</p><p className="mt-1 text-sm leading-6 text-muted-foreground">Cada usuario ve únicamente los módulos autorizados por administración.</p></div>
+                  <div><p className="font-medium">Acceso seguro</p><p className="mt-1 text-sm leading-6 text-muted-foreground">Sus datos permanecen en el hospital.</p></div>
                 </div>
-                <div className="flex items-start gap-3 border-l-2 border-border pl-4">
-                  <ServerIcon aria-hidden="true" className="mt-0.5 shrink-0 text-muted-foreground" />
-                  <div><p className="font-medium">Operación en red local</p><p className="mt-1 text-sm leading-6 text-muted-foreground">El flujo de caja continúa dentro de la infraestructura del hospital.</p></div>
-                </div>
+                <p className="pl-5 text-sm text-muted-foreground">Disponible en la red del hospital</p>
               </div>
             </div>
             <p className="mt-4 hidden items-center gap-2 text-xs text-muted-foreground lg:flex"><CircleCheckIcon aria-hidden="true" className="text-primary" />Estación de trabajo institucional</p>
@@ -121,7 +118,7 @@ export function LoginView({ login, onLoginChange, onPasswordChange, onSubmit, pa
               {displayStatus ? <Alert variant={isError ? 'destructive' : 'default'} role={statusRole}><AlertDescription>{displayStatus}</AlertDescription></Alert> : null}
             </div>
             <Separator className="mt-6" />
-            <p className="mt-5 text-xs leading-5 text-muted-foreground">Conexión local · No comparta usuarios entre turnos.</p>
+            <p className="mt-5 text-xs leading-5 text-muted-foreground">Use únicamente su cuenta asignada.</p>
           </div>
           </section>
         </CardContent>

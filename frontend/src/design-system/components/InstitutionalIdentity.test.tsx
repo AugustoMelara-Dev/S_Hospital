@@ -9,7 +9,7 @@ describe('InstitutionalIdentity', () => {
     expect(screen.getByText('HGSI')).toHaveClass('text-receipt-ink');
   });
 
-  it('uses the canonical institution and marks a missing logo provisional', () => {
+  it('uses the canonical institution without exposing setup language in ordinary screens', () => {
     render(
       <InstitutionalIdentity
         hospitalName="Hospital General San Isidro"
@@ -20,8 +20,21 @@ describe('InstitutionalIdentity', () => {
 
     expect(screen.getByText('Hospital General San Isidro')).toBeVisible();
     expect(screen.getByText('Tocoa, Colón, Honduras')).toBeVisible();
-    expect(screen.getByText('Identidad provisional')).toBeVisible();
+    expect(screen.queryByText(/identidad provisional/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('offers a direct logo setup hint only when the caller requests it', () => {
+    render(
+      <InstitutionalIdentity
+        hospitalName="Hospital General San Isidro"
+        location="Tocoa, Colón, Honduras"
+        provisional
+        showSetupHint
+      />,
+    );
+
+    expect(screen.getByText('Agregue el logotipo oficial')).toBeVisible();
   });
 
   it('reserves a stable box for an uploaded official logo', () => {
@@ -35,6 +48,6 @@ describe('InstitutionalIdentity', () => {
 
     expect(screen.getByRole('img', { name: /hospital general san isidro/i }).parentElement)
       .toHaveClass('institutional-logo-box');
-    expect(screen.queryByText('Identidad provisional')).not.toBeInTheDocument();
+    expect(screen.queryByText(/identidad provisional|agregue el logotipo/i)).not.toBeInTheDocument();
   });
 });

@@ -28,5 +28,21 @@ export function normalizeOperationalStatus(status: OperationalStatusInput): Oper
     throw new Error('Se requiere un estado operativo con mensaje y severidad explícita.');
   }
 
-  return { ...status, toast: status.toast ?? true };
+  return {
+    ...status,
+    message: humanOperationalMessage(status.message),
+    toast: status.toast ?? true,
+  };
+}
+
+function humanOperationalMessage(message: string): string {
+  if (/\b(timeout|timed out)\b|excedi[oó]\s+\d+(?:\.\d+)?\s*(?:ms|s)\b|sin respuesta del servidor/i.test(message)) {
+    return 'La respuesta está tardando más de lo esperado. Intente nuevamente.';
+  }
+
+  if (/\b(?:GET|POST|PUT|PATCH|DELETE)\s+\/?|\/api\/|SQLSTATE|exception|stack|trace|[A-Z]:\\|\/var\/www\//i.test(message)) {
+    return 'No se pudo completar la acción. Intente nuevamente.';
+  }
+
+  return message;
 }

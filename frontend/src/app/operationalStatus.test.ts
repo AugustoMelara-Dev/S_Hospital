@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { normalizeOperationalStatus } from './operationalStatus';
 
 describe('normalizeOperationalStatus', () => {
-  it('conserva la severidad explícita sin inferirla desde el texto', () => {
+  it('conserva la severidad explícita y oculta detalles internos del pedido', () => {
     expect(normalizeOperationalStatus({
       key: 'services-timeout',
       level: 'error',
@@ -10,7 +10,7 @@ describe('normalizeOperationalStatus', () => {
     })).toEqual({
       key: 'services-timeout',
       level: 'error',
-      message: "La operación 'GET /api/services' excedió 10s.",
+      message: 'La respuesta está tardando más de lo esperado. Intente nuevamente.',
       toast: true,
     });
   });

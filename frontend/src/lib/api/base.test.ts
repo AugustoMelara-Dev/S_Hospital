@@ -125,6 +125,26 @@ describe('resolveApiBaseUrl', () => {
     expect(message).not.toMatch(/SQLSTATE/);
   });
 
+  it('turns request timeout internals into a short recovery message', () => {
+    const message = userSafeErrorMessage(
+      new Error("La operación 'GET /api/invoices?page=1&per_page=5' excedió 10s sin respuesta del servidor local."),
+      'No se pudieron cargar las facturas recientes.',
+    );
+
+    expect(message).toBe('La respuesta está tardando más de lo esperado. Intente nuevamente.');
+    expect(message).not.toMatch(/GET|\/api\/|10s|per_page/i);
+  });
+
+  it('does not pass through internal request details from ordinary errors', () => {
+    const message = userSafeErrorMessage(
+      new Error('POST /api/backups failed in queue backups at C:\\hospital\\worker.php'),
+      'No se pudo crear el respaldo.',
+    );
+
+    expect(message).toBe('No se pudo crear el respaldo.');
+    expect(message).not.toMatch(/POST|\/api\/|queue|worker\.php/i);
+  });
+
   it('stores safe local support evidence when the local server is unavailable', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('failed to fetch DB_PASSWORD=secret'));
 

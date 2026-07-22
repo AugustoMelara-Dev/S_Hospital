@@ -87,8 +87,8 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
           <CardHeader><CardTitle>Logo institucional</CardTitle><CardDescription>Aparece en recibos y en la cabecera de la aplicación.</CardDescription></CardHeader>
           <CardContent className="grid gap-4">
             <div className="rounded-xl border bg-muted/40 p-5">
-              <InstitutionalIdentity hospitalName={displayHospitalName(settings?.hospital_name)} location={settings?.receipt_location?.trim() || 'Tocoa, Colón, Honduras'} logoUrl={logoUrl} />
-              {!logoUrl ? <p className="mt-4 text-xs text-muted-foreground">Se usa un wordmark tipográfico provisional hasta recibir un SVG o PNG oficial autorizado.</p> : null}
+              <InstitutionalIdentity hospitalName={displayHospitalName(settings?.hospital_name)} location={settings?.receipt_location?.trim() || 'Tocoa, Colón, Honduras'} logoUrl={logoUrl} showSetupHint />
+              {!logoUrl ? <p className="mt-4 text-xs text-muted-foreground">Puede usar PNG o JPG. El archivo queda guardado en este servidor.</p> : null}
             </div>
             {canEdit ? (
               <Field>
