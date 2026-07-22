@@ -795,7 +795,7 @@ class ExecutiveReportService
 
     private function inclusiveDays(Carbon $start, Carbon $end): int
     {
-        return (int) $start->copy()->startOfDay()->diffInDays($end->copy()->startOfDay()) + 1;
+        return (int) round($start->copy()->startOfDay()->diffInDays($end->copy()->startOfDay())) + 1;
     }
 
     /** @param array<string, mixed> $filters */

@@ -179,6 +179,11 @@ export function operationalSummary(status: SystemStatus): { level: OperationalSt
       status.backups.last_success_file_exists === false ||
       status.backups.last_success_checksum_matches === false
     );
+  const hasRecentUnresolvedFailure = status.backups.last_failure_at !== null
+    && (
+      status.backups.last_success_at === null ||
+      new Date(status.backups.last_failure_at).getTime() > new Date(status.backups.last_success_at).getTime()
+    );
   const hasError =
     !status.database.connected ||
     !status.frontend.dist_index_exists ||
@@ -189,7 +194,7 @@ export function operationalSummary(status: SystemStatus): { level: OperationalSt
     !status.runtime.logs_writable ||
     !status.runtime.cache_writable ||
     (status.backups.queue.failed_jobs_count ?? 0) > 0 ||
-    status.backups.last_failure_at !== null;
+    hasRecentUnresolvedFailure;
 
   if (hasError) {
     return {

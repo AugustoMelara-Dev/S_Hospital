@@ -32,8 +32,10 @@ export function useOpenCashSession() {
         idempotencyKey,
       });
     },
-    onSuccess: () => {
+    onSuccess: (opened) => {
       resetPayloadScopedIdempotencyKey(idempotencyKeyRef, idempotencySignatureRef);
+      queryClient.setQueryData(queryKeys.cashSessions.current('own'), opened);
+      queryClient.setQueryData(queryKeys.cashSessions.current('closable'), opened);
       return invalidateBillingQueries(queryClient);
     },
   });
@@ -52,8 +54,10 @@ export function useCloseCashSession() {
         idempotencyKey,
       });
     },
-    onSuccess: () => {
+    onSuccess: (closed) => {
       resetPayloadScopedIdempotencyKey(idempotencyKeyRef, idempotencySignatureRef);
+      queryClient.setQueryData(queryKeys.cashSessions.current('own'), null);
+      queryClient.setQueryData(queryKeys.cashSessions.current('closable'), null);
       return invalidateBillingQueries(queryClient);
     },
   });

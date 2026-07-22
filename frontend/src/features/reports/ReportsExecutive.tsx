@@ -285,7 +285,7 @@ function validateReportDateRange(dateFrom: string, dateTo: string, maxDays: numb
     return 'Seleccione fechas validas para el reporte.';
   }
 
-  const diffDays = Math.ceil((end.getTime() - start.getTime()) / 86_400_000) + 1;
+  const diffDays = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
 
   if (diffDays < 1) {
     return 'La fecha de inicio debe ser anterior o igual a la fecha de fin.';

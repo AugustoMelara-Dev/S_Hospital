@@ -155,7 +155,8 @@ export function CashBoxView({
     },
     onSuccess: async (opened) => {
       resetPayloadScopedIdempotencyKey(openSessionIdempotencyKeyRef, openSessionIdempotencySignatureRef);
-      queryClient.setQueryData(queryKeys.cashSessions.current(), opened);
+      queryClient.setQueryData(queryKeys.cashSessions.current('own'), opened);
+      queryClient.setQueryData(queryKeys.cashSessions.current('closable'), opened);
       await invalidateBillingQueries(queryClient);
       setClosingAmount('');
       setClosingNotes('');
@@ -191,7 +192,8 @@ export function CashBoxView({
     },
     onSuccess: async (closed) => {
       resetPayloadScopedIdempotencyKey(closeSessionIdempotencyKeyRef, closeSessionIdempotencySignatureRef);
-      queryClient.setQueryData(queryKeys.cashSessions.current(), null);
+      queryClient.setQueryData(queryKeys.cashSessions.current('own'), null);
+      queryClient.setQueryData(queryKeys.cashSessions.current('closable'), null);
       await invalidateBillingQueries(queryClient);
       setClosedSummarySession(closed);
       setClosingAmount('');
