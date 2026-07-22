@@ -7,12 +7,12 @@ import { PasswordChangeView } from './PasswordChangeView';
 const axe = configureAxe({ rules: { 'color-contrast': { enabled: false } } });
 
 describe('PasswordChangeView', () => {
-  it('presenta los requisitos antes de los campos sin una Card contenedora', () => {
+  it('presenta los requisitos antes de los campos dentro de una Card institucional', () => {
     const { container } = render(<PasswordChangeView onSubmit={vi.fn()} />);
     expect(screen.getByRole('heading', { name: 'Cambio obligatorio de contraseña' })).toBeVisible();
     expect(screen.getByText(/mínimo 12 caracteres/i)).toBeVisible();
     expect(screen.getByText(/mayúscula, minúscula, número y símbolo/i)).toBeVisible();
-    expect(container.querySelector('[data-slot="card"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-slot="card"]')).toBeInTheDocument();
   });
 
   it('muestra el error de confirmación cuando las contraseñas no coinciden', async () => {

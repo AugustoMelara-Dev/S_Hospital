@@ -3,9 +3,12 @@ import { CheckIcon, KeyRoundIcon, LockKeyholeIcon, ShieldCheckIcon } from 'lucid
 import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
+import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 
 export const passwordChangeSchema = z.object({
@@ -31,28 +34,35 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
   });
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-background p-4 text-foreground sm:p-6 lg:flex lg:items-center">
-      <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-foreground/10 lg:grid-cols-2">
-        <aside className="border-b border-sidebar-border bg-sidebar px-5 py-7 text-sidebar-foreground sm:px-8 lg:border-r lg:border-b-0 lg:py-10">
-          <span className="flex size-11 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"><ShieldCheckIcon aria-hidden="true" /></span>
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/65">Seguridad de cuenta</p>
-          <h1 className="mt-2 text-2xl font-semibold leading-tight">Cambio obligatorio de contraseña</h1>
-          <p className="mt-3 text-sm leading-6 text-sidebar-foreground/75">Complete el cambio antes de operar facturación, caja o reportes.</p>
-          <section aria-labelledby="password-requirements" className="mt-7 border-l border-sidebar-border pl-4">
+    <main className="flex min-h-dvh items-center overflow-x-hidden bg-muted/30 p-3 text-foreground sm:p-6 lg:p-10">
+      <Card className="mx-auto w-full max-w-6xl py-0 shadow-sm">
+        <CardContent className="grid min-h-0 p-0 lg:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)]">
+          <aside className="border-b border-border bg-muted/35 p-5 sm:p-8 lg:min-h-[40rem] lg:border-r lg:border-b-0 lg:p-10">
+          <span className="flex size-11 items-center justify-center rounded-lg border border-primary/20 bg-background text-primary"><ShieldCheckIcon aria-hidden="true" /></span>
+          <p className="mt-8 text-xs font-semibold uppercase tracking-wider text-primary">Seguridad de cuenta</p>
+          <h1 className="mt-3 max-w-lg text-3xl font-semibold tracking-tight text-balance">Cambio obligatorio de contraseña</h1>
+          <p className="mt-4 max-w-lg text-sm leading-6 text-muted-foreground">Complete el cambio antes de operar facturación, caja o reportes.</p>
+          <section aria-labelledby="password-requirements" className="mt-10 max-w-lg border-l-2 border-primary pl-4">
             <h2 id="password-requirements" className="text-sm font-semibold">Requisitos de contraseña</h2>
-            <p className="mt-2 text-sm leading-6 text-sidebar-foreground/75">Mínimo 12 caracteres, con mayúscula, minúscula, número y símbolo.</p>
-            <ul className="mt-4 flex flex-col gap-2 text-sm text-sidebar-foreground/75">
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Mínimo 12 caracteres, con mayúscula, minúscula, número y símbolo.</p>
+            <ul className="mt-4 flex flex-col gap-2 text-sm text-muted-foreground">
               <li className="flex gap-2"><CheckIcon aria-hidden="true" /> Use una clave individual.</li>
               <li className="flex gap-2"><CheckIcon aria-hidden="true" /> Evite claves compartidas entre turnos.</li>
             </ul>
           </section>
         </aside>
 
-        <section className="min-w-0 px-5 py-7 sm:px-8 lg:px-10 lg:py-10" aria-labelledby="password-form-title">
-          <header className="mb-7">
-            <div className="flex items-center gap-3 text-primary"><LockKeyholeIcon aria-hidden="true" /><h2 id="password-form-title" className="text-xl font-semibold text-foreground">Defina su nueva clave</h2></div>
+        <section className="flex min-w-0 items-center px-5 py-8 sm:px-10 lg:px-12" aria-labelledby="password-form-title">
+          <div className="mx-auto w-full max-w-md">
+          <header>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">Acceso protegido</p>
+              <Badge variant="outline" className="gap-1.5 border-primary/25 text-primary"><ShieldCheckIcon aria-hidden="true" />Cuenta segura</Badge>
+            </div>
+            <div className="mt-4 flex items-center gap-3"><LockKeyholeIcon aria-hidden="true" className="text-primary" /><h2 id="password-form-title" className="text-2xl font-semibold tracking-tight text-foreground">Defina su nueva clave</h2></div>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">La sesión permanecerá restringida hasta completar este formulario.</p>
           </header>
+          <Separator className="my-7" />
           <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup>
               {status?.trim() ? <Alert><AlertTitle>Revise la contraseña</AlertTitle><AlertDescription>{status}</AlertDescription></Alert> : null}
@@ -64,8 +74,10 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
               </Button>
             </FieldGroup>
           </form>
+          </div>
         </section>
-      </div>
+        </CardContent>
+      </Card>
     </main>
   );
 }
@@ -76,7 +88,10 @@ function PasswordField({ autoComplete, disabled, error, id, label, registration 
   return (
     <Field data-invalid={Boolean(error)} data-disabled={disabled}>
       <FieldLabel htmlFor={id}>{label} <span className="text-destructive" aria-hidden="true">*</span></FieldLabel>
-      <div className="relative"><KeyRoundIcon aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" /><Input id={id} type="password" autoComplete={autoComplete} disabled={disabled} aria-label={label} aria-invalid={Boolean(error)} className="pl-9" {...registration} /></div>
+      <InputGroup>
+        <InputGroupAddon><KeyRoundIcon aria-hidden="true" /></InputGroupAddon>
+        <InputGroupInput id={id} type="password" autoComplete={autoComplete} disabled={disabled} aria-label={label} aria-invalid={Boolean(error)} {...registration} />
+      </InputGroup>
       <FieldError>{error}</FieldError>
     </Field>
   );
