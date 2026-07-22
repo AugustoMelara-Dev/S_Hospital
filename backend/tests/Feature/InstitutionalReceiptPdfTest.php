@@ -87,7 +87,9 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->assertStringContainsString('thead', $html);
         $this->assertStringContainsString('page-break-inside: avoid', $html);
-        $this->assertStringContainsString('--institutional-accent: #0f766e;', $html);
+        $this->assertStringContainsString('--institutional-accent: #111827;', $html);
+        $this->assertStringNotContainsString('#0f766e', $html);
+        $this->assertStringNotContainsString('#ecfdf5', $html);
         $this->assertStringContainsString('class="receipt-layout profile-', $html);
         $this->assertStringContainsString('class="meta-table receipt-meta-panel"', $html);
         $this->assertSame('2027-12-31', data_get($context['receipt']->invoice_snapshot, 'fiscal_valid_until'));

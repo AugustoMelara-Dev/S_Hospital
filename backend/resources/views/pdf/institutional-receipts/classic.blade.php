@@ -13,7 +13,7 @@
         }
 
         body {
-            --institutional-accent: #0f766e;
+            --institutional-accent: #111827;
             background: #fff;
             color: #111827;
             font-family: {{ $profile['font_family'] }};
@@ -448,7 +448,7 @@
 
         /* Institutional visual hierarchy: optimized for grayscale and color printers. */
         .receipt-layout {
-            border-top: 3px solid #0f766e;
+            border-top: 3px solid #111827;
             padding-top: 6px;
         }
 
@@ -473,8 +473,8 @@
         }
 
         .document-band {
-            background: #ecfdf5;
-            border: 1px solid #99c8c1;
+            background: #f9fafb;
+            border: 1px solid #9ca3af;
             padding-left: 7px;
             padding-right: 7px;
         }
@@ -499,7 +499,7 @@
         }
 
         .section-title {
-            background: #0f766e;
+            background: #111827;
             border: 0;
             color: #ffffff;
             letter-spacing: 0.035em;
@@ -511,8 +511,8 @@
         }
 
         .items-table th {
-            background: #e7f3f1;
-            border-bottom-color: #99c8c1;
+            background: #f3f4f6;
+            border-bottom-color: #9ca3af;
             color: #1f2937;
         }
 
@@ -523,13 +523,13 @@
         }
 
         .totals-table .grand-total td {
-            border-top: 2px solid #0f766e;
-            color: #0b4f47;
+            border-top: 2px solid #111827;
+            color: #111827;
         }
 
         .amount-words {
             background: #f8fafc;
-            border-left: 3px solid #0f766e;
+            border-left: 3px solid #111827;
         }
 
         .thermal .receipt-layout {

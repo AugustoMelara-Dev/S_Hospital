@@ -20,9 +20,9 @@ describe('InstitutionalReceiptPreviewFrame', () => {
 
     const frame = await screen.findByTitle('Vista previa del recibo institucional REC-A-00000042');
     expect(frame).toHaveAttribute('srcdoc', html);
-    expect(frame).toHaveClass('rounded-md', 'border', 'bg-receipt-paper', 'shadow-sm');
-    expect(frame.closest('[data-slot="card"]')).toHaveClass('overflow-hidden', 'bg-muted/30');
-    expect(frame.parentElement).toHaveClass('p-2', 'sm:p-3');
+    expect(frame).toHaveClass('border', 'bg-white');
+    expect(frame).not.toHaveClass('rounded-md', 'shadow-sm');
+    expect(frame.parentElement).toHaveClass('border', 'bg-muted/20', 'p-4');
     expect(institutionalReceipts.previewHtml).toHaveBeenCalledWith(42);
   });
 });

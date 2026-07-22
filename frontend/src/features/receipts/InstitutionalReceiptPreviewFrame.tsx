@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { institutionalReceipts } from '@/lib/api/institutionalReceipts';
 import { userSafeErrorMessage } from '@/lib/api';
@@ -36,15 +35,13 @@ export function InstitutionalReceiptPreviewFrame({
   }
 
   return (
-    <Card className="overflow-hidden bg-muted/30">
-      <CardContent className="p-2 sm:p-3">
-    <iframe
-      title={`Vista previa del recibo institucional ${receiptNumber}`}
-      srcDoc={preview.data}
-      sandbox=""
-      className="institutional-receipt-preview-frame w-full rounded-md border border-operational-border bg-receipt-paper shadow-sm"
-    />
-      </CardContent>
-    </Card>
+    <div className="overflow-hidden border border-border bg-muted/20 p-4">
+      <iframe
+        title={`Vista previa del recibo institucional ${receiptNumber}`}
+        srcDoc={preview.data}
+        sandbox=""
+        className="institutional-receipt-preview-frame w-full border border-operational-border bg-white"
+      />
+    </div>
   );
 }
