@@ -24,6 +24,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    fs: {
+      strict: true,
+      deny: ['/.env', '/.env.*', '/.*', '/.git/**', '/qa/**']
+    },
     proxy: {
       '/api': {
         target: apiProxyTarget,
