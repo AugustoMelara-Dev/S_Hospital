@@ -64,7 +64,7 @@ describe('ServiceSearch', () => {
 
     unmount();
     const emptyRender = renderSearch({ services: [], search: '', selectedCategoryId: undefined, selectedAreaId: undefined, onAddService });
-    expect(screen.getByRole('status')).toHaveTextContent(/busque o elija una categoría/i);
+    expect(screen.getByRole('status')).toHaveTextContent(/sin servicios encontrados/i);
 
     emptyRender.rerender(defaultRender({ services: [], search: 'no existe', onAddService }));
     expect(screen.getByRole('status')).toHaveTextContent(/sin servicios encontrados/i);

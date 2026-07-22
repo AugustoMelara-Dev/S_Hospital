@@ -94,8 +94,7 @@ export function ServiceSearch({
 
     return matchesArea && matchesCategory && matchesSearch;
   });
-  const hasIntent = Boolean(search.trim()) || selectedAreaId !== undefined || selectedCategoryId !== undefined;
-  const visibleServices = hasIntent ? filteredServices : [];
+  const visibleServices = filteredServices;
   const firstVisibleService = visibleServices[0];
   const areaOptions = ['all', ...serviceAreas.map((area) => area.id)] as Array<number | 'all'>;
   const visibleCategories = categoriesExpanded ? categories : categories.slice(0, COLLAPSED_CATEGORY_LIMIT);
@@ -364,7 +363,7 @@ export function ServiceSearch({
           <div className="flex min-w-0 items-center gap-2">
             <Filter className="size-4 text-primary" aria-hidden="true" />
             <label className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-              Servicios ({hasIntent ? filteredServices.length : 0})
+              Servicios ({filteredServices.length})
             </label>
           </div>
           <Button
@@ -399,15 +398,6 @@ export function ServiceSearch({
             {Array.from({ length: 6 }).map((_, index) => (
               <Skeleton key={index} className="h-16 w-full" />
             ))}
-          </div>
-        ) : !hasIntent ? (
-            <div className="flex flex-col items-center justify-center gap-2 border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground" role="status" aria-live="polite">
-            <span className="font-medium text-foreground">Busque o elija una categoría</span>
-            <span className="max-w-sm text-sm">
-              {scannerEnabled
-                ? 'Escriba el nombre del servicio, use el lector o toque una categoria para ver opciones facturables.'
-                : 'Escriba el nombre del servicio o toque una categoria para ver opciones facturables.'}
-            </span>
           </div>
         ) : filteredServices.length === 0 ? (
           error ? null : (

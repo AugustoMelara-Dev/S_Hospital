@@ -35,15 +35,6 @@ export function usePointOfSaleServiceSearch({
   useEffect(() => {
     if (!canViewCatalog || !pointOfSaleDataLoaded) return;
 
-    if (!hasSearchIntent(searchState.search, searchState.selectedAreaId, searchState.selectedCategoryId)) {
-      serviceSearchAbortRef.current?.abort();
-      serviceSearchAbortRef.current = null;
-      dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: [] });
-      dispatch({ type: 'SET_SERVICE_PAGE_STATE', payload: { page: 1, hasMore: false } });
-      dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
-      return;
-    }
-
     serviceSearchAbortRef.current?.abort();
     dispatch({ type: 'SET_LOADING_MORE_SERVICES', payload: false });
     dispatch({ type: 'SET_SERVICE_PAGE_STATE', payload: { page: 1, hasMore: false } });
@@ -71,11 +62,7 @@ export function usePointOfSaleServiceSearch({
 
   async function retryLoad() {
     if (!pointOfSaleDataLoadedRef.current) await loadDataRef.current();
-    if (!pointOfSaleDataLoadedRef.current || !hasSearchIntent(
-      searchState.search,
-      searchState.selectedAreaId,
-      searchState.selectedCategoryId,
-    )) return;
+    if (!pointOfSaleDataLoadedRef.current) return;
 
     serviceSearchAbortRef.current?.abort();
     const controller = new AbortController();
@@ -101,16 +88,4 @@ export function usePointOfSaleServiceSearch({
   }
 
   return { loadMoreServices, retryLoad };
-}
-
-function hasSearchIntent(
-  search: string,
-  selectedAreaId: NewInvoiceState['selectedAreaId'],
-  selectedCategoryId: NewInvoiceState['selectedCategoryId'],
-): boolean {
-  return Boolean(
-    search.trim()
-    || (selectedAreaId && selectedAreaId !== 'all')
-    || (selectedCategoryId && selectedCategoryId !== 'all'),
-  );
 }

@@ -61,5 +61,9 @@ class CriticalLanPerformanceTest extends TestCase
             $serviceQueries->contains(fn (string $query): bool => preg_match('/\blike\b/i', $query) === 1),
             "La búsqueda debe reducir candidatos en SQL antes de ejecutar el ranking difuso en PHP.\n".$serviceQueries->implode("\n"),
         );
+        $this->assertTrue(
+            $serviceQueries->contains(fn (string $query): bool => preg_match('/\blimit\b/i', $query) === 1),
+            "La consulta de resultados debe paginar en SQL y no cargar todos los candidatos en memoria.\n".$serviceQueries->implode("\n"),
+        );
     }
 }

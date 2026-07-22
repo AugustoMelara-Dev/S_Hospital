@@ -123,7 +123,13 @@ function renderNewInvoice(
 
 async function waitForPointOfSaleLoad() {
   await waitFor(() => {
-    expect(screen.getByText(/busque o elija/i)).toBeInTheDocument();
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    const serviceFetches = fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services'));
+    const mockedGetServices = vi.isMockFunction(apiClient.getServices)
+      ? vi.mocked(apiClient.getServices).mock.calls.length
+      : 0;
+
+    expect(serviceFetches.length + mockedGetServices).toBeGreaterThan(0);
   });
 }
 
@@ -159,15 +165,23 @@ describe('NewInvoiceView critical flows', () => {
     expect(screen.getByLabelText(/buscar por nombre/i)).toBeInTheDocument();
   });
 
-  it('does not request services before the cashier searches or filters', async () => {
+  it('loads at least ten billable services immediately with all categories selected', async () => {
+    const initialServices = Array.from({ length: 12 }, (_, index) => makeService({
+      id: 100 + index,
+      name: `Servicio disponible ${index + 1}`,
+      slug: `servicio-disponible-${index + 1}`,
+    }));
+    const getServices = vi.spyOn(apiClient, 'getServices').mockResolvedValue(initialServices);
+
     renderNewInvoice();
-    await waitForPointOfSaleLoad();
 
-    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
-
-    await new Promise((resolve) => setTimeout(resolve, 350));
-
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services'))).toHaveLength(0);
+    expect(await screen.findByRole('button', { name: /agregar servicio disponible 10, disponible/i })).toBeVisible();
+    expect(screen.getAllByRole('button', { name: /agregar servicio disponible/i })).toHaveLength(12);
+    expect(screen.getByRole('radio', { name: 'Todos' })).toHaveAttribute('aria-checked', 'true');
+    expect(getServices).toHaveBeenCalledWith(
+      expect.objectContaining({ search: undefined, categoryId: undefined, page: 1, perPage: 24 }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it('runs a service search entered while the initial point-of-sale data is still loading', async () => {
@@ -198,13 +212,17 @@ describe('NewInvoiceView critical flows', () => {
   });
 
   it('stops showing the service loader when an in-flight search is cleared', async () => {
-    vi.spyOn(apiClient, 'getServices').mockReturnValue(new Promise<Service[]>(() => undefined));
+    const getServices = vi.spyOn(apiClient, 'getServices')
+      .mockResolvedValueOnce([makeService()])
+      .mockReturnValueOnce(new Promise<Service[]>(() => undefined))
+      .mockResolvedValueOnce([makeService()]);
     renderNewInvoice();
     await waitForPointOfSaleLoad();
 
     const searchInput = screen.getByLabelText(/buscar por nombre/i);
     fireEvent.change(searchInput, { target: { value: 'eritro' } });
     expect(await screen.findByRole('status', { name: /cargando servicios/i })).toBeInTheDocument();
+    await waitFor(() => expect(getServices).toHaveBeenCalledTimes(2));
 
     fireEvent.change(searchInput, { target: { value: '' } });
 
@@ -215,6 +233,7 @@ describe('NewInvoiceView critical flows', () => {
 
   it('keeps the last service results visible after a search timeout and retries the current query', async () => {
     const getServices = vi.spyOn(apiClient, 'getServices')
+      .mockResolvedValueOnce([makeService()])
       .mockResolvedValueOnce([makeService()])
       .mockRejectedValueOnce(new TypeError('Search timeout'))
       .mockResolvedValueOnce([makeService({ id: 11, name: 'Eritropoyetina alfa', slug: 'eritropoyetina-alfa' })]);
@@ -235,7 +254,7 @@ describe('NewInvoiceView critical flows', () => {
     expect(await screen.findByRole('button', { name: /agregar eritropoyetina alfa, disponible/i })).toBeVisible();
     await waitFor(() => {
       expect(screen.queryByText(/no se pudieron cargar los servicios/i)).not.toBeInTheDocument();
-      expect(getServices).toHaveBeenCalledTimes(3);
+      expect(getServices).toHaveBeenCalledTimes(4);
     });
     expect(getServices.mock.calls.at(-1)?.[0]).toMatchObject({ search: 'eritro', page: 1 });
   });
@@ -304,7 +323,7 @@ describe('NewInvoiceView critical flows', () => {
     await new Promise((resolve) => setTimeout(resolve, 350));
 
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services'))).toHaveLength(0);
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services'))).toHaveLength(1);
   });
 
   it('does not show success dialog before an invoice is issued', async () => {
@@ -397,7 +416,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
     addErythropoietinAndOpenAccount();
@@ -460,7 +479,7 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
     await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
     addErythropoietinAndOpenAccount();
     fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
@@ -515,7 +534,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
     addErythropoietinAndOpenAccount();
@@ -628,7 +647,7 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
     await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
     addErythropoietinAndOpenAccount();
     fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
@@ -729,7 +748,7 @@ describe('NewInvoiceView critical flows', () => {
     fireEvent.change(screen.getByLabelText(/buscar por nombre/i), { target: { value: 'eritro' } });
     await waitFor(() => expect(screen.getByText('Eritropoyetina')).toBeInTheDocument(), { timeout: 3000 });
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
     addErythropoietinAndOpenAccount();
     fireEvent.click(await screen.findByRole('button', { name: /^emitir y cobrar$/i }));
@@ -837,7 +856,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
     addErythropoietinAndOpenAccount();
@@ -917,7 +936,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
     addErythropoietinAndOpenAccount();
@@ -1187,7 +1206,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
     addErythropoietinAndOpenAccount();
@@ -1551,7 +1570,7 @@ describe('NewInvoiceView critical flows', () => {
     }, { timeout: 3000 });
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
     addErythropoietinAndOpenAccount();
@@ -1744,7 +1763,7 @@ describe('NewInvoiceView critical flows', () => {
       expect(screen.getByText('Eritropoyetina')).toBeInTheDocument();
     }, { timeout: 3000 });
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/services')).length).toBe(2);
     });
 
     addErythropoietinAndOpenAccount();

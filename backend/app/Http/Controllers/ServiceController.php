@@ -66,18 +66,25 @@ class ServiceController extends Controller
                 ->where('is_billable', true)
                 ->whereHas('category', fn ($category) => $category->where('active', true)))
             ->when($request->has('visible_in_billing'), fn ($query) => $query->where('visible_in_billing', $request->boolean('visible_in_billing')))
-            ->when($request->has('is_billable'), fn ($query) => $query->where('is_billable', $request->boolean('is_billable')))
-            ->orderBy('name');
+            ->when($request->has('is_billable'), fn ($query) => $query->where('is_billable', $request->boolean('is_billable')));
 
         $search = trim($request->string('search')->toString());
 
         if ($search !== '') {
-            $this->applySearchCandidates($query, $search);
-        }
+            $exactQuery = clone $query;
+            $this->applyExactSearch($exactQuery, $search);
 
-        $services = $search !== ''
-            ? $this->fuzzySearch($query->get(), $search, $request)
-            : $query->paginate($request->perPage());
+            if ($exactQuery->exists()) {
+                $this->applySearchRanking($exactQuery, $search);
+                $services = $exactQuery->paginate($request->perPage());
+            } else {
+                $this->applySearchCandidates($query, $search);
+                $services = $this->fuzzySearch($query->limit(250)->get(), $search, $request);
+            }
+        } else {
+            $query->orderBy('name');
+            $services = $query->paginate($request->perPage());
+        }
 
         return response()->json([
             'data' => $services->items(),
@@ -87,6 +94,32 @@ class ServiceController extends Controller
                 'total' => $services->total(),
             ],
         ]);
+    }
+
+    /** @param Builder<Service> $query */
+    private function applyExactSearch(Builder $query, string $search): void
+    {
+        $tokens = array_slice(array_values(array_filter(
+            explode(' ', ServiceSearch::normalize($search)),
+            fn (string $token): bool => $token !== '',
+        )), 0, 4);
+
+        foreach ($tokens as $token) {
+            $like = '%'.addcslashes($token, '\\%_').'%';
+
+            $query->where(function (Builder $exactQuery) use ($like): void {
+                $exactQuery
+                    ->where('name', 'like', $like)
+                    ->orWhere('slug', 'like', $like)
+                    ->orWhere('aliases', 'like', $like)
+                    ->orWhere('scan_code', 'like', $like)
+                    ->orWhere('barcode', 'like', $like)
+                    ->orWhere('qr_code', 'like', $like)
+                    ->orWhere('internal_code', 'like', $like)
+                    ->orWhereHas('category', fn (Builder $categoryQuery) => $categoryQuery->where('name', 'like', $like))
+                    ->orWhereHas('area', fn (Builder $areaQuery) => $areaQuery->where('name', 'like', $like));
+            });
+        }
     }
 
     /** @param Builder<Service> $query */
@@ -124,6 +157,33 @@ class ServiceController extends Controller
                 }
             });
         }
+    }
+
+    /** @param Builder<Service> $query */
+    private function applySearchRanking(Builder $query, string $search): void
+    {
+        $needle = ServiceSearch::normalize($search);
+        $prefix = $needle.'%';
+        $contains = '%'.$needle.'%';
+
+        $query
+            ->orderByRaw(
+                <<<'SQL'
+                    CASE
+                        WHEN LOWER(name) = ? THEN 0
+                        WHEN LOWER(COALESCE(scan_code, '')) = ?
+                          OR LOWER(COALESCE(barcode, '')) = ?
+                          OR LOWER(COALESCE(qr_code, '')) = ?
+                          OR LOWER(COALESCE(internal_code, '')) = ? THEN 1
+                        WHEN LOWER(name) LIKE ? THEN 2
+                        WHEN LOWER(COALESCE(aliases, '')) LIKE ? THEN 3
+                        WHEN LOWER(name) LIKE ? THEN 4
+                        ELSE 5
+                    END
+                SQL,
+                [$needle, $needle, $needle, $needle, $needle, $prefix, $contains, $contains],
+            )
+            ->orderBy('name');
     }
 
     /**
