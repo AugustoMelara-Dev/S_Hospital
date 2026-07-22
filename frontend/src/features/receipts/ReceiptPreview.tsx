@@ -3,6 +3,7 @@ import type React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { type ReceiptData } from '../../lib/api';
 import { receiptPrintPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
@@ -61,16 +62,20 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
       {customPaper ? (
         <style data-receipt-custom-page>{customPaper.pageRule}</style>
       ) : null}
-      <div className="receipt-preview-controls no-print border border-border bg-background p-3" role="group" aria-label="Acciones del comprobante histórico">
-        <Button type="button" className="min-h-11" onClick={handlePrintClick}>
-          Imprimir
-        </Button>
-        {onNewInvoice ? (
-          <Button type="button" variant="outline" className="min-h-11" onClick={onNewInvoice}>
-            Nueva factura
-          </Button>
-        ) : null}
-      </div>
+      <Card className="no-print">
+        <CardContent className="p-3 sm:p-4">
+          <div className="receipt-preview-controls border-0 bg-transparent p-0" role="group" aria-label="Acciones del comprobante histórico">
+            <Button type="button" className="min-h-11" onClick={handlePrintClick}>
+              Imprimir
+            </Button>
+            {onNewInvoice ? (
+              <Button type="button" variant="outline" className="min-h-11" onClick={onNewInvoice}>
+                Nueva factura
+              </Button>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
 
       {printError ? (
         <div className="no-print mb-3">

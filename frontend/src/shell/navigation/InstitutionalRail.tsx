@@ -46,7 +46,7 @@ export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl
       data-expanded-width="256"
       className="print-hidden"
     >
-      <SidebarHeader className="min-h-20 justify-center border-b border-sidebar-border">
+      <SidebarHeader className="min-h-20 justify-center border-b border-sidebar-border px-3">
         {collapsed ? (
           <span
             role="img"
@@ -63,11 +63,11 @@ export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl
         )}
       </SidebarHeader>
 
-      <SidebarContent data-scroll-when-needed="true">
+      <SidebarContent data-scroll-when-needed="true" className="px-2 py-3">
         {sections.length > 0 ? (
           <nav aria-label="Navegación principal">
             {sections.map((section) => (
-              <SidebarGroup key={section.id}>
+              <SidebarGroup key={section.id} className="px-0 py-2">
                 <SidebarGroupLabel id={`institutional-rail-${section.id}`}>{section.label}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
@@ -76,7 +76,7 @@ export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl
                       const active = activeItem?.id === item.id;
                       return (
                         <SidebarMenuItem key={item.id}>
-                          <SidebarMenuButton asChild isActive={active} size="lg" tooltip={item.label}>
+                          <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
                             <Link to={item.path} aria-current={active ? 'page' : undefined}>
                               <Icon aria-hidden="true" />
                               <span>{item.label}</span>
@@ -97,7 +97,7 @@ export function InstitutionalRail({ activeItem, collapsed, hospitalName, logoUrl
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="border-t border-sidebar-border p-2">
         <Button
           variant="ghost"
           size="icon"

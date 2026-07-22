@@ -134,7 +134,7 @@ export function InstitutionalShell({ cashSession, children, logoUrl, onLogout, s
           user={user}
         />
         <div className="min-w-0 flex-1 px-3 py-4 sm:px-5 lg:px-7 lg:py-6 xl:px-8">
-          <div className="mx-auto flex max-w-screen-2xl flex-col gap-5">{children}</div>
+          <div className="mx-auto flex max-w-screen-2xl flex-col gap-6">{children}</div>
         </div>
         <footer className="print-hidden sr-only">Sistema hospitalario local</footer>
       </SidebarInset>

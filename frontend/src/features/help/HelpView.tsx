@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { AlertTriangle, Archive, Banknote, ClipboardCheck, ClipboardList, HelpCircle, Keyboard, LifeBuoy, LogIn, Monitor, Printer, ReceiptText, RefreshCw, Search, WalletCards, WifiOff } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -238,7 +238,7 @@ function SupportEvidenceCard() {
   };
 
   return (
-    <Card>
+    <Card className="p-5 sm:p-6">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Evidencia local para soporte</h2>
         <p className="text-sm text-muted-foreground">Mensajes seguros guardados en este navegador cuando una pantalla o conexión falla.</p>
@@ -373,12 +373,12 @@ export function HelpView() {
       </nav>
 
       <section aria-label="Guías por tarea" className="border border-border">
-        <Accordion type="single" collapsible>
-          {guideItems.map((item) => <AccordionItem key={item.key} value={item.key}><AccordionTrigger>{item.label}</AccordionTrigger><AccordionContent forceMount>{item.children}</AccordionContent></AccordionItem>)}
+        <Accordion type="single" collapsible className="space-y-2">
+          {guideItems.map((item) => <HelpAccordionItem key={item.key} value={item.key} trigger={item.label}>{item.children}</HelpAccordionItem>)}
         </Accordion>
       </section>
 
-      <Card>
+      <Card className="p-5 sm:p-6">
         <div className="mb-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Keyboard aria-hidden="true" className="size-5 text-primary" />
@@ -406,7 +406,7 @@ export function HelpView() {
         </div>
       </Card>
 
-      <Card>
+      <Card className="p-5 sm:p-6">
         <div className="mb-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <WifiOff aria-hidden="true" className="size-5 text-primary" />
@@ -415,13 +415,13 @@ export function HelpView() {
           <p className="text-sm text-muted-foreground">Acciones seguras antes de continuar facturando.</p>
         </div>
         <div>
-          <Accordion type="single" collapsible>
-            {visibleIncidents.map((item) => <AccordionItem key={item.title} value={item.title}><AccordionTrigger>{item.title}</AccordionTrigger><AccordionContent forceMount><p className="leading-6 text-muted-foreground">{item.answer}</p></AccordionContent></AccordionItem>)}
+          <Accordion type="single" collapsible className="space-y-2">
+            {visibleIncidents.map((item) => <HelpAccordionItem key={item.title} value={item.title} trigger={item.title}><p className="leading-6 text-muted-foreground">{item.answer}</p></HelpAccordionItem>)}
           </Accordion>
         </div>
       </Card>
 
-      <Card>
+      <Card className="p-5 sm:p-6">
         <div className="mb-4">
           <h2 className="text-lg font-semibold">Responsabilidades por rol</h2>
           <p className="text-sm text-muted-foreground">Referencia corta para saber quién debe actuar en cada caso.</p>
@@ -436,7 +436,7 @@ export function HelpView() {
         </div>
       </Card>
 
-      <Card>
+      <Card className="p-5 sm:p-6">
         <div className="mb-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <ClipboardCheck aria-hidden="true" className="size-5 text-primary" />
@@ -451,7 +451,7 @@ export function HelpView() {
               <ul className="mt-3 space-y-2">
                 {checklist.items.map((item) => (
                   <li key={item} className="flex gap-2 text-sm leading-6 text-muted-foreground">
-                    <span aria-hidden="true" className="mt-2 shrink-0 bg-secondary" />
+                    <span aria-hidden="true" className="mt-[0.45rem] size-1.5 shrink-0 rounded-full bg-primary/40" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -461,7 +461,7 @@ export function HelpView() {
         </div>
       </Card>
 
-      <Card>
+      <Card className="p-5 sm:p-6">
         <div className="mb-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <AlertTriangle aria-hidden="true" className="size-5 text-warning" />
@@ -479,7 +479,7 @@ export function HelpView() {
         </div>
       </Card>
 
-      <Card>
+      <Card className="p-5 sm:p-6">
         <div className="mb-4">
           <h2 className="text-lg font-semibold">Capacitación segura</h2>
           <p className="text-sm text-muted-foreground">Practique sin afectar facturas, caja ni respaldos reales.</p>
@@ -513,4 +513,13 @@ function normalizeHelpText(value: string): string {
 
 function helpGuideId(title: string): string {
   return `help-guide-${normalizeHelpText(title).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+}
+
+function HelpAccordionItem({ children, trigger, value }: { children: ReactNode; trigger: ReactNode; value: string }) {
+  return (
+    <AccordionItem value={value} className="rounded-lg border border-border bg-background px-4 last:border-b data-[state=open]:bg-muted/35">
+      <AccordionTrigger className="py-4 text-left font-semibold hover:no-underline">{trigger}</AccordionTrigger>
+      <AccordionContent forceMount className="pb-4">{children}</AccordionContent>
+    </AccordionItem>
+  );
 }

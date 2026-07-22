@@ -40,7 +40,12 @@ export function ContextBar({ cashSession, commandButtonRef, crumbs, hospitalName
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <Badge variant="secondary" className="px-3 py-1 text-xs font-bold">
+        <Badge
+          variant={cashSession?.status === 'open' ? 'outline' : 'secondary'}
+          className={cashSession?.status === 'open'
+            ? 'border-success/25 bg-success/10 px-3 py-1 text-xs font-bold text-success'
+            : 'px-3 py-1 text-xs font-bold'}
+        >
           {cashLabel}
         </Badge>
         <span
