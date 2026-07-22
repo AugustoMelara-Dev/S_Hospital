@@ -357,7 +357,7 @@ export function DashboardView({
                           </Link>
                           <InvoiceStatusTag status={invoice.status} />
                           {canViewManagerialReports ? (
-                            <span className="tabular-nums">{formatLempirasUIFromCents(parseCents(invoice.total))}</span>
+                            <strong className="ml-auto font-mono tabular-nums text-foreground">{formatLempirasUIFromCents(parseCents(invoice.total))}</strong>
                           ) : null}
                         </div>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
