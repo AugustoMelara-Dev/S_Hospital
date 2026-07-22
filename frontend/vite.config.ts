@@ -37,8 +37,23 @@ export default defineConfig({
         target: apiProxyTarget,
         changeOrigin: true
       }
-    }
+    },
+    middlewareMode: false
   },
+  plugins: [react(), tailwindcss(), cspNoncePlugin(), {
+    name: 's-hospital-block-internal-routes',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const raw = req.url ? req.url.split('?')[0] : '';
+        if (raw === '/qa' || raw.startsWith('/qa/')) {
+          res.statusCode = 404;
+          res.end('Not Found');
+          return;
+        }
+        next();
+      });
+    }
+  }],
   build: {
     rolldownOptions: {
       output: {
