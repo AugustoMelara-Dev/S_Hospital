@@ -132,7 +132,7 @@ services:
       PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/chromium-browser
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
-    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    command: sh -c "pnpm install --frozen-lockfile && pnpm run dev -- --host 0.0.0.0"
     depends_on:
       - backend
 
