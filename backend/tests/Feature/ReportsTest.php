@@ -1042,6 +1042,8 @@ class ReportsTest extends TestCase
         $this->assertSame('', $spreadsheet->getSheetByName('Auditoría')->getCell('B5')->getValue());
         $this->assertSame(0, $spreadsheet->getSheetByName('Cierre de Caja')->getCell('C5')->getValue());
         $this->assertSame('N/A', $spreadsheet->getSheetByName('Cierre de Caja')->getCell('C8')->getValue());
+        $this->assertSame('FF1F2937', $spreadsheet->getSheetByName('Resumen General')->getStyle('B10')->getFill()->getStartColor()->getARGB());
+        $this->assertSame('FFF3F4F6', $spreadsheet->getSheetByName('Resumen General')->getStyle('B7')->getFill()->getStartColor()->getARGB());
     }
 
     public function test_report_export_includes_financial_reading_sheet_with_sources(): void

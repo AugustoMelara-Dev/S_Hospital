@@ -84,7 +84,7 @@ class PremiumExcelExportService
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '0F766E'], // Premium Teal Accent
+                'startColor' => ['rgb' => '1F2937'],
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -95,7 +95,7 @@ class PremiumExcelExportService
         $titleStyle = [
             'font' => [
                 'bold' => true,
-                'color' => ['rgb' => '0F766E'],
+                'color' => ['rgb' => '111827'],
                 'size' => 16,
                 'name' => 'Segoe UI',
             ],
@@ -119,12 +119,12 @@ class PremiumExcelExportService
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'F0FDFA'], // Soft Teal Background
+                'startColor' => ['rgb' => 'F3F4F6'],
             ],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => '99F6E4'], // Teal Border
+                    'color' => ['rgb' => 'D1D5DB'],
                 ],
             ],
         ];
@@ -227,7 +227,7 @@ class PremiumExcelExportService
             $sheet1->getStyle('B2:C4')->applyFromArray([
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '0F766E'],
+                    'startColor' => ['rgb' => '111827'],
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -263,7 +263,7 @@ class PremiumExcelExportService
                 ],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '0F766E'],
+                    'startColor' => ['rgb' => '111827'],
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -296,7 +296,7 @@ class PremiumExcelExportService
         $sheet1->getStyle('E7')->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheet1->getStyle('E6:F7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('E7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet1->getStyle('E6:F6')->getFill()->setStartColor(new Color('CCFBF1')); // Highlighted soft green/teal
+        $sheet1->getStyle('E6:F6')->getFill()->setStartColor(new Color('E5E7EB'));
 
         $sheet1->mergeCells('H6:I6');
         $sheet1->setCellValue('H6', 'FACTURAS EMITIDAS');
@@ -644,7 +644,7 @@ class PremiumExcelExportService
             $sheet3->setCellValue('G10', 'Top 5 Servicios');
             $sheet3->setCellValue('H10', 'Monto Facturado');
             $sheet3->getStyle('G10:H10')->applyFromArray($headerStyle);
-            $sheet3->getStyle('G10:H10')->getFill()->setStartColor(new Color('0D9488'));
+            $sheet3->getStyle('G10:H10')->getFill()->setStartColor(new Color('374151'));
 
             $calcRow = 11;
             foreach ($topServices as $svc) {
@@ -803,7 +803,7 @@ class PremiumExcelExportService
             $sheet5->setCellValue('E4', 'Motivo de Anulación');
             $sheet5->setCellValue('F4', 'Anulado por');
             $sheet5->getStyle('B4:F4')->applyFromArray($headerStyle);
-            $sheet5->getStyle('B4:F4')->getFill()->setStartColor(new Color('BE123C')); // Premium Crimson/Red for Voids
+            $sheet5->getStyle('B4:F4')->getFill()->setStartColor(new Color('374151'));
 
             $row = 5;
             foreach ($voidRows as $void) {
@@ -836,7 +836,7 @@ class PremiumExcelExportService
             $sheet5->setCellValue('E'.$row, 'Motivo');
             $sheet5->setCellValue('F'.$row, 'Reimpreso por');
             $sheet5->getStyle("B{$row}:F{$row}")->applyFromArray($headerStyle);
-            $sheet5->getStyle("B{$row}:F{$row}")->getFill()->setStartColor(new Color('B45309')); // Premium Amber/Bronze for reprints
+            $sheet5->getStyle("B{$row}:F{$row}")->getFill()->setStartColor(new Color('4B5563'));
 
             $row++;
             foreach ($reprintRows as $reprint) {
@@ -862,7 +862,7 @@ class PremiumExcelExportService
             $sheet5->setCellValue('G'.$row, 'Reversado por');
             $sheet5->setCellValue('H'.$row, 'Fecha');
             $sheet5->getStyle("B{$row}:H{$row}")->applyFromArray($headerStyle);
-            $sheet5->getStyle("B{$row}:H{$row}")->getFill()->setStartColor(new Color('6D28D9'));
+            $sheet5->getStyle("B{$row}:H{$row}")->getFill()->setStartColor(new Color('6B7280'));
 
             $row++;
             foreach ($paymentVoidRows as $paymentVoid) {
