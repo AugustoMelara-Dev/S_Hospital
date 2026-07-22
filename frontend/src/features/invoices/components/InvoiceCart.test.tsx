@@ -76,6 +76,14 @@ describe('InvoiceCart', () => {
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
+  it('wraps a long service name in the account without affecting its amount column', () => {
+    const longName = 'Procedimiento hospitalario extraordinariamente largo sin separadores para comprobar la lectura completa en caja';
+    renderCart({ items: [cartItemFixture({ service: serviceFixture({ name: longName }) })] });
+
+    expect(screen.getByText(longName)).toHaveClass('[overflow-wrap:anywhere]');
+    expect(screen.getAllByText('L 120.00').some((amount) => amount.classList.contains('tabular-nums'))).toBe(true);
+  });
+
   it('keeps quantity increment, decrement, manual change and remove callbacks exact', () => {
     const onUpdateQuantity = vi.fn();
     const onRemoveItem = vi.fn();
