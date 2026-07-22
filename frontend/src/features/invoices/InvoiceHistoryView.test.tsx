@@ -174,7 +174,8 @@ describe('InvoiceHistoryView', () => {
 
     await waitFor(() => expect(screen.getByText('Paciente Columnas')).toBeInTheDocument());
 
-    const columnsButton = screen.getByRole('button', { name: /columnas/i });
+    expect(screen.getByRole('button', { name: /personalizar tabla/i })).toBeVisible();
+    const columnsButton = screen.getByRole('button', { name: /personalizar tabla/i });
     columnsButton.focus();
     await user.keyboard('{Enter}');
 

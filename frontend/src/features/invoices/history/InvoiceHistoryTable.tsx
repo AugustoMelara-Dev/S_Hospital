@@ -1,4 +1,4 @@
-import { BanknoteIcon, DownloadIcon as Download, PrinterIcon as Printer, ReceiptIcon as Receipt, FileTextIcon as ReceiptText, UserIcon as User, CircleXIcon as XCircle, MoreHorizontalIcon } from 'lucide-react';
+import { BanknoteIcon, Columns3Icon, DownloadIcon as Download, PrinterIcon as Printer, ReceiptIcon as Receipt, FileTextIcon as ReceiptText, UserIcon as User, CircleXIcon as XCircle, MoreHorizontalIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -109,7 +109,9 @@ export function InvoiceHistoryTable(props: InvoiceHistoryTableProps) {
   return (
     <div className="space-y-2">
       {hideableColumns.length > 0 && (
-        <DropdownMenu><DropdownMenuTrigger asChild><Button type="button" variant="outline" aria-label="Configurar columnas de facturas">Columnas</Button></DropdownMenuTrigger><DropdownMenuContent aria-label="Visibilidad de columnas del historial">{hideableColumns.map((column) => <DropdownMenuCheckboxItem key={column.key} checked={visibleKeys.includes(column.key)} onCheckedChange={(checked) => setColumnVisible(column.key, checked === true)}>{column.label}</DropdownMenuCheckboxItem>)}</DropdownMenuContent></DropdownMenu>
+        <div className="flex justify-end px-1">
+          <DropdownMenu><DropdownMenuTrigger asChild><Button type="button" variant="ghost" className="text-muted-foreground" aria-label="Personalizar tabla de facturas"><Columns3Icon aria-hidden="true" />Personalizar tabla</Button></DropdownMenuTrigger><DropdownMenuContent align="end" aria-label="Visibilidad de columnas del historial">{hideableColumns.map((column) => <DropdownMenuCheckboxItem key={column.key} checked={visibleKeys.includes(column.key)} onCheckedChange={(checked) => setColumnVisible(column.key, checked === true)}>{column.label}</DropdownMenuCheckboxItem>)}</DropdownMenuContent></DropdownMenu>
+        </div>
       )}
       <section aria-label="Tabla de facturas">
         <DataTable
