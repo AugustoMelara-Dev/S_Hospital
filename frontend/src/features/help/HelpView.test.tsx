@@ -108,4 +108,18 @@ describe('HelpView', () => {
     expect(screen.getByText(/seleccione el m.todo de pago/i)).toBeVisible();
     expect(screen.getAllByRole('link', { name: /volver al .ndice/i }).length).toBeGreaterThan(0);
   });
+
+  it('keeps cards, accordions, and checklist markers visibly structured', () => {
+    render(<HelpView />);
+
+    const shortcutsCard = screen.getByRole('heading', { name: /atajos de teclado/i }).closest('[data-slot="card"]');
+    expect(shortcutsCard).toHaveClass('p-5', 'sm:p-6');
+
+    const chargeTopic = screen.getByRole('button', { name: /^cobrar$/i }).closest('[data-slot="accordion-item"]');
+    expect(chargeTopic).toHaveClass('border', 'px-4');
+
+    const checklist = screen.getByRole('heading', { name: /cajero - inicio de turno/i }).parentElement;
+    const marker = checklist?.querySelector('li > span[aria-hidden="true"]');
+    expect(marker).toHaveClass('size-1.5', 'shrink-0', 'rounded-full');
+  });
 });

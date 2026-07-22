@@ -439,7 +439,7 @@ test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   };
 
   await page.goto('/login');
-  await waitForScreen(page, /iniciar sesión/i);
+  await waitForScreen(page, /caja y facturación, listas para el turno/i);
   await shot('login.png', 'Iniciar sesión');
 
   await login(page, 'admin.validacion');
@@ -520,6 +520,9 @@ test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   await page.goto('/settings/institutional-receipts');
   await waitForScreen(page, /recibos institucionales|recibos/i);
   await page.getByRole('tab', { name: /papel y copias/i }).click();
+  const halfLetterPreview = page.getByRole('region', { name: /vista previa de recibo media carta/i });
+  await expect(halfLetterPreview).toContainText(/prueba - sin validez/i);
+  expect((await halfLetterPreview.boundingBox())?.height).toBeGreaterThan(250);
   await shot('receipt-settings-normal.png');
 
   await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
@@ -529,6 +532,9 @@ test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   await page.getByRole('tab', { name: /papel y copias/i }).click();
   await page.getByRole('radio', { name: /^A5\b/i }).click();
   await expect(page.getByText(/margen|escala de fuente|modo soporte/i)).toHaveCount(0);
+  const a5Preview = page.getByRole('region', { name: /vista previa de recibo a5/i });
+  await expect(a5Preview).toContainText(/prueba - sin validez/i);
+  expect((await a5Preview.boundingBox())?.height).toBeGreaterThan(250);
   await shot('receipt-settings-a5.png');
 
   await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));

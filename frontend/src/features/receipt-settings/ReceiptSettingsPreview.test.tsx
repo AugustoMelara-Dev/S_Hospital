@@ -232,6 +232,8 @@ describe('ReceiptSettingsPreview', () => {
     );
 
     const paper = screen.getByRole('region', { name: 'Vista previa de recibo Media carta' });
+    const pages = paper.closest('[data-receipt-preview-pages]');
+    expect(pages).toHaveClass('w-full', 'min-w-0');
     expect(paper).toHaveClass('receipt-paper-preview');
     expect(paper).toHaveAttribute('data-receipt-preview-paper', 'half_letter');
     const content = paper.querySelector('[data-receipt-preview-content]');

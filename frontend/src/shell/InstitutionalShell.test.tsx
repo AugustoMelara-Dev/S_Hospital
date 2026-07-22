@@ -148,6 +148,11 @@ describe('InstitutionalShell', () => {
     expect(screen.queryByRole('navigation', { name: 'Ruta actual' })).not.toBeInTheDocument();
     expect(within(rail).queryByText(cashier.name)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ver atajos de teclado' })).not.toBeInTheDocument();
+    expect(screen.getByRole('main').querySelector('.max-w-screen-2xl')).toHaveClass('gap-6');
+    expect(navigation.parentElement).toHaveClass('px-2', 'py-3');
+    for (const link of within(navigation).getAllByRole('link')) {
+      expect(link).toHaveAttribute('data-size', 'default');
+    }
   });
 
   it('muestra una sola vez caja y hospital', () => {
@@ -163,6 +168,15 @@ describe('InstitutionalShell', () => {
     expect(mobileIdentity).toHaveClass('lg:hidden');
     expect(desktopIdentity.closest('[data-slot="sidebar-container"]')).toHaveClass('hidden', 'lg:flex');
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
+    expect(screen.getByText(/Mi caja #12/, { selector: '[data-slot="badge"]' })).toHaveClass('bg-success/10', 'text-success-foreground');
+  });
+
+  it('uses a neutral cash badge when the signed-in user has no open session', () => {
+    renderShell({ cashSession: null });
+
+    const badge = screen.getByText('Mi caja cerrada', { selector: '[data-slot="badge"]' });
+    expect(badge).toHaveClass('bg-secondary');
+    expect(badge).not.toHaveClass('bg-success/10', 'text-success-foreground');
   });
 
   it('mantiene identidad accesible y marca visible al reducir el rail', () => {

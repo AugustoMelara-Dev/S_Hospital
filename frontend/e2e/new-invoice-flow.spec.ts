@@ -101,7 +101,7 @@ test.describe('New invoice - critical mocked e2e', () => {
     await page.goto('/billing/new');
 
     await expect(page.getByRole('heading', { level: 1, name: /nueva factura/i })).toBeVisible();
-    await expect(page.getByText('Caja #7', { exact: true })).toBeVisible();
+    await expect(page.getByText('Mi caja #7', { exact: true })).toBeVisible();
     await expect(page.getByLabel(/nombre del paciente/i)).toBeEditable();
     await expect(page.getByRole('region', { name: /servicios/i })).toBeVisible();
     await expect(page.getByRole('region', { name: /cuenta actual/i })).toBeVisible();
