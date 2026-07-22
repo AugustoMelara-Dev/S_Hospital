@@ -54,7 +54,7 @@ export function useCloseCashSession() {
         idempotencyKey,
       });
     },
-    onSuccess: (closed) => {
+    onSuccess: (_closed) => {
       resetPayloadScopedIdempotencyKey(idempotencyKeyRef, idempotencySignatureRef);
       queryClient.setQueryData(queryKeys.cashSessions.current('own'), null);
       queryClient.setQueryData(queryKeys.cashSessions.current('closable'), null);
