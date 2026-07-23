@@ -17,7 +17,7 @@ const reportPeriod = { from: '2026-06-15', to: '2026-06-16', days: 2, timezone: 
 test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
   test.beforeEach(async ({ page }) => installStrictMockGuard(page));
   test.afterEach(async ({ page }) => assertStrictMockGuard(page));
-  test('executive report applies date filters and requests PDF and Excel exports', async ({ page }) => {
+  test('summary report applies date filters and requests PDF and Excel exports', async ({ page }) => {
     let lastExecutiveQuery = new URLSearchParams();
     let pdfExports = 0;
     let excelExports = 0;
@@ -36,23 +36,23 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
 
     await page.goto('/reports/executive');
 
-    await expect(page.getByRole('heading', { level: 1, name: /control ejecutivo/i })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /resumen del período/i })).toBeVisible();
     await expect(page.getByText('Total facturado', { exact: true })).toBeVisible();
     await expect(page.getByText(/glucosa basal/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /criterio contable operativo/i })).toBeVisible();
     await expect(page.getByText(/no se restan otra vez/i)).toBeVisible();
 
-    await setAntDate(page, /inicio ejecutivo/i, reportPeriod.from);
-    await setAntDate(page, /fin ejecutivo/i, reportPeriod.to);
-    await page.getByRole('button', { name: /refrescar ejecutivo/i }).click();
+    await setReportDate(page, /^desde$/i, reportPeriod.from);
+    await setReportDate(page, /^hasta$/i, reportPeriod.to);
+    await page.getByRole('button', { name: /^aplicar$/i }).click();
 
     await expect.poll(() => lastExecutiveQuery.get('date_from')).toBe(reportPeriod.from);
     await expect.poll(() => lastExecutiveQuery.get('date_to')).toBe(reportPeriod.to);
 
-    await page.getByRole('button', { name: /pdf ejecutivo/i }).click();
+    await chooseExportOption(page, /documento pdf/i);
     await expect.poll(() => pdfExports).toBe(1);
 
-    await page.getByRole('button', { name: /excel ejecutivo/i }).click();
+    await chooseExportOption(page, /libro de excel/i);
     await expect.poll(() => excelExports).toBe(1);
   });
 
@@ -96,8 +96,8 @@ test.describe('Reports - critical mocked e2e (3 sub-routes)', () => {
 
     const navigation = page.getByRole('navigation', { name: /secciones de reportes/i });
     await expect(navigation).toBeVisible();
-    await expect(page.getByRole('link', { name: /ejecutivo/i })).toHaveAttribute('aria-current', 'page');
-    for (const buttonName of [/refrescar ejecutivo/i, /pdf ejecutivo/i, /excel ejecutivo/i]) {
+    await expect(page.getByRole('link', { name: /resumen/i })).toHaveAttribute('aria-current', 'page');
+    for (const buttonName of [/^aplicar$/i, /^exportar$/i]) {
       const box = await page.getByRole('button', { name: buttonName }).boundingBox();
       expect(box).not.toBeNull();
       expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(320);
@@ -156,12 +156,17 @@ async function installReportsMocks(
   });
 }
 
-async function setAntDate(page: Page, label: RegExp, value: string) {
+async function setReportDate(page: Page, label: RegExp, value: string) {
   const input = page.getByLabel(label);
   await input.click();
   await input.fill(value);
   await input.press('Enter');
   await expect(input).toHaveValue(value);
+}
+
+async function chooseExportOption(page: Page, option: RegExp) {
+  await page.getByRole('button', { name: /^exportar$/i }).click();
+  await page.getByRole('menuitem', { name: option }).click();
 }
 
 function executiveReport(from: string, to: string) {
