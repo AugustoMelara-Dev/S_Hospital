@@ -52,6 +52,37 @@ class BackupWorkflowTest extends TestCase
             ->assertJsonMissingPath('data.0.error_message');
     }
 
+    public function test_listing_backups_reconciles_orphaned_pending_jobs_after_the_worker_timeout(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        $orphaned = BackupLog::query()->create([
+            'filename' => 'hospital-backup-orphaned.sql.gz.enc',
+            'path' => 'backups/hospital-backup-orphaned.sql.gz.enc',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_PENDING,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+        ]);
+        $orphaned->forceFill([
+            'created_at' => now()->subMinutes(16),
+            'updated_at' => now()->subMinutes(16),
+        ])->save();
+
+        $this->actingAs($admin)
+            ->getJson('/api/backups')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $orphaned->id)
+            ->assertJsonPath('data.0.status', BackupLog::STATUS_FAILED);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'backup.failed',
+            'result' => 'failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $orphaned->id,
+        ]);
+    }
+
     public function test_backup_list_per_page_is_clamped_to_safe_range(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

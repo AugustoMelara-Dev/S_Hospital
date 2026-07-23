@@ -101,6 +101,19 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.month', now()->format('Y-m'));
     }
 
+    public function test_missing_cash_session_report_returns_a_safe_not_found_response(): void
+    {
+        $this->seedBillingBase();
+
+        $response = $this->actingAs($this->admin())
+            ->getJson('/api/reports/cash-sessions/999999')
+            ->assertNotFound()
+            ->assertJsonPath('message', 'La caja solicitada no existe o ya no está disponible.');
+
+        $this->assertStringNotContainsString('App\\Models', (string) $response->getContent());
+        $this->assertStringNotContainsString('No query results', (string) $response->getContent());
+    }
+
     public function test_dashboard_report_returns_cashier_summary_without_sql_errors(): void
     {
         $this->seedBillingBase();

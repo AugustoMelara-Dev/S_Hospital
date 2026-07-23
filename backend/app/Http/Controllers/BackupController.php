@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Backups\CreateBackupAction;
+use App\Actions\Backups\ReconcileStaleBackupLogsAction;
 use App\Http\Requests\Backups\DownloadBackupRequest;
 use App\Http\Requests\Backups\IndexBackupRequest;
 use App\Http\Requests\Backups\StoreBackupRequest;
@@ -17,8 +18,11 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class BackupController extends Controller
 {
-    public function index(IndexBackupRequest $request): JsonResponse
-    {
+    public function index(
+        IndexBackupRequest $request,
+        ReconcileStaleBackupLogsAction $reconcileStaleBackupLogs,
+    ): JsonResponse {
+        $reconcileStaleBackupLogs->execute();
         $validated = $request->validated();
 
         $backups = BackupLog::query()

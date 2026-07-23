@@ -241,7 +241,7 @@ class SystemStatusTest extends TestCase
         $this->assertSame('validated', $checks->firstWhere('code', 'LOCAL_APP_URL_CONFIGURED')['status'] ?? null);
     }
 
-    public function test_status_flags_stale_pending_backups_for_worker_diagnosis(): void
+    public function test_status_reconciles_stale_pending_backups_after_worker_timeout(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
@@ -262,11 +262,12 @@ class SystemStatusTest extends TestCase
         $response = $this->actingAs($admin)
             ->getJson('/api/system/status')
             ->assertOk()
-            ->assertJsonPath('data.backups.pending_count', 1)
-            ->assertJsonPath('data.backups.stale_pending_count', 1)
+            ->assertJsonPath('data.backups.pending_count', 0)
+            ->assertJsonPath('data.backups.failed_count', 1)
+            ->assertJsonPath('data.backups.stale_pending_count', 0)
             ->assertJsonPath('data.backups.stale_pending_threshold_minutes', 15);
 
-        $this->assertIsString($response->json('data.backups.oldest_pending_at'));
+        $this->assertNull($response->json('data.backups.oldest_pending_at'));
     }
 
     public function test_recent_successful_backup_with_clean_queue_marks_worker_active(): void

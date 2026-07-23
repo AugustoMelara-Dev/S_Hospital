@@ -311,6 +311,7 @@ class OperationalMetricsService
     public static function recordWorkerHeartbeat(): void
     {
         Cache::put('operational-metrics:worker-heartbeat', now()->getTimestamp(), now()->addHour());
+        Cache::forget('operational-metrics:http-snapshot');
     }
 
     /**

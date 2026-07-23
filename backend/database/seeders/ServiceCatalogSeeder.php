@@ -106,6 +106,30 @@ class ServiceCatalogSeeder extends Seeder
 
                 $service->fill($serviceData)->save();
             }
+
+            $managedServiceKeys = collect($rows)
+                ->map(fn (array $row): string => $this->serviceSourceKey($row))
+                ->all();
+            $managedCategoryKeys = collect($rows)
+                ->map(fn (array $row): string => $this->categorySourceKey($row['categoria']))
+                ->unique()
+                ->values()
+                ->all();
+
+            Service::query()
+                ->where('source_key', 'like', 'csv:service:%')
+                ->whereNotIn('source_key', $managedServiceKeys)
+                ->update([
+                    'active' => false,
+                    'visible_in_billing' => false,
+                    'is_billable' => false,
+                ]);
+
+            Category::query()
+                ->where('source_key', 'like', 'csv:category:%')
+                ->whereNotIn('source_key', $managedCategoryKeys)
+                ->whereDoesntHave('services', fn ($query) => $query->where('active', true))
+                ->update(['active' => false]);
         });
 
         $loadedCount = collect($rows)

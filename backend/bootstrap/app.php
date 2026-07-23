@@ -9,6 +9,7 @@ use App\Http\Middleware\ThrottleByUser;
 use App\Support\OperationalMessageSanitizer;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -71,6 +72,17 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'message' => 'Sistema en mantenimiento. Vuelva a intentar en unos minutos.',
                 ], 503);
+            }
+
+            if (
+                $exception instanceof ModelNotFoundException
+                || $exception->getPrevious() instanceof ModelNotFoundException
+            ) {
+                $message = str_contains((string) $request->route()?->uri(), 'cash-sessions')
+                    ? 'La caja solicitada no existe o ya no está disponible.'
+                    : 'El registro solicitado no existe o ya no está disponible.';
+
+                return response()->json(['message' => $message], 404);
             }
 
             if ($exception instanceof QueryException && $exception->getCode() === '23000' && str_contains($exception->getMessage(), '1451')) {

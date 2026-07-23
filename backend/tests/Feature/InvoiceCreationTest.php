@@ -245,6 +245,26 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonValidationErrors('items');
     }
 
+    public function test_invoice_rejects_more_than_one_hundred_lines_before_totals_are_calculated(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Factura fuera de límite',
+                'items' => array_fill(0, 101, [
+                    'service_id' => $service->id,
+                    'quantity' => '1.00',
+                ]),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('items');
+
+        $this->assertSame(0, Invoice::query()->count());
+    }
+
     public function test_invoice_rejects_inactive_service(): void
     {
         $this->seedBillingBase();

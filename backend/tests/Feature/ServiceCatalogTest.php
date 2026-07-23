@@ -88,6 +88,40 @@ class ServiceCatalogTest extends TestCase
         $this->assertSame(122, Service::query()->count());
     }
 
+    public function test_service_catalog_seeder_retires_rows_removed_from_the_managed_csv(): void
+    {
+        $this->seed(ServiceCatalogSeeder::class);
+        $obsoleteCategory = Category::query()->create([
+            'source_key' => 'csv:category:catalogo-anterior',
+            'name' => 'Catálogo anterior',
+            'slug' => 'catalogo-anterior',
+            'active' => true,
+            'sort_order' => 99,
+        ]);
+        $obsoleteService = Service::query()->create([
+            'source_key' => 'csv:service:catalogo-anterior:servicio-obsoleto',
+            'name' => 'Servicio obsoleto',
+            'slug' => 'servicio-obsoleto',
+            'category_id' => $obsoleteCategory->id,
+            'area_id' => Area::query()->firstOrFail()->id,
+            'price' => '10.00',
+            'taxable' => true,
+            'active' => true,
+            'visible_in_billing' => true,
+            'is_billable' => true,
+        ]);
+
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $obsoleteService->refresh();
+        $obsoleteCategory->refresh();
+        $this->assertFalse($obsoleteService->active);
+        $this->assertFalse($obsoleteService->visible_in_billing);
+        $this->assertFalse($obsoleteService->is_billable);
+        $this->assertFalse($obsoleteCategory->active);
+        $this->assertSame(122, Service::query()->where('active', true)->count());
+    }
+
     public function test_service_catalog_seeder_preserves_existing_operational_service_changes(): void
     {
         $this->seed(ServiceCatalogSeeder::class);

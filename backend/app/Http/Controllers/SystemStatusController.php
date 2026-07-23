@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Backups\ReconcileStaleBackupLogsAction;
 use App\Actions\Reports\OperationalMetricsService;
 use App\Actions\System\BuildOperationalStatusAction;
 use App\Http\Requests\System\ShowSystemStatusRequest;
@@ -300,6 +301,8 @@ class SystemStatusController extends Controller
      */
     private function backupStatus(): array
     {
+        app(ReconcileStaleBackupLogsAction::class)->execute();
+
         $staleThresholdMinutes = 15;
         $staleBefore = now()->subMinutes($staleThresholdMinutes);
         $lastSuccess = BackupLog::query()
@@ -317,6 +320,18 @@ class SystemStatusController extends Controller
             ->count();
         $failedCount = BackupLog::query()
             ->where('status', BackupLog::STATUS_FAILED)
+            ->when(
+                $lastSuccess?->completed_at !== null,
+                fn ($query) => $query->where(function ($query) use ($lastSuccess): void {
+                    $query
+                        ->where('completed_at', '>', $lastSuccess->completed_at)
+                        ->orWhere(function ($query) use ($lastSuccess): void {
+                            $query
+                                ->where('completed_at', $lastSuccess->completed_at)
+                                ->where('id', '>', $lastSuccess->id);
+                        });
+                }),
+            )
             ->count();
         $oldestPending = BackupLog::query()
             ->where('status', BackupLog::STATUS_PENDING)

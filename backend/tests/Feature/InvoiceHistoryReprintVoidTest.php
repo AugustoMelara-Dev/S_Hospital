@@ -145,6 +145,23 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertJsonPath('meta.total', 1);
     }
 
+    public function test_authorized_history_without_date_filters_returns_recent_invoices_across_days(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $oldId = $this->createInvoice($cashier, 'Paciente Anterior', 'Glucosa');
+        $todayId = $this->createInvoice($cashier, 'Paciente Actual', 'Hemograma Completo');
+
+        Invoice::query()->whereKey($oldId)->update(['issued_at' => now()->subDays(3)]);
+
+        $response = $this->actingAs($this->admin())
+            ->getJson('/api/invoices?per_page=5')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 2);
+
+        $this->assertSame([$todayId, $oldId], collect($response->json('data'))->pluck('id')->all());
+    }
+
     public function test_invoice_detail_includes_snapshots_payments_cash_session_status_without_fiscal_sequence_relation(): void
     {
         $this->seedBillingBase();

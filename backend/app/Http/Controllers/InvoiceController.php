@@ -55,16 +55,6 @@ class InvoiceController extends Controller
                     ->whereBetween('issued_at', [now()->startOfDay(), now()->endOfDay()]),
             )
             ->when(
-                $this->canAccessHistoricalInvoices($user)
-                    && $dateFrom === null
-                    && $dateTo === null
-                    && $reconciliationCashSessionId === null,
-                fn (Builder $query) => $query->whereBetween('issued_at', [
-                    now()->startOfDay(),
-                    now()->endOfDay(),
-                ]),
-            )
-            ->when(
                 $this->canAccessHistoricalInvoices($user) && $dateFrom !== null,
                 fn (Builder $query) => $query->where('issued_at', '>=', $dateFrom),
             )

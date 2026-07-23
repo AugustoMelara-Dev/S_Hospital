@@ -29,6 +29,10 @@ class RunBackupJob implements ShouldQueue
     {
         $backupLog = BackupLog::query()->findOrFail($this->backupLogId);
 
+        if ($backupLog->status !== BackupLog::STATUS_PENDING) {
+            return;
+        }
+
         $createBackup->run($backupLog);
 
         OperationalMetricsService::recordWorkerHeartbeat();

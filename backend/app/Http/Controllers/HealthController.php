@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Reports\OperationalMetricsService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class HealthController extends Controller
 {
@@ -19,7 +20,13 @@ class HealthController extends Controller
      */
     public function show(): JsonResponse
     {
-        $snapshot = $this->metrics->snapshot();
+        $snapshot = app()->environment('testing')
+            ? $this->metrics->snapshot()
+            : Cache::remember(
+                'operational-metrics:http-snapshot',
+                now()->addSeconds(15),
+                fn (): array => $this->metrics->snapshot(),
+            );
         $score = $this->metrics->overallHealthScore($snapshot);
 
         return response()->json([
