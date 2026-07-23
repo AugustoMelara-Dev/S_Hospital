@@ -95,6 +95,19 @@ class InstitutionalReceiptPdfTest extends TestCase
         $this->assertSame('2027-12-31', data_get($context['receipt']->invoice_snapshot, 'fiscal_valid_until'));
     }
 
+    public function test_classic_receipt_uses_a_minimal_monochrome_print_contract(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($context['receipt']);
+
+        $this->assertStringContainsString('data-receipt-style="minimal-monochrome"', $html);
+        $this->assertStringNotContainsString('style="color:', $html);
+        $this->assertStringNotContainsString('background: #111827', $html);
+        $this->assertStringNotContainsString('color: #ffffff', $html);
+        $this->assertStringContainsString('.section-title', $html);
+        $this->assertStringContainsString('border-bottom: 1px solid #111827', $html);
+    }
+
     public function test_classic_receipt_omits_fiscal_authorization_when_snapshot_has_no_fiscal_data(): void
     {
         $context = $this->createIssuedReceiptContext();
@@ -655,7 +668,7 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->assertStringNotContainsString('javascript:', $html);
         $this->assertStringNotContainsString('background: red', $html);
-        $this->assertStringContainsString('color: #b91c1c;', $html);
+        $this->assertStringNotContainsString('style="color:', $html);
         $this->assertStringContainsString('font-family: Arial, sans-serif;', $html);
     }
 

@@ -654,7 +654,7 @@ HTML;
     {
         $title = 'Reporte Ejecutivo - '.$hospitalName;
 
-        return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'.$this->e($title).'</title><style>'.$css.'</style></head><body>'.$body.'</body></html>';
+        return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'.$this->e($title).'</title><style>'.$css.'</style></head><body data-report-style="minimal-monochrome">'.$body.'</body></html>';
     }
 
     private function buildCss(): string
@@ -669,11 +669,11 @@ body {
     margin: 0;
     padding: 0;
 }
-.page-header { border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 18px; }
+.page-header { border-bottom: 1px solid #111827; padding-bottom: 12px; margin-bottom: 18px; }
 .page-header-left { float: left; }
 .page-header-right { float: right; text-align: right; }
 .gov { font-size: 10px; color: #475569; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; }
-.sec { font-size: 10px; color: #0d9488; margin: 2px 0 0; text-transform: uppercase; letter-spacing: 0.05em; font-weight: bold; }
+.sec { font-size: 10px; color: #374151; margin: 2px 0 0; text-transform: uppercase; letter-spacing: 0.05em; font-weight: bold; }
 .hospital { font-size: 18px; color: #0f172a; margin: 4px 0 0; font-weight: bold; }
 .meta { font-size: 10px; color: #64748b; margin: 0; }
 .doc-type { font-size: 16px; color: #0f172a; margin: 0; font-weight: bold; text-transform: uppercase; }
@@ -684,13 +684,13 @@ body {
 .section-sub { font-size: 10px; color: #475569; margin: 4px 0 0; }
 .subsection { font-size: 11px; color: #0f172a; margin: 12px 0 4px; text-transform: uppercase; letter-spacing: 0.04em; }
 .kpi-grid { width: 100%; margin-top: 6px; }
-.kpi-card { display: inline-block; width: 24%; vertical-align: top; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 8px; margin: 0 0.5% 8px; box-sizing: border-box; }
+.kpi-card { display: inline-block; width: 24%; vertical-align: top; background: #ffffff; border: 0; border-top: 1px solid #9ca3af; padding: 8px 0; margin: 0 0.5% 8px; box-sizing: border-box; }
 .kpi-label { font-size: 9px; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
 .kpi-value { font-size: 15px; color: #0f172a; font-weight: bold; margin: 4px 0 0; }
-.kpi-delta { font-size: 9px; color: #0d9488; margin: 2px 0 0; font-weight: bold; }
+.kpi-delta { font-size: 9px; color: #374151; margin: 2px 0 0; font-weight: bold; }
 .kpi-helper { font-size: 9px; color: #64748b; margin: 2px 0 0; }
 .report-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-.report-table th { background: #0f172a; color: #f8fafc; font-size: 10px; padding: 6px 8px; text-align: left; }
+.report-table th { background: #ffffff; border-bottom: 1px solid #111827; color: #111827; font-size: 10px; padding: 6px 8px; text-align: left; }
 .report-table td { font-size: 10px; padding: 5px 8px; border-bottom: 1px solid #e2e8f0; }
 .report-table tr:nth-child(even) td { background: #f8fafc; }
 .empty { font-size: 10px; color: #64748b; font-style: italic; margin: 6px 0; }

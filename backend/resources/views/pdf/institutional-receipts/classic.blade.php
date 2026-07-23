@@ -446,10 +446,10 @@
             padding-top: 1px;
         }
 
-        /* Institutional visual hierarchy: optimized for grayscale and color printers. */
+        /* Minimal institutional hierarchy optimized for monochrome printing. */
         .receipt-layout {
-            border-top: 3px solid #111827;
-            padding-top: 6px;
+            color: #111827;
+            padding-top: 2px;
         }
 
         .receipt-layout.profile-carta_horizontal {
@@ -473,21 +473,24 @@
         }
 
         .document-band {
-            background: #f9fafb;
-            border: 1px solid #9ca3af;
-            padding-left: 7px;
-            padding-right: 7px;
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid #111827;
+            border-top: 1px solid #111827;
+            padding: 6px 0;
         }
 
         .receipt-meta-panel {
-            border: 1px solid #d1d5db;
+            border: 0;
+            border-bottom: 1px solid #d1d5db;
             table-layout: fixed;
         }
 
         .receipt-meta-panel td {
             border-bottom: 1px solid #e5e7eb;
-            border-right: 1px solid #e5e7eb;
-            padding-left: 6px;
+            border-right: 0;
+            padding-left: 0;
+            padding-right: 10px;
         }
 
         .receipt-meta-panel tr:last-child td {
@@ -499,27 +502,29 @@
         }
 
         .section-title {
-            background: #111827;
+            background: transparent;
             border: 0;
-            color: #ffffff;
-            letter-spacing: 0.035em;
-            padding: 4px 6px;
+            border-bottom: 1px solid #111827;
+            color: #111827;
+            letter-spacing: 0.045em;
+            padding: 4px 0 3px;
         }
 
         .items-table {
-            border: 1px solid #d1d5db;
+            border: 0;
         }
 
         .items-table th {
-            background: #f3f4f6;
-            border-bottom-color: #9ca3af;
+            background: transparent;
+            border-bottom-color: #111827;
             color: #1f2937;
         }
 
         .totals-table {
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            padding: 4px 6px;
+            background: transparent;
+            border: 0;
+            border-top: 1px solid #111827;
+            padding: 4px 0;
         }
 
         .totals-table .grand-total td {
@@ -528,8 +533,9 @@
         }
 
         .amount-words {
-            background: #f8fafc;
-            border-left: 3px solid #111827;
+            background: transparent;
+            border-left: 0;
+            border-top: 1px solid #d1d5db;
         }
 
         .thermal .receipt-layout {
@@ -644,7 +650,7 @@
                 : $paymentLabel($displayPayments->first()['method'] ?? null));
     @endphp
     <section class="receipt-page {{ $isThermal ? 'thermal '.$paperClass : $paperClass }}{{ $isCustomSmall ? ' custom-small' : '' }}">
-        <div class="receipt-layout profile-{{ $profile['code'] }}">
+        <div class="receipt-layout profile-{{ $profile['code'] }}" data-receipt-style="minimal-monochrome">
         @if ($page['draft'])
             <div class="draft-watermark">{{ $page['watermark'] }}</div>
         @endif
@@ -684,7 +690,7 @@
                     </td>
                     <td style="text-align: right;">
                         <span class="label">Recibo No.</span><br>
-                        <span class="receipt-number" style="color: {{ $page['series']['receipt_number_color'] }};">
+                        <span class="receipt-number">
                             {{ $page['series']['receipt_number_full'] }}
                         </span>
                     </td>

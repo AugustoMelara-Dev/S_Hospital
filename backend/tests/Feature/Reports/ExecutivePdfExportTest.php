@@ -96,6 +96,9 @@ class ExecutivePdfExportTest extends TestCase
         $this->assertStringNotContainsString('facturado menos anulado y reversado', $html);
 
         $this->assertStringContainsString('L. ', $html);
+        $this->assertStringContainsString('data-report-style="minimal-monochrome"', $html);
+        $this->assertStringNotContainsString('#0d9488', $html);
+        $this->assertStringNotContainsString('background: #0f172a', $html);
     }
 
     public function test_executive_pdf_without_audit_view_omits_audit_sections(): void

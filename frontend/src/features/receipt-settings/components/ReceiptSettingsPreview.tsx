@@ -1,5 +1,4 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { PrintPreviewFrame } from '@/design-system/components/InstitutionalComponents';
 import { formatDate } from '@/lib/format/formatDate';
 import type { InstitutionalReceiptSeries, ReceiptPrintProfile } from '@/lib/api';
@@ -67,7 +66,6 @@ export function ReceiptSettingsPreview({
   draft = true,
 }: ReceiptSettingsPreviewProps) {
   const labels = copyLabels(profile?.copies_mode);
-  const receiptColor = series?.receipt_number_color;
   const previewDate = formatDate(new Date());
   const showSealSpace = profile?.show_physical_seal_space !== false;
   const paperChoice = paperChoiceFor(paper);
@@ -81,9 +79,9 @@ export function ReceiptSettingsPreview({
   return (
     <PrintPreviewFrame
       data-testid="receipt-settings-preview"
-      title="Vista previa institucional"
-      description={`${paperChoice.label}. El contenido de muestra no genera ni modifica recibos.`}
-      className="overflow-hidden border border-border bg-muted"
+      title="Ejemplo del recibo"
+      description={`${paperChoice.label}. Así se verá la información al imprimir.`}
+      className="overflow-hidden border border-border bg-background"
     >
       <div className="w-full min-w-0 space-y-4" data-receipt-preview-pages>
         {labels.map((label) => (
@@ -97,12 +95,12 @@ export function ReceiptSettingsPreview({
             label={`Vista previa de recibo ${paperChoice.label}`}
             paper={paper}
           >
-            <div className="mb-2 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-receipt-muted">
-              <span>Vista previa</span>
+            <div className="mb-3 flex items-center justify-between gap-2 border-b border-receipt-border-soft pb-2 text-xs font-semibold uppercase tracking-wide text-receipt-muted">
+              <span>Ejemplo de impresión</span>
               <span>{paperChoice.label}</span>
             </div>
             {draft ? (
-              <div className="mb-2 border-2 border-receipt-ink py-1 text-center text-sm font-bold uppercase tracking-normal">
+              <div className="mb-3 border-y border-receipt-ink py-1.5 text-center text-xs font-bold uppercase tracking-widest">
                 PRUEBA - SIN VALIDEZ
               </div>
             ) : null}
@@ -114,19 +112,15 @@ export function ReceiptSettingsPreview({
                 {location ? <div>{location}</div> : null}
               </header>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 border-y border-receipt-border-soft py-2 text-sm sm:grid-cols-2">
+              <div className="mt-4 grid grid-cols-1 gap-3 border-y border-receipt-ink py-2 text-sm sm:grid-cols-2">
                 <div>
-                  <span className="font-semibold">Próximo estimado</span>{' '}
+                  <span className="block text-xs font-semibold uppercase tracking-wide text-receipt-muted">Número de muestra</span>
                   {series ? (
-                    <Badge
-                      variant="outline"
-                      className="text-lg font-bold"
-                      style={receiptColor ? { borderColor: receiptColor, color: receiptColor } : undefined}
-                    >
+                    <span className="mt-1 block font-mono text-lg font-bold tracking-tight">
                       {nextReceiptNumber(series)}
-                    </Badge>
+                    </span>
                   ) : (
-                    <span className="text-lg font-bold text-receipt-muted">{nextReceiptNumber(series)}</span>
+                    <span className="mt-1 block font-mono text-lg font-bold text-receipt-muted">{nextReceiptNumber(series)}</span>
                   )}
                 </div>
                 <div className="space-y-1 sm:text-right">
@@ -172,8 +166,8 @@ export function ReceiptSettingsPreview({
                 <div className="border-t border-receipt-ink pt-1">Firma del enterante</div>
                 {showSealSpace ? (
                   <div>
-                    <div className="mx-auto mb-1 h-12 w-3/4 border border-receipt-ink" />
-                    <div className="border-t border-receipt-ink pt-1">Espacio para sello/firma</div>
+                    <div className="h-12" aria-hidden="true" />
+                    <div className="border-t border-receipt-ink pt-1">Sello y firma autorizada</div>
                   </div>
                 ) : null}
               </div>
@@ -252,6 +246,7 @@ function ReceiptDocumentPreview({
       className={className}
       aria-label={label}
       data-receipt-preview-paper={paper}
+      data-receipt-style="minimal-monochrome"
     >
       <div
         ref={contentRef}

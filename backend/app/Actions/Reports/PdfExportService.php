@@ -63,7 +63,7 @@ class PdfExportService
             line-height: 1.5;
         }
         .header {
-            border-bottom: 2px solid #0d9488;
+            border-bottom: 1px solid #111827;
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
@@ -75,7 +75,7 @@ class PdfExportService
         }
         .header-subtitle {
             font-size: 14px;
-            color: #0d9488;
+            color: #374151;
             margin: 5px 0 0 0;
             font-weight: bold;
             text-transform: uppercase;
@@ -94,10 +94,10 @@ class PdfExportService
             width: 100%;
         }
         .summary-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 12px;
+            background-color: #ffffff;
+            border: 0;
+            border-top: 1px solid #94a3b8;
+            padding: 10px 0;
             width: 45%;
             display: inline-block;
             vertical-align: top;
@@ -133,8 +133,9 @@ class PdfExportService
             margin-bottom: 20px;
         }
         th {
-            background-color: #0f172a;
-            color: #ffffff;
+            background-color: #ffffff;
+            border-bottom: 1px solid #111827;
+            color: #111827;
             font-weight: bold;
             text-align: left;
             padding: 8px;
@@ -181,7 +182,7 @@ class PdfExportService
         }
     </style>
 </head>
-<body>
+<body data-report-style='minimal-monochrome'>
 
     <div class='header'>
         <div class='hospital-info'>
@@ -204,7 +205,7 @@ class PdfExportService
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
-            <div class='summary-card-value' style='color: #0d9488;'>".$this->money($data['total_collected'] ?? 0)."</div>
+            <div class='summary-card-value'>".$this->money($data['total_collected'] ?? 0)."</div>
             <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Pagos Procesados: ".$this->e($data['payment_count'] ?? 0)."</div>
         </div>
         <div class='clear'></div>
@@ -393,7 +394,7 @@ class PdfExportService
             line-height: 1.4;
         }
         .header {
-            border-bottom: 2px solid #0d9488;
+            border-bottom: 1px solid #111827;
             padding-bottom: 12px;
             margin-bottom: 15px;
         }
@@ -405,7 +406,7 @@ class PdfExportService
         }
         .header-subtitle {
             font-size: 12px;
-            color: #0d9488;
+            color: #374151;
             margin: 4px 0 0 0;
             font-weight: bold;
             text-transform: uppercase;
@@ -424,10 +425,10 @@ class PdfExportService
             width: 100%;
         }
         .summary-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 10px;
+            background-color: #ffffff;
+            border: 0;
+            border-top: 1px solid #94a3b8;
+            padding: 8px 0;
             width: 46%;
             display: inline-block;
             vertical-align: top;
@@ -463,8 +464,9 @@ class PdfExportService
             margin-bottom: 12px;
         }
         th {
-            background-color: #0f172a;
-            color: #ffffff;
+            background-color: #ffffff;
+            border-bottom: 1px solid #111827;
+            color: #111827;
             font-weight: bold;
             text-align: left;
             padding: 6px;
@@ -498,7 +500,7 @@ class PdfExportService
         }
     </style>
 </head>
-<body>
+<body data-report-style='minimal-monochrome'>
 
     <div class='header'>
         <div class='hospital-info'>
@@ -523,7 +525,7 @@ class PdfExportService
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
-            <div class='summary-card-value' style='color: #0d9488;'>".$this->money($income['total_collected'] ?? 0)."</div>
+            <div class='summary-card-value'>".$this->money($income['total_collected'] ?? 0)."</div>
             <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Pagos Procesados: ".$this->e($income['payment_count'] ?? 0)."</div>
         </div>
         <div class='clear'></div>

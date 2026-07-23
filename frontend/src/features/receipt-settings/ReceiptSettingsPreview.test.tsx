@@ -73,7 +73,7 @@ describe('ReceiptSettingsPreview', () => {
 
     expect(screen.getByText('Hospital San Isidro')).toBeInTheDocument();
     expect(screen.getByText('PRUEBA - SIN VALIDEZ')).toBeInTheDocument();
-    expect(screen.getByText(/Próximo estimado/)).toBeInTheDocument();
+    expect(screen.getByText(/Número de muestra/)).toBeInTheDocument();
     expect(screen.getByText('Paciente')).toBeInTheDocument();
     expect(screen.getByText('Monto en letras')).toBeInTheDocument();
     expect(document.body.textContent).toContain('Texto legal VEINTICINCO LEMPIRAS CON 00/100 CENTAVOS');
@@ -81,11 +81,17 @@ describe('ReceiptSettingsPreview', () => {
     expect(screen.getByRole('columnheader', { name: /descripción/i })).toBeInTheDocument();
     expect(screen.getByText('Consulta de medicina general')).toBeInTheDocument();
     expect(document.body.textContent).toContain('Fecha: 03/07/2026');
-    expect(screen.getByText('Espacio para sello/firma')).toBeInTheDocument();
+    expect(screen.getByText('Sello y firma autorizada')).toBeInTheDocument();
     expect(document.body.textContent).toContain('ORIGINAL');
     expect(document.body.textContent).not.toMatch(/CAI|barcode|qr_code|user_id|Estado|PDF final|servidor/);
     expect(screen.getByRole('region', { name: 'Vista previa de recibo Media carta' })).toBeInTheDocument();
-    expect(screen.getByText('Vista previa')).toBeInTheDocument();
+    expect(screen.getByText('Ejemplo de impresión')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Vista previa de recibo Media carta' })).toHaveAttribute(
+      'data-receipt-style',
+      'minimal-monochrome',
+    );
+    expect(screen.getByText('REC-A-00000005')).not.toHaveAttribute('style');
+    expect(document.body.innerHTML).not.toMatch(/background-color:\s*#[0-9a-f]{6}/i);
   });
 
   it('does not invent optional institutional header lines when they are blank', () => {
@@ -158,7 +164,7 @@ describe('ReceiptSettingsPreview', () => {
     );
 
     expect(screen.getByText('Firma del enterante')).toBeInTheDocument();
-    expect(screen.queryByText('Espacio para sello/firma')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sello y firma autorizada')).not.toBeInTheDocument();
   });
 
   it('uses the A5 paper proportion for A5 receipt previews', () => {
