@@ -20,7 +20,7 @@ type ReportsViewProps = {
 const SUB_ROUTES = [
   {
     id: 'executive',
-    label: 'Ejecutivo',
+    label: 'Resumen',
     description: 'Cobros, pendientes, ticket promedio, tendencia y servicios.',
     icon: ChartNoAxesCombinedIcon,
   },
@@ -32,7 +32,7 @@ const SUB_ROUTES = [
   },
   {
     id: 'audit',
-    label: 'Auditoria',
+    label: 'Auditoría',
     description: 'Anulaciones, reversos, cambios de precio y fiscales.',
     icon: ShieldCheckIcon,
   },

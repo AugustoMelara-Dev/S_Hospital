@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { ReportsExecutive } from './ReportsExecutive';
 import { buildExecutiveReport } from './components/testUtils';
@@ -115,8 +116,8 @@ describe('ReportsExecutive', () => {
     fireEvent.click(screen.getByRole('button', { name: /volver per.odo/i }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/inicio ejecutivo/i)).toHaveValue('2026-06-01');
-      expect(screen.getByLabelText(/fin ejecutivo/i)).toHaveValue('2026-06-02');
+      expect(screen.getByLabelText(/^desde$/i)).toHaveValue('2026-06-01');
+      expect(screen.getByLabelText(/^hasta$/i)).toHaveValue('2026-06-02');
       expect(useExecutiveReportMock).toHaveBeenLastCalledWith(
         { date_from: '2026-06-01', date_to: '2026-06-02' },
         true,
@@ -132,17 +133,17 @@ describe('ReportsExecutive', () => {
       </MemoryRouter>,
     );
 
-    await selectDate(/fin ejecutivo/i, '2026-07-11');
-    fireEvent.click(screen.getByRole('button', { name: /refrescar ejecutivo/i }));
+    await selectDate(/^hasta$/i, '2026-07-11');
+    fireEvent.click(screen.getByRole('button', { name: /^aplicar$/i }));
     await waitFor(() => expect(screen.getByLabelText(/url actual/i)).toHaveTextContent('to=2026-07-11'));
 
-    await selectDate(/fin ejecutivo/i, '2026-07-12');
-    fireEvent.click(screen.getByRole('button', { name: /refrescar ejecutivo/i }));
+    await selectDate(/^hasta$/i, '2026-07-12');
+    fireEvent.click(screen.getByRole('button', { name: /^aplicar$/i }));
     await waitFor(() => expect(screen.getByLabelText(/url actual/i)).toHaveTextContent('to=2026-07-12'));
 
     fireEvent.click(screen.getByRole('button', { name: /volver per.odo/i }));
     await waitFor(() => {
-      expect(screen.getByLabelText(/fin ejecutivo/i)).toHaveValue('2026-07-11');
+      expect(screen.getByLabelText(/^hasta$/i)).toHaveValue('2026-07-11');
       expect(useExecutiveReportMock).toHaveBeenLastCalledWith(
         { date_from: '2026-07-01', date_to: '2026-07-11' },
         true,
@@ -153,10 +154,9 @@ describe('ReportsExecutive', () => {
   it('blocks exports while edited dates have not been applied', async () => {
     renderExecutive({}, '/reports/executive?from=2026-07-01&to=2026-07-10');
 
-    await selectDate(/fin ejecutivo/i, '2026-07-11');
+    await selectDate(/^hasta$/i, '2026-07-11');
 
-    expect(screen.getByRole('button', { name: /pdf ejecutivo/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /excel ejecutivo/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^exportar$/i })).toBeDisabled();
     expect(screen.getByText(/aplique el per.odo antes de exportar/i)).toBeInTheDocument();
     expect(downloadExecutivePdf).not.toHaveBeenCalled();
   });
@@ -174,7 +174,7 @@ describe('ReportsExecutive', () => {
       /1 de julio de 2026.*10 de julio de 2026/i,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /pdf ejecutivo/i }));
+    await chooseExport(/documento pdf/i);
 
     await waitFor(() => {
       expect(downloadExecutivePdf).toHaveBeenCalledWith({
@@ -192,7 +192,7 @@ describe('ReportsExecutive', () => {
       false,
     );
     expect(screen.getAllByText(/fecha de inicio debe ser anterior o igual/i).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('button', { name: /pdf ejecutivo/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^exportar$/i })).toBeDisabled();
     expect(downloadExecutivePdf).not.toHaveBeenCalled();
   });
 
@@ -256,16 +256,16 @@ describe('ReportsExecutive', () => {
 
     renderExecutive({ onStatus });
 
-    fireEvent.click(screen.getByRole('button', { name: /pdf ejecutivo/i }));
+    await chooseExport(/documento pdf/i);
 
     await waitFor(() => expect(downloadExecutivePdf).toHaveBeenCalledTimes(1));
     const exportingButtons = screen.getAllByRole('button', { name: /exportando/i });
     expect(exportingButtons.length).toBeGreaterThan(0);
     exportingButtons.forEach((button) => expect(button).toBeDisabled());
-    expect(screen.getByRole('button', { name: /refrescar ejecutivo/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^aplicar$/i })).toBeDisabled();
     expect(screen.getByLabelText(/per[ií]odo r[aá]pido/i)).toBeDisabled();
-    expect(screen.getByLabelText(/inicio ejecutivo/i)).toBeDisabled();
-    expect(screen.getByLabelText(/fin ejecutivo/i)).toBeDisabled();
+    expect(screen.getByLabelText(/^desde$/i)).toBeDisabled();
+    expect(screen.getByLabelText(/^hasta$/i)).toBeDisabled();
     expect(onStatus).toHaveBeenCalledWith({
       key: 'reports:executive:export-pdf',
       level: 'info',
@@ -279,7 +279,7 @@ describe('ReportsExecutive', () => {
     downloadExecutivePdf.mockResolvedValueOnce(new Blob(['pdf'], { type: 'application/pdf' }));
     const view = renderExecutive({ onStatus });
 
-    fireEvent.click(screen.getByRole('button', { name: /pdf ejecutivo/i }));
+    await chooseExport(/documento pdf/i);
     await waitFor(() => expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
       key: 'reports:executive:export-pdf',
       level: 'success',
@@ -289,7 +289,7 @@ describe('ReportsExecutive', () => {
     onStatus.mockClear();
     downloadExecutivePdf.mockRejectedValueOnce(new Error('Fallo controlado'));
     renderExecutive({ onStatus });
-    fireEvent.click(screen.getByRole('button', { name: /pdf ejecutivo/i }));
+    await chooseExport(/documento pdf/i);
 
     await waitFor(() => expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
       key: 'reports:executive:export-pdf',
@@ -300,4 +300,12 @@ describe('ReportsExecutive', () => {
 
 async function selectDate(label: RegExp, date: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value: date } });
+}
+
+async function chooseExport(name: RegExp) {
+  const user = userEvent.setup();
+  const trigger = screen.getByRole('button', { name: /^exportar$/i });
+  trigger.focus();
+  await user.click(trigger);
+  await user.click(await screen.findByRole('menuitem', { name }));
 }

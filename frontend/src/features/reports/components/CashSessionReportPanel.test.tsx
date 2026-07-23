@@ -1,9 +1,40 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { CashSessionReportPanel } from './CashSessionReportPanel';
 import type { CashSessionReport } from '../../../lib/api/types';
 
 describe('CashSessionReportPanel', () => {
+  it('offers cash PDF and Excel from one export menu', async () => {
+    const user = userEvent.setup();
+    const onExport = vi.fn();
+    const onExportPdf = vi.fn();
+    render(
+      <CashSessionReportPanel
+        canExport
+        cashSession={buildCashSessionReport()}
+        cashReportId="2"
+        loading={false}
+        error=""
+        onCashReportIdChange={() => undefined}
+        onExport={onExport}
+        onExportPdf={onExportPdf}
+        onSubmit={() => undefined}
+      />,
+    );
+
+    expect(screen.getAllByRole('button', { name: /^exportar$/i })).toHaveLength(1);
+    screen.getByRole('button', { name: /^exportar$/i }).focus();
+    await user.click(screen.getByRole('button', { name: /^exportar$/i }));
+    await user.click(await screen.findByRole('menuitem', { name: /documento pdf/i }));
+    expect(onExportPdf).toHaveBeenCalledOnce();
+
+    screen.getByRole('button', { name: /^exportar$/i }).focus();
+    await user.click(screen.getByRole('button', { name: /^exportar$/i }));
+    await user.click(await screen.findByRole('menuitem', { name: /libro de excel/i }));
+    expect(onExport).toHaveBeenCalledOnce();
+  });
+
   it('asks for a cash turn without exposing raw numeric examples', () => {
     render(
       <CashSessionReportPanel

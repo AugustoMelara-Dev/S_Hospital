@@ -220,7 +220,7 @@ export function ReportsExecutive({
           ariaLabel="Alcance del reporte ejecutivo"
           from={appliedFilters.date_from}
           to={appliedFilters.date_to}
-          source="Totales operativos consolidados por el servidor hospitalario"
+          source="Información consolidada del período"
           updatedAt={dataUpdatedAt}
         />
       ) : null}

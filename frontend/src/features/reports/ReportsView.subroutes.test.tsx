@@ -88,23 +88,23 @@ describe('ReportsView (sub-routes)', () => {
   it('renders the three report sub-route links without retired tabs', () => {
     renderReports('/reports');
     expect(screen.getByRole('heading', { level: 1, name: /^informes y auditoría$/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ejecutivo/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /resumen/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /caja/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /auditoria/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /auditoría/i })).toBeInTheDocument();
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /control ejecutivo/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /resumen del período/i })).toBeInTheDocument();
   });
 
   it('exposes concise descriptions for each report section link', () => {
     renderReports('/reports');
 
-    expect(screen.getByRole('link', { name: /ejecutivo/i })).toHaveAccessibleDescription(
+    expect(screen.getByRole('link', { name: /resumen/i })).toHaveAccessibleDescription(
       /cobros, pendientes, ticket promedio, tendencia y servicios/i,
     );
     expect(screen.getByRole('link', { name: /caja/i })).toHaveAccessibleDescription(
       /sesiones, cajeros, metodos y diferencias/i,
     );
-    expect(screen.getByRole('link', { name: /auditoria/i })).toHaveAccessibleDescription(
+    expect(screen.getByRole('link', { name: /auditoría/i })).toHaveAccessibleDescription(
       /anulaciones, reversos, cambios de precio y fiscales/i,
     );
   });
@@ -115,15 +115,15 @@ describe('ReportsView (sub-routes)', () => {
     const navigation = screen.getByRole('navigation', { name: /secciones de reportes/i });
     expect(navigation).toHaveAttribute('data-mobile-layout', 'compact');
     expect(navigation).toHaveClass('grid-cols-3');
-    expect(screen.getByRole('link', { name: /ejecutivo/i })).toHaveClass('min-h-12');
+    expect(screen.getByRole('link', { name: /resumen/i })).toHaveClass('min-h-12');
     expect(screen.getByText(/cobros, pendientes/i)).toHaveClass('hidden', 'sm:block');
   });
 
   it('hides sub-routes when the user lacks managerial permission', async () => {
     renderReports('/reports', false);
     await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
-    expect(screen.queryByRole('link', { name: /ejecutivo/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /resumen/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /auditoría/i })).not.toBeInTheDocument();
   });
 
   it('opens the cash report from root when it is the only permitted report', async () => {
@@ -147,7 +147,7 @@ describe('ReportsView (sub-routes)', () => {
   it('hides the audit report when the user has managerial reports without audit permission', async () => {
     renderReports('/reports/audit', true, true, false);
 
-    expect(screen.queryByRole('link', { name: /auditoria/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /auditoría/i })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /caja/i })).toHaveAttribute('aria-current', 'page');
     await waitFor(() => expect(apiClient.getCashSessions).toHaveBeenCalled());
   });
@@ -155,7 +155,7 @@ describe('ReportsView (sub-routes)', () => {
   it('opens audit from root when it is the only permitted report', () => {
     renderReports('/reports', false, false, true);
 
-    expect(screen.getByRole('link', { name: /auditoria/i })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: /auditoría/i })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('heading', { name: /^auditoría$/i })).toBeInTheDocument();
     expect(screen.queryByText(/reporte ejecutivo no disponible/i)).not.toBeInTheDocument();
   });
@@ -163,8 +163,8 @@ describe('ReportsView (sub-routes)', () => {
   it('falls back to executive when the report sub-route is unknown', () => {
     renderReports('/reports/desconocido');
 
-    expect(screen.getByRole('link', { name: /ejecutivo/i })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('heading', { name: /control ejecutivo/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /resumen/i })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('heading', { name: /resumen del período/i })).toBeInTheDocument();
   });
 
   it('shows empty state in executive sub-route without permissions', () => {

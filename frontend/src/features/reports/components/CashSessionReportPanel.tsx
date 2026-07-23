@@ -1,5 +1,5 @@
 import { type FormEvent } from 'react';
-import { DownloadIcon, FileTextIcon, TriangleAlertIcon } from 'lucide-react';
+import { TriangleAlertIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 import type { CashSession, CashSessionReport } from '../../../lib/api/types';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 import { AccountingControlPanel } from '../../../modules/accounting/components/AccountingControlPanel';
+import { ReportExportMenu } from './ReportExportMenu';
 
 function StatGrid({ items }: { className?: string; items: Array<{ label: string; value: React.ReactNode; helper?: string; tone?: string }> }) { return <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">{items.map((item) => <div className="rounded-xl border border-border bg-card p-4" key={item.label}><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{item.label}</dt><dd className="mt-2 text-xl font-semibold tabular-nums">{item.value}</dd>{item.helper ? <p className="mt-1 text-xs text-muted-foreground">{item.helper}</p> : null}</div>)}</dl>; }
 
@@ -194,16 +195,12 @@ export function CashSessionReportPanel({
 
           <div className="flex flex-wrap justify-end gap-2">
             {canExport ? (
-              <>
-                <Button type="button" variant="outline" onClick={onExportPdf} disabled={exporting}>
-                  <FileTextIcon data-icon="inline-start" />
-                  {exportingType === 'pdf' ? 'Abriendo PDF...' : 'PDF caja'}
-                </Button>
-                <Button type="button" variant="outline" onClick={onExport} disabled={exporting}>
-                  <DownloadIcon data-icon="inline-start" />
-                  {exportingType === 'excel' ? 'Exportando Excel...' : 'Exportar Excel'}
-                </Button>
-              </>
+              <ReportExportMenu
+                disabled={exporting}
+                exporting={exportingType !== null}
+                onExportPdf={onExportPdf}
+                onExportExcel={onExport}
+              />
             ) : (
               <p className="text-sm text-muted-foreground">
                 Exportar caja requiere permiso de exportacion de reportes.
