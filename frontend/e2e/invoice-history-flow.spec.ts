@@ -124,7 +124,7 @@ test.describe('Invoice history - critical mocked e2e', () => {
     await installInvoiceHistoryMocks(page);
     await page.goto('/invoices');
 
-    const columnsButton = page.getByRole('button', { name: /configurar columnas de facturas/i });
+    const columnsButton = page.getByRole('button', { name: /personalizar tabla de facturas/i });
     await columnsButton.click();
     const statusColumnItem = page.getByRole('menuitemcheckbox', { name: /^estado$/i });
     await expect(statusColumnItem).toBeVisible();
