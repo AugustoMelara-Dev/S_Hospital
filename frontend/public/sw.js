@@ -3,11 +3,11 @@
 // Minimal service worker for S_Hospital LAN operation.
 // Strategy:
 //   - API and Sanctum requests are never intercepted or cached.
-//   - navigations -> network with a 2s timeout; fall back to the public shell.
+//   - navigations -> network with an 8s timeout; fall back to the public shell.
 //   - explicit public assets -> CacheFirst.
 //   - every other request -> pass through to the browser.
 
-const CACHE_VERSION = 's-hospital-v3';
+const CACHE_VERSION = 's-hospital-v4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const PRECACHE_PATHS = [

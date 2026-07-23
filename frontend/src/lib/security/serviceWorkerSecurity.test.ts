@@ -22,7 +22,10 @@ describe('service worker security policy', () => {
   it('avoids stale shells during development and tolerates normal LAN latency', () => {
     expect(mainSource).toContain('navigator.serviceWorker.getRegistrations()');
     expect(mainSource).toContain('registration.unregister()');
-    expect(serviceWorkerSource).toContain("const CACHE_VERSION = 's-hospital-v3'");
+    expect(mainSource).toContain('caches.keys()');
+    expect(mainSource).toContain("cacheName.startsWith('s-hospital-')");
+    expect(mainSource).toContain('window.location.reload()');
+    expect(serviceWorkerSource).toContain("const CACHE_VERSION = 's-hospital-v4'");
     expect(serviceWorkerSource).toContain('fetchWithTimeout(request, 8000)');
   });
 });
