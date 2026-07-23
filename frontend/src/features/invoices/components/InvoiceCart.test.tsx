@@ -13,11 +13,14 @@ describe('InvoiceCart', () => {
     expect(screen.getByText(/precio registrado/i)).toHaveTextContent('L 120.00');
   });
 
-  it('renders one compact account table without a promotional estimated-total block', () => {
+  it('renders a compact account list without horizontal scrolling or promotional totals', () => {
     const { container } = renderCart({ actionLabel: 'Emitir y cobrar' });
 
-    expect(container.querySelector('[data-slot="table"]')).toBeInTheDocument();
-    expect(screen.getByRole('table', { name: /cuenta actual/i })).toBeVisible();
+    const accountList = screen.getByRole('list', { name: /cuenta actual/i });
+    expect(accountList).toBeVisible();
+    expect(accountList).toHaveClass('min-w-0');
+    expect(accountList).not.toHaveClass('overflow-x-auto');
+    expect(container.querySelector('[data-slot="table"]')).not.toBeInTheDocument();
     expect(screen.getByText('Subtotal')).toBeVisible();
     expect(screen.getByText(/ISV/)).toBeVisible();
     expect(screen.getByText('Total')).toBeVisible();
@@ -67,7 +70,7 @@ describe('InvoiceCart', () => {
       preview: { subtotal: 'monto-danado', tax: 'NaN', total: 'no-numero' },
     });
 
-    const items = within(screen.getByRole('table', { name: /cuenta actual/i })).getAllByRole('row').slice(1);
+    const items = within(screen.getByRole('list', { name: /cuenta actual/i })).getAllByRole('listitem');
     expect(items).toHaveLength(2);
     expect(within(items[0]).getByText('Primer servicio')).toBeInTheDocument();
     expect(within(items[1]).getByText('Segundo servicio')).toBeInTheDocument();
@@ -176,7 +179,7 @@ describe('InvoiceCart', () => {
       canMarkDialysisPrescription: true,
     });
 
-    const rows = within(screen.getByRole('table', { name: /cuenta actual/i })).getAllByRole('row').slice(1);
+    const rows = within(screen.getByRole('list', { name: /cuenta actual/i })).getAllByRole('listitem');
 
     expect(within(rows[0]).getByText(/^importe$/i)).toBeInTheDocument();
     expect(within(rows[0]).getByText('L 240.00')).toBeInTheDocument();
@@ -198,7 +201,7 @@ describe('InvoiceCart', () => {
       canMarkDialysisPrescription: true,
     });
 
-    const rows = within(screen.getByRole('table', { name: /cuenta actual/i })).getAllByRole('row').slice(1);
+    const rows = within(screen.getByRole('list', { name: /cuenta actual/i })).getAllByRole('listitem');
     expect(rows).toHaveLength(2);
     expect(within(rows[0]).getByText('L 0.00')).toBeInTheDocument();
     expect(within(rows[1]).getByText('L 0.00')).toBeInTheDocument();

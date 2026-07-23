@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { WrapText } from '@/design-system/components/InstitutionalComponents';
 import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
 
@@ -113,11 +112,49 @@ export function InvoiceCart({
             <p className="mt-1 max-w-56 text-xs">Busque por nombre, area o categoria para comenzar.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-operational-border"><Table aria-label="Cuenta actual"><TableHeader><TableRow><TableHead className="min-w-36">Servicio</TableHead><TableHead className="w-32">Cantidad</TableHead><TableHead data-numeric="true">Importe</TableHead><TableHead className="w-10"><span className="sr-only">Acciones</span></TableHead></TableRow></TableHeader><TableBody>{items.map((item, index) => {
+          <ul
+            data-billing-cart-list
+            aria-label="Cuenta actual"
+            className="min-w-0 divide-y divide-operational-border rounded-lg border border-operational-border bg-operational-surface"
+          >
+            {items.map((item, index) => {
             const isFree = dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE;
             const estimatedLineTotal = isFree ? 0 : lineTotalCents(item.service.price, item.quantity);
-            return <TableRow key={item.service.id}><TableCell><WrapText as="p" className="text-sm font-semibold leading-tight">{item.service.name}</WrapText><div className="mt-1 flex flex-wrap gap-1.5"><Badge variant="outline">{item.service.category?.name ?? 'Sin categoría'}</Badge>{item.service.area?.name && item.service.area.name.trim().toLocaleLowerCase('es') !== (item.service.category?.name ?? '').trim().toLocaleLowerCase('es') ? <Badge variant="outline">{item.service.area.name}</Badge> : null}</div><p className="mt-1 text-xs text-muted-foreground">Precio registrado: <span className="font-mono tabular-nums">{moneyLabel(item.service.price)}</span>{isFree ? <span className="font-semibold text-success"> (Gratis - receta diálisis)</span> : null}</p></TableCell><TableCell className="whitespace-nowrap"><div className="flex items-center gap-1"><Button type="button" variant="outline" size="icon" onClick={() => onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)))} aria-label={`Disminuir cantidad de ${item.service.name}`}><Minus aria-hidden="true" /></Button><Input value={item.quantity} onChange={(event) => onUpdateQuantity(index, event.target.value)} className="min-w-16 text-center font-mono tabular-nums" inputMode="decimal" name={`quantity-${item.service.id}`} aria-label={`Cantidad de ${item.service.name}`} /><Button type="button" variant="outline" size="icon" onClick={() => onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100))} aria-label={`Aumentar cantidad de ${item.service.name}`}><Plus aria-hidden="true" /></Button></div></TableCell><TableCell data-numeric="true" className="font-mono font-semibold tabular-nums"><span className="mr-2 text-xs text-muted-foreground sm:sr-only">Importe</span>{formatLempirasUIFromCents(estimatedLineTotal)}</TableCell><TableCell className="whitespace-nowrap"><Button type="button" variant="ghost" size="icon" onClick={() => onRemoveItem(index)} className="text-muted-foreground hover:text-destructive" aria-label={`Quitar ${item.service.name}`}><Trash2 aria-hidden="true" /></Button></TableCell></TableRow>;
-          })}</TableBody></Table></div>
+            return (
+              <li key={item.service.id} className="min-w-0 p-3">
+                <div className="flex min-w-0 items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <WrapText as="p" className="text-sm font-semibold leading-tight">{item.service.name}</WrapText>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      <Badge variant="outline">{item.service.category?.name ?? 'Sin categoría'}</Badge>
+                      {item.service.area?.name && item.service.area.name.trim().toLocaleLowerCase('es') !== (item.service.category?.name ?? '').trim().toLocaleLowerCase('es') ? <Badge variant="outline">{item.service.area.name}</Badge> : null}
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      Precio registrado: <span className="font-mono tabular-nums">{moneyLabel(item.service.price)}</span>
+                      {isFree ? <span className="font-semibold text-success"> (Gratis - receta diálisis)</span> : null}
+                    </p>
+                  </div>
+                  <Button type="button" variant="ghost" size="icon" onClick={() => onRemoveItem(index)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label={`Quitar ${item.service.name}`}><Trash2 aria-hidden="true" /></Button>
+                </div>
+
+                <div className="mt-3 flex min-w-0 flex-wrap items-end justify-between gap-3 border-t border-border/70 pt-3">
+                  <div className="min-w-0">
+                    <span className="mb-1 block text-xs font-medium text-muted-foreground">Cantidad</span>
+                    <div className="flex items-center gap-1">
+                      <Button type="button" variant="outline" size="icon" onClick={() => onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)))} aria-label={`Disminuir cantidad de ${item.service.name}`}><Minus aria-hidden="true" /></Button>
+                      <Input value={item.quantity} onChange={(event) => onUpdateQuantity(index, event.target.value)} className="w-14 min-w-0 text-center font-mono tabular-nums" inputMode="decimal" name={`quantity-${item.service.id}`} aria-label={`Cantidad de ${item.service.name}`} />
+                      <Button type="button" variant="outline" size="icon" onClick={() => onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100))} aria-label={`Aumentar cantidad de ${item.service.name}`}><Plus aria-hidden="true" /></Button>
+                    </div>
+                  </div>
+                  <div className="min-w-0 text-right">
+                    <span className="mb-1 block text-xs font-medium text-muted-foreground">Importe</span>
+                    <span className="whitespace-nowrap font-mono font-semibold tabular-nums">{formatLempirasUIFromCents(estimatedLineTotal)}</span>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+          </ul>
         )}
       </div>
 

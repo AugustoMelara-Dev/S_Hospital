@@ -110,7 +110,9 @@ test.describe('New invoice - critical mocked e2e', () => {
     await page.getByLabel(/buscar por nombre/i).fill('glucosa');
     await page.getByRole('button', { name: /agregar glucosa basal/i }).click();
 
-    await expect(page.getByRole('table', { name: /cuenta actual/i })).toContainText('Glucosa basal');
+    const accountList = page.getByRole('list', { name: /cuenta actual/i });
+    await expect(accountList).toContainText('Glucosa basal');
+    await expectNoHorizontalOverflow(accountList);
     const emitButton = page.getByRole('button', { name: /emitir y cobrar/i });
     await expect(emitButton).toBeEnabled();
     await expect(emitButton).toBeInViewport();
@@ -212,7 +214,9 @@ test.describe('New invoice - critical mocked e2e', () => {
 
       const accountTrigger = page.getByRole('button', { name: /ver cuenta/i });
       if (viewport.desktopAccount) {
-        await expect(page.getByRole('table', { name: /cuenta actual/i })).toContainText('Glucosa basal');
+        const accountList = page.getByRole('list', { name: /cuenta actual/i });
+        await expect(accountList).toContainText('Glucosa basal');
+        await expectNoHorizontalOverflow(accountList);
       } else {
         await expect(accountTrigger).toBeVisible();
         await expect(accountTrigger).toContainText('1 servicio');
@@ -240,6 +244,7 @@ test.describe('New invoice - critical mocked e2e', () => {
         expect(bottomBarBounds).not.toBeNull();
         expect(quantityBounds).not.toBeNull();
         expect(quantityBounds!.y + quantityBounds!.height).toBeLessThanOrEqual(bottomBarBounds!.y);
+        await expectNoHorizontalOverflow(page.getByRole('list', { name: /cuenta actual/i }));
       }
 
       writeFileSync(
@@ -277,6 +282,15 @@ test.describe('New invoice - critical mocked e2e', () => {
     });
   }
 });
+
+async function expectNoHorizontalOverflow(locator: import('@playwright/test').Locator) {
+  const dimensions = await locator.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+}
 
 async function installNewInvoiceMocks(
   page: Page,
