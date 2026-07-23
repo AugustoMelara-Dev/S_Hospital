@@ -11,7 +11,6 @@ import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
-import { useOperationalSettings } from '@/hooks/useFiscalSettings';
 import { useServices } from '@/hooks/useServices';
 import { CatalogPagination } from './components/CatalogPagination';
 import { CatalogToolbar } from './components/CatalogToolbar';
@@ -66,7 +65,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const servicesQuery = useServices(serviceFilters);
   const categoriesQuery = useCategories();
   const areasQuery = useAreas(true);
-  const operationalSettingsQuery = useOperationalSettings();
 
   useEffect(() => {
     if (servicesQuery.data) {
@@ -80,7 +78,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const services = useMemo(() => servicesData?.data ?? [], [servicesData]);
   const overlayState = catalogOverlayState(searchParams, services, categories);
   const meta = servicesData?.meta ?? { current_page: 1, per_page: DEFAULT_PER_PAGE, total: 0 };
-  const scannerEnabled = operationalSettingsQuery.data?.scanner_enabled === true;
   const serviceStatusActionLabel = servicePendingStatusChange?.active ? 'Desactivar servicio' : 'Activar servicio';
   const loadError = errorMessageFromQueries(servicesQuery.error, categoriesQuery.error, areasQuery.error);
   const isLoading = servicesQuery.isLoading && !servicesData;
@@ -139,9 +136,8 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       servicesQuery.refetch(),
       categoriesQuery.refetch(),
       areasQuery.refetch(),
-      operationalSettingsQuery.refetch(),
     ]);
-  }, [areasQuery, categoriesQuery, operationalSettingsQuery, servicesQuery]);
+  }, [areasQuery, categoriesQuery, servicesQuery]);
 
   function handleCategoryFilterChange(value: string) {
     setCategoryFilter(value);
@@ -304,7 +300,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         onClearFilters={clearFilters}
         onRetry={refetchCatalogData}
         onRowActions={{ canManage: canManageCatalog, onEdit: openEditService, onToggleActive: toggleServiceActive }}
-        scannerEnabled={scannerEnabled}
         services={services}
         hasActiveFilters={hasFilters}
         isEmpty={isEmpty}
@@ -340,7 +335,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             service={overlayState.editingService ? normalizeServiceForDrawer(overlayState.editingService) : null}
             categories={categories}
             areas={areas}
-            scannerEnabled={scannerEnabled}
             onSuccess={handleServiceSuccess}
           />
 

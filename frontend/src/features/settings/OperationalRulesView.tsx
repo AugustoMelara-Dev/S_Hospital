@@ -14,7 +14,6 @@ type OperationalRulesViewProps = { canEdit: boolean; onStatus: OperationalStatus
 
 export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesViewProps) {
   const [settings, setSettings] = useState<OperationalSettings | null>(null);
-  const [scannerEnabled, setScannerEnabled] = useState(false);
   const [partialPaymentsEnabled, setPartialPaymentsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,7 +26,6 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
     try {
       const data = await apiClient.getOperationalSettings();
       setSettings(data);
-      setScannerEnabled(data?.scanner_enabled === true);
       setPartialPaymentsEnabled(data?.partial_payments_enabled === true);
     } catch (err) {
       setError(safeClientMessage(userSafeErrorMessage(err, 'No se pudo cargar reglas operativas.')));
@@ -42,7 +40,7 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
     setError('');
     onStatus({ key: 'settings:operational-rules:save', level: 'info', message: 'Guardando reglas operativas...', toast: false });
     try {
-      const updated = await apiClient.updateOperationalSettings({ scanner_enabled: scannerEnabled, partial_payments_enabled: partialPaymentsEnabled });
+      const updated = await apiClient.updateOperationalSettings({ scanner_enabled: false, partial_payments_enabled: partialPaymentsEnabled });
       setSettings((current) => (current ? { ...current, ...updated } : current));
       onStatus({ key: 'settings:operational-rules:save', level: 'success', message: 'Reglas operativas guardadas.' });
     } catch (err) {
@@ -71,14 +69,6 @@ export function OperationalRulesView({ canEdit, onStatus }: OperationalRulesView
           <CardDescription>Active o desactive funciones del flujo de facturación.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
-          <Field orientation="horizontal" className="rounded-xl border bg-muted/30 p-4" data-disabled={!canEdit}>
-            <FieldContent>
-              <FieldLabel htmlFor="scanner_enabled"><FieldTitle>Habilitar scanner/códigos en caja</FieldTitle></FieldLabel>
-              <FieldDescription>Si está desactivado, el POS oculta los controles de scanner y códigos internos.</FieldDescription>
-            </FieldContent>
-            <Switch id="scanner_enabled" checked={scannerEnabled} onCheckedChange={setScannerEnabled} disabled={!canEdit} />
-          </Field>
-
           <Field orientation="horizontal" className="rounded-xl border bg-muted/30 p-4" data-disabled={!canEdit}>
             <FieldContent>
               <FieldLabel htmlFor="partial_payments_enabled"><FieldTitle>Permitir abonos parciales</FieldTitle></FieldLabel>

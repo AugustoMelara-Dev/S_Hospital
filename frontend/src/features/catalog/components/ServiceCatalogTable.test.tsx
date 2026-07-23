@@ -20,21 +20,20 @@ describe('ServiceCatalogTable', () => {
     expect(clear).toHaveBeenCalledOnce(); expect(retry).toHaveBeenCalledOnce();
   });
 
-  it('renders prioritized operational columns and a visible distinguishing code', () => {
-    render(<ServiceCatalogTable {...baseProps()} scannerEnabled services={[serviceFixture({ scan_code: 'LAB-1', barcode: '123', qr_code: 'QR-1' })]} />);
+  it('renders prioritized operational columns without internal scanner codes', () => {
+    render(<ServiceCatalogTable {...baseProps()} services={[serviceFixture({ scan_code: 'LAB-1', barcode: '123', qr_code: 'QR-1' })]} />);
     ['Servicio', 'Categoría', 'Área', 'Precio', 'Estado', 'Acciones'].forEach((name) => expect(screen.getByRole('columnheader', { name })).toBeInTheDocument());
-    expect(screen.getAllByText(/código LAB-1/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/LAB-1|123|QR-1/i)).not.toBeInTheDocument();
   });
 
-  it('wraps long service metadata instead of truncating it in the operational table', () => {
+  it('does not expose long internal codes in the operational table', () => {
     const longCode = 'CODIGO-OPERATIVO-EXCEPCIONALMENTE-LARGO-SIN-ESPACIOS-123456789';
     render(<ServiceCatalogTable {...baseProps()} services={[serviceFixture({ scan_code: longCode })]} />);
 
-    expect(screen.getByText(`Código ${longCode}`)).toHaveClass('[overflow-wrap:anywhere]');
-    expect(screen.getByText(`Código ${longCode}`)).not.toHaveClass('truncate');
+    expect(screen.queryByText(new RegExp(longCode))).not.toBeInTheDocument();
   });
 
-  it('uses a mobile list that distinguishes same-name services by category, area and code', () => {
+  it('uses a mobile list that distinguishes same-name services by category and area without codes', () => {
     mediaState.isMobile = true;
     render(<ServiceCatalogTable {...baseProps()} services={[
       serviceFixture({ id: 1, name: 'Consulta', scan_code: 'CON-EXT' }),
@@ -50,8 +49,9 @@ describe('ServiceCatalogTable', () => {
     const mobileList = screen.getByRole('list', { name: /servicios del catálogo en móvil/i });
     const items = within(mobileList).getAllByRole('listitem');
     expect(items).toHaveLength(2);
-    expect(items[0]).toHaveTextContent(/Consulta.*Laboratorio.*Código CON-EXT/i);
-    expect(items[1]).toHaveTextContent(/Consulta.*Emergencia.*Urgencias.*Código CON-EME/i);
+    expect(items[0]).toHaveTextContent(/Consulta.*Laboratorio/i);
+    expect(items[1]).toHaveTextContent(/Consulta.*Emergencia.*Urgencias/i);
+    expect(mobileList).not.toHaveTextContent(/CON-EXT|CON-EME/);
   });
 
   it('renders billing summaries and HNL prices through column renderers', () => {
@@ -63,5 +63,5 @@ describe('ServiceCatalogTable', () => {
   });
 });
 
-function baseProps() { return { areas: [], canManage: true, categories: [], hasActiveFilters: false, isEmpty: false, isLoading: false, loadError: '', onClearFilters: vi.fn(), onRetry: vi.fn(), onRowActions: { canManage: true, onEdit: vi.fn(), onToggleActive: vi.fn() }, scannerEnabled: false, services: [serviceFixture()] }; }
+function baseProps() { return { areas: [], canManage: true, categories: [], hasActiveFilters: false, isEmpty: false, isLoading: false, loadError: '', onClearFilters: vi.fn(), onRetry: vi.fn(), onRowActions: { canManage: true, onEdit: vi.fn(), onToggleActive: vi.fn() }, services: [serviceFixture()] }; }
 function serviceFixture(overrides: Partial<Service> = {}): Service { return { id: 1, category_id: 1, area_id: 1, name: 'Glucosa', aliases: null, slug: 'glucosa', scan_code: null, barcode: null, qr_code: null, price: '15.00', taxable: true, active: true, visible_in_billing: true, is_billable: true, special_rule_code: null, category: { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 }, area: { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true }, ...overrides }; }

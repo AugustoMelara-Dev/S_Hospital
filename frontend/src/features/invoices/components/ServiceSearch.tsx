@@ -1,4 +1,4 @@
-import { BarcodeIcon as Barcode, FilterIcon as Filter, PlusIcon as Plus, SearchIcon as Search, XIcon as X } from 'lucide-react';
+import { FilterIcon as Filter, PlusIcon as Plus, SearchIcon as Search, XIcon as X } from 'lucide-react';
 import { type KeyboardEvent, type RefObject, useCallback, useDeferredValue, useEffect, useRef, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -52,15 +52,9 @@ export function ServiceSearch({
   onCategoryChange,
   search,
   onSearchChange,
-  scanCode,
-  onScanCodeChange,
   onAddService,
-  onAddByScanCode,
   searchInputRef,
-  scannerInputRef,
   loading,
-  scanningCode = false,
-  scannerEnabled = false,
   error,
   onRetry,
   cartItems = [],
@@ -72,8 +66,6 @@ export function ServiceSearch({
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const addLockRef = useRef<number | null>(null);
   const addLockTimeoutRef = useRef<number | null>(null);
-  const scanLockRef = useRef(false);
-  const scanLockTimeoutRef = useRef<number | null>(null);
   const deferredSearch = useDeferredValue(search);
   const deferredServices = useDeferredValue(services);
   const normalizedSearch = deferredSearch.trim().toLocaleLowerCase('es');
@@ -123,36 +115,7 @@ export function ServiceSearch({
     if (addLockTimeoutRef.current !== null) {
       window.clearTimeout(addLockTimeoutRef.current);
     }
-    if (scanLockTimeoutRef.current !== null) {
-      window.clearTimeout(scanLockTimeoutRef.current);
-    }
   }, []);
-
-  const handleAddByScanCode = useCallback(() => {
-    if (scanningCode || scanLockRef.current) return;
-
-    scanLockRef.current = true;
-    const scheduleUnlock = () => {
-      if (scanLockTimeoutRef.current !== null) {
-        window.clearTimeout(scanLockTimeoutRef.current);
-      }
-      scanLockTimeoutRef.current = window.setTimeout(() => {
-        scanLockRef.current = false;
-        scanLockTimeoutRef.current = null;
-      }, 250);
-    };
-
-    try {
-      const result = onAddByScanCode();
-      if (result instanceof Promise) {
-        void result.then(scheduleUnlock, scheduleUnlock);
-      } else {
-        scheduleUnlock();
-      }
-    } catch {
-      scheduleUnlock();
-    }
-  }, [onAddByScanCode, scanningCode]);
 
   const handleRadioGroupKeyDown = useCallback((
     event: KeyboardEvent<HTMLDivElement>,
@@ -206,17 +169,13 @@ export function ServiceSearch({
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold tracking-tight text-foreground">Selección de servicios</h2>
-            <p className="sr-only">
-              {scannerEnabled
-                ? 'Filtre por area, categoria, texto o lector sin exponer datos internos.'
-                : 'Filtre por nombre, area o categoria para agregar servicios.'}
-            </p>
+            <p className="sr-only">Filtre por nombre, area o categoria para agregar servicios.</p>
           </div>
           <Badge variant={activeFilterCount > 0 ? 'secondary' : 'outline'} className="w-fit">
             {activeFilterCount} filtro{activeFilterCount === 1 ? '' : 's'}
           </Badge>
         </div>
-        <div className={scannerEnabled ? 'grid gap-3 2xl:grid-cols-2' : 'grid gap-3'}>
+        <div className="grid gap-3">
           <div className="flex min-w-0 flex-col gap-2">
             <label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Buscar por nombre, area o categoria
@@ -253,45 +212,6 @@ export function ServiceSearch({
               />
             </div>
           </div>
-
-          {scannerEnabled ? (
-            <div className="flex min-w-0 flex-col gap-2">
-              <label htmlFor="scanner-code" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Lector USB o entrada manual
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="relative min-w-0 flex-1">
-                  <Barcode className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary" aria-hidden="true" />
-                  <Input
-                    ref={(node) => {
-                      if (scannerInputRef) {
-                        (scannerInputRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
-                      }
-                    }}
-                    id="scanner-code"
-                    name="scanner_code"
-                    aria-label="Lector USB o entrada manual"
-                    placeholder="Escanee o ingrese referencia..."
-                    value={scanCode}
-                    onChange={(e) => onScanCodeChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        if (e.ctrlKey || e.metaKey || e.altKey) return;
-                        e.preventDefault();
-                        handleAddByScanCode();
-                      }
-                    }}
-                    autoComplete="off"
-                    disabled={scanningCode}
-                    className="min-h-11 pl-9"
-                  />
-                </div>
-                <Button type="button" variant="outline" className="min-h-11 shrink-0" disabled={scanningCode} onClick={handleAddByScanCode}>
-                  {scanningCode ? 'Buscando...' : 'Escanear'}
-                </Button>
-              </div>
-            </div>
-          ) : null}
         </div>
 
         <div className="grid gap-3">
@@ -452,9 +372,6 @@ export function ServiceSearch({
                           <Badge variant="outline" className="px-1.5 py-0.5 text-xs">
                             {areaName}
                           </Badge>
-                        ) : null}
-                        {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) ? (
-                          <span className="text-xs text-muted-foreground">Disponible para lector</span>
                         ) : null}
                       </div>
                       {isErythropoietin ? (

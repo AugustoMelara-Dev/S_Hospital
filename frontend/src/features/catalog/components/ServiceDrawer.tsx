@@ -13,7 +13,7 @@ import { ServiceAuditedChangesSummary, auditedServiceChanges, priceValuesDiffer 
 import { ERYTHROPOIETIN_FIXED_PRICE, MIN_CHANGE_REASON_LENGTH, SPECIAL_RULE_ERYTHROPOIETIN, SPECIAL_RULE_NONE, defaultServiceFormValues, serviceSchema, type ServiceFormData } from './serviceDrawerTypes';
 
 type ServiceDraft = { id: number; category_id: number; area_id?: number | null; name: string; price: string; scan_code?: string | null; barcode?: string | null; qr_code?: string | null; taxable: boolean; active: boolean; visible_in_billing?: boolean | null; is_billable?: boolean | null; special_rule_code?: string | null };
-type ServiceDrawerProps = { open: boolean; onOpenChange: (open: boolean) => void; service?: ServiceDraft | null; categories: Array<{ id: number; name: string }>; areas: Array<{ id: number; name: string }>; scannerEnabled?: boolean; onSuccess: () => void };
+type ServiceDrawerProps = { open: boolean; onOpenChange: (open: boolean) => void; service?: ServiceDraft | null; categories: Array<{ id: number; name: string }>; areas: Array<{ id: number; name: string }>; onSuccess: () => void };
 type TextFieldName = keyof Pick<ServiceFormData, 'name' | 'price' | 'price_change_reason' | 'tax_change_reason' | 'availability_change_reason' | 'scan_code' | 'barcode' | 'qr_code'>;
 const optionalCode = (value: string | null | undefined) => value?.trim() || null;
 
@@ -23,7 +23,7 @@ export function catalogValuesForSpecialRule(value: string) {
     : null;
 }
 
-export function ServiceDrawer({ open, onOpenChange, service, categories, areas, scannerEnabled = false, onSuccess }: ServiceDrawerProps) {
+export function ServiceDrawer({ open, onOpenChange, service, categories, areas, onSuccess }: ServiceDrawerProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(open);
@@ -177,8 +177,6 @@ export function ServiceDrawer({ open, onOpenChange, service, categories, areas, 
               {taxChanged ? textField('tax_change_reason', 'Motivo del cambio de impuesto', true) : null}
             </FieldGroup>
           </FieldSet>
-
-          {scannerEnabled ? <FieldSet><FieldLegend>Escáner</FieldLegend><FieldGroup>{textField('scan_code', 'Código de escáner')}{textField('barcode', 'Código de barra')}{textField('qr_code', 'Código QR')}</FieldGroup></FieldSet> : null}
 
           <FieldSet>
             <FieldLegend>Disponibilidad</FieldLegend>

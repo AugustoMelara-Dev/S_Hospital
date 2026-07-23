@@ -496,20 +496,19 @@ describe('ServiceDrawer contract preservation', () => {
         }}
         categories={[{ id: 1, name: 'Laboratorio' }]}
         areas={[{ id: 1, name: 'Laboratorio' }]}
-        scannerEnabled
         onSuccess={noop}
       />,
     );
 
     expect(screen.getByDisplayValue('Hemograma')).toBeInTheDocument();
     expect(screen.getByDisplayValue('275.50')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('LAB-HEM-01')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('1234567890')).toBeInTheDocument();
+    expect(screen.queryByText(/LAB-HEM-01|1234567890/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/escáner|código de barra|código qr/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/visible en caja/i)).toBeChecked();
     expect(screen.getByLabelText(/^facturable$/i)).toBeChecked();
   });
 
-  it('submits scanner, barcode, QR and billing-state flags from the form', async () => {
+  it('keeps scanner fields out of the form and submits empty codes for new services', async () => {
     const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
       id: 12,
       category_id: 1,
@@ -532,16 +531,13 @@ describe('ServiceDrawer contract preservation', () => {
         service={null}
         categories={[{ id: 1, name: 'Laboratorio' }]}
         areas={[{ id: 1, name: 'Laboratorio' }]}
-        scannerEnabled
         onSuccess={noop}
       />,
     );
 
     fireEvent.change(screen.getByLabelText(/^nombre/i), { target: { value: 'Glucosa' } });
     fireEvent.change(screen.getByLabelText(/precio/i), { target: { value: '15.00' } });
-    fireEvent.change(screen.getByLabelText(/código de escáner/i), { target: { value: 'LAB-GLU-001' } });
-    fireEvent.change(screen.getByLabelText(/código de barra/i), { target: { value: '7700000001001' } });
-    fireEvent.change(screen.getByLabelText(/código qr/i), { target: { value: 'QR-LAB-GLU' } });
+    expect(screen.queryByLabelText(/escáner|código de barra|código qr/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText(/visible en caja/i));
     fireEvent.click(screen.getByLabelText(/^facturable$/i));
     fireEvent.click(screen.getByRole('button', { name: /crear/i }));
@@ -549,9 +545,9 @@ describe('ServiceDrawer contract preservation', () => {
     await waitFor(() => {
       expect(saveService).toHaveBeenCalledWith(
         expect.objectContaining({
-          scan_code: 'LAB-GLU-001',
-          barcode: '7700000001001',
-          qr_code: 'QR-LAB-GLU',
+          scan_code: null,
+          barcode: null,
+          qr_code: null,
           visible_in_billing: false,
           is_billable: false,
         }),

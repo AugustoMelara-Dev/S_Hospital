@@ -45,32 +45,33 @@ describe('OperationalRulesView', () => {
   it('loads operational rules without requesting full fiscal settings', async () => {
     render(<OperationalRulesView canEdit onStatus={vi.fn()} />);
 
-    expect(await screen.findByLabelText(/scanner/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/abonos parciales/i)).toBeInTheDocument();
     expect(apiClient.getOperationalSettings).toHaveBeenCalled();
     expect(apiClient.getFiscalSettings).not.toHaveBeenCalled();
   });
 
-  it('renders scanner and partial payments checkboxes', async () => {
+  it('removes scanner configuration and keeps partial payments', async () => {
     render(<OperationalRulesView canEdit onStatus={vi.fn()} />);
 
-    expect(await screen.findByLabelText(/scanner/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/abonos parciales/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/abonos parciales/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/scanner/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/scanner|lector|c[oó]digos internos/i);
   });
 
-  it('submits the toggled flags', async () => {
+  it('submits partial payments while keeping scanner disabled', async () => {
     const updateOperationalSettings = vi.mocked(apiClient.updateOperationalSettings);
     const onStatus = vi.fn();
 
     render(<OperationalRulesView canEdit onStatus={onStatus} />);
 
-    const scanner = await screen.findByLabelText(/scanner/i);
-    fireEvent.click(scanner);
+    const partialPayments = await screen.findByLabelText(/abonos parciales/i);
+    fireEvent.click(partialPayments);
 
     fireEvent.click(screen.getByRole('button', { name: /guardar reglas operativas/i }));
 
     expect(updateOperationalSettings).toHaveBeenCalledWith({
-      scanner_enabled: true,
-      partial_payments_enabled: false,
+      scanner_enabled: false,
+      partial_payments_enabled: true,
     });
     expect(apiClient.updateFiscalSettings).not.toHaveBeenCalled();
     expect(onStatus).toHaveBeenCalledWith({
@@ -102,7 +103,7 @@ describe('OperationalRulesView', () => {
   it('disables inputs without edit permission', async () => {
     render(<OperationalRulesView canEdit={false} onStatus={vi.fn()} />);
 
-    expect(await screen.findByLabelText(/scanner/i)).toBeDisabled();
+    expect(await screen.findByLabelText(/abonos parciales/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /guardar reglas operativas/i })).toBeDisabled();
   });
 });

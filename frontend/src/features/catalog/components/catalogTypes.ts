@@ -47,7 +47,6 @@ export type ServiceCatalogTableProps = {
   onClearFilters: () => void;
   onRetry: () => void;
   onRowActions: ServiceRowActions;
-  scannerEnabled: boolean;
   services: Service[];
   hasActiveFilters: boolean;
   categories: Category[];
@@ -83,7 +82,6 @@ export type ServiceFormSectionProps = {
   categories: Array<{ id: number; name: string }>;
   categoryValue: string;
   isEditing: boolean;
-  isScannerEnabled: boolean;
   onCategoryChange: (value: string) => void;
   onSpecialRuleChange: (value: string) => void;
   onTaxableChange: (checked: boolean) => void;

@@ -1,4 +1,4 @@
-import { createRef, type ComponentProps, type FormEvent } from 'react';
+import { type ComponentProps, type FormEvent } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -219,61 +219,16 @@ describe('ServiceSearch', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/sin servicios encontrados/i);
   });
 
-  it('keeps scanner value, callback and Enter behavior when scanner is enabled', () => {
-    vi.useFakeTimers();
-    try {
-      const onScanCodeChange = vi.fn();
-      const onAddByScanCode = vi.fn();
-      const scannerInputRef = createRef<HTMLInputElement>();
-      renderSearch({
-        scannerEnabled: true,
-        scanCode: 'LAB-001',
-        onScanCodeChange,
-        onAddByScanCode,
-        scannerInputRef,
-      });
-
-      const scanner = screen.getByLabelText(/lector usb o entrada manual/i);
-      expect(scanner).toHaveValue('LAB-001');
-
-      fireEvent.change(scanner, { target: { value: 'LAB-002' } });
-      fireEvent.keyDown(scanner, { key: 'Enter', code: 'Enter' });
-      fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
-
-      expect(onScanCodeChange).toHaveBeenCalledWith('LAB-002');
-      expect(onAddByScanCode).toHaveBeenCalledTimes(1);
-
-      vi.advanceTimersByTime(251);
-      fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
-      expect(onAddByScanCode).toHaveBeenCalledTimes(2);
-    } finally {
-      vi.runOnlyPendingTimers();
-      vi.useRealTimers();
-    }
-  });
-
-  it('keeps scanner controls disabled while a lookup is pending', () => {
+  it('never exposes scanner controls in the billing flow', () => {
     renderSearch({
       scannerEnabled: true,
       scanningCode: true,
       scanCode: 'LAB-001',
     });
 
-    expect(screen.getByLabelText(/lector usb o entrada manual/i)).toBeDisabled();
-    expect(screen.getByRole('button', { name: /buscando/i })).toBeDisabled();
-  });
-
-  it('keeps scanner and filter controls operable', () => {
-    renderSearch({
-      scannerEnabled: true,
-      serviceAreas: [{ id: 3, name: 'Laboratorio', slug: 'laboratorio', active: true }],
-      categories: [{ id: 2, name: 'Imágenes', slug: 'imagenes', active: true, sort_order: 2 }],
-    });
-
-    expect(screen.getByLabelText(/lector usb o entrada manual/i)).toBeEnabled();
-    expect(screen.getByRole('button', { name: /escanear/i })).toBeEnabled();
-    expect(screen.getAllByRole('radio')).not.toHaveLength(0);
-    expect(screen.getByRole('button', { name: 'Limpiar' })).toBeEnabled();
+    expect(screen.queryByLabelText(/lector usb|scanner|c[oó]digo/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /escanear|buscando/i })).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/scanner|lector usb|disponible para lector/i);
   });
 
   it('supports keyboard navigation in category radio groups', async () => {
@@ -305,7 +260,7 @@ describe('ServiceSearch', () => {
       services: [serviceFixture({ scan_code: 'SECRET-SCAN', barcode: 'SECRET-BAR', qr_code: 'SECRET-QR' })],
     });
 
-    expect(screen.getByText(/disponible para lector/i)).toBeInTheDocument();
+    expect(screen.queryByText(/disponible para lector/i)).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SECRET-SCAN|SECRET-BAR|SECRET-QR/);
   });
 
