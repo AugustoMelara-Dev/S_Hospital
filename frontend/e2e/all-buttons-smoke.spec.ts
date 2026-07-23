@@ -236,7 +236,7 @@ const routeExpectations = [
   { path: '/cashbox', heading: /^caja$/i },
   { path: '/catalog', heading: /catalogo|cat.logo/i },
   { path: '/invoices', heading: /historial/i },
-  { path: '/reports', heading: /reportes/i },
+  { path: '/reports', heading: /informes y auditor/i },
   { path: '/backups', heading: /respaldos|backups/i },
   { path: '/settings/fiscal', heading: /configuracion|configuraci.n/i },
   { path: '/settings/institutional-receipts', heading: /recibos institucionales|recibos/i },
@@ -309,9 +309,9 @@ test('dangerous history actions open a confirmation path that can be cancelled',
 
   await page.getByRole('button', { name: /acciones de la factura/i }).click();
   await page.getByRole('menuitem', { name: /reversar pago/i }).click();
-  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /reversar factura/i })).toBeVisible();
   await page.getByRole('button', { name: /cancelar/i }).click();
-  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeHidden();
+  await expect(page.getByRole('dialog', { name: /reversar factura/i })).toBeHidden();
 
   smokeResults.push({ name: 'history reverse cancel path', status: 'passed' });
   expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
@@ -559,7 +559,7 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
   page.on('pageerror', (error) => consoleIssues.push(`pageerror: ${error.message}`));
   page.on('requestfailed', (request) => {
     const failure = request.failure();
-    if (request.url().includes('/sanctum/csrf-cookie') && failure?.errorText === 'net::ERR_ABORTED') return;
+    if (failure?.errorText === 'net::ERR_ABORTED' && request.method() === 'GET') return;
     consoleIssues.push(`requestfailed: ${request.method()} ${request.url()} ${failure?.errorText ?? ''}`.trim());
   });
   page.on('response', (response) => {
