@@ -97,5 +97,7 @@ describe('BrandingView', () => {
       key: 'settings:branding:color',
       level: 'error',
     })));
+    expect(screen.getByRole('button', { name: /verde cl/i })).toHaveAttribute('data-variant', 'default');
+    expect(screen.getByRole('button', { name: /azul/i })).toHaveAttribute('data-variant', 'outline');
   });
 });

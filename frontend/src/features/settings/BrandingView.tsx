@@ -41,6 +41,7 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
 
   async function handleSaveColor(newColor: ColorTheme) {
     if (!canEdit || !settings || savingRef.current) return;
+    const previousColor = colorTheme;
     setColorTheme(newColor);
     savingRef.current = true;
     onStatus({ key: 'settings:branding:color', level: 'info', message: 'Guardando color de marca...', toast: false });
@@ -49,6 +50,7 @@ export function BrandingView({ canEdit, onStatus }: BrandingViewProps) {
       setSettings(updated);
       onStatus({ key: 'settings:branding:color', level: 'success', message: `Color de marca cambiado a ${COLOR_THEMES[newColor].name}.` });
     } catch (err) {
+      setColorTheme(previousColor);
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo guardar el color.'));
       onStatus({ key: 'settings:branding:color', level: 'error', message });
     } finally {
