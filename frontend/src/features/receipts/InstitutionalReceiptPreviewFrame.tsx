@@ -40,7 +40,7 @@ export function InstitutionalReceiptPreviewFrame({
         title={`Vista previa del recibo institucional ${receiptNumber}`}
         srcDoc={preview.data}
         sandbox=""
-        className="institutional-receipt-preview-frame w-full border border-operational-border bg-white"
+        className="institutional-receipt-preview-frame w-full border border-operational-border bg-receipt-paper"
       />
     </div>
   );
