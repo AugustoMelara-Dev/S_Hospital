@@ -20,7 +20,7 @@ describe('InstitutionalReceiptPreviewFrame', () => {
 
     const frame = await screen.findByTitle('Vista previa del recibo institucional REC-A-00000042');
     expect(frame).toHaveAttribute('srcdoc', html);
-    expect(frame).toHaveClass('border', 'bg-white');
+    expect(frame).toHaveClass('border', 'bg-receipt-paper');
     expect(frame).not.toHaveClass('rounded-md', 'shadow-sm');
     expect(frame.parentElement).toHaveClass('border', 'bg-muted/20', 'p-4');
     expect(institutionalReceipts.previewHtml).toHaveBeenCalledWith(42);

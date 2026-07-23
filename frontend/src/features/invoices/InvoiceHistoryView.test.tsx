@@ -1281,7 +1281,7 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(onStatus).toHaveBeenCalledWith({
       key: 'invoice-history:receipt-download',
       level: 'error',
-      message: expect.stringMatching(/LAN timeout|no se pudo descargar/i),
+      message: expect.stringMatching(/tardando más de lo esperado|intente nuevamente/i),
       toast: false,
     }));
     expect(registerPrint).not.toHaveBeenCalled();

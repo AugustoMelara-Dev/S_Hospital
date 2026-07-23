@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 
@@ -90,8 +91,7 @@ describe('ReportsCash', () => {
     });
     expect(apiClient.getCashSessions).toHaveBeenCalledTimes(1);
     expect((await screen.findAllByText(/Caja Principal/i)).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('button', { name: /exportar excel/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /pdf caja/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^exportar$/i })).not.toBeInTheDocument();
   });
 
   it('lets the cashier open a recent cash session report without typing an id', async () => {
@@ -151,8 +151,7 @@ describe('ReportsCash', () => {
     fireEvent.change(screen.getByLabelText(/n.mero de caja/i), { target: { value: '12' } });
     fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
 
-    const exportButton = await screen.findByRole('button', { name: /exportar excel/i });
-    fireEvent.click(exportButton);
+    await chooseExportOption(/libro de excel/i);
 
     await waitFor(() => {
       expect(downloadCashSessionReportExcelMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -185,8 +184,7 @@ describe('ReportsCash', () => {
     fireEvent.change(screen.getByLabelText(/n.mero de caja/i), { target: { value: '12' } });
     fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
 
-    const pdfButton = await screen.findByRole('button', { name: /pdf caja/i });
-    fireEvent.click(pdfButton);
+    await chooseExportOption(/documento pdf/i);
 
     await waitFor(() => {
       expect(downloadCashSessionReportPdfMock).toHaveBeenCalledWith({
@@ -207,8 +205,7 @@ describe('ReportsCash', () => {
     fireEvent.change(screen.getByLabelText(/n.mero de caja/i), { target: { value: '12' } });
     fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
 
-    const exportButton = await screen.findByRole('button', { name: /exportar excel/i });
-    fireEvent.click(exportButton);
+    await chooseExportOption(/libro de excel/i);
 
     await waitFor(() => {
       expect(downloadCashSessionReportExcelMock).toHaveBeenCalledTimes(1);
@@ -228,14 +225,14 @@ describe('ReportsCash', () => {
     fireEvent.change(screen.getByLabelText(/n.mero de caja/i), { target: { value: '12' } });
     fireEvent.click(screen.getByRole('button', { name: /^ver caja$/i }));
 
-    const exportButton = await screen.findByRole('button', { name: /exportar excel/i });
-    fireEvent.click(exportButton);
+    const exportButton = await screen.findByRole('button', { name: /^exportar$/i });
+    await chooseExportOption(/libro de excel/i);
 
     expect(await screen.findByText(/no se pudo exportar excel/i)).toBeInTheDocument();
     expect(screen.queryByText(/no se pudo cargar la caja/i)).not.toBeInTheDocument();
     expect(exportButton).toBeEnabled();
 
-    fireEvent.click(exportButton);
+    await chooseExportOption(/libro de excel/i);
 
     await waitFor(() => expect(downloadCashSessionReportExcelMock).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(downloadBlob).toHaveBeenCalledWith(expect.any(Blob), 'reporte-caja-12.xlsx'));
@@ -266,11 +263,11 @@ describe('ReportsCash', () => {
     renderCash({ canExport: true });
     fireEvent.change(screen.getByLabelText(/n.mero de caja/i), { target: { value: '12' } });
     fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
-    expect(await screen.findByRole('button', { name: /exportar excel/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^exportar$/i })).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/n.mero de caja/i), { target: { value: '13' } });
 
-    expect(screen.queryByRole('button', { name: /exportar excel/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^exportar$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: /alcance del reporte de caja/i })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
@@ -298,6 +295,13 @@ describe('ReportsCash', () => {
     });
   });
 });
+
+async function chooseExportOption(name: RegExp) {
+  const user = userEvent.setup();
+  const trigger = await screen.findByRole('button', { name: /^exportar$/i });
+  await user.click(trigger);
+  await user.click(await screen.findByRole('menuitem', { name }));
+}
 
 function buildCashSessionReport(id = 12): CashSessionReport {
   return {
