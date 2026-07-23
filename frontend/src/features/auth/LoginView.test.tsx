@@ -29,15 +29,14 @@ describe('LoginView', () => {
     expect(screen.getByRole('button', { name: /iniciar sesión/i })).toBeInTheDocument();
   });
 
-  it('renders local institutional reassurance without changing the login controls', () => {
+  it('keeps the login focused on identity and credentials without technical copy', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
     expect(screen.queryByText(/identidad provisional/i)).not.toBeInTheDocument();
-    expect(screen.getByText('Acceso seguro')).toBeVisible();
-    expect(screen.getByText('Disponible en la red del hospital')).toBeVisible();
-    expect(screen.getByText('Sus datos permanecen en el hospital.')).toBeVisible();
-    expect(screen.queryByText(/infraestructura|módulos autorizados|administración/i)).not.toBeInTheDocument();
-    expect(document.body).not.toHaveTextContent(/clientes LAN|sistema hospitalario LAN|offline\/LAN/i);
+    expect(screen.queryByText(/acceso seguro|red local|estación de trabajo|caja y facturación, listas/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/infraestructura|módulos autorizados|administración|LAN|offline/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Ingrese con su usuario y contraseña.')).toBeVisible();
+    expect(screen.getByTestId('login-card')).toHaveClass('max-w-md');
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveAttribute('autocomplete', 'username');
     expect(screen.getByLabelText(/^contrase/i)).toHaveAttribute('autocomplete', 'current-password');
     expect(screen.queryByText(/operación financiera clara/i)).not.toBeInTheDocument();
