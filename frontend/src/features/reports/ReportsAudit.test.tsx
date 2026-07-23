@@ -18,6 +18,9 @@ const oneEntryAuditPage: AuditLogPage = {
       action: 'invoices.void',
       result: 'success',
       reason: 'error operativo',
+      entity_type: 'App\\Models\\Invoice',
+      entity_id: 77,
+      ip: '192.168.1.24',
       created_at: '2026-06-30T15:00:00.000000Z',
       user: { id: 1, name: 'Cajero Demo', username: 'cajero' },
     },
@@ -233,6 +236,9 @@ describe('ReportsAudit', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/factura anulada/i)).toBeInTheDocument();
+      expect(screen.getByText('Factura · registro 77')).toBeInTheDocument();
+      expect(screen.getByText('192.168.1.24')).toBeInTheDocument();
+      expect(screen.getByText('Completado')).toHaveAttribute('data-variant', 'outline');
       expect(document.body.textContent).not.toMatch(/invoices\.void|Cajero Demo \(cajero\)/i);
     });
   });
@@ -265,6 +271,7 @@ describe('ReportsAudit', () => {
     renderView();
 
     expect(await screen.findByText(/con error/i)).toBeInTheDocument();
+    expect(screen.getByText(/con error/i)).toHaveAttribute('data-variant', 'destructive');
     expect(document.body.textContent).not.toMatch(/\bfailed\b/i);
   });
 

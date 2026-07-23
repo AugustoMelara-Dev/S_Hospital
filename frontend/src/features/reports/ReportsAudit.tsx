@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { SearchIcon, TriangleAlertIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -19,8 +20,62 @@ import { computePresetRange, parseReportDate } from './components/reportDateRang
 import { ReportScope } from './components/ReportScope';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
-type AuditLogEntry = { id: number; action: string; created_at: string; reason?: string | null; result?: string; user?: { name: string } | null };
-function AuditLogList({ entries }: { entries: AuditLogEntry[] }) { const columns: Array<InstitutionalColumn<AuditLogEntry>> = [{ accessorKey: 'created_at', header: 'Fecha', cell: ({ row }) => formatLocalizedDateTime(row.original.created_at) }, { accessorKey: 'action', header: 'Acción' }, { id: 'user', header: 'Usuario', cell: ({ row }) => row.original.user?.name ?? 'Sistema' }, { accessorKey: 'reason', header: 'Motivo', cell: ({ row }) => row.original.reason || 'Sin motivo' }, { accessorKey: 'result', header: 'Resultado', cell: ({ row }) => row.original.result === 'error' ? 'Con error' : row.original.result || 'Completado' }]; return <DataTable ariaLabel="Bitácora de auditoría" data={entries} columns={columns} getRowId={(entry) => String(entry.id)} emptyTitle="Sin entradas de auditoría" />; }
+type AuditLogEntry = {
+  id: number;
+  action: string;
+  created_at: string;
+  reason?: string | null;
+  result?: string;
+  ip?: string | null;
+  entity_type?: string | null;
+  entity_id?: number | string | null;
+  user?: { name: string } | null;
+};
+
+function AuditLogList({ entries }: { entries: AuditLogEntry[] }) {
+  const columns: Array<InstitutionalColumn<AuditLogEntry>> = [
+    {
+      accessorKey: 'created_at',
+      header: 'Fecha',
+      cell: ({ row }) => <span className="whitespace-nowrap">{formatLocalizedDateTime(row.original.created_at)}</span>,
+    },
+    {
+      accessorKey: 'action',
+      header: 'Evento',
+      cell: ({ row }) => (
+        <div className="min-w-44">
+          <p className="font-medium text-foreground">{row.original.action}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{row.original.reason || 'Sin motivo registrado'}</p>
+        </div>
+      ),
+    },
+    {
+      id: 'user',
+      header: 'Responsable',
+      cell: ({ row }) => row.original.user?.name ?? 'Sistema',
+    },
+    {
+      id: 'context',
+      header: 'Registro',
+      cell: ({ row }) => (
+        <div className="min-w-36 text-sm">
+          <p>{auditEntityLabel(row.original.entity_type, row.original.entity_id)}</p>
+          {row.original.ip ? <p className="mt-1 font-mono text-xs text-muted-foreground">{row.original.ip}</p> : null}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'result',
+      header: 'Resultado',
+      cell: ({ row }) => {
+        const failed = row.original.result === 'error';
+        return <Badge variant={failed ? 'destructive' : 'outline'}>{failed ? 'Con error' : 'Completado'}</Badge>;
+      },
+    },
+  ];
+
+  return <DataTable ariaLabel="Bitácora de auditoría" data={entries} columns={columns} getRowId={(entry) => String(entry.id)} emptyTitle="Sin entradas de auditoría" />;
+}
 
 type AuditLogFilters = {
   action: string;
@@ -386,8 +441,25 @@ function toSafeAuditEntry(entry: ApiAuditLogEntry): AuditLogEntry {
     created_at: entry.created_at ?? '',
     reason: typeof entry.reason === 'string' ? entry.reason : null,
     result: entry.result === 'failed' ? 'error' : entry.result ?? undefined,
+    ip: entry.ip ?? null,
+    entity_type: entry.entity_type ?? null,
+    entity_id: entry.entity_id ?? null,
     user: entry.user?.name ? { name: entry.user.name } : null,
   };
+}
+
+function auditEntityLabel(entityType: string | null | undefined, entityId: number | string | null | undefined): string {
+  if (!entityId) return 'Sin referencia';
+
+  const normalized = (entityType ?? '').toLowerCase();
+  if (normalized.includes('invoice')) return `Factura · registro ${entityId}`;
+  if (normalized.includes('payment')) return `Pago · registro ${entityId}`;
+  if (normalized.includes('backup')) return `Respaldo · registro ${entityId}`;
+  if (normalized.includes('user')) return `Usuario · registro ${entityId}`;
+  if (normalized.includes('service')) return `Servicio · registro ${entityId}`;
+  if (normalized.includes('cash')) return `Caja · registro ${entityId}`;
+
+  return `Registro ${entityId}`;
 }
 
 function auditActionLabel(action: string): string {
