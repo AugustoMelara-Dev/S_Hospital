@@ -25,15 +25,9 @@ type ServiceSearchProps = {
   onCategoryChange: (id: number | 'all' | undefined) => void;
   search: string;
   onSearchChange: (value: string) => void;
-  scanCode: string;
-  onScanCodeChange: (value: string) => void;
   onAddService: (service: Service) => void;
-  onAddByScanCode: () => void | Promise<void>;
   searchInputRef?: RefObject<HTMLInputElement | null>;
-  scannerInputRef?: RefObject<HTMLInputElement | null>;
   loading?: boolean;
-  scanningCode?: boolean;
-  scannerEnabled?: boolean;
   error?: string;
   onRetry?: () => void;
   cartItems?: CartItem[];

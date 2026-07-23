@@ -12,7 +12,6 @@ describe('newInvoiceReducer', () => {
     expect(state).toMatchObject<Partial<NewInvoiceState>>({
       patientName: '',
       search: '',
-      scanCode: '',
       cartItems: [],
       paymentMethod: 'cash',
       receiptWidth: 'half_letter',
@@ -33,7 +32,6 @@ describe('newInvoiceReducer', () => {
       categories,
       serviceAreas,
       services,
-      scannerEnabled: true,
       partialPaymentsEnabled: true,
       loadingServices: true,
     };
@@ -47,7 +45,6 @@ describe('newInvoiceReducer', () => {
       categories,
       serviceAreas,
       services,
-      scannerEnabled: true,
       partialPaymentsEnabled: true,
       loadingServices: false,
       loadedCashSession: cashSession,
@@ -208,7 +205,6 @@ describe('newInvoiceReducer', () => {
       ...getInitialNewInvoiceState(cashSession),
       patientName: 'Juan',
       search: 'demo',
-      scanCode: 'X-1',
       selectedCategoryId: 1,
     };
 
@@ -218,7 +214,6 @@ describe('newInvoiceReducer', () => {
       cartItems: [],
       patientName: '',
       search: '',
-      scanCode: '',
       selectedCategoryId: undefined,
       loadedCashSession: cashSession,
     });

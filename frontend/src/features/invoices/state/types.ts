@@ -5,7 +5,6 @@ export interface NewInvoiceState {
   patientName: string;
   patientError: string | undefined;
   search: string;
-  scanCode: string;
   categories: Category[];
   serviceAreas: ServiceArea[];
   services: Service[];
@@ -24,7 +23,6 @@ export interface NewInvoiceState {
   completedPaymentReceivedAmount: string | null;
   completedPaymentChangeAmount: string | null;
   receiptWidth: ReceiptData['width'];
-  scannerEnabled: boolean;
   partialPaymentsEnabled: boolean;
   receipt: ReceiptData | null;
   institutionalReceipt: InstitutionalReceipt | null;
@@ -39,7 +37,6 @@ export interface NewInvoiceState {
   showReceipt: boolean;
   showClearConfirm: boolean;
   loadingServices: boolean;
-  scanningCode: boolean;
   submitting: boolean;
   paying: boolean;
 }
@@ -48,7 +45,6 @@ export type NewInvoiceAction =
   | { type: 'SET_PATIENT_NAME'; payload: string }
   | { type: 'SET_PATIENT_ERROR'; payload: string | undefined }
   | { type: 'SET_SEARCH'; payload: string }
-  | { type: 'SET_SCAN_CODE'; payload: string }
   | { type: 'SET_CATEGORIES'; payload: Category[] }
   | { type: 'SET_SERVICE_AREAS'; payload: ServiceArea[] }
   | { type: 'SET_SERVICES'; payload: Service[] }
@@ -66,7 +62,6 @@ export type NewInvoiceAction =
   | { type: 'SET_PAYMENT_ERROR'; payload: string | null }
   | { type: 'SET_COMPLETED_PAYMENT_CASH'; payload: { receivedAmount: string | null; changeAmount: string | null } }
   | { type: 'SET_RECEIPT_WIDTH'; payload: ReceiptData['width'] }
-  | { type: 'SET_SCANNER_ENABLED'; payload: boolean }
   | { type: 'SET_PARTIAL_PAYMENTS_ENABLED'; payload: boolean }
   | { type: 'SET_RECEIPT'; payload: ReceiptData | null }
   | { type: 'SET_INSTITUTIONAL_RECEIPT'; payload: InstitutionalReceipt | null }
@@ -81,7 +76,6 @@ export type NewInvoiceAction =
   | { type: 'SET_SHOW_RECEIPT'; payload: boolean }
   | { type: 'SET_SHOW_CLEAR_CONFIRM'; payload: boolean }
   | { type: 'SET_LOADING_SERVICES'; payload: boolean }
-  | { type: 'SET_SCANNING_CODE'; payload: boolean }
   | { type: 'SET_SUBMITTING'; payload: boolean }
   | { type: 'SET_PAYING'; payload: boolean }
   | { type: 'RESET_FORM'; payload: { loadedCashSession: CashSession | null } }
@@ -99,7 +93,6 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     patientName: '',
     patientError: undefined,
     search: '',
-    scanCode: '',
     categories: [],
     serviceAreas: [],
     services: [],
@@ -118,7 +111,6 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     completedPaymentReceivedAmount: null,
     completedPaymentChangeAmount: null,
     receiptWidth: 'half_letter',
-    scannerEnabled: false,
     partialPaymentsEnabled: false,
     receipt: null,
     institutionalReceipt: null,
@@ -133,7 +125,6 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     showReceipt: false,
     showClearConfirm: false,
     loadingServices: true,
-    scanningCode: false,
     submitting: false,
     paying: false,
   };

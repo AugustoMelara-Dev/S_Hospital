@@ -4,7 +4,6 @@ import type { NewInvoiceAction } from '../state/types';
 type NewInvoiceShortcutState = {
   patientName: string;
   search: string;
-  scanCode: string;
   cartItemsLength: number;
   showConfirmation: boolean;
   showPayment: boolean;
@@ -19,7 +18,6 @@ type UseNewInvoiceShortcutsOptions = {
   onEmit: () => void;
   onValidate: () => boolean;
   patientInputRef: RefObject<HTMLInputElement | null>;
-  scannerInputRef: RefObject<HTMLInputElement | null>;
   searchInputRef: RefObject<HTMLInputElement | null>;
   state: NewInvoiceShortcutState;
 };
@@ -30,7 +28,6 @@ export function useNewInvoiceShortcuts({
   onEmit,
   onValidate,
   patientInputRef,
-  scannerInputRef,
   searchInputRef,
   state,
 }: UseNewInvoiceShortcutsOptions) {
@@ -48,15 +45,11 @@ export function useNewInvoiceShortcuts({
         e.preventDefault();
         searchInputRef.current?.focus();
       }
-      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        scannerInputRef.current?.focus();
-      }
       if (e.key === 'Escape') {
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
         if (state.showConfirmation || state.showPayment || state.showSuccess || state.showReceipt) return;
         if (target.closest('[data-dialog-content]')) return;
-        if (state.patientName || state.search || state.scanCode || state.cartItemsLength > 0) {
+        if (state.patientName || state.search || state.cartItemsLength > 0) {
           e.preventDefault();
           dispatch({ type: 'SET_SHOW_CLEAR_CONFIRM', payload: true });
         }
@@ -82,11 +75,9 @@ export function useNewInvoiceShortcuts({
     onEmit,
     onValidate,
     patientInputRef,
-    scannerInputRef,
     searchInputRef,
     state.cartItemsLength,
     state.patientName,
-    state.scanCode,
     state.search,
     state.showClearConfirm,
     state.showConfirmation,

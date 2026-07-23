@@ -10,8 +10,6 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, patientError: action.payload };
     case 'SET_SEARCH':
       return { ...state, search: action.payload };
-    case 'SET_SCAN_CODE':
-      return { ...state, scanCode: action.payload };
     case 'SET_CATEGORIES':
       return { ...state, categories: action.payload };
     case 'SET_SERVICE_AREAS':
@@ -57,8 +55,6 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       };
     case 'SET_RECEIPT_WIDTH':
       return { ...state, receiptWidth: action.payload };
-    case 'SET_SCANNER_ENABLED':
-      return { ...state, scannerEnabled: action.payload };
     case 'SET_PARTIAL_PAYMENTS_ENABLED':
       return { ...state, partialPaymentsEnabled: action.payload };
     case 'SET_RECEIPT':
@@ -91,8 +87,6 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, showClearConfirm: action.payload };
     case 'SET_LOADING_SERVICES':
       return { ...state, loadingServices: action.payload };
-    case 'SET_SCANNING_CODE':
-      return { ...state, scanningCode: action.payload };
     case 'SET_SUBMITTING':
       return { ...state, submitting: action.payload };
     case 'SET_PAYING':
@@ -159,7 +153,6 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         institutionalReceiptRecoveryMessage: null,
         pointOfSaleLoadError: null,
         search: '',
-        scanCode: '',
         selectedAreaId: undefined,
         selectedCategoryId: undefined,
       };
@@ -177,7 +170,6 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         services: state.services,
         servicePage: state.servicePage,
         hasMoreServices: state.hasMoreServices,
-        scannerEnabled: state.scannerEnabled,
         partialPaymentsEnabled: state.partialPaymentsEnabled,
         loadingServices: false,
       };

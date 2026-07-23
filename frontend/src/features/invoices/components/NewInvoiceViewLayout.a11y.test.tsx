@@ -33,9 +33,7 @@ describe('NewInvoiceViewLayout accessibility', () => {
           onAreaChange={() => {}}
           onCategoryChange={() => {}}
           onSearchChange={() => {}}
-          onScanCodeChange={() => {}}
           onAddService={() => {}}
-          onAddByScanCode={() => {}}
           onUpdateQuantity={() => {}}
           onUpdateDialysisPrescription={() => {}}
           onRemoveItem={() => {}}
@@ -57,7 +55,6 @@ describe('NewInvoiceViewLayout accessibility', () => {
           onClearConfirmChange={() => {}}
           patientInputRef={{ current: null }}
           searchInputRef={{ current: null }}
-          scannerInputRef={{ current: null }}
         />
       </MemoryRouter>,
     );

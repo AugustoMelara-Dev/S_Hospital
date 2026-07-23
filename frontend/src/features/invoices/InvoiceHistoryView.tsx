@@ -43,8 +43,6 @@ type InvoiceHistoryViewProps = {
   onStatus: OperationalStatusReporter;
 };
 
-const today = localDateString();
-
 function invoicePatientNameLabel(invoice: Invoice | null) {
   const patientName = invoice?.patient_name?.trim();
   return patientName ? patientName : 'Paciente sin nombre';
@@ -181,8 +179,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
   function clearFilters() {
     const clearedFilters: InvoiceFilters = {
-      date_from: today,
-      date_to: today,
+      date_from: '',
+      date_to: '',
       status: '',
       patient: '',
       invoice_number: '',
@@ -762,8 +760,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     filters.status ||
     filters.balance_state ||
     filters.receipt_state ||
-    (filters.date_from && filters.date_from !== today) ||
-    (filters.date_to && filters.date_to !== today)
+    filters.date_from ||
+    filters.date_to
   );
   const reconciliationCriterion = reconciliationCriterionFromFilters(filters);
 
@@ -1218,8 +1216,8 @@ function filtersFromSearchParams(searchParams: URLSearchParams): InvoiceFilters 
   const hasReconciliationCriterion = hasPendingBalanceCriterion || hasMissingReceiptCriterion;
 
   return {
-    date_from: searchParams.get('date_from') || (hasReconciliationCriterion ? '' : today),
-    date_to: searchParams.get('date_to') || (hasReconciliationCriterion ? '' : today),
+    date_from: searchParams.get('date_from') ?? '',
+    date_to: searchParams.get('date_to') ?? '',
     status: (searchParams.get('status') ?? '') as InvoiceFilters['status'],
     balance_state: hasPendingBalanceCriterion ? 'pending' : '',
     receipt_state: hasMissingReceiptCriterion ? 'missing' : '',
@@ -1241,12 +1239,11 @@ function positiveIntegerFromSearchParam(value: string | null, fallback: number):
 
 function searchParamsFromFilters(filters: InvoiceFilters): Record<string, string> {
   const params: Record<string, string> = {};
-  const hasReconciliationCriterion = reconciliationCriterionFromFilters(filters) !== null;
 
-  if (filters.date_from && (filters.date_from !== today || hasReconciliationCriterion)) {
+  if (filters.date_from) {
     params.date_from = filters.date_from;
   }
-  if (filters.date_to && (filters.date_to !== today || hasReconciliationCriterion)) {
+  if (filters.date_to) {
     params.date_to = filters.date_to;
   }
   if (filters.status) params.status = filters.status;

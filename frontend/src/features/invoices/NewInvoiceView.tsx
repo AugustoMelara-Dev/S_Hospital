@@ -54,7 +54,6 @@ export function NewInvoiceView({
   const queryClient = useQueryClient();
   const patientInputRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const scannerInputRef = useRef<HTMLInputElement | null>(null);
   const emitConfirmationInFlightRef = useRef(false);
   const submitInvoiceInFlightRef = useRef(false);
   const submitInvoiceIdempotencyKeyRef = useRef<string | null>(null);
@@ -64,7 +63,6 @@ export function NewInvoiceView({
   const submitPaymentIdempotencySignatureRef = useRef<string | null>(null);
   const receiptGenerationIdempotencyKeyRef = useRef<string | null>(null);
   const receiptGenerationIdempotencySignatureRef = useRef<string | null>(null);
-  const scanCodeInFlightRef = useRef(false);
   const serviceSearchAbortRef = useRef<AbortController | null>(null);
   const serviceSearchRequestIdRef = useRef(0);
   const pointOfSaleLoadInFlightRef = useRef(false);
@@ -95,7 +93,6 @@ export function NewInvoiceView({
     if (!operationalSettings) {
       return;
     }
-    dispatch({ type: 'SET_SCANNER_ENABLED', payload: operationalSettings.scanner_enabled === true });
     dispatch({ type: 'SET_PARTIAL_PAYMENTS_ENABLED', payload: operationalSettings.partial_payments_enabled === true });
   }, [operationalSettings]);
 
@@ -131,12 +128,10 @@ export function NewInvoiceView({
     onEmit: handleEmitClick,
     onValidate: validateForm,
     patientInputRef,
-    scannerInputRef,
     searchInputRef,
     state: {
       patientName: state.patientName,
       search: state.search,
-      scanCode: state.scanCode,
       cartItemsLength: state.cartItems.length,
       showConfirmation: state.showConfirmation,
       showPayment: state.showPayment,
@@ -256,52 +251,6 @@ export function NewInvoiceView({
       dispatch({ type: 'CLEAR_SUCCESS_MESSAGE', payload: message });
     }, 2200);
     dispatch({ type: 'ADD_TO_CART', payload: service });
-  }
-
-  async function addByScanCode() {
-    if (scanCodeInFlightRef.current) return;
-
-    const code = state.scanCode.trim();
-    const refocusScanner = () => window.setTimeout(() => scannerInputRef.current?.focus(), 0);
-    if (code === '') {
-      const message = 'Ingrese o escanee un código.';
-      dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-      onStatus({ message, level: 'warning', key: 'billing-service-added', toast: false });
-      refocusScanner();
-      return;
-    }
-    scanCodeInFlightRef.current = true;
-    dispatch({ type: 'SET_SCANNING_CODE', payload: true });
-    try {
-      const [service] = await apiClient.getServices({ code, active: true, billing: true, perPage: 1 });
-      if (!service) {
-        const message = 'No se encontró servicio activo para este código.';
-        dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-        onStatus({ message, level: 'warning', key: 'billing-service-added', toast: false });
-        refocusScanner();
-        return;
-      }
-      if (!service.active) {
-        const message = 'El servicio esta inactivo y no puede facturarse.';
-        dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-        onStatus({ message, level: 'warning', key: 'billing-service-added', toast: false });
-        refocusScanner();
-        return;
-      }
-      addToCart(service);
-      dispatch({ type: 'SET_SCAN_CODE', payload: '' });
-      dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
-      onStatus({ message: `Servicio agregado por código: ${service.name}.`, level: 'success', key: 'billing-service-added', toast: false });
-      refocusScanner();
-    } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo buscar el código escaneado.');
-      dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-      onStatus({ message, level: 'error', key: 'billing-service-added', toast: false });
-      refocusScanner();
-    } finally {
-      scanCodeInFlightRef.current = false;
-      dispatch({ type: 'SET_SCANNING_CODE', payload: false });
-    }
   }
 
   function updateQuantity(index: number, quantity: string) {
@@ -663,9 +612,7 @@ export function NewInvoiceView({
       onAreaChange={(val) => dispatch({ type: 'SET_SELECTED_AREA_ID', payload: val })}
       onCategoryChange={(val) => dispatch({ type: 'SET_SELECTED_CATEGORY_ID', payload: val })}
       onSearchChange={(val) => dispatch({ type: 'SET_SEARCH', payload: val })}
-      onScanCodeChange={(val) => dispatch({ type: 'SET_SCAN_CODE', payload: val })}
       onAddService={addToCart}
-      onAddByScanCode={addByScanCode}
       onUpdateQuantity={updateQuantity}
       onUpdateDialysisPrescription={updateDialysisPrescription}
       onRemoveItem={removeItem}
@@ -699,7 +646,6 @@ export function NewInvoiceView({
       onClearConfirmChange={(val) => dispatch({ type: 'SET_SHOW_CLEAR_CONFIRM', payload: val })}
       patientInputRef={patientInputRef}
       searchInputRef={searchInputRef}
-      scannerInputRef={scannerInputRef}
     />
   );
 }

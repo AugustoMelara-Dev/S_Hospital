@@ -36,9 +36,7 @@ export type NewInvoiceLayoutProps = {
   onAreaChange: (val: number | 'all' | undefined) => void;
   onCategoryChange: (val: number | 'all' | undefined) => void;
   onSearchChange: (val: string) => void;
-  onScanCodeChange: (val: string) => void;
   onAddService: (service: Service) => void;
-  onAddByScanCode: () => void | Promise<void>;
   onUpdateQuantity: (index: number, quantity: string) => void;
   onUpdateDialysisPrescription: (index: number, checked: boolean) => void;
   onRemoveItem: (index: number) => void;
@@ -63,7 +61,6 @@ export type NewInvoiceLayoutProps = {
   onClearConfirmChange: (val: boolean) => void;
   patientInputRef: RefObject<HTMLInputElement | null>;
   searchInputRef: RefObject<HTMLInputElement | null>;
-  scannerInputRef: RefObject<HTMLInputElement | null>;
 };
 
 export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
@@ -88,9 +85,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onAreaChange,
     onCategoryChange,
     onSearchChange,
-    onScanCodeChange,
     onAddService,
-    onAddByScanCode,
     onUpdateQuantity,
     onUpdateDialysisPrescription,
     onRemoveItem,
@@ -115,7 +110,6 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onClearConfirmChange,
     patientInputRef,
     searchInputRef,
-    scannerInputRef,
   } = props;
   const postedPayments = state.issuedInvoice?.payments?.filter((payment) => payment.status === 'posted') ?? [];
   const latestPayment = paymentResult ?? postedPayments[postedPayments.length - 1];
@@ -238,15 +232,9 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
               onCategoryChange={onCategoryChange}
               search={state.search}
               onSearchChange={onSearchChange}
-              scanCode={state.scanCode}
-              onScanCodeChange={onScanCodeChange}
               onAddService={onAddService}
-              onAddByScanCode={onAddByScanCode}
               searchInputRef={searchInputRef}
-              scannerInputRef={scannerInputRef}
               loading={state.loadingServices}
-              scanningCode={state.scanningCode}
-              scannerEnabled={state.scannerEnabled}
               error={state.pointOfSaleLoadError ?? undefined}
               onRetry={onRetryLoad}
               cartItems={state.cartItems}

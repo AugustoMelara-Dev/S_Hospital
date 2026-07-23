@@ -23,7 +23,6 @@ describe('ServiceSearch', () => {
 
   it('keeps normal service search free of scanner and internal code language', () => {
     renderSearch({
-      scannerEnabled: false,
       search: '',
       selectedCategoryId: undefined,
       selectedAreaId: undefined,
@@ -221,9 +220,6 @@ describe('ServiceSearch', () => {
 
   it('never exposes scanner controls in the billing flow', () => {
     renderSearch({
-      scannerEnabled: true,
-      scanningCode: true,
-      scanCode: 'LAB-001',
     });
 
     expect(screen.queryByLabelText(/lector usb|scanner|c[oó]digo/i)).not.toBeInTheDocument();
@@ -255,7 +251,6 @@ describe('ServiceSearch', () => {
 
   it('does not expose hidden barcode or QR values in service results', () => {
     renderSearch({
-      scannerEnabled: true,
       search: 'glu',
       services: [serviceFixture({ scan_code: 'SECRET-SCAN', barcode: 'SECRET-BAR', qr_code: 'SECRET-QR' })],
     });
@@ -320,10 +315,7 @@ function defaultRender(overrides: Partial<ComponentProps<typeof ServiceSearch>> 
       onCategoryChange={vi.fn()}
       search=""
       onSearchChange={vi.fn()}
-      scanCode=""
-      onScanCodeChange={vi.fn()}
       onAddService={vi.fn()}
-      onAddByScanCode={vi.fn()}
       {...overrides}
     />
   );

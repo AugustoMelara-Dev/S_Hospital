@@ -98,6 +98,21 @@ describe('InvoiceHistoryView', () => {
     expect(screen.getByRole('cell', { name: 'L 80.00' })).toHaveAttribute('data-numeric', 'true');
   });
 
+  it('loads recent history without an implicit daily filter', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 10, total: 0 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(getInvoices).toHaveBeenCalled());
+
+    const query = getInvoices.mock.calls[0]![0]!;
+    expect(query.date_from).toBeUndefined();
+    expect(query.date_to).toBeUndefined();
+  });
+
   it('keeps the cached invoice grid visible while a background refresh is pending', async () => {
     const cachedResponse = {
       data: [invoiceFixture({ patient_name: 'Paciente Cache Visible' })],

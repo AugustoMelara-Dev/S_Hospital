@@ -32,9 +32,7 @@ function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceV
         onAreaChange={noop}
         onCategoryChange={noop}
         onSearchChange={noop}
-        onScanCodeChange={noop}
         onAddService={noop}
-        onAddByScanCode={noop}
         onUpdateQuantity={noop}
         onUpdateDialysisPrescription={noop}
         onRemoveItem={noop}
@@ -56,7 +54,6 @@ function renderLayout(overrides: Partial<React.ComponentProps<typeof NewInvoiceV
         onClearConfirmChange={noop}
         patientInputRef={createRef<HTMLInputElement>()}
         searchInputRef={createRef<HTMLInputElement>()}
-        scannerInputRef={createRef<HTMLInputElement>()}
         {...overrides}
       />
     </MemoryRouter>,
@@ -143,7 +140,7 @@ describe('NewInvoiceViewLayout', () => {
     });
 
     expect(screen.getByLabelText(/nombre del paciente/i)).toHaveValue('Maria Lopez');
-    expect(screen.getByRole('table', { name: /cuenta actual/i })).toContainElement(screen.getByText('Hemograma'));
+    expect(screen.getByRole('list', { name: /cuenta actual/i })).toContainElement(screen.getByText('Hemograma'));
     expect(container.querySelectorAll('[data-billing-region]')).toHaveLength(3);
   });
 

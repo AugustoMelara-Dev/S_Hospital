@@ -99,7 +99,7 @@ describe('FiscalSettingsView (separated sections)', () => {
     expect(screen.getByRole('heading', { level: 1, name: /configuraci[oó]n hospitalaria/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /numeraci[oó]n/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /operativa/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /^marca$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^marca$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /^recibos$/i })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /administrar recibos/i })).toHaveAttribute(
       'href',
@@ -158,7 +158,7 @@ describe('FiscalSettingsView (separated sections)', () => {
     fireEvent.mouseDown(operationalTab);
     fireEvent.click(operationalTab);
 
-    expect(await screen.findByLabelText(/scanner/i)).not.toBeDisabled();
+    expect(await screen.findByLabelText(/permitir abonos parciales/i)).not.toBeDisabled();
     expect(screen.getByRole('button', { name: /guardar reglas operativas/i })).not.toBeDisabled();
     expect(screen.getByText(/edici.n operativa/i)).toBeInTheDocument();
   });
@@ -167,7 +167,7 @@ describe('FiscalSettingsView (separated sections)', () => {
     renderView({ canEdit: false, canEditOperationalRules: true, canViewFiscalSettings: false });
 
     expect(await screen.findByRole('tab', { name: /operativa/i })).toBeInTheDocument();
-    expect(await screen.findByLabelText(/scanner/i)).not.toBeDisabled();
+    expect(await screen.findByLabelText(/permitir abonos parciales/i)).not.toBeDisabled();
     expect(apiClient.getOperationalSettings).toHaveBeenCalledTimes(1);
     expect(apiClient.getFiscalSettings).not.toHaveBeenCalled();
     expect(apiClient.getFiscalSequences).not.toHaveBeenCalled();

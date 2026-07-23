@@ -11,7 +11,6 @@ import { FiscalSummary } from './components/FiscalSummary';
 import { HospitalSettingsView } from './HospitalSettingsView';
 import { FiscalNumerationView } from './FiscalNumerationView';
 import { OperationalRulesView } from './OperationalRulesView';
-import { BrandingView } from './BrandingView';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type FiscalSettingsViewProps = {
@@ -64,7 +63,7 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
         <div className="min-w-0">
           <h1 className="text-xl font-semibold leading-tight text-foreground sm:text-2xl">Configuración hospitalaria</h1>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            Identidad hospitalaria, numeración fiscal, reglas operativas, marca y documentos institucionales.
+            Datos del hospital, numeración fiscal, reglas de cobro y documentos institucionales.
           </p>
         </div>
         <Badge className="w-fit" variant={canEdit || canEditOperationalRules ? 'secondary' : 'outline'}>
@@ -80,7 +79,6 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
         <TabsList className="h-auto w-full flex-wrap justify-start" aria-label="Secciones de configuración">
           {canViewFiscalSettings ? <><TabsTrigger value="resumen">Resumen</TabsTrigger><TabsTrigger value="hospital">Hospital</TabsTrigger><TabsTrigger value="numeracion">Numeración</TabsTrigger></> : null}
           <TabsTrigger value="operativa">Operativa</TabsTrigger>
-          {canViewFiscalSettings ? <TabsTrigger value="marca">Marca</TabsTrigger> : null}
         </TabsList>
         {canViewFiscalSettings ? (
           <>
@@ -94,7 +92,6 @@ export function FiscalSettingsView({ canEdit, canEditOperationalRules, canViewFi
             </TabsContent>
             <TabsContent value="hospital"><HospitalSettingsView canEdit={canEdit} onStatus={onStatus} /></TabsContent>
             <TabsContent value="numeracion"><FiscalNumerationView canEdit={canEdit} onStatus={onStatus} /></TabsContent>
-            <TabsContent value="marca"><BrandingView canEdit={canEdit} onStatus={onStatus} /></TabsContent>
           </>
         ) : null}
         <TabsContent value="operativa"><OperationalRulesView canEdit={canEditOperationalRules} onStatus={onStatus} /></TabsContent>
