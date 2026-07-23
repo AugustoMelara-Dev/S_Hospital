@@ -8,8 +8,9 @@ RUN apk add --no-cache bash curl git icu-dev libzip-dev oniguruma-dev zip \
 # FPM tuning is dev-only, but copying it costs nothing and keeps
 # dev/prod parity.
 COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-hospital-tuning.conf
+COPY docker/php-cli-opcache.ini /usr/local/etc/php/conf.d/zz-hospital-cli-opcache.ini
+RUN mkdir -p /tmp/s-hospital-opcache && chmod 1777 /tmp/s-hospital-opcache
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
-

@@ -19,12 +19,13 @@ x-backend-environment: &backend-environment
   HOSPITAL_SCHEDULER_TICK_RETENTION_DAYS: ${HOSPITAL_SCHEDULER_TICK_RETENTION_DAYS:-7}
   HOSPITAL_LOGIN_ATTEMPT_RETENTION_DAYS: ${HOSPITAL_LOGIN_ATTEMPT_RETENTION_DAYS:-30}
   HOSPITAL_CLIENT_ERROR_RETENTION_DAYS: ${HOSPITAL_CLIENT_ERROR_RETENTION_DAYS:-90}
-  CACHE_STORE: file
+  # Database cache avoids lock-heavy file I/O across the Windows bind mount.
+  CACHE_STORE: database
   QUEUE_CONNECTION: database
   SESSION_DRIVER: database
   # The PHP CLI server is development-only. Multiple workers prevent Docker's
   # health probe from serializing browser and API requests during local QA.
-  PHP_CLI_SERVER_WORKERS: ${PHP_CLI_SERVER_WORKERS:-4}
+  PHP_CLI_SERVER_WORKERS: ${PHP_CLI_SERVER_WORKERS:-8}
 
 services:
   backend:
@@ -52,16 +53,14 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl --max-time 4 -fsS http://127.0.0.1:8000/up >/dev/null || exit 1"]
+      # Keep the probe outside Laravel. Probing an authenticated API route made
+      # the development server create a self-sustaining request queue.
+      test: ["CMD-SHELL", "curl --max-time 2 -fsS http://127.0.0.1:8000/healthz.txt >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 60s
-    command: >
-      sh -c "composer install &&
-             if [ ! -f .env ]; then cp .env.docker.example .env && php artisan key:generate --force; fi &&
-             cd public &&
-             exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
+    command: sh docker/start-local-server.sh
 
   queue-worker:
     build:

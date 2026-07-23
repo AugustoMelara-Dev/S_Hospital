@@ -26,6 +26,7 @@
         <env name="APP_KEY" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" force="true"/>
         <env name="APP_NAME" value="Sistema de Caja Hospitalaria" force="true"/>
         <env name="APP_CONFIG_CACHE" value="storage/framework/testing/config.php" force="true"/>
+        <env name="APP_ROUTES_CACHE" value="storage/framework/testing/routes.php" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4" force="true"/>
         <env name="BROADCAST_CONNECTION" value="null" force="true"/>
