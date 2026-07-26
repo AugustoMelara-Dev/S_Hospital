@@ -2,6 +2,7 @@
 
 namespace App\Actions\System;
 
+use App\Actions\Catalog\AuditInstitutionalServiceRulesAction;
 use App\Support\System\OperationalCheck;
 
 /**
@@ -9,6 +10,39 @@ use App\Support\System\OperationalCheck;
  */
 class BuildOperationalStatusAction
 {
+    public function __construct(
+        private readonly AuditInstitutionalServiceRulesAction $catalogRuleAudit,
+    ) {}
+
+    /**
+     * @param  array<string, mixed>  $status
+     * @return array<string, mixed>
+     */
+    public function addCatalogRuleReadiness(array $status): array
+    {
+        if ($this->catalogRuleAudit->execute()['valid']) {
+            return $status;
+        }
+
+        $readiness = $this->statusSection($status['readiness'] ?? null);
+        $blockers = $this->statusItems($readiness['blockers'] ?? null);
+
+        if (collect($blockers)->contains('code', 'CATALOG_INSTITUTIONAL_RULE_INVALID')) {
+            return $status;
+        }
+
+        $blockers[] = [
+            'code' => 'CATALOG_INSTITUTIONAL_RULE_INVALID',
+            'label' => 'Revise la regla institucional de eritropoyetina antes de facturar.',
+            'status' => 'pending',
+        ];
+        $readiness['production_ready'] = false;
+        $readiness['blockers'] = $blockers;
+        $status['readiness'] = $readiness;
+
+        return $status;
+    }
+
     /**
      * @param  array<string, mixed>  $status
      * @return array<string, mixed>

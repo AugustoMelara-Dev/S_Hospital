@@ -173,17 +173,19 @@ class SystemStatusController extends Controller
         ],
     ];
 
-    public function show(ShowSystemStatusRequest $request): JsonResponse
+    public function show(ShowSystemStatusRequest $request, BuildOperationalStatusAction $statusBuilder): JsonResponse
     {
         return response()->json([
-            'data' => $this->baseStatus(),
+            'data' => $statusBuilder->addCatalogRuleReadiness($this->baseStatus()),
         ]);
     }
 
     public function summary(BuildOperationalStatusAction $statusBuilder): JsonResponse
     {
+        $status = $statusBuilder->addCatalogRuleReadiness($this->baseStatus());
+
         return response()->json([
-            'data' => $statusBuilder->publicSummary($this->baseStatus()),
+            'data' => $statusBuilder->publicSummary($status),
         ]);
     }
 
