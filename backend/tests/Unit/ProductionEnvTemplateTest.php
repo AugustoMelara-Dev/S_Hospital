@@ -25,16 +25,23 @@ class ProductionEnvTemplateTest extends TestCase
     public function test_local_compose_server_preserves_the_container_database_environment(): void
     {
         $contents = file_get_contents(base_path('../docker-compose.yml'));
+        $serverScript = file_get_contents(base_path('docker/start-local-server.sh'));
 
         $this->assertIsString($contents);
+        $this->assertIsString($serverScript);
         $this->assertStringNotContainsString(
             'php artisan serve',
             $contents,
             'Artisan serve can rehydrate the mounted .env when it spawns the PHP server and override Compose DB_* values.',
         );
         $this->assertStringContainsString(
-            'exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php',
+            'command: sh docker/start-local-server.sh',
             $contents,
+        );
+        $this->assertStringNotContainsString('php artisan serve', $serverScript);
+        $this->assertStringContainsString(
+            'php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php',
+            $serverScript,
         );
     }
 }
