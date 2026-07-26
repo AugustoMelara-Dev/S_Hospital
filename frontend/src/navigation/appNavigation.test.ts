@@ -29,7 +29,6 @@ describe('appNavigation', () => {
       '/reports',
       '/backups',
       '/settings/fiscal',
-      '/settings/institutional-receipts',
       '/admin/users',
       '/help',
     ]);
@@ -42,7 +41,6 @@ describe('appNavigation', () => {
       'Reportes',
       'Respaldos',
       'Configuración',
-      'Recibos',
       'Usuarios',
       'Ayuda',
     ]);
@@ -55,7 +53,6 @@ describe('appNavigation', () => {
       { path: '/reports', group: 'operations', permissions: ['reports.managerial.view', 'reports.cash_session.view', 'audit.view'], mode: 'any' },
       { path: '/backups', group: 'administration', permissions: ['backups.view'], mode: 'any' },
       { path: '/settings/fiscal', group: 'administration', permissions: ['settings.fiscal.view', 'settings.operational.update'], mode: 'any' },
-      { path: '/settings/institutional-receipts', group: 'administration', permissions: ['receipt_settings.view'], mode: 'any' },
       { path: '/admin/users', group: 'administration', permissions: ['users.view'], mode: 'any' },
       { path: '/help', group: 'support', permissions: [], mode: 'any' },
     ]);
@@ -73,7 +70,8 @@ describe('appNavigation', () => {
     ]);
     expect(getBreadcrumbs('/settings/institutional-receipts')).toEqual([
       { label: 'Inicio', path: '/dashboard' },
-      { label: 'Recibos institucionales', path: '/settings/institutional-receipts' },
+      { label: 'Configuracion', path: '/settings/fiscal' },
+      { label: 'Recibos e impresion', path: '/settings/fiscal' },
     ]);
     expect(getBreadcrumbs('/admin/users')).toEqual([
       { label: 'Inicio', path: '/dashboard' },

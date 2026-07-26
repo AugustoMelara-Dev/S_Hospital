@@ -62,7 +62,7 @@ describe('InstitutionalShell accessibility', () => {
     renderShell();
     expect(screen.getByRole('status')).toHaveTextContent('Servidor local disponible');
     expect(screen.getByLabelText('Conexión local disponible')).toBeInTheDocument();
-    expect(screen.getByText('Recibos institucionales', { selector: '[data-current-location]' })).toBeVisible();
+    expect(screen.getByText('Recibos e impresion', { selector: '[data-current-location]' })).toBeVisible();
     expect(screen.queryByRole('navigation', { name: 'Ruta actual' })).not.toBeInTheDocument();
   });
 
@@ -71,6 +71,6 @@ describe('InstitutionalShell accessibility', () => {
 
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Panel operativo');
-    expect(screen.getByText('Recibos institucionales', { selector: '[data-current-location]' }).tagName).toBe('P');
+    expect(screen.getByText('Recibos e impresion', { selector: '[data-current-location]' }).tagName).toBe('P');
   });
 });

@@ -51,18 +51,6 @@ const PROFILE_FORM_DEFAULTS = {
   is_global_default: false,
 } as const;
 
-const institutionSchema = z.object({
-  hospital_name: z.string().trim().min(1, 'Requerido'),
-  rtn: z.string().trim().max(64).optional(),
-  address: z.string().max(255).optional(),
-  phone: z.string().max(64).optional(),
-  slogan: z.string().max(255).optional(),
-  government_line: z.string().max(120).optional(),
-  secretariat_line: z.string().max(160).optional(),
-  receipt_location: z.string().max(160).optional(),
-  receipt_footer_text: z.string().max(255).optional(),
-});
-
 const seriesSchema = z.object({
   series: z.string().trim().min(1, 'Requerido'),
   prefix: z.string().trim().min(1, 'Requerido'),
@@ -153,7 +141,6 @@ export function InstitutionalReceiptSettingsView({
   const queryClient = useQueryClient();
   const [paper, setPaper] = useState<InstitutionalPaper>('half_letter');
   const [error, setError] = useState('');
-  const institutionSavingRef = useRef(false);
   const seriesSavingRef = useRef(false);
   const profileSavingRef = useRef(false);
   const paperSelectionDirtyRef = useRef(false);
@@ -172,21 +159,6 @@ export function InstitutionalReceiptSettingsView({
       settings?.print_profiles.find((candidate) => candidate.code === paperProfileCode(paper)) ?? null,
     [paper, settings],
   );
-
-  const institutionForm = useForm<InstitutionFormData>({
-    resolver: zodResolver(institutionSchema),
-    defaultValues: {
-      hospital_name: '',
-      rtn: '',
-      address: '',
-      phone: '',
-      slogan: '',
-      government_line: '',
-      secretariat_line: '',
-      receipt_location: '',
-      receipt_footer_text: '',
-    },
-  });
 
   const seriesForm = useForm<SeriesFormData>({
     resolver: zodResolver(seriesSchema),
@@ -225,26 +197,12 @@ export function InstitutionalReceiptSettingsView({
       support_reason: '',
     },
   });
-  const institutionDirtyFields = institutionForm.formState.dirtyFields;
   const seriesDirtyFields = seriesForm.formState.dirtyFields;
   const profileIsDirty = profileForm.formState.isDirty;
   const advancedProfileIsDirty = advancedProfileForm.formState.isDirty;
 
   useEffect(() => {
     if (!settings) return;
-
-    const institution = settings.institution;
-    institutionForm.reset({
-      hospital_name: institution?.hospital_name ?? '',
-      rtn: institution?.rtn ?? '',
-      address: institution?.address ?? '',
-      phone: institution?.phone ?? '',
-      slogan: institution?.slogan ?? '',
-      government_line: institution?.government_line ?? '',
-      secretariat_line: institution?.secretariat_line ?? '',
-      receipt_location: institution?.receipt_location ?? '',
-      receipt_footer_text: institution?.receipt_footer_text ?? '',
-    }, { keepDirtyValues: true });
 
     if (activeSeries) {
       seriesForm.reset({
@@ -269,7 +227,7 @@ export function InstitutionalReceiptSettingsView({
     if (!hasLocalProfileState) {
       setPaper(institutionalPaperFromProfile(settings.resolved_profile));
     }
-  }, [settings, activeSeries, institutionForm, seriesForm, institutionDirtyFields, seriesDirtyFields, profileIsDirty, advancedProfileIsDirty]);
+  }, [settings, activeSeries, seriesForm, seriesDirtyFields, profileIsDirty, advancedProfileIsDirty]);
 
   useEffect(() => {
     if (!selectedProfile) return;
@@ -314,41 +272,6 @@ export function InstitutionalReceiptSettingsView({
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.settings.institutionalReceipts() });
-
-  const institutionMutation = useMutation({
-    mutationFn: (payload: InstitutionFormData) => apiClient.updateReceiptInstitution(payload),
-    onMutate: () => onStatus({
-      key: 'receipt-settings:institution',
-      level: 'info',
-      message: 'Guardando datos institucionales del recibo...',
-      toast: false,
-    }),
-    onSuccess: async (institution) => {
-      if (institution) {
-        institutionForm.reset({
-          hospital_name: institution.hospital_name ?? '',
-          rtn: institution.rtn ?? '',
-          address: institution.address ?? '',
-          phone: institution.phone ?? '',
-          slogan: institution.slogan ?? '',
-          government_line: institution.government_line ?? '',
-          secretariat_line: institution.secretariat_line ?? '',
-          receipt_location: institution.receipt_location ?? '',
-          receipt_footer_text: institution.receipt_footer_text ?? '',
-        });
-      }
-      await invalidate();
-      onStatus({ key: 'receipt-settings:institution', level: 'success', message: 'Datos institucionales del recibo guardados.' });
-    },
-    onError: (err) => {
-      const message = userSafeErrorMessage(err, 'No se pudo guardar la institución del recibo.');
-      setError(message);
-      onStatus({ key: 'receipt-settings:institution', level: 'error', message });
-    },
-    onSettled: () => {
-      institutionSavingRef.current = false;
-    },
-  });
 
   const seriesMutation = useMutation({
     mutationFn: (payload: SeriesFormData) =>
@@ -498,7 +421,7 @@ export function InstitutionalReceiptSettingsView({
     );
   }
 
-  const institutionValues = institutionForm.watch();
+  const institutionValues = settings?.institution ?? null;
   const seriesValues = seriesForm.watch();
   const previewSeries: InstitutionalReceiptSeries | null = activeSeries
     ? { ...activeSeries, ...seriesValues }
@@ -569,62 +492,6 @@ export function InstitutionalReceiptSettingsView({
       <ReceiptTabs
         defaultValue="papel"
         items={[
-          {
-            key: 'institucion',
-            label: 'Institución',
-            children: (
-              <div className="min-w-0 space-y-6">
-          <SectionCard
-            title="Datos del recibo"
-            description="Encabezado, ubicación y leyenda del documento institucional."
-          >
-            <form
-              className="space-y-4"
-              onSubmit={institutionForm.handleSubmit((data) =>
-                institutionSavingRef.current
-                  ? undefined
-                  : (() => {
-                      institutionSavingRef.current = true;
-                      institutionMutation.mutate(data);
-                    })(),
-              )}
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Nombre del hospital" id="hospital_name" error={institutionForm.formState.errors.hospital_name?.message}>
-                  <Controller name="hospital_name" control={institutionForm.control} render={({ field }) => <Input id="hospital_name" disabled={!canEdit} {...field} />} />
-                </Field>
-                <Field label="RTN si aplica" id="rtn">
-                  <Controller name="rtn" control={institutionForm.control} render={({ field }) => <Input id="rtn" disabled={!canEdit} {...field} />} />
-                </Field>
-                <Field label="Dependencia superior" id="government_line" hint="Déjelo en blanco si no existe un encabezado oficial.">
-                  <Controller name="government_line" control={institutionForm.control} render={({ field }) => <Input id="government_line" disabled={!canEdit} {...field} />} />
-                </Field>
-                <Field label="Secretaría o unidad" id="secretariat_line">
-                  <Controller name="secretariat_line" control={institutionForm.control} render={({ field }) => <Input id="secretariat_line" disabled={!canEdit} {...field} />} />
-                </Field>
-                <Field label="Ciudad o lugar" id="receipt_location" hint="No se completa automáticamente desde la dirección.">
-                  <Controller name="receipt_location" control={institutionForm.control} render={({ field }) => <Input id="receipt_location" disabled={!canEdit} {...field} />} />
-                </Field>
-                <Field label="Dirección o referencia" id="address">
-                  <Controller name="address" control={institutionForm.control} render={({ field }) => <Input id="address" disabled={!canEdit} {...field} />} />
-                </Field>
-                <Field label="Teléfono" id="phone">
-                  <Controller name="phone" control={institutionForm.control} render={({ field }) => <Input id="phone" disabled={!canEdit} {...field} />} />
-                </Field>
-              </div>
-              <Field label="Leyenda de copias o pie" id="receipt_footer_text">
-                <Controller name="receipt_footer_text" control={institutionForm.control} render={({ field }) => <Textarea id="receipt_footer_text" disabled={!canEdit} {...field} />} />
-              </Field>
-              <div className="flex justify-end">
-                <Button type="submit" disabled={!canEdit || institutionMutation.isPending}>
-                  {institutionMutation.isPending ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}Guardar institución
-                </Button>
-              </div>
-            </form>
-          </SectionCard>
-              </div>
-            ),
-          },
           {
             key: 'serie',
             label: 'Serie',
@@ -907,11 +774,11 @@ export function InstitutionalReceiptSettingsView({
 
             <div className="min-w-0">
               <ReceiptSettingsPreview
-                hospitalName={institutionValues.hospital_name}
-                governmentLine={institutionValues.government_line ?? ''}
-                secretariatLine={institutionValues.secretariat_line ?? ''}
-                location={institutionValues.receipt_location ?? ''}
-                footerText={institutionValues.receipt_footer_text ?? ''}
+                hospitalName={institutionValues?.hospital_name ?? ''}
+                governmentLine={institutionValues?.government_line ?? ''}
+                secretariatLine={institutionValues?.secretariat_line ?? ''}
+                location={institutionValues?.receipt_location ?? ''}
+                footerText={institutionValues?.receipt_footer_text ?? ''}
                 series={previewSeries}
                 profile={previewProfile}
                 paper={paper}
@@ -927,11 +794,11 @@ export function InstitutionalReceiptSettingsView({
             label: 'Vista previa',
             children: (
           <ReceiptSettingsPreview
-            hospitalName={institutionValues.hospital_name}
-            governmentLine={institutionValues.government_line ?? ''}
-            secretariatLine={institutionValues.secretariat_line ?? ''}
-            location={institutionValues.receipt_location ?? ''}
-            footerText={institutionValues.receipt_footer_text ?? ''}
+            hospitalName={institutionValues?.hospital_name ?? ''}
+            governmentLine={institutionValues?.government_line ?? ''}
+            secretariatLine={institutionValues?.secretariat_line ?? ''}
+            location={institutionValues?.receipt_location ?? ''}
+            footerText={institutionValues?.receipt_footer_text ?? ''}
             series={previewSeries}
             profile={previewProfile}
             paper={paper}

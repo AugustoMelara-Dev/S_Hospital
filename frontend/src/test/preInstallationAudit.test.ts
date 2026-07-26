@@ -1,5 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { appRoutes, primaryNavigation } from '@/navigation/appNavigation';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const readSource = (relative: string) => readFileSync(resolve(here, relative), 'utf-8');
 
 describe('Pre-installation audit: navigation consolidation', () => {
   it('does not expose a separate administrative entry for institutional receipts', () => {
@@ -24,11 +30,8 @@ describe('Pre-installation audit: navigation consolidation', () => {
 });
 
 describe('Pre-installation audit: institutional receipt series form', () => {
-  it('does not require a receipt_number_color in the normal series schema', async () => {
-    const source = await import('node:fs').then((fs) => fs.promises.readFile(
-      new URL('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx', import.meta.url),
-      'utf-8',
-    ));
+  it('does not require a receipt_number_color in the normal series schema', () => {
+    const source = readSource('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx');
 
     const seriesSchemaMatch = source.match(/const\s+seriesSchema\s*=\s*z\.object\(\s*\{([\s\S]*?)\}\)/);
     expect(seriesSchemaMatch, 'seriesSchema debe seguir declarada en el modulo de recibos.').not.toBeNull();
@@ -37,21 +40,15 @@ describe('Pre-installation audit: institutional receipt series form', () => {
     expect(seriesSchemaBody).not.toContain('receipt_number_color');
   });
 
-  it('does not render a color picker in the normal institutional series form', async () => {
-    const source = await import('node:fs').then((fs) => fs.promises.readFile(
-      new URL('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx', import.meta.url),
-      'utf-8',
-    ));
+  it('does not render a color picker in the normal institutional series form', () => {
+    const source = readSource('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx');
 
     const typeColorMatch = source.match(/<Input\s+id="receipt_number_color"\s+type="color"/);
     expect(typeColorMatch, 'El selector de color no debe renderizarse en el formulario normal de serie.').toBeNull();
   });
 
-  it('does not render an Institucion tab in the consolidated settings view', async () => {
-    const source = await import('node:fs').then((fs) => fs.promises.readFile(
-      new URL('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx', import.meta.url),
-      'utf-8',
-    ));
+  it('does not render an Institucion tab in the consolidated settings view', () => {
+    const source = readSource('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx');
 
     expect(source).not.toContain("key: 'institucion'");
     expect(source).not.toContain("label: 'Institución'");
@@ -60,11 +57,8 @@ describe('Pre-installation audit: institutional receipt series form', () => {
 });
 
 describe('Pre-installation audit: fiscal sequence form', () => {
-  it('does not expose current_number as a writable input in the fiscal sequence form', async () => {
-    const source = await import('node:fs').then((fs) => fs.promises.readFile(
-      new URL('../features/settings/FiscalNumerationView.tsx', import.meta.url),
-      'utf-8',
-    ));
+  it('does not expose current_number as a writable input in the fiscal sequence form', () => {
+    const source = readSource('../features/settings/FiscalNumerationView.tsx');
 
     expect(source).not.toMatch(/form\.register\(['"]current_number['"]/);
     expect(source).toContain('El backend lo incrementa al emitir. No se reinicia desde esta pantalla.');

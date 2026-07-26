@@ -244,17 +244,7 @@ export function AppRoutes({
       />
       <Route
         path={appRoutes.receiptSettings.path}
-        element={
-          <PermissionGate allowed={canAccessRoute(appRoutes.receiptSettings, user.permissions)} reason={appRoutes.receiptSettings.deniedReason}>
-            <Suspense fallback={<RouteState kind="loading" title="Cargando recibos institucionales..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-              <InstitutionalReceiptSettingsView
-                canEdit={user.permissions.includes('receipt_settings.update')}
-                canEditAdvanced={user.permissions.includes('receipt_settings.advanced')}
-                onStatus={onStatus}
-              />
-            </Suspense>
-          </PermissionGate>
-        }
+        element={<Navigate to={appRoutes.fiscalSettings.path} replace />}
       />
       <Route
         path={appRoutes.users.path}

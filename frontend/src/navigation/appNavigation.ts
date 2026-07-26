@@ -174,10 +174,11 @@ export const appRoutes = {
     icon: ReceiptTextIcon,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
-      { label: 'Recibos institucionales', path: '/settings/institutional-receipts' },
+      { label: 'Configuracion', path: '/settings/fiscal' },
+      { label: 'Recibos e impresion', path: '/settings/fiscal' },
     ],
     navigationGroup: 'administration',
-    navigation: true,
+    navigation: false,
     navigationPermissions: ['receipt_settings.view'],
     requiredPermissions: ['receipt_settings.view'],
     deniedReason: 'Requiere permiso para consultar configuracion de recibos institucionales.',
@@ -256,7 +257,6 @@ export const primaryNavigation: AppNavigationItem[] = [
   appRoutes.reports,
   appRoutes.backups,
   appRoutes.fiscalSettings,
-  appRoutes.receiptSettings,
   appRoutes.users,
   appRoutes.help,
 ].map(toNavigationItem);

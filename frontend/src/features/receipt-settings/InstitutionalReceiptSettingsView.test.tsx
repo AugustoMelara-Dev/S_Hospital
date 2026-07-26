@@ -83,7 +83,6 @@ vi.mock('@/lib/api', async () => {
     ...actual,
     apiClient: {
       getInstitutionalReceiptSettings: vi.fn().mockResolvedValue(mockData.settings),
-      updateReceiptInstitution: vi.fn().mockResolvedValue(mockData.settings.institution),
       storeReceiptSeries: vi.fn(),
       updateReceiptSeries: vi.fn().mockResolvedValue(mockData.settings.active_series),
       updateReceiptPrintProfile: vi.fn().mockResolvedValue(mockData.profiles[1]),
@@ -196,41 +195,6 @@ describe('InstitutionalReceiptSettingsView', () => {
     await waitFor(() => expectSelectedCopies('Original + primera copia'));
   });
 
-  it('preserves local drafts and paper selection when receipt settings refresh', async () => {
-    const user = userEvent.setup();
-    const { queryClient } = renderView();
-
-    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    await activateTab('Papel y copias');
-    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
-    await chooseCopies('Original + dos copias');
-
-    await activateTab(/instituci/i);
-    const hospitalName = screen.getByLabelText(/nombre del hospital/i);
-    await user.clear(hospitalName);
-    await user.type(hospitalName, 'Hospital borrador local');
-
-    await act(async () => {
-      queryClient.setQueryData(queryKeys.settings.institutionalReceipts(), {
-        ...mockData.settings,
-        institution: {
-          ...mockData.settings.institution,
-          address: 'Direccion actualizada por refetch',
-        },
-        print_profiles: mockData.profiles.map((profile) => ({ ...profile })),
-        resolved_profile: { ...mockData.profiles[1] },
-      });
-    });
-
-    expect(hospitalName).toHaveValue('Hospital borrador local');
-    await waitFor(() => {
-      expect(screen.getByLabelText(/direcci.*referencia/i)).toHaveValue('Direccion actualizada por refetch');
-    });
-    await activateTab('Papel y copias');
-    expect(screen.getByRole('radio', { name: /^Carta\b/i })).toBeChecked();
-    expectSelectedCopies('Original + dos copias');
-  });
-
   it('hydrates refreshed values into an untouched print profile', async () => {
     const { queryClient } = renderView();
 
@@ -260,80 +224,6 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.getAllByText('Media carta').length).toBeGreaterThan(0);
     expect(screen.getAllByText('REC-A').length).toBeGreaterThan(0);
     expect(screen.getByText('Editable')).toBeInTheDocument();
-  });
-
-  it('preloads saved institutional address before editing receipt data', async () => {
-    renderView();
-
-    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    await activateTab(/instituci/i);
-
-    await waitFor(() => expect(screen.getByLabelText(/direcci/i)).toHaveValue('Tocoa, Colon'));
-  });
-
-  it('trims receipt institution identity fields before saving', async () => {
-    const { apiClient } = await import('@/lib/api');
-    const user = userEvent.setup();
-    renderView();
-
-    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    await activateTab(/instituci/i);
-
-    const hospitalName = screen.getByLabelText(/nombre del hospital/i);
-    await waitFor(() => expect(hospitalName).toHaveValue('Hospital San Isidro'));
-    await user.clear(hospitalName);
-    await user.type(hospitalName, '  Hospital Regional del Norte  ');
-    const rtn = screen.getByLabelText(/rtn si aplica/i);
-    await user.clear(rtn);
-    await user.type(rtn, '  08011999123456  ');
-    await user.click(screen.getByRole('button', { name: /guardar instituci/i }));
-
-    await waitFor(() => {
-      expect(apiClient.updateReceiptInstitution).toHaveBeenCalledWith(
-        expect.objectContaining({
-          hospital_name: 'Hospital Regional del Norte',
-          rtn: '08011999123456',
-        }),
-      );
-    });
-  });
-
-  it('accepts later institution refreshes after a successful save clears dirty state', async () => {
-    const { apiClient } = await import('@/lib/api');
-    const user = userEvent.setup();
-    const onStatus = vi.fn();
-    const savedInstitution = {
-      ...mockData.settings.institution!,
-      hospital_name: 'Hospital guardado',
-    };
-    vi.mocked(apiClient.getInstitutionalReceiptSettings)
-      .mockResolvedValueOnce(mockData.settings)
-      .mockResolvedValueOnce({ ...mockData.settings, institution: savedInstitution });
-    vi.mocked(apiClient.updateReceiptInstitution).mockResolvedValueOnce(savedInstitution);
-    const { queryClient } = renderView({ onStatus });
-
-    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
-    await activateTab(/instituci/i);
-    const hospitalName = screen.getByLabelText(/nombre del hospital/i);
-    await user.clear(hospitalName);
-    await user.type(hospitalName, 'Hospital guardado');
-    await user.click(screen.getByRole('button', { name: /guardar instituci/i }));
-
-    await waitFor(() => {
-      expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
-        key: 'receipt-settings:institution',
-        level: 'success',
-      }));
-    });
-
-    await act(async () => {
-      queryClient.setQueryData(queryKeys.settings.institutionalReceipts(), {
-        ...mockData.settings,
-        institution: { ...savedInstitution, hospital_name: 'Hospital actualizado remotamente' },
-      });
-    });
-
-    await waitFor(() => expect(hospitalName).toHaveValue('Hospital actualizado remotamente'));
   });
 
   it('never exposes the manual paper fields in the normal flow', async () => {
