@@ -48,6 +48,8 @@ Filename: "{app}\setup.bat"; WorkingDir: "{app}"; StatusMsg: "Configurando S_Hos
 function DockerDesktopInstalled: Boolean;
 begin
   Result :=
+    FileExists(ExpandConstant('{localappdata}\Programs\DockerDesktop\Docker Desktop.exe')) or
+    FileExists(ExpandConstant('{localappdata}\Programs\DockerDesktop\resources\bin\docker.exe')) or
     FileExists(ExpandConstant('{pf}\Docker\Docker\Docker Desktop.exe')) or
     FileExists(ExpandConstant('{pf}\Docker\Docker\resources\bin\docker.exe')) or
     FileExists(ExpandConstant('{commonpf64}\Docker\Docker\Docker Desktop.exe')) or

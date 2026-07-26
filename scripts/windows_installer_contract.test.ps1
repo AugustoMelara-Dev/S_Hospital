@@ -41,6 +41,7 @@ foreach ($requiredInstallerSetting in @(
     'Source: "{#SourceRoot}\offline-release\*"',
     'Filename: "{app}\setup.bat"',
     'WorkingDir: "{app}"',
+    "FileExists(ExpandConstant('{localappdata}\Programs\DockerDesktop\Docker Desktop.exe'))",
     "waituntilterminated"
 )) {
     Assert-Contains $installer $requiredInstallerSetting "Inno Setup script"
