@@ -62,6 +62,13 @@ if (-not (Test-Path -LiteralPath $recoveryRuntimePath)) {
     exit 1
 }
 . $recoveryRuntimePath
+$recoveryValidationPath = Join-Path $PSScriptRoot 'lib\recovery_validation.ps1'
+if (-not (Test-Path -LiteralPath $recoveryValidationPath)) {
+    Write-Host '[ERROR] Falta el validador local de recuperacion.' -ForegroundColor Red
+    exit 1
+}
+. $recoveryValidationPath
+
 
 
 $script:ExitCode = 0
@@ -201,21 +208,7 @@ function Test-DisposableDatabaseName {
         [switch]$ForceProduction
     )
 
-    if ($Database -notmatch '^[A-Za-z0-9_]+$') {
-        return $false
-    }
-
-    $lower = $Database.ToLowerInvariant()
-    
-    if ($lower -in @('hospital_billing', 'hospital_billing_production')) {
-        return $false
-    }
-    
-    if ($lower -in @('mysql', 'information_schema', 'performance_schema', 'sys')) {
-        return $false
-    }
-
-    return $lower -match '(test|validation|restore|disposable|proof)'
+    return Test-RecoveryDisposableDatabaseName -Database $Database
 }
 
 function New-DisposableDatabaseRecreateCommand {
@@ -359,6 +352,11 @@ function Invoke-SelfTest {
         Write-Error 'Self-test fallo: los adaptadores de runtime no estan disponibles.'
         exit 1
     }
+    if ((Get-RecoveryCriticalTables).Count -ne 10) {
+        Write-Error 'Self-test fallo: la validacion no cubre las diez tablas criticas.'
+        exit 1
+    }
+
 
     $blockedRecovery = Test-ProductionRecoveryAllowed -State ([pscustomobject]@{})
     if ($blockedRecovery.Allowed -or $blockedRecovery.Blockers.Count -ne 4) {
@@ -532,6 +530,9 @@ if ($BackupFile -and $BackupFile -match '\.sql(\.gz)?\.enc$') {
     $decryptedSql = Join-Path $env:TEMP "hospital_restore_$(Get-Date -Format 'yyyyMMddHHmmss')_$([Guid]::NewGuid().ToString('N')).sql"
     & php $artisan hospital:decrypt-backup $BackupFile $decryptedSql
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $decryptedSql)) {
+        if (Test-Path -LiteralPath $decryptedSql) {
+            Remove-Item -LiteralPath $decryptedSql -Force -ErrorAction SilentlyContinue
+        }
         Write-Error "No se pudo descifrar el backup cifrado."
         exit 1
     }
@@ -581,15 +582,27 @@ try {
     }
 
     Write-Step "Verificando tablas criticas..."
-    $criticalTables = @('users', 'services', 'invoices', 'payments', 'backup_logs')
+    $criticalTables = Get-RecoveryCriticalTables
+    $criticalTableCounts = @{}
     foreach ($table in $criticalTables) {
         $countCmd = "SELECT COUNT(*) FROM ``$($dbConfig.Database)``.``$table``;"
         $count = & $mysqlExe --defaults-extra-file=$mysqlDefaultsFile --batch --skip-column-names -e $countCmd 2>&1
-        if ($count -as [int] -ge 0) {
-            Write-Success "  $table : $count registros"
+        $parsedCount = 0
+        if ($LASTEXITCODE -eq 0 -and [int]::TryParse(([string]$count).Trim(), [ref]$parsedCount)) {
+            $criticalTableCounts[$table] = $parsedCount
+            Write-Success "  $table : $parsedCount registros"
         } else {
             Write-Warning "  $table : no verificado"
         }
+    }
+
+    $validationResult = New-RecoveryValidationResult `
+        -Database ([string]$dbConfig.Database) `
+        -TableCounts $criticalTableCounts
+    Write-Host "[RECOVERY_VALIDATION] $($validationResult | ConvertTo-Json -Depth 5 -Compress)"
+    if (-not $validationResult.Valid) {
+        Write-Error 'La validacion descartable no contiene todas las tablas criticas. Restore bloqueado.'
+        exit 1
     }
 
     Write-Host ""
