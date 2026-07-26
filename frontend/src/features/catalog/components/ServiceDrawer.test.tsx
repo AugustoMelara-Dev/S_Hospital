@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiClient } from '@/lib/api';
-import { catalogValuesForSpecialRule, ServiceDrawer } from './ServiceDrawer';
+import { ServiceDrawer } from './ServiceDrawer';
 
 const noop = () => undefined;
 
@@ -556,15 +556,7 @@ describe('ServiceDrawer contract preservation', () => {
     });
   });
 
-  it('normalizes erythropoietin services to the fixed L 25.00 untaxed catalog price', () => {
-    expect(catalogValuesForSpecialRule('ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION')).toEqual({
-      price: '25.00',
-      taxable: false,
-    });
-    expect(catalogValuesForSpecialRule('none')).toBeNull();
-  });
-
-  it('locks erythropoietin rule, price and tax fields when editing an erythropoietin service', () => {
+  it('shows the erythropoietin institutional rule as read-only and locks price and tax fields', () => {
     render(
       <ServiceDrawer
         open
@@ -591,8 +583,9 @@ describe('ServiceDrawer contract preservation', () => {
     );
 
     expect(screen.getByLabelText(/precio/i)).toBeDisabled();
-    expect(screen.getByRole('combobox', { name: /regla especial/i })).toBeDisabled();
+    expect(screen.queryByRole('combobox', { name: /regla especial/i })).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: /aplica isv/i })).toBeDisabled();
+    expect(screen.getByText(/regla institucional de eritropoyetina/i)).toBeInTheDocument();
     expect(screen.getByText(/eritropoyetina mantiene precio fijo/i)).toBeInTheDocument();
   });
 
@@ -624,6 +617,7 @@ describe('ServiceDrawer contract preservation', () => {
       />,
     );
 
+    expect(screen.queryByRole('combobox', { name: /regla especial/i })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/^nombre/i), {
       target: { value: 'Radiografia' },
     });
@@ -646,10 +640,10 @@ describe('ServiceDrawer contract preservation', () => {
           active: expect.any(Boolean),
           visible_in_billing: true,
           is_billable: true,
-          special_rule_code: null,
         }),
         undefined,
       );
+      expect(saveService.mock.calls[0]?.[0]).not.toHaveProperty('special_rule_code');
     });
     expect(onSuccess).toHaveBeenCalled();
   });

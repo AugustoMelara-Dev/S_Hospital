@@ -140,7 +140,7 @@ export type ServicePayload = {
   active: boolean;
   visible_in_billing?: boolean;
   is_billable?: boolean;
-  special_rule_code: string | null;
+  special_rule_code?: string | null;
   print_on_receipt?: boolean;
 };
 

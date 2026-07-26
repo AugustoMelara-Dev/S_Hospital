@@ -7,7 +7,6 @@ use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreServiceRequest extends FormRequest
@@ -51,7 +50,7 @@ class StoreServiceRequest extends FormRequest
             'active' => ['sometimes', 'boolean'],
             'visible_in_billing' => ['sometimes', 'boolean'],
             'is_billable' => ['sometimes', 'boolean'],
-            'special_rule_code' => ['nullable', 'string', Rule::in([Service::ERYTHROPOIETIN_RULE])],
+            'special_rule_code' => ['prohibited'],
             'print_on_receipt' => ['sometimes', 'boolean'],
         ];
     }

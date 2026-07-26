@@ -122,11 +122,26 @@ class UpdateServiceRequest extends FormRequest
                     $validator->errors()->add('availability_change_reason', 'Indique el motivo del cambio de disponibilidad para caja.');
                 }
 
+                $this->validateInstitutionalRuleAssignment($validator, $service);
                 $this->validateErythropoietinRuleIntegrity($validator, $service);
                 $this->validateErythropoietinFixedPrice($validator, $service);
                 $this->validateGlobalCodes($validator, $service);
             },
         ];
+    }
+
+    private function validateInstitutionalRuleAssignment(Validator $validator, Service $service): void
+    {
+        if (! $this->has('special_rule_code')) {
+            return;
+        }
+
+        if ($this->requestedSpecialRuleCode($service) !== $service->special_rule_code) {
+            $validator->errors()->add(
+                'special_rule_code',
+                'La regla institucional no se administra desde el catalogo.',
+            );
+        }
     }
 
     private function validateErythropoietinRuleIntegrity(Validator $validator, Service $service): void

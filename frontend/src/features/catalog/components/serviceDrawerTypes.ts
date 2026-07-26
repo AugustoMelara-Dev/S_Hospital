@@ -1,8 +1,6 @@
 import { z } from 'zod';
 
-export const SPECIAL_RULE_NONE = 'none';
 export const SPECIAL_RULE_ERYTHROPOIETIN = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
-export const ERYTHROPOIETIN_FIXED_PRICE = '25.00';
 export const MIN_CHANGE_REASON_LENGTH = 5;
 
 export const serviceSchema = z.object({
@@ -22,7 +20,6 @@ export const serviceSchema = z.object({
   active: z.boolean(),
   visible_in_billing: z.boolean(),
   is_billable: z.boolean(),
-  special_rule_code: z.string().nullable().optional(),
 });
 
 export type ServiceFormData = z.infer<typeof serviceSchema>;
@@ -42,7 +39,6 @@ export const defaultServiceFormValues: ServiceFormData = {
   active: true,
   visible_in_billing: true,
   is_billable: true,
-  special_rule_code: null,
 };
 
 export function priceCents(value: string): number | null {

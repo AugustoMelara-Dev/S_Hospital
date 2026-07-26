@@ -10,24 +10,18 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { ServiceAuditedChangesSummary, auditedServiceChanges, priceValuesDiffer } from './ServiceAuditedChangesSummary';
-import { ERYTHROPOIETIN_FIXED_PRICE, MIN_CHANGE_REASON_LENGTH, SPECIAL_RULE_ERYTHROPOIETIN, SPECIAL_RULE_NONE, defaultServiceFormValues, serviceSchema, type ServiceFormData } from './serviceDrawerTypes';
+import { MIN_CHANGE_REASON_LENGTH, SPECIAL_RULE_ERYTHROPOIETIN, defaultServiceFormValues, serviceSchema, type ServiceFormData } from './serviceDrawerTypes';
 
 type ServiceDraft = { id: number; category_id: number; area_id?: number | null; name: string; price: string; scan_code?: string | null; barcode?: string | null; qr_code?: string | null; taxable: boolean; active: boolean; visible_in_billing?: boolean | null; is_billable?: boolean | null; special_rule_code?: string | null };
 type ServiceDrawerProps = { open: boolean; onOpenChange: (open: boolean) => void; service?: ServiceDraft | null; categories: Array<{ id: number; name: string }>; areas: Array<{ id: number; name: string }>; onSuccess: () => void };
 type TextFieldName = keyof Pick<ServiceFormData, 'name' | 'price' | 'price_change_reason' | 'tax_change_reason' | 'availability_change_reason' | 'scan_code' | 'barcode' | 'qr_code'>;
 const optionalCode = (value: string | null | undefined) => value?.trim() || null;
 
-export function catalogValuesForSpecialRule(value: string) {
-  return value === SPECIAL_RULE_ERYTHROPOIETIN
-    ? { price: ERYTHROPOIETIN_FIXED_PRICE, taxable: false }
-    : null;
-}
-
 export function ServiceDrawer({ open, onOpenChange, service, categories, areas, onSuccess }: ServiceDrawerProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(open);
-  const { control, register, handleSubmit, reset, setError, setFocus, setValue, watch, formState: { errors, isSubmitting } } = useForm<ServiceFormData>({ resolver: zodResolver(serviceSchema), defaultValues: defaultServiceFormValues });
+  const { control, register, handleSubmit, reset, setError, setFocus, watch, formState: { errors, isSubmitting } } = useForm<ServiceFormData>({ resolver: zodResolver(serviceSchema), defaultValues: defaultServiceFormValues });
   const values = watch();
   const locksEpo = Boolean(service?.special_rule_code === SPECIAL_RULE_ERYTHROPOIETIN);
   const priceChanged = Boolean(service && priceValuesDiffer(service.price, values.price));
@@ -52,7 +46,6 @@ export function ServiceDrawer({ open, onOpenChange, service, categories, areas, 
       active: service.active,
       visible_in_billing: service.visible_in_billing ?? true,
       is_billable: service.is_billable ?? true,
-      special_rule_code: service.special_rule_code,
     } : { ...defaultServiceFormValues, category_id: categories[0]?.id ?? 0, area_id: areas[0]?.id ?? 0 });
   }, [open, service, categories, areas, reset]);
 
@@ -86,7 +79,7 @@ export function ServiceDrawer({ open, onOpenChange, service, categories, areas, 
   async function submit(data: ServiceFormData) {
     setSubmitError(null);
     if (!requireReason(priceChanged, 'price_change_reason', data.price_change_reason, 'Indique el motivo del cambio de precio.') || !requireReason(taxChanged, 'tax_change_reason', data.tax_change_reason, 'Indique el motivo del cambio de impuesto.') || !requireReason(availabilityChanged, 'availability_change_reason', data.availability_change_reason, 'Indique el motivo del cambio de disponibilidad para caja.')) return;
-    const payload = { ...data, price_change_reason: optionalCode(data.price_change_reason), tax_change_reason: optionalCode(data.tax_change_reason), availability_change_reason: optionalCode(data.availability_change_reason), scan_code: optionalCode(data.scan_code), barcode: optionalCode(data.barcode), qr_code: optionalCode(data.qr_code), special_rule_code: optionalCode(data.special_rule_code) };
+    const payload = { ...data, price_change_reason: optionalCode(data.price_change_reason), tax_change_reason: optionalCode(data.tax_change_reason), availability_change_reason: optionalCode(data.availability_change_reason), scan_code: optionalCode(data.scan_code), barcode: optionalCode(data.barcode), qr_code: optionalCode(data.qr_code) };
     try {
       await apiClient.saveService(payload, service?.id);
       onSuccess();
@@ -156,23 +149,7 @@ export function ServiceDrawer({ open, onOpenChange, service, categories, areas, 
             <FieldGroup>
               {textField('price', 'Precio (L.)', true)}
               {priceChanged ? textField('price_change_reason', 'Motivo del cambio de precio', true) : null}
-              <Controller control={control} name="special_rule_code" render={({ field }) => (
-                <Field>
-                  <FieldLabel htmlFor="special_rule_code">Regla especial</FieldLabel>
-                  <Select value={field.value ?? SPECIAL_RULE_NONE} disabled={locksEpo || isSubmitting} onValueChange={(value) => {
-                    field.onChange(value === SPECIAL_RULE_NONE ? null : value);
-                    const normalized = catalogValuesForSpecialRule(value);
-                    if (normalized) {
-                      setValue('price', normalized.price, { shouldValidate: true });
-                      setValue('taxable', normalized.taxable);
-                    }
-                  }}>
-                    <SelectTrigger id="special_rule_code" className="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectGroup><SelectItem value={SPECIAL_RULE_NONE}>Sin regla</SelectItem><SelectItem value={SPECIAL_RULE_ERYTHROPOIETIN}>Eritropoyetina con receta de diálisis</SelectItem></SelectGroup></SelectContent>
-                  </Select>
-                </Field>
-              )} />
-              {locksEpo ? <Alert><AlertTitle>Regla institucional bloqueada</AlertTitle><AlertDescription>Eritropoyetina mantiene precio fijo de L 25.00 y no aplica ISV.</AlertDescription></Alert> : null}
+              {locksEpo ? <Alert><AlertTitle>Regla institucional de eritropoyetina</AlertTitle><AlertDescription>Eritropoyetina mantiene precio fijo de L 25.00 y no aplica ISV. Solo esta línea queda gratuita cuando la factura indica receta de diálisis.</AlertDescription></Alert> : null}
               {checkboxField('taxable', 'Aplica ISV', locksEpo)}
               {taxChanged ? textField('tax_change_reason', 'Motivo del cambio de impuesto', true) : null}
             </FieldGroup>
