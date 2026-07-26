@@ -11,6 +11,21 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+Artisan::command('auth:has-active-admin
+    {--json : Emitir resultado JSON para automatizacion local}', function () {
+    $exists = User::role('admin')->where('active', true)->exists();
+
+    if ($this->option('json')) {
+        $this->line(json_encode([
+            'active_admin_exists' => $exists,
+        ], JSON_THROW_ON_ERROR));
+    } else {
+        $this->line($exists ? 'Existe un administrador activo.' : 'No existe un administrador activo.');
+    }
+
+    return $exists ? 0 : 1;
+})->purpose('Verificar si la instalacion ya tiene un administrador activo.');
+
 Artisan::command('auth:create-initial-admin
     {--username= : Username del admin inicial}
     {--email= : Email del admin inicial}

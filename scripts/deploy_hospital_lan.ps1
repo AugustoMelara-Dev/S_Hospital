@@ -193,7 +193,8 @@ if (-not (Test-Path $installModePath)) {
 $backupInstallerLibraries = @(
     (Join-Path $libDir 'backup_install_readiness.ps1'),
     (Join-Path $libDir 'backup_install_verifier.ps1'),
-    (Join-Path $libDir 'backup_install_runtime.ps1')
+    (Join-Path $libDir 'backup_install_runtime.ps1'),
+    (Join-Path $libDir 'install_result.ps1')
 )
 foreach ($backupInstallerLibrary in $backupInstallerLibraries) {
     if (-not (Test-Path -LiteralPath $backupInstallerLibrary)) {
@@ -762,6 +763,7 @@ try {
 
     # ---- Main menu loop ----
     $exitRequested = $false
+    $finalInstallExitCode = 1
 
     while (-not $exitRequested) {
         $menuChoice = Show-MainMenu
@@ -887,6 +889,7 @@ try {
             # OPTION 6: Exit
             # ==============================================================
             "6" {
+                $finalInstallExitCode = 0
                 $exitRequested = $true
                 continue
             }
@@ -910,6 +913,14 @@ try {
         Write-Host ""
 
         $failures = New-Object System.Collections.ArrayList
+        $runtimeReady = $false
+        $databaseReady = $false
+        $migrationsReady = $false
+        $adminReady = $false
+        $webHealthy = $false
+        $shortcutReady = $false
+        $maintenanceShortcutReady = $false
+
         $warnings = New-Object System.Collections.ArrayList
 
         # ---- A. Admin check ----
@@ -1207,8 +1218,11 @@ try {
             Write-Host "[*] Ejecutando migraciones y seeders..." -ForegroundColor Yellow
             & docker compose -f $composeProdPath exec -T backend php artisan migrate --force
             if ($LASTEXITCODE -ne 0) { throw "Las migraciones de produccion fallaron." }
+            $databaseReady = $true
             & docker compose -f $composeProdPath exec -T backend php artisan db:seed --force
             if ($LASTEXITCODE -ne 0) { throw "Los seeders base de produccion fallaron." }
+            $migrationsReady = $true
+            $runtimeReady = $true
         }
         # ==============================================================
         # BARE-METAL MODE
@@ -1235,6 +1249,7 @@ try {
                 }
             }
 
+            $runtimeReady = $true
             # Backend .env
             $backendEnvPath = Join-Path $projectRoot "backend\.env"
             $existingEnv = @{}
@@ -1345,20 +1360,29 @@ try {
                 continue
             }
             Write-Host "[OK] Base de datos lista." -ForegroundColor Green
+            $databaseReady = $true
 
             # Migrations
             Write-Host "[*] Ejecutando migraciones..." -ForegroundColor Yellow
             Push-Location (Join-Path $projectRoot "backend")
-
-            if ($currAppKey -eq "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" -or $currAppKey -eq "") {
-                & $phpPath artisan key:generate --force
+            try {
+                if ($currAppKey -eq "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" -or $currAppKey -eq "") {
+                    & $phpPath artisan key:generate --force
+                    if ($LASTEXITCODE -ne 0) { throw 'No se pudo generar APP_KEY.' }
+                }
+                & $phpPath artisan migrate --force --seed
+                if ($LASTEXITCODE -ne 0) { throw 'Las migraciones bare-metal fallaron.' }
+                & $phpPath artisan config:cache
+                if ($LASTEXITCODE -ne 0) { throw 'No se pudo preparar config:cache.' }
+                & $phpPath artisan route:cache
+                if ($LASTEXITCODE -ne 0) { throw 'No se pudo preparar route:cache.' }
+                & $phpPath artisan view:cache
+                if ($LASTEXITCODE -ne 0) { throw 'No se pudo preparar view:cache.' }
+                $migrationsReady = $true
             }
-
-            & $phpPath artisan migrate --force --seed
-            & $phpPath artisan config:cache
-            & $phpPath artisan route:cache
-            & $phpPath artisan view:cache
-            Pop-Location
+            finally {
+                Pop-Location
+            }
             Write-Host "[OK] Base de datos migrada." -ForegroundColor Green
 
             # Backup tasks
@@ -1388,6 +1412,28 @@ try {
         Write-Host " [ADMIN] CONFIGURACION DEL USUARIO ADMINISTRADOR INICIAL" -ForegroundColor Cyan
         Write-Host "======================================================================" -ForegroundColor Cyan
 
+        $adminAlreadyExists = $false
+        if ($installChoice -eq '1') {
+            $composeProdPath = Join-Path $projectRoot 'docker-compose.prod.yml'
+            & docker compose -f $composeProdPath exec -T backend php artisan auth:has-active-admin --json 2>$null | Out-Null
+            $adminAlreadyExists = ($LASTEXITCODE -eq 0)
+        }
+        else {
+            Push-Location (Join-Path $projectRoot 'backend')
+            try {
+                & $phpPath artisan auth:has-active-admin --json 2>$null | Out-Null
+                $adminAlreadyExists = ($LASTEXITCODE -eq 0)
+            }
+            finally {
+                Pop-Location
+            }
+        }
+
+        if ($adminAlreadyExists) {
+            $adminReady = $true
+            Write-Host '[OK] Se conserva el administrador activo existente.' -ForegroundColor Green
+        }
+        else {
         $adminUsername = ""
         while ([string]::IsNullOrWhiteSpace($adminUsername)) {
             $adminUsername = Read-Host "Nombre de Usuario (ej. admin.hospital)"
@@ -1447,13 +1493,14 @@ try {
             if ($LASTEXITCODE -ne 0) {
                 throw "No se pudo crear el administrador inicial. Revise si ya existe un administrador activo."
             }
+            $adminReady = $true
         }
         finally {
             $adminPassword = $null
             [Environment]::SetEnvironmentVariable('HOSPITAL_INITIAL_ADMIN_PASSWORD', $previousInitialAdminPassword, 'Process')
         }
+        }
 
-        # ==============================================================
         # ==============================================================
         # AUTOMATIC BACKUP CERTIFICATION
         # ==============================================================
@@ -1499,20 +1546,24 @@ try {
 
         $healthCheckUrl = "$($installMode.AppUrl)/up"
         $webHealthy = $false
-        try {
-            $webResponse = Invoke-WebRequest -Uri $healthCheckUrl -UseBasicParsing -TimeoutSec 10 -ErrorAction SilentlyContinue
-            if ($webResponse -and $webResponse.StatusCode -eq 200) {
-                $webHealthy = $true
-                Write-Host "[OK] Servidor responde en $healthCheckUrl" -ForegroundColor Green
+        foreach ($healthAttempt in 1..12) {
+            try {
+                $webResponse = Invoke-WebRequest -Uri $healthCheckUrl -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+                if ($webResponse -and $webResponse.StatusCode -eq 200) {
+                    $webHealthy = $true
+                    break
+                }
             }
-            else {
-                Write-Host "[WARN] No se pudo validar $healthCheckUrl. Verifique firewall." -ForegroundColor Yellow
-            }
+            catch { }
+            if ($healthAttempt -lt 12) { Start-Sleep -Seconds 5 }
         }
-        catch {
-            Write-Host "[WARN] No se pudo conectar a $healthCheckUrl." -ForegroundColor Yellow
-            Write-Host "  Puede ser normal si la aplicacion aun esta iniciando." -ForegroundColor Gray
+        if ($webHealthy) {
+            Write-Host "[OK] Servidor responde en $healthCheckUrl" -ForegroundColor Green
+        }
+        else {
+            Write-Host "[WARN] El servicio no respondio despues de los reintentos." -ForegroundColor Yellow
             Write-Host "  Pruebe manualmente en el navegador: $($installMode.AppUrl)" -ForegroundColor White
+            [void] $warnings.Add('El servicio web no supero la comprobacion final de salud.')
         }
         # ==============================================================
         # APPLICATION AND MAINTENANCE SHORTCUTS
@@ -1525,7 +1576,9 @@ try {
                 $shortcutResult = & $shortcutScript `
                     -ProjectRoot $projectRoot -Url $installMode.AppUrl `
                     -MaintenanceScript $maintenanceScript
-                $shortcutReady = [bool] $shortcutResult.Success
+                $shortcutReady = ([bool] $shortcutResult.Success -and (Test-Path -LiteralPath $shortcutResult.ApplicationPath))
+                $maintenanceShortcutReady = ([bool] $shortcutResult.Success -and (Test-Path -LiteralPath $shortcutResult.MaintenancePath))
+
                 if ($shortcutReady) {
                     Write-Host '[OK] Accesos de S_Hospital y mantenimiento creados.' -ForegroundColor Green
                     if ($shortcutResult.Warning) {
@@ -1544,7 +1597,32 @@ try {
         # ==============================================================
         # SUCCESS BANNER
         # ==============================================================
-        $installationReadyForUse = ($backupVerification.Ready -and $webHealthy -and $shortcutReady)
+        $installChecks = @{
+            'runtime' = $runtimeReady
+            'database' = $databaseReady
+            'migrations' = $migrationsReady
+            'admin' = $adminReady
+            'web-health' = $webHealthy
+            'queue-worker' = $backupAutomationReady
+            'scheduler' = $backupAutomationReady
+            'encrypted-backup' = $encryptedBackupReady
+            'app-shortcut' = $shortcutReady
+            'maintenance-shortcut' = $maintenanceShortcutReady
+        }
+        $installDetails = @{
+            Mode = $installMode.Choice
+            LocalUrl = "http://127.0.0.1:$appPort"
+            LanUrl = $(if ($installMode.LanEnabled) { $installMode.AppUrl } else { '' })
+            BackupTime = [string] $backupVerifiedAt
+            ShortcutStatus = $(if ($shortcutReady -and $maintenanceShortcutReady) { 'ready' } elseif ($shortcutReady) { 'application-only' } else { 'missing' })
+            LogLocation = [string] $logPath
+        }
+        $installResult = Get-InstallResult `
+            -Checks $installChecks `
+            -Details $installDetails `
+            -ProjectRoot $projectRoot
+        $installationReadyForUse = $installResult.Success
+        $finalInstallExitCode = if ($installationReadyForUse) { 0 } else { 1 }
         Write-Host ""
         if ($installationReadyForUse) {
             Write-Host "======================================================================" -ForegroundColor Green
@@ -1557,26 +1635,26 @@ try {
             Write-Host "======================================================================" -ForegroundColor Yellow
         }
         Write-Host ""
-        Write-Host " [RED] DIRECCION DE ACCESO:" -ForegroundColor Cyan
-        Write-Host "  -> S_Hospital: $($installMode.AppUrl)" -ForegroundColor White
+        Write-Host " [RESUMEN VERIFICADO]" -ForegroundColor Cyan
+        Write-Host "  Modo: $($installResult.SafeSummary.Mode)" -ForegroundColor White
+        Write-Host "  URL local: $($installResult.SafeSummary.LocalUrl)" -ForegroundColor White
         if ($installMode.LanEnabled) {
-            Write-Host "  -> Otras computadoras: $($installMode.AppUrl)" -ForegroundColor Yellow -BackgroundColor Black
+            Write-Host "  URL LAN: $($installResult.SafeSummary.LanUrl)" -ForegroundColor White
         }
-        Write-Host ""
-        Write-Host " [ADMIN] CREDENCIALES:" -ForegroundColor Cyan
-        Write-Host "  -> Usuario:    $adminUsername" -ForegroundColor White
-        Write-Host "  -> Contrasena: (la que ingreso arriba)" -ForegroundColor White
-        Write-Host ""
-        Write-Host " [INFO] INSTRUCCIONES:" -ForegroundColor Yellow
-        if ($installMode.LanEnabled) {
-            Write-Host "  1. En las otras computadoras, abra Chrome/Edge:" -ForegroundColor White
-            Write-Host "     $($installMode.AppUrl)" -ForegroundColor Yellow
-            Write-Host "  2. Asegurese de que la IP $serverIp sea ESTATICA." -ForegroundColor White
+        Write-Host "  Respaldo verificado: $($installResult.SafeSummary.BackupTime)" -ForegroundColor White
+        Write-Host "  Accesos directos: $($installResult.SafeSummary.ShortcutStatus)" -ForegroundColor White
+        Write-Host "  Bitacora: $($installResult.SafeSummary.LogLocation)" -ForegroundColor Gray
+        if ($installResult.Blockers.Count -gt 0) {
+            Write-Host ""
+            Write-Host " [REQUIERE ATENCION] Comprobaciones pendientes:" -ForegroundColor Yellow
+            foreach ($blocker in $installResult.Blockers) {
+                Write-Host "  - $blocker" -ForegroundColor Yellow
+            }
+            Write-Host "  Ejecute setup.bat otra vez o use -DiagnosticsOnly." -ForegroundColor White
         }
-        else {
-            Write-Host "  1. Abra S_Hospital desde el acceso directo de esta computadora." -ForegroundColor White
+        if ($installResult.Warnings -contains 'maintenance-shortcut') {
+            Write-Host " [WARN] El acceso de mantenimiento no se creo; el script local sigue disponible." -ForegroundColor Yellow
         }
-        Write-Host "  Para apagar (Docker): docker compose -f docker-compose.prod.yml down" -ForegroundColor White
         Write-Host "======================================================================" -ForegroundColor Green
 
         $exitRequested = $true
@@ -1584,6 +1662,7 @@ try {
 
     Write-Host ""
     Read-Host "Presione Enter para finalizar"
+    exit $finalInstallExitCode
 }
 catch {
     Write-Host ""
