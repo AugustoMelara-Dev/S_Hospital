@@ -253,6 +253,37 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(screen.queryByText('receipt_settings.advanced')).not.toBeInTheDocument();
   });
 
+  it('muestra la serie institucional como estado de solo lectura cuando el usuario no es avanzado', async () => {
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Serie');
+
+    const readonly = await screen.findByTestId('series-readonly-state');
+    expect(readonly).toBeInTheDocument();
+    expect(within(readonly).getByText('REC-A')).toBeInTheDocument();
+    expect(within(readonly).getByText('RA')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /^Serie$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /guardar serie/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/color del n.mero/i)).not.toBeInTheDocument();
+  });
+
+  it('expone la serie como estado de solo lectura cuando no hay serie activa', async () => {
+    const empty: InstitutionalReceiptSettings = {
+      ...mockData.settings,
+      active_series: null,
+      series: [],
+    };
+    const { apiClient } = await import('@/lib/api');
+    vi.mocked(apiClient.getInstitutionalReceiptSettings).mockResolvedValueOnce(empty);
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Serie');
+
+    expect(await screen.findByTestId('series-readonly-empty')).toBeInTheDocument();
+  });
+
   it('protects technical paper controls behind the advanced receipt permission', async () => {
     renderView({ canEditAdvanced: true });
 
@@ -518,7 +549,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   });
 
   it('explains sensitive receipt numbering before saving a series', async () => {
-    renderView();
+    renderView({ canEditAdvanced: true });
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Serie');
@@ -531,7 +562,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   it('blocks saving a receipt series when the range end is below the start', async () => {
     const { apiClient } = await import('@/lib/api');
     const user = userEvent.setup();
-    renderView();
+    renderView({ canEditAdvanced: true });
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Serie');
@@ -552,7 +583,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   it('blocks saving a receipt series when the current number exceeds the range end', async () => {
     const { apiClient } = await import('@/lib/api');
     const user = userEvent.setup();
-    renderView();
+    renderView({ canEditAdvanced: true });
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Serie');
@@ -571,7 +602,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   it('blocks saving an active receipt series when the next number leaves the authorized range', async () => {
     const { apiClient } = await import('@/lib/api');
     const user = userEvent.setup();
-    renderView();
+    renderView({ canEditAdvanced: true });
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Serie');
@@ -590,7 +621,7 @@ describe('InstitutionalReceiptSettingsView', () => {
   it('trims receipt series identity fields before saving', async () => {
     const { apiClient } = await import('@/lib/api');
     const user = userEvent.setup();
-    renderView();
+    renderView({ canEditAdvanced: true });
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Serie');

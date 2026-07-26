@@ -60,7 +60,6 @@ const seriesSchema = z.object({
   current_number: z.number().int().min(0),
   range_authorization: z.string().max(120).optional(),
   legal_text: z.string().max(255).optional(),
-  receipt_number_color: z.string().max(16),
   active: z.boolean(),
 }).refine((data) => data.max_number >= data.min_number, {
   path: ['max_number'],
@@ -171,8 +170,6 @@ export function InstitutionalReceiptSettingsView({
       current_number: 0,
       range_authorization: '',
       legal_text: '',
-      // Configurable receipt data, not an application design-system color.
-      receipt_number_color: ['#', 'dc2626'].join(''),
       active: true,
     },
   });
@@ -214,7 +211,6 @@ export function InstitutionalReceiptSettingsView({
         current_number: activeSeries.current_number,
         range_authorization: activeSeries.range_authorization ?? '',
         legal_text: activeSeries.legal_text ?? '',
-        receipt_number_color: activeSeries.receipt_number_color,
         active: activeSeries.active,
       }, { keepDirtyValues: true });
     }
@@ -294,7 +290,6 @@ export function InstitutionalReceiptSettingsView({
         current_number: series.current_number,
         range_authorization: series.range_authorization ?? '',
         legal_text: series.legal_text ?? '',
-        receipt_number_color: series.receipt_number_color,
         active: series.active,
       });
       await invalidate();
@@ -498,9 +493,16 @@ export function InstitutionalReceiptSettingsView({
             children: (
               <div className="space-y-6">
           <SectionCard
-            title="Serie y control fiscal"
-            description="Rango, formato y correlativo actual del recibo institucional."
+            title="Serie institucional"
+            description="Estado de la serie interna de recibos. La administracion solo esta disponible para soporte tecnico autorizado."
           >
+            {!canEditAdvanced ? (
+              <SeriesReadOnlyState
+                series={activeSeries}
+                receiptLocation={institutionValues?.receipt_location ?? ''}
+                receiptFooterText={institutionValues?.receipt_footer_text ?? ''}
+              />
+            ) : (
             <form
               className="space-y-4"
               onSubmit={seriesForm.handleSubmit((data) =>
@@ -537,9 +539,6 @@ export function InstitutionalReceiptSettingsView({
                 >
                   <Controller name="current_number" control={seriesForm.control} render={({ field }) => <NumberInput id="current_number" disabled={!canEdit} className="w-full" {...field} />} />
                 </Field>
-                <Field label="Color del número" id="receipt_number_color">
-                  <Controller name="receipt_number_color" control={seriesForm.control} render={({ field }) => <Input id="receipt_number_color" type="color" disabled={!canEdit} {...field} />} />
-                </Field>
                 <Field label="Rango autorizado" id="range_authorization">
                   <Controller name="range_authorization" control={seriesForm.control} render={({ field }) => <Input id="range_authorization" disabled={!canEdit} {...field} />} />
                 </Field>
@@ -562,6 +561,7 @@ export function InstitutionalReceiptSettingsView({
                 </Button>
               </div>
             </form>
+            )}
           </SectionCard>
               </div>
             ),
@@ -874,6 +874,52 @@ function CheckboxField({
         onCheckedChange={(checked) => onChange(Boolean(checked))}
       />
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    </div>
+  );
+}
+
+function SeriesReadOnlyState({ series }: { series: InstitutionalReceiptSeries | null; receiptLocation: string; receiptFooterText: string }) {
+  if (!series) {
+    return (
+      <Alert data-testid="series-readonly-empty">
+        <TriangleAlert />
+        <AlertTitle>Sin serie institucional configurada</AlertTitle>
+        <AlertDescription>
+          El sistema aun no tiene una serie activa. Solicite a soporte tecnico autorizado que la configure
+          utilizando el permiso receipt_settings.advanced.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  const formatRange = `${series.min_number.toLocaleString('es-HN')} a ${series.max_number.toLocaleString('es-HN')}`;
+  const correlativo = series.current_number.toLocaleString('es-HN');
+  const next = (series.current_number + 1).toLocaleString('es-HN');
+
+  return (
+    <div data-testid="series-readonly-state" className="grid gap-3 sm:grid-cols-2">
+      <ReadOnlyField label="Serie" value={series.series} />
+      <ReadOnlyField label="Prefijo" value={series.prefix} />
+      <ReadOnlyField label="Formato" value={series.number_format} />
+      <ReadOnlyField label="Rango autorizado" value={formatRange} />
+      <ReadOnlyField label="Correlativo actual" value={correlativo} hint={`Próximo recibo: ${next}`} />
+      <ReadOnlyField label="Estado" value={series.active ? 'Activa' : 'Inactiva'} />
+      {series.range_authorization ? (
+        <ReadOnlyField label="Autorización" value={series.range_authorization} />
+      ) : null}
+      {series.legal_text ? (
+        <ReadOnlyField label="Texto legal" value={series.legal_text} multiline />
+      ) : null}
+    </div>
+  );
+}
+
+function ReadOnlyField({ label, value, hint, multiline }: { label: string; value: string; hint?: string; multiline?: boolean }) {
+  return (
+    <div className="border border-operational-border bg-muted/40 p-3 text-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`mt-1 font-medium ${multiline ? 'whitespace-pre-line' : ''}`}>{value}</p>
+      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
