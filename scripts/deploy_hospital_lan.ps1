@@ -1462,9 +1462,11 @@ try {
         Start-Sleep -Seconds 5
 
         $healthCheckUrl = "$($installMode.AppUrl)/up"
+        $webHealthy = $false
         try {
             $webResponse = Invoke-WebRequest -Uri $healthCheckUrl -UseBasicParsing -TimeoutSec 10 -ErrorAction SilentlyContinue
             if ($webResponse -and $webResponse.StatusCode -eq 200) {
+                $webHealthy = $true
                 Write-Host "[OK] Servidor responde en $healthCheckUrl" -ForegroundColor Green
             }
             else {
@@ -1475,6 +1477,32 @@ try {
             Write-Host "[WARN] No se pudo conectar a $healthCheckUrl." -ForegroundColor Yellow
             Write-Host "  Puede ser normal si la aplicacion aun esta iniciando." -ForegroundColor Gray
             Write-Host "  Pruebe manualmente en el navegador: $($installMode.AppUrl)" -ForegroundColor White
+        }
+        # ==============================================================
+        # APPLICATION AND MAINTENANCE SHORTCUTS
+        # ==============================================================
+        $shortcutReady = $false
+        if ($webHealthy) {
+            try {
+                $shortcutScript = Join-Path $projectRoot 'scripts\install_hospital_startup_shortcut.ps1'
+                $maintenanceScript = Join-Path $projectRoot 'scripts\restore_hospital_windows.ps1'
+                $shortcutResult = & $shortcutScript `
+                    -ProjectRoot $projectRoot -Url $installMode.AppUrl `
+                    -MaintenanceScript $maintenanceScript
+                $shortcutReady = [bool] $shortcutResult.Success
+                if ($shortcutReady) {
+                    Write-Host '[OK] Accesos de S_Hospital y mantenimiento creados.' -ForegroundColor Green
+                    if ($shortcutResult.Warning) {
+                        [void] $warnings.Add($shortcutResult.Warning)
+                    }
+                }
+            }
+            catch {
+                [void] $warnings.Add("No se pudieron crear los accesos directos: $($_.Exception.Message)")
+            }
+        }
+        else {
+            [void] $warnings.Add('Los accesos directos no se crearon porque el servicio web no respondio correctamente.')
         }
 
         # ==============================================================

@@ -1,22 +1,37 @@
+#Requires -Version 5.1
+
 param(
     [Parameter(Mandatory = $true)]
-    [string]$ProjectRoot,
+    [string] $ProjectRoot,
 
     [Parameter(Mandatory = $true)]
-    [string]$Url
+    [string] $Url,
+
+    [string] $MaintenanceScript = '',
+    [string] $OutputRoot = [Environment]::GetFolderPath('Desktop'),
+    [string] $IconPath = '',
+    [switch] $WhatIfOnly
 )
 
 $ErrorActionPreference = 'Stop'
 
-$resolvedRoot = (Resolve-Path $ProjectRoot).Path
-$desktop = [Environment]::GetFolderPath('Desktop')
-$shortcutPath = Join-Path $desktop 'Sistema de Caja Hospitalaria.url'
+if ([string]::IsNullOrWhiteSpace($MaintenanceScript)) {
+    $MaintenanceScript = Join-Path $ProjectRoot 'scripts\restore_hospital_windows.ps1'
+}
+if ([string]::IsNullOrWhiteSpace($IconPath)) {
+    $IconPath = Join-Path $ProjectRoot 'frontend\public\icons\hospital-app.ico'
+}
 
-$content = @"
-[InternetShortcut]
-URL=$Url
-WorkingDirectory=$resolvedRoot
-"@
+$libraryPath = Join-Path $PSScriptRoot 'lib\shortcut_installer.ps1'
+if (-not (Test-Path -LiteralPath $libraryPath)) {
+    throw "Shortcut installer module is missing: $libraryPath"
+}
+. $libraryPath
 
-Set-Content -LiteralPath $shortcutPath -Value $content -Encoding ASCII
-Write-Host "Acceso directo creado: $shortcutPath"
+Install-HospitalShortcuts `
+    -ProjectRoot $ProjectRoot `
+    -Url $Url `
+    -MaintenanceScript $MaintenanceScript `
+    -OutputRoot $OutputRoot `
+    -IconPath $IconPath `
+    -WhatIfOnly:$WhatIfOnly
