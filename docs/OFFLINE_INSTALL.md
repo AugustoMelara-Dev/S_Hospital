@@ -6,13 +6,17 @@ Este manual detalla cómo preparar y desplegar el sistema **Hospital Billing OS*
 
 ## Ruta recomendada: una sola computadora
 
-Para la instalacion habitual en una sola PC, copie el paquete completo al disco local y ejecute `setup.bat` como administrador.
+Para la instalacion habitual en una sola PC, copie el paquete completo al disco local y haga doble clic en `setup.bat`. Windows solicitara permiso de administrador y el resto del flujo sera automatico.
 
-1. Seleccione **Esta computadora (recomendado)**.
-2. Seleccione **Contenedores Docker** cuando Docker Desktop y las imagenes offline esten disponibles.
-3. El instalador limita los puertos a `127.0.0.1`, ejecuta migraciones, conserva el administrador existente o crea el inicial y espera la salud de los servicios.
-4. Antes de declarar exito, crea y valida un respaldo local cifrado con checksum SHA-256.
-5. Al terminar crea `S_Hospital` y `Mantenimiento S_Hospital` en el Escritorio. El segundo abre el flujo local y protegido de restauracion.
+1. Selecciona automaticamente **Esta computadora** y Docker.
+2. Genera sin preguntas las contrasenas de MariaDB, aplicacion, respaldos y tiempo real.
+3. Ejecuta migraciones, conserva cualquier base existente y crea `admin.local` solamente cuando no existe un administrador.
+4. Guarda en el Escritorio `CREDENCIALES INICIALES S_HOSPITAL.txt`; la contrasena es temporal y debe cambiarse al primer ingreso.
+5. Crea y valida un respaldo local cifrado con checksum SHA-256.
+6. Crea los accesos `S_Hospital` y `Mantenimiento S_Hospital`.
+7. Registra el inicio automatico: al iniciar sesion en Windows espera Docker, levanta el sistema y verifica `/up`.
+
+El nombre legal del hospital, RTN y CAI no se inventan durante la instalacion. El administrador los registra una sola vez dentro de Configuracion con los documentos reales de la institucion.
 
 El modo LAN es opcional. Seleccionelo solamente cuando otras computadoras deban entrar al mismo servidor; no instale bases de datos independientes por estacion.
 

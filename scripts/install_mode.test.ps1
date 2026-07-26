@@ -38,6 +38,11 @@ foreach ($unsafeAddress in @('127.0.0.1', '169.254.10.20', '0.0.0.0', '224.0.0.1
     Assert-Equal $true $blocked "LAN mode must reject $unsafeAddress"
 }
 
+Assert-Equal 8000 (Resolve-UnattendedAppPort -EnvironmentValues @{}) 'Fresh automatic install must use port 8000'
+Assert-Equal 8282 (Resolve-UnattendedAppPort -EnvironmentValues @{ APP_PORT = '8282' }) 'Automatic reinstall must preserve its current port'
+Assert-Equal 8000 (Resolve-UnattendedAppPort -EnvironmentValues @{ APP_PORT = 'not-a-port' }) 'Invalid stored port must fall back safely'
+Assert-Equal 8000 (Resolve-UnattendedAppPort -EnvironmentValues @{ APP_PORT = '70000' }) 'Out-of-range stored port must fall back safely'
+
 $badChoiceBlocked = $false
 try {
     Resolve-InstallMode -Choice Other -DetectedIp '192.168.1.10' -AppPort 8000 | Out-Null

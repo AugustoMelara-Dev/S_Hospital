@@ -256,6 +256,7 @@ function Test-VirtualizationEnabled {
 
 # Realiza un chequeo interactivo de Docker para el instalador
 function Invoke-DockerCheck {
+    param([switch] $Automatic)
     if (-not (Test-DockerInstalled)) {
         return [PSCustomObject]@{
             Status = "NotInstalled"
@@ -271,6 +272,24 @@ function Invoke-DockerCheck {
         }
     }
     
+    if ($Automatic) {
+        $dockerDesktopPath = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'
+        if (Test-Path -LiteralPath $dockerDesktopPath -PathType Leaf) {
+            Start-Process -FilePath $dockerDesktopPath -WindowStyle Hidden | Out-Null
+        }
+        $automaticReady = Wait-ForDocker
+        if ($automaticReady) {
+            return [PSCustomObject]@{
+                Status = 'Ready'
+                Message = 'Docker se inicio automaticamente.'
+            }
+        }
+        return [PSCustomObject]@{
+            Status = 'Stopped'
+            Message = 'Docker no se pudo iniciar automaticamente.'
+        }
+    }
+
     # Si esta instalado pero no corriendo, podemos intentar guiar al usuario
     Write-Host ""
     Write-Host "======================================================================" -ForegroundColor Yellow

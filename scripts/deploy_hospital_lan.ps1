@@ -9,7 +9,8 @@
 
 param(
     [switch]$DiagnosticsOnly,
-    [switch]$SelfTest
+    [switch]$SelfTest,
+    [switch]$UnattendedSinglePc
 )
 
 $ErrorActionPreference = "Stop"
@@ -194,7 +195,8 @@ $backupInstallerLibraries = @(
     (Join-Path $libDir 'backup_install_readiness.ps1'),
     (Join-Path $libDir 'backup_install_verifier.ps1'),
     (Join-Path $libDir 'backup_install_runtime.ps1'),
-    (Join-Path $libDir 'install_result.ps1')
+    (Join-Path $libDir 'install_result.ps1'),
+    (Join-Path $libDir 'unattended_admin.ps1')
 )
 foreach ($backupInstallerLibrary in $backupInstallerLibraries) {
     if (-not (Test-Path -LiteralPath $backupInstallerLibrary)) {
@@ -766,7 +768,7 @@ try {
     $finalInstallExitCode = 1
 
     while (-not $exitRequested) {
-        $menuChoice = Show-MainMenu
+        $menuChoice = if ($UnattendedSinglePc) { '1' } else { Show-MainMenu }
 
         switch ($menuChoice) {
             # ==============================================================
@@ -920,6 +922,7 @@ try {
         $webHealthy = $false
         $shortcutReady = $false
         $maintenanceShortcutReady = $false
+        $appAutostartReady = $false
 
         $warnings = New-Object System.Collections.ArrayList
 
@@ -942,11 +945,17 @@ try {
         Write-Host "Seleccione donde se usara S_Hospital:" -ForegroundColor White
         Write-Host " [1] Esta computadora (recomendado)" -ForegroundColor Green
         Write-Host " [2] Servidor para otras computadoras de la red" -ForegroundColor White
-        $scopeChoice = ''
-        while ($scopeChoice -notin @('1', '2')) {
-            $scopeChoice = Read-Host 'Seleccione una opcion [1-2]'
+        if ($UnattendedSinglePc) {
+            $installScopeChoice = 'SinglePc'
+            Write-Host '[AUTO] Esta computadora seleccionada.' -ForegroundColor Green
         }
-        $installScopeChoice = if ($scopeChoice -eq '1') { 'SinglePc' } else { 'Lan' }
+        else {
+            $scopeChoice = ''
+            while ($scopeChoice -notin @('1', '2')) {
+                $scopeChoice = Read-Host 'Seleccione una opcion [1-2]'
+            }
+            $installScopeChoice = if ($scopeChoice -eq '1') { 'SinglePc' } else { 'Lan' }
+        }
 
         # ---- D. Network / IP ----
         if ($installScopeChoice -eq 'Lan') {
@@ -988,7 +997,7 @@ try {
 
         # ---- F. Docker check ----
         Write-Host "[*] Verificando Docker..." -ForegroundColor Yellow
-        $dockerResult = Invoke-DockerCheck
+        $dockerResult = Invoke-DockerCheck -Automatic:$UnattendedSinglePc
         $dockerReady = ($dockerResult.Status -eq "Ready")
         $dockerSkipped = ($dockerResult.Status -eq "UserSkipped")
 
@@ -1005,6 +1014,16 @@ try {
         $appPort = 8000
         $dbPort = 3306
 
+        if ($UnattendedSinglePc) {
+            $automaticEnvironment = @{}
+            $automaticEnvPath = Join-Path $projectRoot '.env'
+            if (Test-Path -LiteralPath $automaticEnvPath -PathType Leaf) {
+                $automaticEnvironment = Read-EnvFile $automaticEnvPath
+            }
+            $appPort = Resolve-UnattendedAppPort -EnvironmentValues $automaticEnvironment
+            Write-Host "[AUTO] Puerto local seleccionado: $appPort" -ForegroundColor Green
+        }
+        else {
         $appPort = Resolve-PortConflict -Port $appPort -PortLabel "Servidor Web"
         if ($appPort -eq -1) {
             Write-Host "[INFO] Instalacion cancelada para resolver conflicto de puerto." -ForegroundColor Gray
@@ -1015,6 +1034,8 @@ try {
         if ($dbPort -eq -1) {
             Write-Host "[INFO] Instalacion cancelada para resolver conflicto de puerto." -ForegroundColor Gray
             continue
+        }
+
         }
 
         # ---- H. Offline mode detection ----
@@ -1089,6 +1110,13 @@ try {
         $installChoice = ""
         $validInstallChoices = if ($isOfflineMode) { @("1") } else { @("1", "2") }
         $installPrompt = if ($isOfflineMode) { "Ingrese la opcion [1]" } else { "Ingrese una opcion [1-2]" }
+        if ($UnattendedSinglePc) {
+            if (-not $dockerReady) {
+                throw 'Docker Desktop debe estar instalado y en ejecucion para la instalacion automatica.'
+            }
+            $installChoice = '1'
+            Write-Host '[AUTO] Instalacion Docker seleccionada.' -ForegroundColor Green
+        }
         while ($installChoice -notin $validInstallChoices) {
             $installChoice = Read-Host $installPrompt
             if ($installChoice -eq "1" -and -not $dockerReady) {
@@ -1123,7 +1151,13 @@ try {
 
             # Previous install detection
             $composeProdPath = Join-Path $projectRoot "docker-compose.prod.yml"
-            $prevInstall = Show-PreviousInstallMenu -ComposeFile $composeProdPath
+            $prevInstall = if ($UnattendedSinglePc) {
+                Write-Host '[AUTO] Se conservaran los datos de cualquier instalacion existente.' -ForegroundColor Green
+                'keep-db'
+            }
+            else {
+                Show-PreviousInstallMenu -ComposeFile $composeProdPath
+            }
 
             if ($prevInstall -eq "cancel") {
                 Write-Host "[INFO] Operacion cancelada." -ForegroundColor Gray
@@ -1434,6 +1468,15 @@ try {
             Write-Host '[OK] Se conserva el administrador activo existente.' -ForegroundColor Green
         }
         else {
+        $unattendedAdminPlan = $null
+        if ($UnattendedSinglePc) {
+            $adminPassword = New-UnattendedAdminPassword
+            $unattendedAdminPlan = Get-UnattendedAdminPlan -Password $adminPassword -AppUrl $installMode.AppUrl
+            $adminUsername = $unattendedAdminPlan.Username
+            $adminEmail = $unattendedAdminPlan.Email
+            Write-Host '[AUTO] Se creara el administrador local inicial.' -ForegroundColor Green
+        }
+        else {
         $adminUsername = ""
         while ([string]::IsNullOrWhiteSpace($adminUsername)) {
             $adminUsername = Read-Host "Nombre de Usuario (ej. admin.hospital)"
@@ -1471,6 +1514,7 @@ try {
                 Write-Host "La contrasena temporal no cumple la politica minima." -ForegroundColor Yellow
             }
         }
+        }
 
         Write-Host "[*] Registrando administrador..." -ForegroundColor Yellow
         $previousInitialAdminPassword = [Environment]::GetEnvironmentVariable('HOSPITAL_INITIAL_ADMIN_PASSWORD', 'Process')
@@ -1494,9 +1538,21 @@ try {
                 throw "No se pudo crear el administrador inicial. Revise si ya existe un administrador activo."
             }
             $adminReady = $true
+            if ($UnattendedSinglePc) {
+                $handoffDirectory = [Environment]::GetFolderPath('Desktop')
+                if ([string]::IsNullOrWhiteSpace($handoffDirectory)) {
+                    $handoffDirectory = $projectRoot
+                }
+                $adminHandoff = Write-UnattendedAdminHandoff `
+                    -Plan $unattendedAdminPlan -OutputDirectory $handoffDirectory
+                Write-Host "[OK] Credenciales iniciales guardadas en: $($adminHandoff.Path)" -ForegroundColor Green
+            }
         }
         finally {
             $adminPassword = $null
+            if ($null -ne $unattendedAdminPlan) {
+                $unattendedAdminPlan.Password = $null
+            }
             [Environment]::SetEnvironmentVariable('HOSPITAL_INITIAL_ADMIN_PASSWORD', $previousInitialAdminPassword, 'Process')
         }
         }
@@ -1595,6 +1651,26 @@ try {
         }
 
         # ==============================================================
+        # WINDOWS AUTOMATIC STARTUP
+        # ==============================================================
+        if ($webHealthy -and $installChoice -eq '1') {
+            try {
+                $autostartScript = Join-Path $projectRoot 'scripts\install_hospital_autostart.ps1'
+                $autostartResult = & $autostartScript -ProjectRoot $projectRoot
+                $appAutostartReady = (
+                    [bool] $autostartResult.Success -and
+                    (Test-Path -LiteralPath $autostartResult.StartupPath -PathType Leaf)
+                )
+                if ($appAutostartReady) {
+                    Write-Host '[OK] S_Hospital iniciara automaticamente con Windows.' -ForegroundColor Green
+                }
+            }
+            catch {
+                [void] $warnings.Add("No se pudo activar el inicio automatico: $($_.Exception.Message)")
+            }
+        }
+
+        # ==============================================================
         # SUCCESS BANNER
         # ==============================================================
         $installChecks = @{
@@ -1607,6 +1683,7 @@ try {
             'scheduler' = $backupAutomationReady
             'encrypted-backup' = $encryptedBackupReady
             'app-shortcut' = $shortcutReady
+            'app-autostart' = $appAutostartReady
             'maintenance-shortcut' = $maintenanceShortcutReady
         }
         $installDetails = @{

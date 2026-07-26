@@ -65,7 +65,8 @@ function Get-InstallResult {
         'queue-worker',
         'scheduler',
         'encrypted-backup',
-        'app-shortcut'
+        'app-shortcut',
+        'app-autostart'
     )
     $blockers = [System.Collections.ArrayList]::new()
     foreach ($checkName in $requiredChecks) {

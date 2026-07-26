@@ -61,3 +61,24 @@ function Resolve-InstallMode {
         FirewallRequired = $true
     }
 }
+
+function Resolve-UnattendedAppPort {
+    param(
+        [hashtable] $EnvironmentValues = @{},
+        [int] $DefaultPort = 8000
+    )
+
+    if (-not $EnvironmentValues.ContainsKey('APP_PORT')) {
+        return $DefaultPort
+    }
+
+    $candidate = 0
+    if (-not [int]::TryParse([string] $EnvironmentValues['APP_PORT'], [ref] $candidate)) {
+        return $DefaultPort
+    }
+    if ($candidate -lt 1 -or $candidate -gt 65535) {
+        return $DefaultPort
+    }
+
+    return $candidate
+}

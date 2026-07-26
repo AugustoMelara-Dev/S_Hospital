@@ -26,7 +26,8 @@ $requiredNames = @(
     'queue-worker',
     'scheduler',
     'encrypted-backup',
-    'app-shortcut'
+    'app-shortcut',
+    'app-autostart'
 )
 $allChecks = @{}
 foreach ($name in $requiredNames) {
@@ -70,6 +71,8 @@ $setupContent = Get-Content -LiteralPath (Join-Path (Split-Path $PSScriptRoot -P
 Assert-InstallResult ($setupContent -match 'set "INSTALL_EXIT=%ERRORLEVEL%"') 'setup.bat must capture the PowerShell exit code.'
 Assert-InstallResult ($setupContent -match 'exit /b %INSTALL_EXIT%') 'setup.bat must propagate the installer exit code.'
 Assert-InstallResult ($setupContent -notmatch 'Instalacion LAN') 'setup.bat title must not imply LAN-only installation.'
+Assert-InstallResult ($setupContent -match '-UnattendedSinglePc') 'setup.bat must default to the unattended single-PC flow.'
+Assert-InstallResult ($setupContent -match 'Start-Process.+-Verb RunAs') 'setup.bat must request administrator elevation automatically.'
 
 $deployerContent = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'deploy_hospital_lan.ps1') -Raw
 foreach ($requiredName in $requiredNames) {
@@ -78,5 +81,9 @@ foreach ($requiredName in $requiredNames) {
 Assert-InstallResult ($deployerContent -match 'Get-InstallResult') 'Deployer must use the consolidated result.'
 Assert-InstallResult ($deployerContent -match 'exit \$finalInstallExitCode') 'Deployer must return the consolidated exit code.'
 Assert-InstallResult ($deployerContent -notmatch '\[ADMIN\] CREDENCIALES') 'Final summary must not print credential details.'
+Assert-InstallResult ($deployerContent -match 'Invoke-DockerCheck -Automatic:\$UnattendedSinglePc') 'Unattended setup must start Docker without prompting.'
+
+$dockerDiagnostics = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'lib\docker_diagnostics.ps1') -Raw
+Assert-InstallResult ($dockerDiagnostics -match 'Docker Desktop\.exe') 'Automatic Docker check must start Docker Desktop when needed.'
 
 Write-Host "Install result self-test passed: $script:Checks checks."

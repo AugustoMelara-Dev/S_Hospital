@@ -23,12 +23,17 @@ No ejecutar `migrate:fresh` en el servidor real.
 
 ## Preparación y Despliegue Automatizado (Recomendado)
 
-El flujo recomendado para una sola PC es ejecutar `setup.bat`, elegir **Esta computadora (recomendado)** y usar Docker con las imagenes offline. El asistente no anuncia exito hasta validar runtime, base, migraciones, administrador, web, worker, scheduler, respaldo cifrado y acceso de aplicacion.
+El flujo recomendado para una sola PC es hacer doble clic en `setup.bat` y aceptar la elevacion de Windows. El instalador selecciona monocomputadora y Docker sin menus. No anuncia exito hasta validar runtime, base, migraciones, administrador, web, worker, scheduler, respaldo cifrado, acceso de aplicacion e inicio automatico.
 
 - Publica HTTP y tiempo real solo en `127.0.0.1` en modo monocomputadora.
+- Genera automaticamente todas las claves tecnicas y las conserva en el `.env` local.
+- Crea `admin.local` con contrasena temporal fuerte si no existe administrador, y deja el archivo de primer ingreso en el Escritorio.
 - Crea accesos `S_Hospital` y `Mantenimiento S_Hospital` con icono institucional.
+- Inicia Docker y el stack de S_Hospital automaticamente en cada inicio de sesion de Windows.
 - Verifica un respaldo cifrado real y deja los respaldos automaticos activos.
 - El modo LAN se habilita de forma explicita y conserva una unica base en el servidor.
+
+RTN, CAI y el nombre legal deben capturarse una vez dentro de Configuracion porque el instalador no puede inventar datos fiscales.
 
 El despliegue está completamente automatizado a través de un asistente inteligente. Ya no es necesario ejecutar comandos manuales en producción:
 
