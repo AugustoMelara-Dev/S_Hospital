@@ -439,7 +439,7 @@ test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   };
 
   await page.goto('/login');
-  await waitForScreen(page, /caja y facturación, listas para el turno/i);
+  await waitForScreen(page, /iniciar sesi.n/i);
   await shot('login.png', 'Iniciar sesión');
 
   await login(page, 'admin.validacion');
@@ -498,9 +498,9 @@ test('refactor final screenshots evidence', async ({ page }, testInfo) => {
   await shot('invoice-reverse-reason.png');
 
   for (const [route, file, heading] of [
-    ['/reports/executive', 'reports-executive.png', /control ejecutivo/i],
-    ['/reports/cash', 'reports-cash.png', /control de caja|caja/i],
-    ['/reports/audit', 'reports-audit.png', /auditoria|auditor/i],
+    ['/reports/executive', 'reports-executive.png', /resumen del per.odo/i],
+    ['/reports/cash', 'reports-cash.png', /operaci.n de caja/i],
+    ['/reports/audit', 'reports-audit.png', /auditor.a/i],
   ] as const) {
     await page.goto(route);
     await waitForScreen(page, heading);

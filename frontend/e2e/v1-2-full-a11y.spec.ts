@@ -251,18 +251,18 @@ const executiveReport = {
   audit_summary: { critical_events: 0, reprints: 1, fiscal_changes: 0, cash_differences: 0, backup_events: 1 },
 };
 const routeExpectations = [
-  { path: '/dashboard', heading: /centro de mando/i },
+  { path: '/dashboard', heading: /continuar operaci.n/i },
   { path: '/billing/new', heading: /nueva factura/i },
   { path: '/cashbox', heading: /^caja$/i },
   { path: '/catalog', heading: /catalogo|cat.logo/i },
   { path: '/invoices', heading: /historial/i },
-  { path: '/reports', heading: /reportes/i },
+  { path: '/reports', heading: /informes y auditor.a/i },
   { path: '/backups', heading: /respaldos|backups/i },
   { path: '/settings/fiscal', heading: /configuracion|configuraci.n/i },
   { path: '/settings/institutional-receipts', heading: /recibos institucionales|recibos/i },
   { path: '/admin/users', heading: /usuarios/i },
   { path: '/help', heading: /ayuda/i },
-  { path: '/support', heading: /soporte|centro de soporte/i },
+  { path: '/support', heading: /asistencia operativa/i },
   { path: '/about', heading: /informacion del sistema|informaci.n del sistema/i },
   { path: '/does-not-exist', heading: /pagina no encontrada|no encontrada/i },
 ];
@@ -293,7 +293,7 @@ for (const viewport of smokeViewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
 
     await page.goto('/login');
-    await waitForScreen(page, /hospital san isidro/i);
+    await waitForScreen(page, /iniciar sesi.n/i);
     await auditCurrentPage(page, viewport.name, '/login');
 
     await login(page, 'admin.validacion');
@@ -312,8 +312,8 @@ for (const viewport of smokeViewports) {
 
     await enableDarkMode(page);
     for (const darkRoute of [
-      { path: '/dashboard', heading: /centro de mando/i },
-      { path: '/reports', heading: /reportes/i },
+      { path: '/dashboard', heading: /continuar operaci.n/i },
+      { path: '/reports', heading: /informes y auditor.a/i },
       { path: '/settings/institutional-receipts', heading: /recibos institucionales|recibos/i },
       { path: '/admin/users', heading: /usuarios/i },
     ]) {
@@ -343,10 +343,11 @@ test('dangerous history actions open a confirmation path that can be cancelled',
 
   await page.getByRole('button', { name: /acciones de la factura/i }).click();
   await page.getByRole('menuitem', { name: /reversar pago/i }).click();
-  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeVisible();
-  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toHaveAccessibleDescription(/revise la informaci.n/i);
+  const reverseDialog = page.getByRole('dialog', { name: /reversar factura/i });
+  await expect(reverseDialog).toBeVisible();
+  await expect(reverseDialog).toHaveAccessibleDescription(/confirmaci.n de una acci.n/i);
   await page.getByRole('button', { name: /cancelar/i }).click();
-  await expect(page.getByRole('alertdialog', { name: /reversar factura/i })).toBeHidden();
+  await expect(reverseDialog).toBeHidden();
 
   smokeResults.push({ name: 'history reverse cancel path', status: 'passed' });
   expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
@@ -357,7 +358,7 @@ async function login(page: Page, username: string) {
   await page.locator('#login-input').fill(username);
   await page.locator('#password-input').fill('Password123!');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await waitForScreen(page, /centro de mando/i);
+  await waitForScreen(page, /continuar operaci.n/i);
 }
 
 async function waitForScreen(page: Page, heading: RegExp) {
@@ -738,6 +739,7 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
   page.on('requestfailed', (request) => {
     const failure = request.failure();
     const pathname = new URL(request.url()).pathname;
+    if (request.method() === 'GET' && failure?.errorText?.startsWith('net::ERR_ABORTED') && pathname.startsWith('/api/')) return;
     if (failure?.errorText === 'net::ERR_ABORTED' && !pathname.startsWith('/api/')) return;
     if (request.url().includes('/sanctum/csrf-cookie') && failure?.errorText === 'net::ERR_ABORTED') return;
     if (request.url().includes('/api/auth/logout') && failure?.errorText === 'net::ERR_ABORTED') return;

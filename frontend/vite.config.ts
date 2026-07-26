@@ -5,10 +5,12 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { cspNoncePlugin } from './vite-plugins/csp-nonce';
+import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+const dependenciesRoot = realpathSync(path.resolve(dirname, 'node_modules'));
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 const apiProxyTarget = process.env.VITE_DEV_API_PROXY_TARGET ?? 'http://localhost:8000';
@@ -25,6 +27,7 @@ export default defineConfig({
   server: {
     port: 5173,
     fs: {
+      allow: [dirname, dependenciesRoot],
       strict: true,
       deny: ['/.env', '/.env.*', '/.*', '/.git/**', '/qa/**']
     },
