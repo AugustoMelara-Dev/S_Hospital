@@ -99,4 +99,3 @@ class MixedDialysisBasketTest extends TestCase
         return $cashier->refresh();
     }
 }
-

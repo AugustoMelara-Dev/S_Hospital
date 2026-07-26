@@ -128,4 +128,3 @@ class MixedDialysisPaymentTest extends TestCase
         return $cashier->refresh();
     }
 }
-
