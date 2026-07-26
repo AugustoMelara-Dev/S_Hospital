@@ -56,6 +56,13 @@ if (-not (Test-Path -LiteralPath $recoveryContractPath)) {
     exit 1
 }
 . $recoveryContractPath
+$recoveryRuntimePath = Join-Path $PSScriptRoot 'lib\recovery_runtime.ps1'
+if (-not (Test-Path -LiteralPath $recoveryRuntimePath)) {
+    Write-Host '[ERROR] Falta el adaptador local de recuperacion.' -ForegroundColor Red
+    exit 1
+}
+. $recoveryRuntimePath
+
 
 $script:ExitCode = 0
 $script:DecryptedSqlPath = ""
@@ -347,6 +354,12 @@ function Invoke-SelfTest {
         Write-Error 'Self-test fallo: el contrato productivo esta incompleto o fuera de orden.'
         exit 1
     }
+    if (-not (Get-Command Resolve-RecoveryRuntime -ErrorAction SilentlyContinue) -or
+        -not (Get-Command Invoke-HospitalCommand -ErrorAction SilentlyContinue)) {
+        Write-Error 'Self-test fallo: los adaptadores de runtime no estan disponibles.'
+        exit 1
+    }
+
     $blockedRecovery = Test-ProductionRecoveryAllowed -State ([pscustomobject]@{})
     if ($blockedRecovery.Allowed -or $blockedRecovery.Blockers.Count -ne 4) {
         Write-Error 'Self-test fallo: la recuperacion sin preflight no fue bloqueada.'
