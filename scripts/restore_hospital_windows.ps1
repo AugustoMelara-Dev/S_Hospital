@@ -46,6 +46,12 @@ param(
     [switch]$ProductionRecovery,
 
     [Parameter(Mandatory=$false)]
+    [string]$ProductionDatabaseConfirmation = "",
+
+    [Parameter(Mandatory=$false)]
+    [string]$ProductionActionConfirmation = "",
+
+    [Parameter(Mandatory=$false)]
     [switch]$ForceProductionRestore
 )
 
@@ -68,6 +74,13 @@ if (-not (Test-Path -LiteralPath $recoveryValidationPath)) {
     exit 1
 }
 . $recoveryValidationPath
+
+$recoveryDockerPath = Join-Path $PSScriptRoot 'lib\recovery_docker.ps1'
+if (-not (Test-Path -LiteralPath $recoveryDockerPath)) {
+    Write-Host '[ERROR] Falta el adaptador Docker de recuperacion.' -ForegroundColor Red
+    exit 1
+}
+. $recoveryDockerPath
 
 $recoveryOrchestratorPath = Join-Path $PSScriptRoot 'lib\recovery_orchestrator.ps1'
 if (-not (Test-Path -LiteralPath $recoveryOrchestratorPath)) {
@@ -367,6 +380,11 @@ function Invoke-SelfTest {
         Write-Error 'Self-test fallo: el orquestador productivo no esta disponible.'
         exit 1
     }
+    if (-not (Get-Command Invoke-DockerGuardedProductionRecovery -ErrorAction SilentlyContinue)) {
+        Write-Error 'Self-test fallo: la recuperacion Docker no esta disponible.'
+        exit 1
+    }
+
 
 
 
@@ -400,9 +418,38 @@ if ($ForceProductionRestore) {
     exit 1
 }
 if ($ProductionRecovery) {
-    Write-Error '-ProductionRecovery permanece bloqueado hasta completar validacion descartable, cajas cerradas y respaldo preventivo.'
-    Write-Error 'Use el modo predeterminado para validar el paquete en una base descartable.'
-    exit 1
+    if ([string]::IsNullOrWhiteSpace($BackupFile) -or [string]::IsNullOrWhiteSpace($ExpectedSha256)) {
+        Write-Error '-ProductionRecovery requiere -BackupFile y -ExpectedSha256.'
+        exit 1
+    }
+
+    try {
+        $recoveryResult = Invoke-DockerGuardedProductionRecovery `
+            -ProjectRoot $projectRoot `
+            -BackupFile ([System.IO.Path]::GetFullPath($BackupFile)) `
+            -ExpectedSha256 $ExpectedSha256 `
+            -ValidationDatabase $TargetDatabase `
+            -DatabaseConfirmation $ProductionDatabaseConfirmation `
+            -ActionConfirmation $ProductionActionConfirmation
+    } catch {
+        Write-Error "Recuperacion productiva bloqueada: $($_.Exception.Message)"
+        exit 1
+    }
+
+    if (-not $recoveryResult.Success) {
+        Write-Error "Recuperacion productiva fallida: $($recoveryResult.Error)"
+        if ($recoveryResult.RollbackAttempted) {
+            Write-Warning "Rollback preventivo ejecutado: $($recoveryResult.RollbackSucceeded)"
+        }
+        if ($recoveryResult.MaintenanceActive) {
+            Write-Warning 'El sistema permanece en mantenimiento. No intente facturar hasta revision tecnica.'
+        }
+        exit 1
+    }
+
+    Write-Success 'RECUPERACION PRODUCTIVA COMPLETADA'
+    Write-Host "[RECOVERY_RESULT] $($recoveryResult | ConvertTo-Json -Depth 6 -Compress)"
+    exit 0
 }
 
 if (-not (Test-DisposableDatabaseName -Database $TargetDatabase -ForceProduction:$ForceProductionRestore)) {
