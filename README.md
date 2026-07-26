@@ -94,29 +94,44 @@ En LAN HTTP controlada, `HOSPITAL_ALLOW_INSECURE_HTTP=1` documenta la excepcion 
 
 ## Instalacion recomendada en LAN
 
-### Paquete offline
+### Instalador grafico para una sola PC
 
-En una computadora tecnica con internet y Docker:
+En la computadora tecnica con Docker e Inno Setup 6:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\build_windows_installer.ps1
 ```
 
-El resultado queda en `offline-release\` con compose, instalador, documentacion, checksums y todas las imagenes necesarias. Copie la carpeta completa al servidor, inicie Docker Desktop y ejecute como Administrador:
+Copie a la memoria USB la carpeta completa
+`installer-output\ENTREGA-USB`. En el hospital se copia el EXE al Escritorio,
+se hace doble clic y se sigue **Siguiente -> Instalar**. El asistente grafico:
+
+1. extrae el paquete completo en `C:\S_Hospital`;
+2. diagnostica Windows, puertos, Docker y espacio;
+3. verifica y carga las imagenes offline;
+4. genera automaticamente las claves tecnicas locales;
+5. inicia Nginx, Laravel, MariaDB, worker, scheduler y Soketi;
+6. ejecuta migraciones y seeders base idempotentes;
+7. crea el administrador inicial con una contraseña temporal aleatoria;
+8. configura accesos directos, arranque automatico, respaldos y firewall;
+9. comprueba `/up`.
+
+Docker Desktop debe instalarse primero. El constructor permite incluir su
+instalador oficial en `ENTREGA-USB` mediante `-DockerDesktopInstallerPath`.
+Los pasos exactos estan en
+[`docs/GENERAR_INSTALADOR_WINDOWS.md`](docs/GENERAR_INSTALADOR_WINDOWS.md).
+
+### Paquete offline tecnico
+
+El resultado intermedio queda en `offline-release\` con Compose,
+documentacion, checksums y las imagenes necesarias. Para una reparacion
+tecnica tambien se puede copiar esa carpeta completa y ejecutar como
+Administrador:
 
 ```powershell
 .\setup.bat
 ```
-
-El asistente:
-
-1. diagnostica Windows, red, puertos, Docker y espacio;
-2. detecta las imagenes offline y verifica su integridad;
-3. pide la IP LAN y genera secretos locales;
-4. inicia Nginx, Laravel, MariaDB, worker, scheduler y Soketi;
-5. ejecuta migraciones y seeders base idempotentes;
-6. crea el administrador inicial con contraseña temporal oculta;
-7. configura firewall y comprueba `/up`.
 
 El paquete offline solo ofrece Docker porque no incluye fuentes ni dependencias para una instalacion bare-metal.
 

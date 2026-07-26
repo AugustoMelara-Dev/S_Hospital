@@ -5,6 +5,7 @@
 install-logs/
 offline-release/
 offline-release.rar
+installer-output/
 Sistema-Caja-Hospitalaria-RC*.zip
 nginx/ssl/
 qa/support-packets/
