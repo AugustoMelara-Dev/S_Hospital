@@ -29,6 +29,8 @@ class BackupCommandJsonTest extends TestCase
             'backup_log_id' => $backup->id,
             'filename' => $backup->filename,
             'checksum_sha256' => $backup->checksum_sha256,
+            'encrypted' => true,
+            'size_bytes' => $backup->size_bytes,
         ], $payload);
         $this->assertArrayNotHasKey('path', $payload);
         $this->assertArrayNotHasKey('disk', $payload);

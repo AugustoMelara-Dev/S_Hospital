@@ -40,6 +40,8 @@ class BackupDatabaseCommand extends Command
                     'backup_log_id' => $backupLog->id,
                     'filename' => $backupLog->filename,
                     'checksum_sha256' => $backupLog->checksum_sha256,
+                    'encrypted' => $backupLog->encrypted,
+                    'size_bytes' => $backupLog->size_bytes,
                 ], JSON_THROW_ON_ERROR));
             } else {
                 $this->info("Respaldo local creado: {$backupLog->filename}");

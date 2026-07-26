@@ -18,16 +18,22 @@ $netHelper = Join-Path $scriptDir "lib\net_diagnostics.ps1"
 $dockerHelper = Join-Path $scriptDir "lib\docker_diagnostics.ps1"
 $portHelper = Join-Path $scriptDir "lib\port_diagnostics.ps1"
 $envHelper = Join-Path $scriptDir "lib\env_helpers.ps1"
+$backupReadinessHelper = Join-Path $scriptDir "lib\backup_install_readiness.ps1"
+$backupVerifierHelper = Join-Path $scriptDir "lib\backup_install_verifier.ps1"
 
 if (-not (Test-Path $netHelper)) { throw "Falta net_diagnostics.ps1" }
 if (-not (Test-Path $dockerHelper)) { throw "Falta docker_diagnostics.ps1" }
 if (-not (Test-Path $portHelper)) { throw "Falta port_diagnostics.ps1" }
 if (-not (Test-Path $envHelper)) { throw "Falta env_helpers.ps1" }
+if (-not (Test-Path $backupReadinessHelper)) { throw "Falta backup_install_readiness.ps1" }
+if (-not (Test-Path $backupVerifierHelper)) { throw "Falta backup_install_verifier.ps1" }
 
 . $netHelper
 . $dockerHelper
 . $portHelper
 . $envHelper
+. $backupReadinessHelper
+. $backupVerifierHelper
 
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "     S_HOSPITAL - INICIANDO SUITE DE AUTO-TEST" -ForegroundColor Cyan -BackgroundColor DarkBlue
@@ -135,6 +141,47 @@ Write-Host "[*] Test 6: Validacion del Entorno del Repositorio" -ForegroundColor
 $composeExists = Test-Path (Join-Path $projectRoot "docker-compose.prod.yml")
 Assert-Equal $composeExists $true "Archivo docker-compose.prod.yml esta presente en el repositorio"
 
+# --- TEST 7: Disponibilidad de automatizacion de respaldos ---
+Write-Host ""
+Write-Host "[*] Test 7: Disponibilidad de automatizacion de respaldos" -ForegroundColor Yellow
+$dockerReady = Get-BackupAutomationReadiness -Mode Docker -ServiceStates @{ 'queue-worker' = 'healthy'; scheduler = 'healthy' }
+Assert-Equal $dockerReady.Ready $true "Docker exige worker y scheduler saludables"
+$dockerUnhealthy = Get-BackupAutomationReadiness -Mode Docker -ServiceStates @{ 'queue-worker' = 'healthy'; scheduler = 'starting' }
+Assert-Equal $dockerUnhealthy.Ready $false "Docker rechaza scheduler no saludable"
+
+$bareReady = Get-BackupAutomationReadiness -Mode BareMetal -TaskStates @{ Worker = @{ Installed = $true; Enabled = $true; State = 'Running' }; Daily = @{ Installed = $true; Enabled = $true; State = 'Ready' } }
+Assert-Equal $bareReady.Ready $true "Bare-metal exige worker activo y tarea diaria habilitada"
+$bareStopped = Get-BackupAutomationReadiness -Mode BareMetal -TaskStates @{ Worker = @{ Installed = $true; Enabled = $true; State = 'Ready' }; Daily = @{ Installed = $true; Enabled = $true; State = 'Ready' } }
+Assert-Equal $bareStopped.Ready $false "Bare-metal rechaza worker detenido"
+
+# --- TEST 8: Evidencia de respaldo cifrado ---
+Write-Host ""
+Write-Host "[*] Test 8: Evidencia de respaldo cifrado" -ForegroundColor Yellow
+$validBackupJson = '{"status":"success","backup_log_id":91,"filename":"hospital.sql.enc","checksum_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","encrypted":true,"size_bytes":2048}'
+$validBackup = Test-EncryptedBackupResult -ExitCode 0 -JsonOutput $validBackupJson
+Assert-Equal $validBackup.Ready $true "Respaldo cifrado registrado con checksum es valido"
+$missingEncryptedFile = Test-EncryptedBackupResult -ExitCode 0 -JsonOutput '{"status":"success","backup_log_id":91,"filename":"hospital.sql","checksum_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","encrypted":false,"size_bytes":2048}'
+Assert-Equal $missingEncryptedFile.Ready $false "Exit zero sin archivo cifrado registrado no es exito"
+$badChecksum = Test-EncryptedBackupResult -ExitCode 0 -JsonOutput '{"status":"success","backup_log_id":91,"filename":"hospital.sql.enc","checksum_sha256":"bad","encrypted":true,"size_bytes":2048}'
+Assert-Equal $badChecksum.Ready $false "Checksum invalido bloquea la certificacion"
+$nonzeroBackup = Test-EncryptedBackupResult -ExitCode 1 -JsonOutput $validBackupJson
+Assert-Equal $nonzeroBackup.Ready $false "Exit code fallido bloquea la certificacion"
+
+$script:BackupRunnerCalled = $false
+$injectedReady = Invoke-BackupInstallVerification `
+    -Mode Docker `
+    -AutomationProbe { @{ 'queue-worker' = 'healthy'; scheduler = 'healthy' } } `
+    -BackupRunner { $script:BackupRunnerCalled = $true; @{ ExitCode = 0; Output = $validBackupJson } }
+Assert-Equal $injectedReady.Ready $true "Verificador inyectado certifica automatizacion y archivo"
+Assert-Equal $script:BackupRunnerCalled $true "Runner de respaldo se ejecuta al estar saludable"
+
+$script:BlockedRunnerCalled = $false
+$injectedBlocked = Invoke-BackupInstallVerification `
+    -Mode Docker `
+    -AutomationProbe { @{ 'queue-worker' = 'healthy'; scheduler = 'starting' } } `
+    -BackupRunner { $script:BlockedRunnerCalled = $true; @{ ExitCode = 0; Output = $validBackupJson } }
+Assert-Equal $injectedBlocked.Ready $false "Verificador bloquea automatizacion no saludable"
+Assert-Equal $script:BlockedRunnerCalled $false "No crea respaldo cuando automatizacion esta rota"
 # --- INFORME FINAL ---
 Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Cyan

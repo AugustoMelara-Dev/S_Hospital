@@ -6,7 +6,8 @@ param(
     [switch] $WhatIfOnly,
     [switch] $UpdateExisting,
     [switch] $Uninstall,
-    [switch] $Status
+    [switch] $Status,
+    [switch] $JsonStatus
 )
 
 $ErrorActionPreference = "Stop"
@@ -42,6 +43,38 @@ function Get-TaskIfExists([string] $taskName) {
     return Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 }
 
+function Get-TaskStatusRecord([string] $taskName) {
+    $task = Get-TaskIfExists $taskName
+    if ($null -eq $task) {
+        return [pscustomobject]@{
+            Installed = $false
+            Enabled = $false
+            State = 'Missing'
+            LastRunTime = $null
+            LastTaskResult = $null
+            NextRunTime = $null
+        }
+    }
+
+    $enabled = $true
+    try {
+        if ($null -ne $task.Settings -and $null -ne $task.Settings.Enabled) {
+            $enabled = [bool] $task.Settings.Enabled
+        }
+    }
+    catch { $enabled = $true }
+    $info = Get-ScheduledTaskInfo -TaskName $taskName
+
+    return [pscustomobject]@{
+        Installed = $true
+        Enabled = $enabled
+        State = [string] $task.State
+        LastRunTime = $info.LastRunTime
+        LastTaskResult = $info.LastTaskResult
+        NextRunTime = $info.NextRunTime
+    }
+}
+
 function Show-TaskStatus([string] $taskName) {
     $task = Get-TaskIfExists $taskName
     if ($null -eq $task) {
@@ -65,10 +98,20 @@ Write-Host "Worker task: $workerTaskName"
 Write-Host "Daily backup task: $dailyTaskName at $DailyBackupTime"
 
 if ($Status) {
-    Show-TaskStatus $workerTaskName
-    Show-TaskStatus $dailyTaskName
-    Write-Host "Confirm the worker is running with: Get-ScheduledTask -TaskName '$workerTaskName'"
-    Write-Host "Confirm UI backups finish by creating a backup and checking it changes from pending to success."
+    $workerStatus = Get-TaskStatusRecord $workerTaskName
+    $dailyStatus = Get-TaskStatusRecord $dailyTaskName
+    if ($JsonStatus) {
+        [pscustomobject]@{
+            Worker = $workerStatus
+            Daily = $dailyStatus
+        } | ConvertTo-Json -Compress -Depth 4
+    }
+    else {
+        Show-TaskStatus $workerTaskName
+        Show-TaskStatus $dailyTaskName
+        Write-Host "Confirm the worker is running with: Get-ScheduledTask -TaskName '$workerTaskName'"
+        Write-Host "Confirm UI backups finish by creating a backup and checking it changes from pending to success."
+    }
     exit 0
 }
 

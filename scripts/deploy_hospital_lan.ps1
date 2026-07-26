@@ -190,6 +190,19 @@ if (-not (Test-Path $installModePath)) {
 }
 . $installModePath
 
+$backupInstallerLibraries = @(
+    (Join-Path $libDir 'backup_install_readiness.ps1'),
+    (Join-Path $libDir 'backup_install_verifier.ps1'),
+    (Join-Path $libDir 'backup_install_runtime.ps1')
+)
+foreach ($backupInstallerLibrary in $backupInstallerLibraries) {
+    if (-not (Test-Path -LiteralPath $backupInstallerLibrary)) {
+        Write-Host "[FAIL] No se encontro: $backupInstallerLibrary" -ForegroundColor Red
+        if (-not $SelfTest) { Read-Host 'Presione Enter para cerrar' }
+        exit 1
+    }
+    . $backupInstallerLibrary
+}
 # ==============================================================================
 # PROJECT ROOT & LOGGING
 # ==============================================================================
@@ -1441,6 +1454,29 @@ try {
         }
 
         # ==============================================================
+        # ==============================================================
+        # AUTOMATIC BACKUP CERTIFICATION
+        # ==============================================================
+        Write-Host ''
+        Write-Host '[*] Verificando automatizacion y respaldo cifrado...' -ForegroundColor Yellow
+        $backupRuntimeMode = if ($installChoice -eq '1') { 'Docker' } else { 'BareMetal' }
+        $backupVerification = Invoke-HospitalBackupInstallVerification `
+            -Mode $backupRuntimeMode `
+            -ProjectRoot $projectRoot `
+            -PhpPath $(if ($backupRuntimeMode -eq 'BareMetal') { $phpPath } else { 'php' })
+        $backupAutomationReady = ($null -ne $backupVerification.Automation -and $backupVerification.Automation.Ready)
+        $encryptedBackupReady = ($null -ne $backupVerification.Backup -and $backupVerification.Backup.Ready)
+        $backupVerifiedAt = $backupVerification.VerifiedAt
+        if ($backupVerification.Ready) {
+            Write-Host '[OK] Respaldo local cifrado verificado.' -ForegroundColor Green
+        }
+        else {
+            Write-Host '[ATTENTION] Los respaldos requieren atencion antes de usar el sistema.' -ForegroundColor Red
+            foreach ($backupReason in $backupVerification.Reasons) {
+                Write-Host "  - $backupReason" -ForegroundColor Yellow
+                [void] $warnings.Add($backupReason)
+            }
+        }
         # FIREWALL RULE
         # ==============================================================
         if ($installMode.FirewallRequired) {
@@ -1508,10 +1544,18 @@ try {
         # ==============================================================
         # SUCCESS BANNER
         # ==============================================================
+        $installationReadyForUse = ($backupVerification.Ready -and $webHealthy -and $shortcutReady)
         Write-Host ""
-        Write-Host "======================================================================" -ForegroundColor Green
-        Write-Host " [SUCCESS] S_HOSPITAL - DESPLIEGUE COMPLETADO" -ForegroundColor Green -BackgroundColor DarkGreen
-        Write-Host "======================================================================" -ForegroundColor Green
+        if ($installationReadyForUse) {
+            Write-Host "======================================================================" -ForegroundColor Green
+            Write-Host " [SUCCESS] S_HOSPITAL - DESPLIEGUE VERIFICADO" -ForegroundColor Green -BackgroundColor DarkGreen
+            Write-Host "======================================================================" -ForegroundColor Green
+        }
+        else {
+            Write-Host "======================================================================" -ForegroundColor Yellow
+            Write-Host " [ATTENTION] S_HOSPITAL - INSTALACION REQUIERE ATENCION" -ForegroundColor Yellow -BackgroundColor Black
+            Write-Host "======================================================================" -ForegroundColor Yellow
+        }
         Write-Host ""
         Write-Host " [RED] DIRECCION DE ACCESO:" -ForegroundColor Cyan
         Write-Host "  -> S_Hospital: $($installMode.AppUrl)" -ForegroundColor White
