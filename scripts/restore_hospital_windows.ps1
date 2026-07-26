@@ -69,6 +69,13 @@ if (-not (Test-Path -LiteralPath $recoveryValidationPath)) {
 }
 . $recoveryValidationPath
 
+$recoveryOrchestratorPath = Join-Path $PSScriptRoot 'lib\recovery_orchestrator.ps1'
+if (-not (Test-Path -LiteralPath $recoveryOrchestratorPath)) {
+    Write-Host '[ERROR] Falta el orquestador local de recuperacion.' -ForegroundColor Red
+    exit 1
+}
+. $recoveryOrchestratorPath
+
 
 
 $script:ExitCode = 0
@@ -356,6 +363,11 @@ function Invoke-SelfTest {
         Write-Error 'Self-test fallo: la validacion no cubre las diez tablas criticas.'
         exit 1
     }
+    if (-not (Get-Command Invoke-ProductionRecovery -ErrorAction SilentlyContinue)) {
+        Write-Error 'Self-test fallo: el orquestador productivo no esta disponible.'
+        exit 1
+    }
+
 
 
     $blockedRecovery = Test-ProductionRecoveryAllowed -State ([pscustomobject]@{})
