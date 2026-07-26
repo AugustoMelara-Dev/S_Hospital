@@ -80,7 +80,7 @@ export function RouteState({ action, description, detail, headingLevel = 1, kind
           {actionable ? (
             <div className="mt-6">
               {actionable.href ? (
-                <Button asChild size="lg"><a href={actionable.href}>{actionable.label}</a></Button>
+                <Button asChild size="lg" variant={kind === 'denied' ? 'outline' : 'default'}><a href={actionable.href}>{actionable.label}</a></Button>
               ) : (
                 <Button size="lg" onClick={actionable.onClick}>{actionable.label}</Button>
               )}

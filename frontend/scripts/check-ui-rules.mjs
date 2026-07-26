@@ -9,6 +9,7 @@ export function scanUiRuleSource(relative, source) {
   const violations = [];
   const rules = [
     [/\bspace-[xy]-[^\s"']+/g, 'usar gap en lugar de space-x/space-y'],
+    [/\btransition-all\b/g, 'declarar solo las propiedades animadas; transition-all esta prohibido'],
     [/\bdark:(?:bg|text|border|ring|outline|fill|stroke)-[^\s"']+/g, 'usar tokens semánticos en lugar de colores dark:*'],
     [/(?:@import\s+|url\(\s*)["']?https?:\/\//g, 'recurso remoto incompatible con operación offline'],
   ];

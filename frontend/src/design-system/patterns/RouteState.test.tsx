@@ -53,6 +53,19 @@ describe('RouteState', () => {
     expect(screen.getByText('Puede tardar unos segundos.')).toBeVisible();
   });
 
+  it('usa una accion secundaria de alto contraste cuando el acceso esta restringido', () => {
+    render(
+      <RouteState
+        kind="denied"
+        title="Sin permisos"
+        description="Solicite acceso a un supervisor."
+        action={{ label: 'Ver guia de ayuda', href: '/help' }}
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'Ver guia de ayuda' })).toHaveAttribute('data-variant', 'outline');
+  });
+
   it('navega mediante un enlace real cuando la acción tiene destino', () => {
     render(
       <RouteState

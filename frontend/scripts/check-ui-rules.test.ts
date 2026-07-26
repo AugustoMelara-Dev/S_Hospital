@@ -21,6 +21,12 @@ describe('shadcn UI rules', () => {
       expect.stringContaining('operación offline'),
     ]);
   });
+  it('rejects transition-all in shared UI primitives', () => {
+    expect(scanUiRuleSource('src/components/ui/button.tsx', '<button className="transition-all" />')).toEqual([
+      expect.stringContaining('transition-all esta prohibido'),
+    ]);
+  });
+
 
   it('rejects using the secondary surface token as foreground content', () => {
     expect(scanAppSemanticRules('src/features/help.tsx', '<a className="text-secondary">Ayuda</a>')).toEqual([

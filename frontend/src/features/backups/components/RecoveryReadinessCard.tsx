@@ -36,7 +36,7 @@ export function RecoveryReadinessCard({ readinessBlockers }: RecoveryReadinessCa
           </div>
 
           {readinessBlockers.length > 0 ? (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+            <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-warning-foreground">
               <p className="mb-2 text-sm font-medium">Pendientes antes de recuperar</p>
               <ul aria-label="Pendientes para recuperación" className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
                 {readinessBlockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
