@@ -133,6 +133,14 @@ foreach ($file in $filesToCopy) {
     }
 }
 
+$shortcutIconRelativePath = 'frontend\public\icons\hospital-app.ico'
+$shortcutIconSource = Join-Path $projectRoot $shortcutIconRelativePath
+$shortcutIconDestination = Join-Path $releaseDir $shortcutIconRelativePath
+if (-not (Test-Path -LiteralPath $shortcutIconSource -PathType Leaf)) {
+    throw "Falta el icono institucional requerido: $shortcutIconRelativePath"
+}
+$null = New-Item -ItemType Directory -Force -Path (Split-Path $shortcutIconDestination -Parent)
+Copy-Item -LiteralPath $shortcutIconSource -Destination $shortcutIconDestination -Force
 # Copiar selectivamente Dockerfile.prod de backend (creando el árbol necesario)
 $destBackendDir = Join-Path $releaseDir "backend"
 $null = New-Item -ItemType Directory -Force -Path $destBackendDir
@@ -223,11 +231,13 @@ IMAGENES INCLUIDAS:
 $( $tarList -join "`r`n" )
 
 INSTRUCCIONES RAPIDAS DE INSTALACION:
-1. Copie todo el contenido de la carpeta 'offline-release' a la PC Servidor.
-2. Inicie Docker Desktop en el Servidor.
+1. Copie todo el contenido de la carpeta 'offline-release' a la PC que usara S_Hospital.
+2. Inicie Docker Desktop.
 3. Haga clic derecho sobre 'setup.bat' y seleccione 'Ejecutar como administrador'.
-4. Seleccione la opcion [1] (Docker) en el instalador.
-5. El instalador detectara automaticamente la carpeta 'offline-images/' e
+4. Seleccione 'Instalar / iniciar sistema'.
+5. Seleccione 'Esta computadora (recomendado)' o habilite LAN de forma explicita.
+6. Seleccione la opcion Docker.
+7. El instalador detectara automaticamente la carpeta 'offline-images/',
    importara todas las imagenes usando 'docker load' de manera offline.
 ======================================================================
 "@

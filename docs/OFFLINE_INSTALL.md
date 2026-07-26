@@ -4,6 +4,20 @@ Este manual detalla cómo preparar y desplegar el sistema **Hospital Billing OS*
 
 ---
 
+## Ruta recomendada: una sola computadora
+
+Para la instalacion habitual en una sola PC, copie el paquete completo al disco local y ejecute `setup.bat` como administrador.
+
+1. Seleccione **Esta computadora (recomendado)**.
+2. Seleccione **Contenedores Docker** cuando Docker Desktop y las imagenes offline esten disponibles.
+3. El instalador limita los puertos a `127.0.0.1`, ejecuta migraciones, conserva el administrador existente o crea el inicial y espera la salud de los servicios.
+4. Antes de declarar exito, crea y valida un respaldo local cifrado con checksum SHA-256.
+5. Al terminar crea `S_Hospital` y `Mantenimiento S_Hospital` en el Escritorio. El segundo abre el flujo local y protegido de restauracion.
+
+El modo LAN es opcional. Seleccionelo solamente cuando otras computadoras deban entrar al mismo servidor; no instale bases de datos independientes por estacion.
+
+Si cualquier comprobacion obligatoria falla, el asistente muestra **Instalacion requiere atencion** y `setup.bat` devuelve error. No use el sistema hasta corregir los puntos indicados.
+
 ## Estructura del Despliegue
 
 1. **PC Servidor Central**:

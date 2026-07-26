@@ -65,4 +65,25 @@ Assert-Contains $releaseValidator 'Missing versioned source file required by off
 Assert-Contains $releaseValidator 'Missing release file required by offline release contract' "offline release validator"
 Assert-Contains $releaseValidator 'scripts\lib\lan_asset_discovery.ps1' "offline release validator"
 
+$singlePcReleasePaths = @(
+    'setup.bat',
+    'docker-compose.prod.yml',
+    'frontend\public\icons\hospital-app.ico',
+    'scripts\restore_hospital_windows.ps1',
+    'scripts\install_hospital_startup_shortcut.ps1',
+    'scripts\lib\install_mode.ps1',
+    'scripts\lib\install_result.ps1',
+    'scripts\lib\recovery_contract.ps1',
+    'scripts\lib\recovery_runtime.ps1',
+    'scripts\lib\shortcut_installer.ps1',
+    'scripts\lib\backup_install_readiness.ps1',
+    'scripts\lib\backup_install_verifier.ps1',
+    'scripts\lib\backup_install_runtime.ps1'
+)
+foreach ($relativePath in $singlePcReleasePaths) {
+    $expectedAssertion = 'Test-ReleaseFileMatchesSource "' + $relativePath + '"'
+    Assert-Contains $releaseValidator $expectedAssertion "offline release validator"
+}
+Assert-Contains $releaseBuilder 'hospital-app.ico' "offline release builder"
+
 Write-Host "[ OK ] offline release contract is complete and secure"
