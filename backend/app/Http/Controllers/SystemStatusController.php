@@ -320,17 +320,19 @@ class SystemStatusController extends Controller
         $pendingCount = BackupLog::query()
             ->where('status', BackupLog::STATUS_PENDING)
             ->count();
+        $lastSuccessCompletedAt = $lastSuccess?->completed_at;
+        $lastSuccessId = $lastSuccess?->id;
         $failedCount = BackupLog::query()
             ->where('status', BackupLog::STATUS_FAILED)
             ->when(
-                $lastSuccess?->completed_at !== null,
-                fn ($query) => $query->where(function ($query) use ($lastSuccess): void {
+                $lastSuccessCompletedAt !== null,
+                fn ($query) => $query->where(function ($query) use ($lastSuccessCompletedAt, $lastSuccessId): void {
                     $query
-                        ->where('completed_at', '>', $lastSuccess->completed_at)
-                        ->orWhere(function ($query) use ($lastSuccess): void {
+                        ->where('completed_at', '>', $lastSuccessCompletedAt)
+                        ->orWhere(function ($query) use ($lastSuccessCompletedAt, $lastSuccessId): void {
                             $query
-                                ->where('completed_at', $lastSuccess->completed_at)
-                                ->where('id', '>', $lastSuccess->id);
+                                ->where('completed_at', $lastSuccessCompletedAt)
+                                ->where('id', '>', $lastSuccessId);
                         });
                 }),
             )
