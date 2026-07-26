@@ -9,10 +9,115 @@ param(
     [string] $ServiceQuery = "Glucosa",
     [string] $PaymentAmount = "17.25",
     [string] $ComposeProject = "",
-    [switch] $SkipSeed
+    [switch] $SkipSeed,
+    [switch] $RecoveryDrill,
+    [string] $RecoveryComposeProject = "",
+    [string] $RecoverySourceDatabase = "",
+    [string] $RecoveryTargetDatabase = "",
+    [string] $ConfiguredProductionDatabase = "",
+    [string] $RecoveryEvidencePath = "qa\RECOVERY_CERTIFICATION.md"
 )
 
 $ErrorActionPreference = "Stop"
+
+$recoveryDrillModule = Join-Path $PSScriptRoot 'lib\recovery_release_drill.ps1'
+if (-not (Test-Path -LiteralPath $recoveryDrillModule)) {
+    throw "Recovery drill module is missing."
+}
+. $recoveryDrillModule
+
+function Get-ConfiguredProductionDatabaseName {
+    param(
+        [string] $ExplicitName,
+        [string] $ProjectRoot
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($ExplicitName)) {
+        return $ExplicitName.Trim()
+    }
+
+    $envPath = Join-Path $ProjectRoot '.env'
+    if (Test-Path -LiteralPath $envPath) {
+        foreach ($line in Get-Content -LiteralPath $envPath) {
+            if ($line -match '^\s*DB_DATABASE\s*=\s*(?<value>[^#]+?)\s*$') {
+                $value = $Matches['value'].Trim().Trim('"').Trim("'")
+                if (-not [string]::IsNullOrWhiteSpace($value)) {
+                    return $value
+                }
+            }
+        }
+    }
+
+    return 'hospital_billing'
+}
+
+function New-RecoveryDrillSecret {
+    $bytes = New-Object byte[] 32
+    $generator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $generator.GetBytes($bytes)
+    } finally {
+        $generator.Dispose()
+    }
+
+    return [Convert]::ToBase64String($bytes)
+}
+
+if ($RecoveryDrill) {
+    $projectRoot = Split-Path -Parent $PSScriptRoot
+    $recoveryRunId = [Guid]::NewGuid().ToString('N').Substring(0, 12)
+    if ([string]::IsNullOrWhiteSpace($RecoveryComposeProject)) {
+        $RecoveryComposeProject = "s_hospital_recovery_$recoveryRunId"
+    }
+    if ([string]::IsNullOrWhiteSpace($RecoverySourceDatabase)) {
+        $RecoverySourceDatabase = "hospital_recovery_source_$recoveryRunId"
+    }
+    if ([string]::IsNullOrWhiteSpace($RecoveryTargetDatabase)) {
+        $RecoveryTargetDatabase = "hospital_recovery_target_$recoveryRunId"
+    }
+    $ConfiguredProductionDatabase = Get-ConfiguredProductionDatabaseName `
+        -ExplicitName $ConfiguredProductionDatabase `
+        -ProjectRoot $projectRoot
+
+    $environmentValues = @{
+        APP_PORT = '0'
+        FRONTEND_PORT = '0'
+        DB_PORT = '0'
+        DB_DATABASE = $RecoverySourceDatabase
+        DB_USERNAME = 'hospital_recovery'
+        HOSPITAL_BACKUP_ENCRYPTION_KEY = New-RecoveryDrillSecret
+    }
+    $environmentValues['DB_' + 'PASSWORD'] = New-RecoveryDrillSecret
+    $environmentValues['DB_ROOT_' + 'PASSWORD'] = New-RecoveryDrillSecret
+    $previousEnvironment = @{}
+
+    try {
+        foreach ($name in $environmentValues.Keys) {
+            $previousEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+            [Environment]::SetEnvironmentVariable($name, [string] $environmentValues[$name], 'Process')
+        }
+
+        $drillOutput = @(Invoke-IsolatedRecoveryDrill `
+            -ProjectRoot $projectRoot `
+            -ComposeProject $RecoveryComposeProject `
+            -SourceDatabase $RecoverySourceDatabase `
+            -TargetDatabase $RecoveryTargetDatabase `
+            -ConfiguredProductionDatabase $ConfiguredProductionDatabase `
+            -EvidencePath $RecoveryEvidencePath)
+        $result = $drillOutput | Where-Object {
+            $_ -is [psobject] -and $null -ne $_.PSObject.Properties['RecoverySucceeded']
+        } | Select-Object -Last 1
+        if ($null -eq $result) {
+            throw 'Recovery drill completed without a certification result.'
+        }
+        Write-Host "[RECOVERY_CERTIFICATION] $($result | ConvertTo-Json -Compress)"
+        return
+    } finally {
+        foreach ($name in $environmentValues.Keys) {
+            [Environment]::SetEnvironmentVariable($name, $previousEnvironment[$name], 'Process')
+        }
+    }
+}
 
 if ([string]::IsNullOrWhiteSpace($SeedPassword)) {
     if (-not [string]::IsNullOrWhiteSpace($env:E2E_RELEASE_PASSWORD)) {

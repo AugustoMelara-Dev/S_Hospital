@@ -3,6 +3,7 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\recovery_validation.ps1')
 . (Join-Path $PSScriptRoot 'lib\recovery_docker.ps1')
+$dockerRecoverySource = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'lib\recovery_docker.ps1') -Raw
 
 $script:Checks = 0
 
@@ -69,6 +70,9 @@ try {
     )
     Assert-Equal 'hospital_billing' (Get-RecoveryEnvValue $envPath 'DB_DATABASE') 'Debe leer la base activa'
     Assert-Equal 'fallback' (Get-RecoveryEnvValue $envPath 'MISSING' 'fallback') 'Debe usar default seguro'
+
+    $cacheClearCount = [regex]::Matches($dockerRecoverySource, 'DELETE FROM cache_locks; DELETE FROM cache;').Count
+    Assert-Equal 2 $cacheClearCount 'Restore y rollback deben limpiar locks transitorios restaurados'
 } finally {
     Remove-Item -LiteralPath $fixtureRoot -Recurse -Force -ErrorAction SilentlyContinue
 }

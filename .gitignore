@@ -14,6 +14,7 @@ qa/screenshots/**/*.jpg
 qa/screenshots/**/*.jpeg
 qa/screenshots/**/*.webp
 qa/screenshots/**/*.json
+qa/RECOVERY_CERTIFICATION.md
 
 backend/.env
 backend/build/

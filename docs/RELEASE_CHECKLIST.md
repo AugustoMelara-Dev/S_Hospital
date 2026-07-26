@@ -73,6 +73,29 @@ Debe ejecutarse solo contra una base `local/testing` preparada y no productiva.
 La evidencia 2026-07-19 paso 2/2 specs sobre una MariaDB aislada creada desde
 cero.
 
+### Certificacion aislada de backup y recuperacion
+
+Ejecutar el drill destructivo solo mediante el runner aislado:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\run_release_e2e_mariadb.ps1 -RecoveryDrill
+```
+
+El runner genera nombres unicos con prefijo `s_hospital_recovery_`, rechaza la
+base configurada, usa dos bases desechables distintas y elimina contenedores,
+volumenes, SQL temporales, paquetes de prueba y la etiqueta temporal al salir.
+La evidencia local queda en `qa/RECOVERY_CERTIFICATION.md` y no se versiona;
+usar `qa/RECOVERY_CERTIFICATION.example.md` como plantilla compartible.
+
+Para aprobar se requiere:
+
+- backup programado cifrado con checksum verificado;
+- diez tablas criticas presentes;
+- respaldo preventivo exitoso;
+- fallo de salud inyectado con rollback exitoso;
+- segunda recuperacion exitosa, migraciones y auditoria de catalogo;
+- evidencia sin secretos ni rutas absolutas.
+
 ## Reset dev/testing con base descartable
 
 `php artisan migrate:fresh --seed` solo puede usarse para validar migraciones y seeders en una base descartable de desarrollo, testing o demo. No ejecutar `migrate:fresh` en el servidor real del hospital.
@@ -138,11 +161,12 @@ un warning fuerte mas salida no cero: ese resultado no puede llamarse
 
 Restore MySQL/MariaDB:
 
-No existe actualmente un script `validate_restore_mysql.sh` en este repositorio.
-La restauracion debe validarse con el runbook y, en Windows, con
-`scripts/restore_hospital_windows.ps1` contra una base descartable. Nunca usarla
-contra la base activa ni contra nombres sensibles. El nombre debe contener
-`test`, `restore`, `validation` o `disposable`.
+La restauracion descartable y el rollback automatizado se certifican con
+`scripts/run_release_e2e_mariadb.ps1 -RecoveryDrill`. La restauracion productiva
+se ejecuta solo desde **Mantenimiento S_Hospital** o con
+`scripts/restore_hospital_windows.ps1 -ProductionRecovery`, despues de validar
+checksum, cerrar cajas y completar la doble confirmacion. Nunca usar un nombre
+sensible como base de validacion.
 
 Evidencia Fase 11: ejecutado en MariaDB XAMPP local contra `hospital_restore_validation_test` con backup `hospital-backup-20260517-204322-lcsexyiz.sql`, SHA256 `5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362`. Repetir en servidor final si cambia el entorno.
 

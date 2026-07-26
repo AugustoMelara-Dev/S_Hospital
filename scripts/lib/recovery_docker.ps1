@@ -265,6 +265,10 @@ function Invoke-DockerGuardedProductionRecovery {
             "$rootClient '$productionDatabase' < '$sqlMysqlPath'"
         ) | Out-Null
 
+        Invoke-RecoveryDockerCompose $composeFile $envFile @(
+            'exec', '-T', 'mysql', 'sh', '-lc',
+            "$rootClient '$productionDatabase' -e 'DELETE FROM cache_locks; DELETE FROM cache;'"
+        ) | Out-Null
         Write-Step 'Ejecutando migraciones y verificaciones de salud'
         Invoke-RecoveryDockerCompose $composeFile $envFile @(
             'exec', '-T', 'backend', 'php', 'artisan', 'migrate', '--force'
@@ -306,6 +310,10 @@ function Invoke-DockerGuardedProductionRecovery {
                 Invoke-RecoveryDockerCompose $composeFile $envFile @(
                     'exec', '-T', 'mysql', 'sh', '-lc',
                     "$rootClient '$productionDatabase' < '$preventiveMysqlPath'"
+                ) | Out-Null
+                Invoke-RecoveryDockerCompose $composeFile $envFile @(
+                    'exec', '-T', 'mysql', 'sh', '-lc',
+                    "$rootClient '$productionDatabase' -e 'DELETE FROM cache_locks; DELETE FROM cache;'"
                 ) | Out-Null
                 $rollbackSucceeded = $true
             } catch {
