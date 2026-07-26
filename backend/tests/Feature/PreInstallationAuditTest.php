@@ -157,14 +157,10 @@ class PreInstallationAuditTest extends TestCase
             'Debe existir HondurasDistributionSeeder::run().',
         );
 
-        $runMethod = $reflection->getMethod('run');
-        $source = file($runMethod->getFileName());
-        $body = implode('', array_slice($source, $runMethod->getStartLine() - 1, $runMethod->getEndLine() - $runMethod->getStartLine() + 1));
-
-        $this->assertStringContainsString('Hospital General San Isidro', $body);
-        $this->assertStringContainsString('Gobierno de Honduras', $body);
-        $this->assertStringContainsString('Secretaria de Salud Publica', $body);
-        $this->assertStringContainsString('Tocoa', $body);
+        $this->assertSame('Hospital General San Isidro', HondurasDistributionSeeder::HOSPITAL_NAME);
+        $this->assertSame('Gobierno de Honduras', HondurasDistributionSeeder::GOVERNMENT_LINE);
+        $this->assertSame('Secretaria de Salud Publica', HondurasDistributionSeeder::SECRETARIAT_LINE);
+        $this->assertStringContainsString('Tocoa', HondurasDistributionSeeder::RECEIPT_LOCATION);
     }
 
     public function test_honduras_distribution_seeder_populates_only_when_empty(): void
@@ -219,11 +215,11 @@ class PreInstallationAuditTest extends TestCase
     {
         $seeder = new DatabaseSeeder;
         $reflection = new ReflectionClass($seeder);
-        $source = file($reflection->getFileName());
+        $source = implode('', file($reflection->getFileName()));
 
-        $this->assertContains(
-            HondurasDistributionSeeder::class,
-            array_map('trim', explode(',', implode('', $source))),
+        $this->assertTrue(
+            str_contains($source, 'HondurasDistributionSeeder::class')
+                || str_contains($source, HondurasDistributionSeeder::class),
             'DatabaseSeeder debe invocar HondurasDistributionSeeder.',
         );
     }
