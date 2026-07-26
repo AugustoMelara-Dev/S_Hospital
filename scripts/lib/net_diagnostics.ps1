@@ -122,7 +122,7 @@ function Get-LanIPv4Candidates {
     $candidates = @()
     try {
         $ips = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue
-        if ($null -eq $ips) { return $candidates }
+        if ($null -eq $ips) { $ips = @() }
 
         $defaultIdx = Get-DefaultRouteInterface
 
@@ -228,6 +228,24 @@ function Get-LanIPv4Candidates {
                 }
             }
         } catch {}
+    }
+
+    if (-not ($candidates | Where-Object { $_.IPAddress -like "127.*" } | Select-Object -First 1)) {
+        $candidates += [PSCustomObject][ordered]@{
+            IP = "127.0.0.1"
+            IPAddress = "127.0.0.1"
+            InterfaceIndex = $null
+            Alias = "Loopback local"
+            InterfaceAlias = "Loopback local"
+            Source = "InstallerFallback"
+            IsVirtual = $true
+            IsDefaultRoute = $false
+            RecType = "localhost - NO sirve para estaciones cliente"
+            RecScore = 0
+            Dhcp = "No aplica"
+            Profile = "Local"
+            AddressState = "Preferred"
+        }
     }
 
     # Ordenamos por RecScore descendente para sugerir la mejor opción arriba

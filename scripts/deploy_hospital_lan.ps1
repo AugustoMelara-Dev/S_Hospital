@@ -181,6 +181,15 @@ if (-not (Test-Path $portDiagPath)) {
 }
 . $portDiagPath
 
+$installModePath = Join-Path $libDir "install_mode.ps1"
+if (-not (Test-Path $installModePath)) {
+    Write-Host "[FAIL] No se encontro: $installModePath" -ForegroundColor Red
+    Write-Host "El instalador requiere la libreria de modo de instalacion." -ForegroundColor White
+    if (-not $SelfTest) { Read-Host "Presione Enter para cerrar" }
+    exit 1
+}
+. $installModePath
+
 # ==============================================================================
 # PROJECT ROOT & LOGGING
 # ==============================================================================
@@ -245,6 +254,12 @@ if ($SelfTest) {
     Assert-Test "169.254.1.1 es APIPA" (Test-IsApipa "169.254.1.1")
     Assert-Test "192.168.1.1 NO es APIPA" (-not (Test-IsApipa "192.168.1.1"))
 
+    $singlePcMode = Resolve-InstallMode -Choice SinglePc -DetectedIp '192.168.1.10' -AppPort 8000
+    Assert-Test "Single-PC usa loopback" ($singlePcMode.AppHost -eq '127.0.0.1')
+    Assert-Test "Single-PC no abre firewall" (-not $singlePcMode.FirewallRequired)
+    $lanMode = Resolve-InstallMode -Choice Lan -DetectedIp '192.168.1.10' -AppPort 8000
+    Assert-Test "LAN conserva IP real" ($lanMode.AppHost -eq '192.168.1.10' -and $lanMode.FirewallRequired)
+
     # Test 4: Virtual adapter detection
     Assert-Test "Docker detectado como virtual" (Test-IsVirtualAdapter "vEthernet (Docker)")
     Assert-Test "VirtualBox detectado como virtual" (Test-IsVirtualAdapter "VirtualBox Host-Only Network")
@@ -255,7 +270,7 @@ if ($SelfTest) {
     Assert-Test "Wi-Fi NO es virtual" (-not (Test-IsVirtualAdapter "Wi-Fi"))
 
     # Test 5: IP candidate discovery
-    $candidates = Get-LanIPv4Candidates
+    $candidates = @(Get-LanIPv4Candidates)
     Assert-Test "Get-LanIPv4Candidates no lanza excepcion" $true
     $hasLoopback = $false
     foreach ($c in $candidates) {
@@ -900,7 +915,17 @@ try {
             [void]$failures.Add("Espacio libre insuficiente: ${freeGb} GB. Se requieren al menos 5 GB.")
         }
 
+        Write-Host "Seleccione donde se usara S_Hospital:" -ForegroundColor White
+        Write-Host " [1] Esta computadora (recomendado)" -ForegroundColor Green
+        Write-Host " [2] Servidor para otras computadoras de la red" -ForegroundColor White
+        $scopeChoice = ''
+        while ($scopeChoice -notin @('1', '2')) {
+            $scopeChoice = Read-Host 'Seleccione una opcion [1-2]'
+        }
+        $installScopeChoice = if ($scopeChoice -eq '1') { 'SinglePc' } else { 'Lan' }
+
         # ---- D. Network / IP ----
+        if ($installScopeChoice -eq 'Lan') {
         Write-Host "[*] Detectando red LAN..." -ForegroundColor Yellow
         $ipResult = Confirm-OrSelectServerIp
         $serverIp = $ipResult.IPAddress
@@ -930,6 +955,11 @@ try {
         }
         catch {
             [void]$warnings.Add("No se pudo verificar el perfil de red. Asegurese de permitir trafico en los puertos necesarios.")
+        }
+        }
+        else {
+            $serverIp = '127.0.0.1'
+            Write-Host "[OK] Modo recomendado: acceso solo desde esta computadora." -ForegroundColor Green
         }
 
         # ---- F. Docker check ----
@@ -964,6 +994,11 @@ try {
         }
 
         # ---- H. Offline mode detection ----
+        $installMode = Resolve-InstallMode `
+            -Choice $installScopeChoice `
+            -DetectedIp $serverIp `
+            -AppPort $appPort
+        $serverIp = $installMode.AppHost
         $offlineImagesDir = Join-Path $projectRoot "offline-images"
         $isOfflineMode = Test-Path $offlineImagesDir
         Write-Host ""
@@ -1089,6 +1124,8 @@ try {
             # Write .env
             $rootVars = @{
                 "SERVER_IP"        = $serverIp
+                "APP_BIND_IP"      = $(if ($installMode.LanEnabled) { '0.0.0.0' } else { '127.0.0.1' })
+                "SOKETI_BIND_IP"   = $(if ($installMode.LanEnabled) { '0.0.0.0' } else { '127.0.0.1' })
                 "APP_PORT"         = "$appPort"
                 "APP_KEY"          = $currAppKey
                 "DB_PORT"          = "$dbPort"
@@ -1406,6 +1443,7 @@ try {
         # ==============================================================
         # FIREWALL RULE
         # ==============================================================
+        if ($installMode.FirewallRequired) {
         try {
             & netsh advfirewall firewall delete rule name="S_Hospital Server LAN Port $appPort" 2>$null
             & netsh advfirewall firewall add rule name="S_Hospital Server LAN Port $appPort" dir=in action=allow protocol=TCP localport=$appPort | Out-Null
@@ -1413,6 +1451,7 @@ try {
         }
         catch {
             [void]$warnings.Add("No se pudo crear la regla de firewall. Habilitela manualmente.")
+        }
         }
 
         # ==============================================================
@@ -1422,7 +1461,7 @@ try {
         Write-Host "[*] Verificacion final del servicio..." -ForegroundColor Yellow
         Start-Sleep -Seconds 5
 
-        $healthCheckUrl = "http://${serverIp}:${appPort}/up"
+        $healthCheckUrl = "$($installMode.AppUrl)/up"
         try {
             $webResponse = Invoke-WebRequest -Uri $healthCheckUrl -UseBasicParsing -TimeoutSec 10 -ErrorAction SilentlyContinue
             if ($webResponse -and $webResponse.StatusCode -eq 200) {
@@ -1435,7 +1474,7 @@ try {
         catch {
             Write-Host "[WARN] No se pudo conectar a $healthCheckUrl." -ForegroundColor Yellow
             Write-Host "  Puede ser normal si la aplicacion aun esta iniciando." -ForegroundColor Gray
-            Write-Host "  Pruebe manualmente en el navegador: http://${serverIp}:${appPort}" -ForegroundColor White
+            Write-Host "  Pruebe manualmente en el navegador: $($installMode.AppUrl)" -ForegroundColor White
         }
 
         # ==============================================================
@@ -1446,19 +1485,26 @@ try {
         Write-Host " [SUCCESS] S_HOSPITAL - DESPLIEGUE COMPLETADO" -ForegroundColor Green -BackgroundColor DarkGreen
         Write-Host "======================================================================" -ForegroundColor Green
         Write-Host ""
-        Write-Host " [RED] DIRECCIONES DE ACCESO:" -ForegroundColor Cyan
-        Write-Host "  -> Esta computadora:  http://localhost:$appPort" -ForegroundColor White
-        Write-Host "  -> Estaciones LAN:    http://${serverIp}:${appPort}" -ForegroundColor Yellow -BackgroundColor Black
+        Write-Host " [RED] DIRECCION DE ACCESO:" -ForegroundColor Cyan
+        Write-Host "  -> S_Hospital: $($installMode.AppUrl)" -ForegroundColor White
+        if ($installMode.LanEnabled) {
+            Write-Host "  -> Otras computadoras: $($installMode.AppUrl)" -ForegroundColor Yellow -BackgroundColor Black
+        }
         Write-Host ""
         Write-Host " [ADMIN] CREDENCIALES:" -ForegroundColor Cyan
         Write-Host "  -> Usuario:    $adminUsername" -ForegroundColor White
         Write-Host "  -> Contrasena: (la que ingreso arriba)" -ForegroundColor White
         Write-Host ""
         Write-Host " [INFO] INSTRUCCIONES:" -ForegroundColor Yellow
-        Write-Host "  1. En las estaciones cliente, abra Chrome/Edge:" -ForegroundColor White
-        Write-Host "     http://${serverIp}:${appPort}" -ForegroundColor Yellow
-        Write-Host "  2. Asegurese de que la IP $serverIp sea ESTATICA." -ForegroundColor White
-        Write-Host "  3. Para apagar (Docker): docker compose -f docker-compose.prod.yml down" -ForegroundColor White
+        if ($installMode.LanEnabled) {
+            Write-Host "  1. En las otras computadoras, abra Chrome/Edge:" -ForegroundColor White
+            Write-Host "     $($installMode.AppUrl)" -ForegroundColor Yellow
+            Write-Host "  2. Asegurese de que la IP $serverIp sea ESTATICA." -ForegroundColor White
+        }
+        else {
+            Write-Host "  1. Abra S_Hospital desde el acceso directo de esta computadora." -ForegroundColor White
+        }
+        Write-Host "  Para apagar (Docker): docker compose -f docker-compose.prod.yml down" -ForegroundColor White
         Write-Host "======================================================================" -ForegroundColor Green
 
         $exitRequested = $true
