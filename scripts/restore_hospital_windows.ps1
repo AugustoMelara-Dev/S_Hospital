@@ -43,10 +43,20 @@ param(
     [switch]$UseExistingEnv,
 
     [Parameter(Mandatory=$false)]
+    [switch]$ProductionRecovery,
+
+    [Parameter(Mandatory=$false)]
     [switch]$ForceProductionRestore
 )
 
 $ErrorActionPreference = "Stop"
+$recoveryContractPath = Join-Path $PSScriptRoot 'lib\recovery_contract.ps1'
+if (-not (Test-Path -LiteralPath $recoveryContractPath)) {
+    Write-Host '[ERROR] Falta el contrato local de recuperacion.' -ForegroundColor Red
+    exit 1
+}
+. $recoveryContractPath
+
 $script:ExitCode = 0
 $script:DecryptedSqlPath = ""
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -319,6 +329,30 @@ function Invoke-SelfTest {
         exit 1
     }
 
+    $expectedProductionSteps = @(
+        'verify-package',
+        'validate-disposable',
+        'verify-no-open-cash',
+        'create-preventive-backup',
+        'enter-maintenance',
+        'stop-writers',
+        'restore-production',
+        'run-migrations',
+        'verify-health',
+        'resume-writers',
+        'leave-maintenance'
+    )
+    $actualProductionSteps = Get-RecoverySteps -Mode Production
+    if (($expectedProductionSteps -join '|') -ne ($actualProductionSteps -join '|')) {
+        Write-Error 'Self-test fallo: el contrato productivo esta incompleto o fuera de orden.'
+        exit 1
+    }
+    $blockedRecovery = Test-ProductionRecoveryAllowed -State ([pscustomobject]@{})
+    if ($blockedRecovery.Allowed -or $blockedRecovery.Blockers.Count -ne 4) {
+        Write-Error 'Self-test fallo: la recuperacion sin preflight no fue bloqueada.'
+        exit 1
+    }
+
     Write-Success "Self-test completado. No se tocaron bases ni backups."
     exit 0
 }
@@ -342,6 +376,12 @@ if ($ForceProductionRestore) {
     Write-Error "-ForceProductionRestore ya no esta soportado. Use este helper solo con una base descartable; el restore productivo requiere el runbook manual con parada operativa."
     exit 1
 }
+if ($ProductionRecovery) {
+    Write-Error '-ProductionRecovery permanece bloqueado hasta completar validacion descartable, cajas cerradas y respaldo preventivo.'
+    Write-Error 'Use el modo predeterminado para validar el paquete en una base descartable.'
+    exit 1
+}
+
 if (-not (Test-DisposableDatabaseName -Database $TargetDatabase -ForceProduction:$ForceProductionRestore)) {
     Write-Error "No se puede restaurar a '$TargetDatabase'."
     Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation'. El helper no restaura sobre produccion."
