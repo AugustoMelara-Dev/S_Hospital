@@ -12,6 +12,7 @@ import { BackupEmptyState } from './components/BackupExplanationCard';
 import { BackupHistoryTable } from './components/BackupHistoryTable';
 import { BackupPageActions } from './components/BackupPageActions';
 import { PageHeader } from '@/design-system/components/PageHeader';
+import { RecoveryReadinessCard } from './components/RecoveryReadinessCard';
 import { BackupSupportStatusPanel } from './components/BackupSupportStatusPanel';
 import {
   backupDownloadFilename,
@@ -229,6 +230,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             systemStatus={systemStatus}
           />
         ) : null}
+
+        <RecoveryReadinessCard
+          readinessBlockers={visibleReadinessBlockers.map((blocker) => friendlyReadinessBlocker(blocker.code, blocker.label))}
+        />
 
         {latestBackupNotConfirmed ? (
           <WarningAlert title="Respaldo reciente no confirmado">El último respaldo exitoso registrado no se puede confirmar en el servidor local. Cree un respaldo nuevo antes de confiar en la recuperación.</WarningAlert>

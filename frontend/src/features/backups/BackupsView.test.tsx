@@ -50,17 +50,19 @@ describe('BackupsView', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders concise backup guidance without restore or delete actions', async () => {
+  it('guides guarded local recovery without exposing a restore API action', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     expect(await screen.findByRole('heading', { level: 1, name: /protección y recuperación/i })).toBeInTheDocument();
-    expect(screen.queryByText(/restauraci.n no disponible desde la app/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/restaurar|restauraci.n/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^1\. crear$/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^2\. verificar$/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^3\. restaurar con prueba$/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /restaurar/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /restauración local/i })).toBeInTheDocument();
+    expect(screen.getByText(/use el acceso “mantenimiento s_hospital” en esta computadora/i)).toBeInTheDocument();
+    expect(screen.getByText(/la restauración detiene temporalmente el sistema y crea un respaldo preventivo/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /abrir centro de soporte/i })).toHaveAttribute('href', '/support');
+    expect(screen.queryByRole('button', { name: /restaurar ahora/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /eliminar|borrar/i })).not.toBeInTheDocument();
+    expect(fetchSpy.mock.calls.flatMap((call) => call).join(' ')).not.toMatch(/\/api\/backups\/.*\/restore/i);
   });
 
   it('shows a single create backup action when the history is empty', async () => {

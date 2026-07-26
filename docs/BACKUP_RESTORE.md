@@ -1,8 +1,11 @@
 ﻿# Backup y Restore Local - Sistema de Caja Hospitalaria
 
-## Alcance de Fase 8
+## Alcance
 
-El sistema permite crear y descargar backups locales desde admin y con `php artisan hospital:backup`. No existe restore por UI ni endpoint destructivo de restore en esta fase.
+El sistema permite crear y descargar backups locales desde admin y con `php artisan hospital:backup`.
+La restauracion no expone un endpoint destructivo ni se ejecuta dentro del navegador:
+se realiza en la computadora servidor mediante el acceso **Mantenimiento S_Hospital**
+y el helper local protegido.
 
 ## Crear backup manual
 
@@ -286,27 +289,47 @@ php artisan test --colors=never
 
 ## Restore en produccion
 
-Restore en produccion requiere:
+Solo personal autorizado debe usar la recuperacion productiva desde la
+computadora servidor. No se ejecuta desde la pagina de Backups.
 
-1. Avisar parada operativa y detener acceso de clientes LAN.
-2. Crear un backup nuevo antes del restore.
-3. Copiar la base actual a un destino externo.
-4. Validar checksum del archivo que se restaurara.
-5. Restaurar primero en prueba si no se hizo antes.
-6. Restaurar en produccion con el servicio web detenido o en modo mantenimiento.
-7. Ejecutar `php artisan config:cache`.
-8. Validar `/up`, `/login`, `/verify-email`, login admin, listado de facturas, caja y reporte diario.
-9. Documentar fecha, operador, archivo usado, checksum y resultado.
+Antes de iniciar:
+
+1. Avisar la parada operativa y cerrar todas las cajas abiertas.
+2. Tener el paquete cifrado y su SHA-256 esperado.
+3. Confirmar que el ensayo descartable del mismo paquete puede completarse.
+4. Conservar la clave local de cifrado fuera del repositorio.
+
+En una instalacion Docker, abrir **Mantenimiento S_Hospital** o ejecutar:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 `
+  -ProductionRecovery `
+  -BackupFile C:\backups\hospital-backup.sql.gz.enc `
+  -ExpectedSha256 <sha256>
+```
+
+El asistente exige escribir exactamente el nombre de la base activa y
+`RESTAURAR`. Antes de reemplazar datos valida el paquete en una base
+descartable, comprueba que no haya cajas abiertas y crea un respaldo preventivo.
+Luego activa mantenimiento, detiene los escritores, restaura, ejecuta
+migraciones, audita las reglas institucionales y verifica la salud.
+
+Si la restauracion o la verificacion falla despues del reemplazo, intenta
+rollback con el respaldo preventivo y mantiene la aplicacion en mantenimiento.
+No se debe forzar la salida de mantenimiento hasta revisar el resultado.
 
 ## Checklist de evidencia minima
 
-- Fecha y hora del restore de prueba.
+- Fecha y hora de la validacion y de la recuperacion.
 - Equipo donde se probo.
-- Archivo restaurado.
-- Checksum esperado y checksum calculado.
-- Resultado de `php artisan migrate:status`.
-- Resultado de `/up`, `/login`, `/verify-email`.
-- Conteos minimos revisados: users, roles, permissions, services, invoices, payments, cash_register_sessions, backup_logs.
+- Identificador relativo del respaldo, sin ruta absoluta.
+- Coincidencia del SHA-256 esperado y calculado.
+- Resultado del respaldo preventivo.
+- Resultado de migraciones, auditoria de catalogo y verificacion de salud.
+- Resultado del rollback cuando se haya ejercitado.
+- Conteos minimos revisados: users, roles, permissions, services, invoices,
+  invoice_items, payments, cash_register_sessions, cash_movements y backup_logs.
+- Estado final de mantenimiento y de los procesos escritores.
 - Firma o nombre del responsable local.
 
 ## Script Fase 10

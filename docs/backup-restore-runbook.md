@@ -7,8 +7,9 @@ servidor LAN del hospital.
 
 - Los respaldos se crean desde la app, desde `hospital:backup` o por el
   scheduler local.
-- La restauracion no existe en la UI ni en la API. Cualquier restore se hace
-  desde el servidor por personal autorizado.
+- La restauracion no existe como accion destructiva en la UI ni en la API.
+  La pagina orienta al acceso local **Mantenimiento S_Hospital**; el restore se
+  ejecuta desde el servidor por personal autorizado.
 - Los respaldos quedan registrados en `backup_logs` con nombre, estado,
   tamano, SHA-256, tipo y usuario solicitante cuando aplica.
 - El archivo cifrado se guarda en el disco `local` de Laravel:
@@ -109,7 +110,9 @@ Notas:
 
 - `TargetDatabase` debe ser descartable y contener `test`, `restore`,
   `validation`, `disposable` o `proof`.
-- El script rechaza bases productivas incluso si alguien intenta forzar el restore; produccion se restaura solo con el runbook manual y parada operativa.
+- El modo predeterminado rechaza bases productivas. Para produccion solo se
+  acepta el modo explicito `-ProductionRecovery`, con doble confirmacion,
+  validacion descartable, respaldo preventivo y parada operativa.
 - Para backups `.sql.gz.enc`, el script llama internamente a
   `php artisan hospital:decrypt-backup <input> <output>`.
 - Para ensayo sin escribir datos, usar `-WhatIf`.
@@ -155,44 +158,48 @@ shred -u /tmp/hospital-backup-restore.sql 2>/dev/null || rm -f /tmp/hospital-bac
 Solo proceder si el restore de prueba fue exitoso y existe autorizacion
 escrita.
 
-1. Poner la app en mantenimiento:
+1. Confirmar que todas las cajas esten cerradas y avisar la parada.
+2. Calcular el SHA-256 del paquete cifrado.
+3. Desde la computadora servidor, abrir **Mantenimiento S_Hospital** o ejecutar:
 
-   ```bash
-   php artisan down
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 `
+     -ProductionRecovery `
+     -BackupFile C:\backups\hospital-backup.sql.gz.enc `
+     -ExpectedSha256 <sha256>
    ```
 
-2. Crear dump final del estado actual antes de sobrescribir:
+4. Escribir el nombre exacto de la base activa cuando el asistente lo solicite.
+5. Escribir `RESTAURAR` para la segunda confirmacion.
+6. Esperar el resultado final sin cerrar la ventana.
 
-   ```bash
-   mysqldump -u root -p s_hospital | gzip > /tmp/pre-restore-$(date +%Y%m%d-%H%M%S).sql.gz
-   ```
+El asistente ejecuta en este orden:
 
-3. Restaurar el SQL validado:
+1. Verifica SHA-256 y descifra el paquete en almacenamiento temporal.
+2. Restaura y revisa diez tablas criticas en una base descartable.
+3. Bloquea si existe una caja abierta.
+4. Crea y verifica un respaldo preventivo de la base activa.
+5. Activa mantenimiento y detiene los escritores.
+6. Reemplaza la base, ejecuta migraciones y audita reglas institucionales.
+7. Verifica salud, reinicia escritores y sale de mantenimiento.
 
-   ```bash
-   mysql -u root -p s_hospital < /tmp/hospital-backup-restore.sql
-   ```
+### Fallo y rollback
 
-4. Ejecutar validaciones minimas:
+Si ocurre un error despues de reemplazar la base:
 
-   ```bash
-   php artisan migrate:status
-   php artisan test --filter=BackupWorkflowTest
-   ```
+- el asistente intenta restaurar automaticamente el respaldo preventivo;
+- la aplicacion permanece en mantenimiento;
+- no se debe reiniciar caja ni facturacion hasta que soporte confirme el estado;
+- conservar el resultado visible y registrar si `rollback_succeeded` fue
+  verdadero o falso.
 
-5. Levantar la app:
+### Evidencia operativa
 
-   ```bash
-   php artisan up
-   ```
-
-6. Registrar manualmente en la bitacora operativa:
-   - fecha y hora;
-   - responsable;
-   - motivo;
-   - SHA-256 restaurado;
-   - base de prueba usada;
-   - resultado de validaciones.
+Registrar fecha/hora, responsable, motivo, identificador relativo del respaldo,
+coincidencia del SHA-256, conteos de validacion, resultado del respaldo
+preventivo, migraciones, auditoria de catalogo, salud, rollback (si aplico),
+estado final de mantenimiento y escritores. No incluir credenciales, clave de
+cifrado ni rutas absolutas del servidor.
 
 ## 9. Criterios de exito
 
