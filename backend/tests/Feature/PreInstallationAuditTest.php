@@ -25,28 +25,47 @@ class PreInstallationAuditTest extends TestCase
 
         $reflection = new ReflectionClass(InstitutionalReceiptSettingsController::class);
         $updateMethod = $reflection->getMethod('updateInstitution');
-        $startLine = $updateMethod->getStartLine();
-        $endLine = $updateMethod->getEndLine();
-
-        $source = file($updateMethod->getFileName());
-        $body = implode('', array_slice($source, $startLine - 1, $endLine - $startLine + 1));
+        $fileSource = file($reflection->getFileName());
+        $body = implode('', array_slice(
+            $fileSource,
+            $updateMethod->getStartLine() - 1,
+            $updateMethod->getEndLine() - $updateMethod->getStartLine() + 1,
+        ));
 
         $this->assertStringContainsString(
-            'FiscalSetting',
+            'UpdateFiscalInstitutionAction',
             $body,
-            'La actualizacion de institucion debe seguir viviendo contra FiscalSetting.',
+            'updateInstitution debe inyectar y delegar al caso de uso canonico UpdateFiscalInstitutionAction.',
         );
 
         $this->assertStringContainsString(
-            'FiscalSettingsController',
+            '$action->execute(',
             $body,
-            'updateInstitution debe delegar al caso de uso canonico de FiscalSetting, no duplicar la logica de escritura.',
+            'updateInstitution debe ejecutar el caso de uso canonico en lugar de duplicar la escritura.',
+        );
+
+        $this->assertStringContainsString(
+            'use App\\Actions\\Fiscal\\UpdateFiscalInstitutionAction;',
+            implode('', $fileSource),
+            'El controlador debe importar el caso de uso canonico.',
         );
 
         $this->assertStringNotContainsString(
-            '$setting->fill(['.PHP_EOL.'                ...$values,',
+            '$setting->fill(',
             $body,
-            'updateInstitution no debe replicar la asignacion de campos institucionales; debe delegar.',
+            'updateInstitution no debe replicar la asignacion de campos; debe delegar.',
+        );
+
+        $this->assertStringNotContainsString(
+            "FiscalSetting::query()->first() ?? new FiscalSetting",
+            $body,
+            'updateInstitution no debe volver a resolver FiscalSetting directamente.',
+        );
+
+        $this->assertStringNotContainsString(
+            'institutional_receipt.settings.updated',
+            implode('', $fileSource),
+            'updateInstitution no debe seguir emitiendo una accion de auditoria paralela a fiscal_settings.',
         );
     }
 

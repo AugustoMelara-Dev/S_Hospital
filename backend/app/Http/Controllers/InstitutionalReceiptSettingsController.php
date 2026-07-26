@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Fiscal\UpdateFiscalInstitutionAction;
 use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
 use App\Actions\InstitutionalReceipts\ResolveReceiptPrintProfileAction;
 use App\Http\Requests\InstitutionalReceipts\StoreReceiptSeriesRequest;
@@ -57,44 +58,14 @@ class InstitutionalReceiptSettingsController extends Controller
         ]);
     }
 
-    public function updateInstitution(UpdateReceiptInstitutionRequest $request): JsonResponse
+    public function updateInstitution(UpdateReceiptInstitutionRequest $request, UpdateFiscalInstitutionAction $action): JsonResponse
     {
-        $setting = DB::transaction(function () use ($request): FiscalSetting {
-            $setting = FiscalSetting::query()->first() ?? new FiscalSetting;
-            $fields = $this->institutionFields();
-            $oldValues = $setting->exists ? $setting->only($fields) : null;
-
-            if (! $setting->exists) {
-                $setting->fill([
-                    'default_tax_rate' => '15.00',
-                    'receipt_width' => '80mm',
-                    'primary_color' => 'indigo',
-                    'receipt_paper_size' => 'half_letter',
-                ]);
-                $setting->created_by = $this->authenticatedUser($request)->id;
-            }
-
-            $values = $request->validated();
-            $values['rtn'] = $values['rtn'] ?? '';
-
-            $setting->fill([
-                ...$values,
-                'receipt_template_mode' => $request->input('receipt_template_mode', 'institutional'),
-            ]);
-            $setting->updated_by = $this->authenticatedUser($request)->id;
-            $setting->save();
-
-            $this->audit(
-                $this->authenticatedUser($request)->id,
-                $oldValues ? 'institutional_receipt.settings.updated' : 'institutional_receipt.settings.created',
-                FiscalSetting::class,
-                $setting->id,
-                $oldValues,
-                $setting->refresh()->only($fields)
-            );
-
-            return $setting->refresh();
-        });
+        $setting = $action->execute(
+            user: $this->authenticatedUser($request),
+            validated: $request->validated(),
+            request: $request,
+            receiptTemplateMode: $request->input('receipt_template_mode', 'institutional'),
+        );
 
         return response()->json([
             'data' => $setting,

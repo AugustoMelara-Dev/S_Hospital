@@ -56,8 +56,12 @@ class InstitutionalReceiptSettingsTest extends TestCase
         ]);
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
-            'action' => 'institutional_receipt.settings.created',
+            'action' => 'fiscal_settings.created',
             'entity_type' => FiscalSetting::class,
+        ]);
+        $this->assertDatabaseMissing('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'institutional_receipt.settings.created',
         ]);
     }
 
