@@ -236,8 +236,14 @@ export function filterViolationsForMode(violations, mode) {
   if (mode === 'inventory') return violations;
   if (mode === 'final') return violations.filter((violation) => !/\.(?:test|spec|stories)\.(?:ts|tsx)$/.test(violation.file));
   if (mode === 'strict') {
-    return violations.filter((violation) => strictModulePrefixes.some((prefix) => violation.file.startsWith(prefix))
+    const scoped = violations.filter((violation) => strictModulePrefixes.some((prefix) => violation.file.startsWith(prefix))
       && !/\.(?:test|spec|stories)\.(?:ts|tsx)$/.test(violation.file));
+    const filesWithLegacyImport = new Set(
+      scoped.filter((violation) => violation.kind === 'legacy-import').map((violation) => violation.file),
+    );
+    return scoped.filter(
+      (violation) => !(violation.kind === 'compat-surface' && filesWithLegacyImport.has(violation.file)),
+    );
   }
   throw new Error(`Modo desconocido: ${mode}`);
 }

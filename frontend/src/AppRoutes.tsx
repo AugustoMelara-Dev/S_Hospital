@@ -30,7 +30,6 @@ const CatalogView = lazy(() => import('./features/catalog/CatalogView').then((mo
 const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((module) => ({ default: module.DashboardView })));
 const FiscalSettingsView = lazy(() => import('./features/settings/FiscalSettingsView').then((module) => ({ default: module.FiscalSettingsView })));
 const HelpView = lazy(() => import('./features/help/HelpView').then((module) => ({ default: module.HelpView })));
-const InstitutionalReceiptSettingsView = lazy(() => import('./features/receipt-settings/InstitutionalReceiptSettingsView').then((module) => ({ default: module.InstitutionalReceiptSettingsView })));
 const InvoiceHistoryView = lazy(() => import('./features/invoices/InvoiceHistoryView').then((module) => ({ default: module.InvoiceHistoryView })));
 const NewInvoiceView = lazy(() => import('./features/invoices/NewInvoiceView').then((module) => ({ default: module.NewInvoiceView })));
 const ReportsView = lazy(() => import('./features/reports/ReportsView').then((module) => ({ default: module.ReportsView })));

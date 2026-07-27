@@ -51,7 +51,7 @@ describe('ui legacy audit', () => {
     ];
 
     expect(filterViolationsForMode(violations, 'inventory')).toHaveLength(2);
-    expect(filterViolationsForMode(violations, 'strict')).toHaveLength(1);
+    expect(filterViolationsForMode(violations, 'strict')).toHaveLength(2);
     expect(filterViolationsForMode(violations, 'final')).toHaveLength(2);
   });
 

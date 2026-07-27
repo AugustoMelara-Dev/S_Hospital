@@ -85,7 +85,6 @@ const advancedProfileSchema = z.object({
   support_reason: z.string().trim().min(10, 'Documente el motivo de soporte.'),
 });
 
-type InstitutionFormData = z.infer<typeof institutionSchema>;
 type SeriesFormData = z.infer<typeof seriesSchema>;
 type ProfileFormData = ReceiptProfileForm;
 type AdvancedProfileFormData = z.infer<typeof advancedProfileSchema>;
