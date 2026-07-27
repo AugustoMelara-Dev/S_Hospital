@@ -64,3 +64,120 @@ describe('Pre-installation audit: fiscal sequence form', () => {
     expect(source).toContain('El backend lo incrementa al emitir. No se reinicia desde esta pantalla.');
   });
 });
+
+describe('Pre-installation audit: H1 canonical institution source', () => {
+  it('HospitalSettingsView is the only React form that writes institution identity fields', () => {
+    const hospitalSource = readSource('../features/settings/HospitalSettingsView.tsx');
+    const receiptSource = readSource('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx');
+    const fiscalSource = readSource('../features/settings/FiscalSettingsView.tsx');
+
+    expect(hospitalSource).toContain('hospital_name');
+    expect(hospitalSource).toContain('government_line');
+    expect(hospitalSource).toContain('secretariat_line');
+    expect(hospitalSource).toContain('receipt_location');
+
+    expect(receiptSource).not.toMatch(/institutionSchema\s*=\s*z\.object/);
+    expect(receiptSource).not.toMatch(/updateReceiptInstitution\(/);
+    expect(receiptSource).not.toContain("key: 'institucion'");
+    expect(receiptSource).not.toMatch(/<form[^>]*onSubmit=\{institutionForm/);
+
+    expect(fiscalSource).toContain('<HospitalSettingsView');
+  });
+
+  it('AppRoutes redirects /settings/institutional-receipts to /settings/fiscal', () => {
+    const appRoutesSource = readSource('../AppRoutes.tsx');
+
+    expect(appRoutesSource).toContain(`path={appRoutes.receiptSettings.path}`);
+    const receiptRouteBlock = appRoutesSource.match(
+      new RegExp(`<Route\\s+path=\\{appRoutes\\.receiptSettings\\.path\\}[\\s\\S]*?\\/>`),
+    );
+    expect(receiptRouteBlock, 'Debe existir una ruta explicita para /settings/institutional-receipts.').not.toBeNull();
+    expect(receiptRouteBlock?.[0]).toMatch(/Navigate\s+to=\{appRoutes\.fiscalSettings\.path\}/);
+    expect(receiptRouteBlock?.[0]).toContain('replace');
+  });
+});
+
+describe('Pre-installation audit: H2 separate numbering', () => {
+  it('does not import FiscalSequence in InstitutionalReceiptSeries or vice versa', () => {
+    const institutionalSeriesModel = readSource('../../../backend/app/Models/InstitutionalReceiptSeries.php');
+    const fiscalSequenceModel = readSource('../../../backend/app/Models/FiscalSequence.php');
+
+    expect(institutionalSeriesModel).not.toContain('FiscalSequence');
+    expect(fiscalSequenceModel).not.toContain('InstitutionalReceiptSeries');
+
+    const institutionalController = readSource('../../../backend/app/Http/Controllers/InstitutionalReceiptSettingsController.php');
+    expect(institutionalController).not.toContain('FiscalSequence::');
+    expect(institutionalController).not.toMatch(/->update\(\s*\[\s*['"]current_number['"]/);
+    expect(institutionalController).not.toMatch(/fill\(\s*\[\s*['"]current_number['"]/);
+  });
+});
+
+describe('Pre-installation audit: H3 color out of normal flow', () => {
+  it('UpdateReceiptSeriesRequest treats receipt_number_color as optional', () => {
+    const requestSource = readSource('../../../backend/app/Http/Requests/InstitutionalReceipts/UpdateReceiptSeriesRequest.php');
+
+    expect(requestSource).toContain('receipt_number_color');
+    expect(requestSource).toMatch(/receipt_number_color['"]\s*=>\s*\[\s*'sometimes'/);
+  });
+
+  it('InstitutionalReceiptSeriesView omits the color picker and the field from the normal form', () => {
+    const source = readSource('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx');
+    expect(source).not.toMatch(/<Input\s+id="receipt_number_color"\s+type="color"/);
+    expect(source).not.toMatch(/name="receipt_number_color"/);
+    expect(source).not.toMatch(/label:\s*['"]Color del número['"]/);
+  });
+});
+
+describe('Pre-installation audit: H4 Honduras defaults', () => {
+  it('HondurasDistributionSeeder declares the canonical constants', () => {
+    const seederSource = readSource('../../../backend/database/seeders/HondurasDistributionSeeder.php');
+
+    expect(seederSource).toContain('HOSPITAL_NAME');
+    expect(seederSource).toContain('GOVERNMENT_LINE');
+    expect(seederSource).toContain('SECRETARIAT_LINE');
+    expect(seederSource).toContain('RECEIPT_LOCATION');
+    expect(seederSource).not.toContain('VALIDACION-CAI');
+    expect(seederSource).not.toContain('08019999123456');
+    expect(seederSource).not.toContain('2444-0000');
+    expect(seederSource).not.toMatch(/cai\s*=\s*['"][A-Z0-9-]/i);
+    expect(seederSource).not.toMatch(/range_authorization\s*=\s*['"][A-Z0-9-]/i);
+  });
+
+  it('HondurasDistributionSeeder does not introduce FiscalSequence rows', () => {
+    const seederSource = readSource('../../../backend/database/seeders/HondurasDistributionSeeder.php');
+    expect(seederSource).not.toContain('FiscalSequence');
+    expect(seederSource).not.toMatch(/min_number\s*=/);
+    expect(seederSource).not.toMatch(/max_number\s*=/);
+    expect(seederSource).not.toMatch(/valid_until\s*=/);
+  });
+});
+
+describe('Pre-installation audit: H5/H6 maintenance launcher and icons', () => {
+  it('install_hospital_startup_shortcut.ps1 defaults to the maintenance console', () => {
+    const source = readSource('../../../scripts/install_hospital_startup_shortcut.ps1');
+    expect(source).toContain('maintenance_hospital_windows.ps1');
+    expect(source).not.toMatch(/restore_hospital_windows\.ps1['"]?\s*\}/);
+  });
+
+  it('maintenance console avoids depending on host MySQL', () => {
+    const source = readSource('../../../scripts/maintenance_hospital_windows.ps1');
+    expect(source).toContain('docker compose');
+    expect(source).not.toMatch(/mysql\.exe[^a-z]/);
+  });
+
+  it('three multiresolution icons exist and are distinct', () => {
+    const readSize = (relative: string) => readFileSync(resolve(here, `../../public/icons/${relative}`)).length;
+    const appSize = readSize('s-hospital-app.ico');
+    const installerSize = readSize('s-hospital-installer.ico');
+    const maintenanceSize = readSize('s-hospital-maintenance.ico');
+
+    expect(appSize, 's-hospital-app.ico debe existir').toBeGreaterThan(4096);
+    expect(installerSize, 's-hospital-installer.ico debe existir').toBeGreaterThan(4096);
+    expect(maintenanceSize, 's-hospital-maintenance.ico debe existir').toBeGreaterThan(4096);
+
+    expect(appSize).not.toBe(installerSize);
+    expect(installerSize).not.toBe(maintenanceSize);
+    expect(appSize).not.toBe(maintenanceSize);
+  });
+});
+

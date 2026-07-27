@@ -67,7 +67,6 @@ describe('AppRoutes lazy-loading', () => {
       'DashboardView',
       'FiscalSettingsView',
       'HelpView',
-      'InstitutionalReceiptSettingsView',
       'InvoiceHistoryView',
       'NewInvoiceView',
       'ReportsView',

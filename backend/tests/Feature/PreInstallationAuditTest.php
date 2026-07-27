@@ -211,6 +211,62 @@ class PreInstallationAuditTest extends TestCase
         $this->assertSame('Tegucigalpa oficial', $settings->receipt_location);
     }
 
+    public function test_honduras_seeder_never_introduces_fake_fiscal_data(): void
+    {
+        FiscalSetting::query()->create([
+            'hospital_name' => '',
+            'rtn' => '',
+            'default_tax_rate' => '15.00',
+            'receipt_width' => '80mm',
+            'primary_color' => 'indigo',
+            'receipt_paper_size' => 'half_letter',
+        ]);
+
+        (new HondurasDistributionSeeder)->run();
+        (new HondurasDistributionSeeder)->run();
+
+        $settings = FiscalSetting::query()->first();
+        $this->assertSame('', (string) $settings->rtn);
+        $this->assertSame('', (string) $settings->address);
+        $this->assertSame('', (string) $settings->phone);
+        $this->assertSame('', (string) $settings->slogan);
+        $this->assertSame('Hospital General San Isidro', $settings->hospital_name);
+        $this->assertSame(1, FiscalSetting::query()->count(), 'El seeder no debe duplicar filas.');
+    }
+
+    public function test_honduras_seeder_does_not_touch_fiscal_sequence_table(): void
+    {
+        FiscalSetting::query()->create([
+            'hospital_name' => '',
+            'rtn' => '',
+            'default_tax_rate' => '15.00',
+            'receipt_width' => '80mm',
+            'primary_color' => 'indigo',
+            'receipt_paper_size' => 'half_letter',
+        ]);
+
+        \App\Models\FiscalSequence::query()->create([
+            'document_type' => 'invoice',
+            'prefix' => 'PRE',
+            'min_number' => 1,
+            'max_number' => 100,
+            'current_number' => 50,
+            'cai' => 'CAI-EXISTENTE',
+            'valid_until' => now()->addYear(),
+            'active' => true,
+            'created_by' => null,
+            'updated_by' => null,
+        ]);
+
+        (new HondurasDistributionSeeder)->run();
+
+        $sequence = \App\Models\FiscalSequence::query()->first();
+        $this->assertNotNull($sequence, 'El seeder no debe crear secuencias fiscales.');
+        $this->assertSame('PRE', $sequence->prefix);
+        $this->assertSame(50, $sequence->current_number);
+        $this->assertSame('CAI-EXISTENTE', $sequence->cai);
+    }
+
     public function test_database_seeder_calls_honduras_distribution_seeder(): void
     {
         $seeder = new DatabaseSeeder;
