@@ -1,10 +1,10 @@
 ﻿{
     "skip":  0,
-    "ok":  18,
-    "commit":  "91e833dfb773386a462e78492163e75c094cb373",
-    "generated_at":  "2026-07-27T15:43:01.3365914-06:00",
+    "ok":  19,
+    "commit":  "b756ef308758b3e36a43574f60b051e573c3468f",
+    "generated_at":  "2026-07-27T17:38:39.7140269-06:00",
     "error":  0,
-    "total":  18,
+    "total":  19,
     "suites":  {
                    "recovery_contract.test.ps1":  "OK",
                    "recovery_docker.test.ps1":  "OK",
@@ -23,7 +23,8 @@
                    "unattended_admin.test.ps1":  "OK",
                    "lan_asset_discovery.test.ps1":  "OK",
                    "production_readiness_preflight.test.ps1":  "OK",
-                   "run_release_e2e_mariadb.test.ps1":  "OK"
+                   "run_release_e2e_mariadb.test.ps1":  "OK",
+                   "certification\\regenerate_candidate_manifest.test.ps1":  "OK"
                },
     "failed":  0
 }

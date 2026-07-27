@@ -1,0 +1,42 @@
+{
+  "status": "PENDING",
+  "timestamp": "2026-07-27T16:50:00-06:00",
+  "operator": null,
+  "environment": {
+    "vm_or_pc": null,
+    "windows_edition": null,
+    "windows_build": null,
+    "architecture": null,
+    "ram_gb": null,
+    "disk_free_gb": null,
+    "docker_desktop_version": null,
+    "wsl_or_virtualization": null,
+    "mysql_present": null,
+    "s_hospital_pre_installed": null
+  },
+  "candidate": {
+    "source_commit": "5e7d48ecd6b7d8a0f647d8892e90fe8ac1b91c3e",
+    "expected_sha256": "0a2947fd88d6ee4415b5bac314bbf4da6d7f89a72c570088116ffb54832b8559",
+    "measured_sha256": null,
+    "match": null
+  },
+  "results": {
+    "installation": null,
+    "first_start": null,
+    "configuration": null,
+    "cash_and_invoice_l900": null,
+    "print_logical": null,
+    "print_physical": null,
+    "reprint": null,
+    "cancel": null,
+    "maintenance": null,
+    "backup": null,
+    "restore": null,
+    "rollback": null,
+    "restart": null,
+    "offline_check": null,
+    "uninstall_reinstall": null
+  },
+  "defects": [],
+  "promoted_to_usb_at": null
+}
