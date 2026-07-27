@@ -1,11 +1,26 @@
 # Reporte de entrega — Auditoría pre-instalación S_Hospital
 
-> Documento de certificación generado por el agente de código. No
-> constituye la liberación de la entrega USB ni la publicación de
-> una release. La regeneración del paquete y los hashes finales
-> queda bloqueada hasta que un operador complete la prueba manual
-> en Windows limpio y autorice la publicación, según la regla 9 de
-> la auditoría.
+> **SUPERSEDED** — Este reporte corresponde a una entrega
+> anterior y contiene identificadores obsoletos (SHA final
+> `64664959`, "Commits nuevos 12", "Frontend 1149 / 3 failed preexistentes").
+>
+> La fuente canonica vigente es
+> **`docs/audit/PRE_INSTALLATION_FINAL_REPORT.md`**.
+>
+> El SHA real de la rama al cierre de la ultima fase de
+> certificacion automatizada se obtiene siempre con
+> `git rev-parse HEAD`. Este archivo se conserva unicamente como
+> registro historico de los identificadores que estuvieron vigentes
+> al cierre del primer intento de la auditoria pre-instalacion.
+
+## 1. Identificadores (historico)
+
+| Campo | Valor (desactualizado) |
+|---|---|
+| SHA base (`main`) | `fe4b40f2168d15097a59bed044f6e0b891b7e22d` |
+| SHA final (snapshot intermedio) | `64664959a6ea1ef5c0a06d924133bc26108aeb2a` (NO es el HEAD actual) |
+| Rama | `audit/pre-installation-fixes` |
+| Commits (snapshot intermedio) | 12 (NO es el conteo real) |
 
 ## 1. Identificadores
 

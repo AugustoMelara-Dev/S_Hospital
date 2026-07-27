@@ -1,0 +1,33 @@
+﻿{
+    "frontend":  {
+                     "typescript_errors":  0,
+                     "build":  "documentado via typecheck verde",
+                     "lint_errors":  0,
+                     "failed":  0,
+                     "passed":  1162
+                 },
+    "powershell":  {
+                       "failed":  0,
+                       "suites":  18
+                   },
+    "branch":  "audit/pre-installation-fixes",
+    "repository_commit":  "91e833dfb773386a462e78492163e75c094cb373",
+    "backend":  {
+                    "assertions":  7344,
+                    "skipped_note":  "11 requieren MariaDB (validados en gate MariaDB dedicado); 1 es coverage driver (pcov/xdebug, documentado en backend-skipped.txt).",
+                    "skipped":  12,
+                    "failed":  0,
+                    "passed":  981
+                },
+    "generated_at":  "2026-07-27T15:43:35.1062037-06:00",
+    "mariadb":  {
+                    "details":  "9/11 MariaDB-especificos verificados localmente en 127.0.0.1:3307. 2 pendientes requieren pcntl (CI Linux). 1 skip explicito por cobertura. Ver mariadb-skipped-analysis.md y mariadb-full.txt.",
+                    "skipped":  0,
+                    "failed":  0,
+                    "passed":  9
+                },
+    "python":  {
+                   "failed":  0,
+                   "suites":  1
+               }
+}
