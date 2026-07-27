@@ -180,4 +180,3 @@ describe('Pre-installation audit: H5/H6 maintenance launcher and icons', () => {
     expect(appSize).not.toBe(maintenanceSize);
   });
 });
-
