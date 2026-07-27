@@ -1,0 +1,25 @@
+﻿Suites ejecutadas:
+  [01] recovery_contract.test.ps1 : OK
+  [02] recovery_docker.test.ps1 : OK
+  [03] recovery_runtime.test.ps1 : OK
+  [04] recovery_validation.test.ps1 : OK
+  [05] production_recovery.test.ps1 : OK
+  [06] offline_release_contract.test.ps1 : OK
+  [07] windows_installer_contract.test.ps1 : OK
+  [08] install_hospital_startup_shortcut.test.ps1 : OK
+  [09] install_hospital_autostart.test.ps1 : OK
+  [10] pre_installation_shortcut_audit.test.ps1 : OK
+  [11] pre_installation_maintenance_audit.test.ps1 : OK
+  [12] docker_compose_dev_contract.test.ps1 : OK
+  [13] install_result.test.ps1 : OK
+  [14] install_mode.test.ps1 : OK
+  [15] unattended_admin.test.ps1 : OK
+  [16] lan_asset_discovery.test.ps1 : OK
+  [17] production_readiness_preflight.test.ps1 : OK
+  [18] run_release_e2e_mariadb.test.ps1 : OK
+
+TOTAL: 18
+OK: 18
+FAILED: 0
+ERROR: 0
+SKIP: 0

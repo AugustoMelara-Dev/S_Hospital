@@ -1,0 +1,29 @@
+﻿{
+    "skip":  0,
+    "ok":  18,
+    "commit":  "054e462b821a83a1ad4cbe2202b30d4bb7b1496f",
+    "generated_at":  "2026-07-27T07:04:15.8342229-06:00",
+    "error":  0,
+    "total":  18,
+    "suites":  {
+                   "recovery_contract.test.ps1":  "OK",
+                   "recovery_docker.test.ps1":  "OK",
+                   "recovery_runtime.test.ps1":  "OK",
+                   "recovery_validation.test.ps1":  "OK",
+                   "production_recovery.test.ps1":  "OK",
+                   "offline_release_contract.test.ps1":  "OK",
+                   "windows_installer_contract.test.ps1":  "OK",
+                   "install_hospital_startup_shortcut.test.ps1":  "OK",
+                   "install_hospital_autostart.test.ps1":  "OK",
+                   "pre_installation_shortcut_audit.test.ps1":  "OK",
+                   "pre_installation_maintenance_audit.test.ps1":  "OK",
+                   "docker_compose_dev_contract.test.ps1":  "OK",
+                   "install_result.test.ps1":  "OK",
+                   "install_mode.test.ps1":  "OK",
+                   "unattended_admin.test.ps1":  "OK",
+                   "lan_asset_discovery.test.ps1":  "OK",
+                   "production_readiness_preflight.test.ps1":  "OK",
+                   "run_release_e2e_mariadb.test.ps1":  "OK"
+               },
+    "failed":  0
+}
