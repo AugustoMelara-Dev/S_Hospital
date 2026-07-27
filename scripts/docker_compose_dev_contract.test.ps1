@@ -20,19 +20,23 @@ Assert-Contains `
     "Development backend must receive the persistent backup encryption key."
 
 Assert-Contains `
-    'command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"' `
-    "Development frontend must install exactly from package-lock.json."
+    'command: sh -c "pnpm install --frozen-lockfile && pnpm run dev -- --host 0.0.0.0"' `
+    "Development frontend must install exactly from pnpm-lock.yaml."
+
+Assert-NotContains `
+    'command: sh -c "pnpm install && pnpm run dev -- --host 0.0.0.0"' `
+    "Development frontend must not rewrite pnpm-lock.yaml at startup."
 
 Assert-NotContains `
     'command: sh -c "npm install && npm run dev -- --host 0.0.0.0"' `
-    "Development frontend must not rewrite package-lock.json at startup."
+    "Development frontend must not rely on the npm registry."
 
-$lockPath = Join-Path (Split-Path $PSScriptRoot -Parent) "frontend\package-lock.json"
+$lockPath = Join-Path (Split-Path $PSScriptRoot -Parent) "frontend\pnpm-lock.yaml"
 $lockContent = Get-Content -LiteralPath $lockPath -Raw
 
-foreach ($linuxPackage in @("node_modules/@emnapi/core", "node_modules/@emnapi/runtime")) {
-    if (-not $lockContent.Contains('"' + $linuxPackage + '": {')) {
-        throw "package-lock.json must include Linux optional package: $linuxPackage"
+foreach ($linuxPackage in @("@emnapi/core", "@emnapi/runtime")) {
+    if (-not $lockContent.Contains($linuxPackage)) {
+        throw "pnpm-lock.yaml must include Linux optional package: $linuxPackage"
     }
 }
 
@@ -65,11 +69,11 @@ Assert-Contains `
     "Development scheduler must persist an operational heartbeat."
 
 Assert-Contains `
-    'curl --max-time 4 -fsS http://127.0.0.1:8000/up' `
+    'curl --max-time 2 -fsS http://127.0.0.1:8000/healthz.txt' `
     "Development health probes must stop before Docker starts another probe."
 
 Assert-Contains `
-    'PHP_CLI_SERVER_WORKERS: ${PHP_CLI_SERVER_WORKERS:-4}' `
+    'PHP_CLI_SERVER_WORKERS: ${PHP_CLI_SERVER_WORKERS:-8}' `
     "Development PHP must serve concurrent browser, API, and health-check requests."
 
 Write-Host "[ OK ] development compose keeps backups recoverable and frontend installs reproducible"
