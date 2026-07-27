@@ -34,14 +34,16 @@ try {
             'Test-MaintenanceBackup',
             'Invoke-DisposableRestore',
             'Invoke-ProductionRecovery',
-            'Show-MaintenanceLogs',
+            'Show-MaintenanceLogs'
         )) {
-            Assert-MaintenanceAuditTest ($source -match "function\s+$([regex]::Escape($expectedFunction))\b") "Debe existir la funcion $expectedFunction en la consola de mantenimiento."
+            $escapedName = [regex]::Escape($expectedFunction)
+            $pattern = 'function\s+' + $escapedName + '\b'
+            Assert-MaintenanceAuditTest ($source -match $pattern) "Debe existir la funcion $expectedFunction en la consola de mantenimiento."
         }
 
         Assert-MaintenanceAuditTest ($source -match 'docker compose') 'La consola de mantenimiento debe usar el adaptador Docker, no depender de mysql.exe del host.'
-        Assert-MaintenanceAuditTest ($source -notmatch 'mysql\.exe') 'La consola de mantenimiento NO debe depender de mysql.exe del host para distribuciones Docker.'
-        Assert-MaintenanceAuditTest ($source -match 'NoCloseOnError|Read-Host|Pause') 'La consola de mantenimiento debe permanecer abierta en caso de error para mostrar el mensaje.'
+        Assert-MaintenanceAuditTest (-not [bool]($source -match 'mysql\.exe[^a-z]')) 'La consola de mantenimiento NO debe depender de mysql.exe del host para distribuciones Docker.'
+        Assert-MaintenanceAuditTest ($source -match 'Read-Host|Pause') 'La consola de mantenimiento debe permanecer abierta en caso de error para mostrar el mensaje.'
     }
 
     if ($script:Errors.Count -gt 0) {

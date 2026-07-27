@@ -2,6 +2,13 @@
 
 Set-StrictMode -Version Latest
 
+function Resolve-ShortcutIcon {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path)) { return '' }
+    if (-not (Test-Path -LiteralPath $Path)) { return '' }
+    return (Resolve-Path -LiteralPath $Path).Path
+}
+
 function New-HospitalShortcutPlan {
     param(
         [Parameter(Mandatory = $true)]
@@ -12,15 +19,17 @@ function New-HospitalShortcutPlan {
         [string] $MaintenanceScript,
         [Parameter(Mandatory = $true)]
         [string] $OutputRoot,
-        [string] $IconPath = ''
+        [string] $IconPath = '',
+        [string] $MaintenanceIconPath = ''
     )
 
     $resolvedRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
     $resolvedMaintenance = (Resolve-Path -LiteralPath $MaintenanceScript).Path
     $resolvedOutput = [System.IO.Path]::GetFullPath($OutputRoot)
-    $resolvedIcon = ''
-    if (-not [string]::IsNullOrWhiteSpace($IconPath) -and (Test-Path -LiteralPath $IconPath)) {
-        $resolvedIcon = (Resolve-Path -LiteralPath $IconPath).Path
+    $resolvedIcon = Resolve-ShortcutIcon -Path $IconPath
+    $resolvedMaintenanceIcon = Resolve-ShortcutIcon -Path $MaintenanceIconPath
+    if ([string]::IsNullOrWhiteSpace($resolvedMaintenanceIcon)) {
+        $resolvedMaintenanceIcon = $resolvedIcon
     }
 
     return [pscustomobject]@{
@@ -39,7 +48,7 @@ function New-HospitalShortcutPlan {
             Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$resolvedMaintenance`""
             ShortcutPath = Join-Path $resolvedOutput 'Mantenimiento S_Hospital.lnk'
             FallbackPath = Join-Path $resolvedOutput 'Mantenimiento S_Hospital.cmd'
-            IconPath = $resolvedIcon
+            IconPath = $resolvedMaintenanceIcon
         }
         WorkingDirectory = $resolvedRoot
     }
@@ -55,6 +64,7 @@ function Install-HospitalShortcuts {
         [string] $MaintenanceScript,
         [string] $OutputRoot = [Environment]::GetFolderPath('Desktop'),
         [string] $IconPath = '',
+        [string] $MaintenanceIconPath = '',
         [switch] $WhatIfOnly
     )
 
@@ -63,7 +73,8 @@ function Install-HospitalShortcuts {
         -Url $Url `
         -MaintenanceScript $MaintenanceScript `
         -OutputRoot $OutputRoot `
-        -IconPath $IconPath
+        -IconPath $IconPath `
+        -MaintenanceIconPath $MaintenanceIconPath
 
     if ($WhatIfOnly) {
         return $plan
@@ -88,7 +99,7 @@ function Install-HospitalShortcuts {
         $maintenanceShortcut.TargetPath = $plan.Maintenance.TargetPath
         $maintenanceShortcut.Arguments = $plan.Maintenance.Arguments
         $maintenanceShortcut.WorkingDirectory = $plan.WorkingDirectory
-        $maintenanceShortcut.Description = 'Respaldar o restaurar S_Hospital'
+        $maintenanceShortcut.Description = 'Mantenimiento y respaldo de S_Hospital'
         if (-not [string]::IsNullOrWhiteSpace($plan.Maintenance.IconPath)) {
             $maintenanceShortcut.IconLocation = $plan.Maintenance.IconPath
         }

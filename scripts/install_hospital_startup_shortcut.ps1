@@ -10,16 +10,20 @@ param(
     [string] $MaintenanceScript = '',
     [string] $OutputRoot = [Environment]::GetFolderPath('Desktop'),
     [string] $IconPath = '',
+    [string] $MaintenanceIconPath = '',
     [switch] $WhatIfOnly
 )
 
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($MaintenanceScript)) {
-    $MaintenanceScript = Join-Path $ProjectRoot 'scripts\restore_hospital_windows.ps1'
+    $MaintenanceScript = Join-Path $ProjectRoot 'scripts\maintenance_hospital_windows.ps1'
 }
 if ([string]::IsNullOrWhiteSpace($IconPath)) {
-    $IconPath = Join-Path $ProjectRoot 'frontend\public\icons\hospital-app.ico'
+    $IconPath = Join-Path $ProjectRoot 'frontend\public\icons\s-hospital-app.ico'
+}
+if ([string]::IsNullOrWhiteSpace($MaintenanceIconPath)) {
+    $MaintenanceIconPath = Join-Path $ProjectRoot 'frontend\public\icons\s-hospital-maintenance.ico'
 }
 
 $libraryPath = Join-Path $PSScriptRoot 'lib\shortcut_installer.ps1'
@@ -34,4 +38,5 @@ Install-HospitalShortcuts `
     -MaintenanceScript $MaintenanceScript `
     -OutputRoot $OutputRoot `
     -IconPath $IconPath `
+    -MaintenanceIconPath $MaintenanceIconPath `
     -WhatIfOnly:$WhatIfOnly
