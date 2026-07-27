@@ -37,7 +37,7 @@ foreach ($requiredInstallerSetting in @(
     "WizardStyle=modern",
     "Compression=lzma2/max",
     "SolidCompression=yes",
-    "SetupIconFile={#SourceRoot}\offline-release\frontend\public\icons\hospital-app.ico",
+    "SetupIconFile={#SourceRoot}\offline-release\frontend\public\icons\s-hospital-installer.ico",
     'Source: "{#SourceRoot}\offline-release\*"',
     'Filename: "{app}\setup.bat"',
     'WorkingDir: "{app}"',

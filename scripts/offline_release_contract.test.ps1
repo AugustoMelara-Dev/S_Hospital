@@ -68,7 +68,9 @@ Assert-Contains $releaseValidator 'scripts\lib\lan_asset_discovery.ps1' "offline
 $singlePcReleasePaths = @(
     'setup.bat',
     'docker-compose.prod.yml',
-    'frontend\public\icons\hospital-app.ico',
+    'frontend\public\icons\s-hospital-app.ico',
+    'frontend\public\icons\s-hospital-installer.ico',
+    'frontend\public\icons\s-hospital-maintenance.ico',
     'scripts\restore_hospital_windows.ps1',
     'scripts\install_hospital_startup_shortcut.ps1',
     'scripts\install_hospital_autostart.ps1',
@@ -87,6 +89,6 @@ foreach ($relativePath in $singlePcReleasePaths) {
     $expectedAssertion = 'Test-ReleaseFileMatchesSource "' + $relativePath + '"'
     Assert-Contains $releaseValidator $expectedAssertion "offline release validator"
 }
-Assert-Contains $releaseBuilder 'hospital-app.ico' "offline release builder"
+Assert-Contains $releaseBuilder 's-hospital-app.ico' "offline release builder"
 
 Write-Host "[ OK ] offline release contract is complete and secure"

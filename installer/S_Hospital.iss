@@ -24,11 +24,22 @@ PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
+; Uninstallable=no: el instalador institucional no se desinstala
+; por diseno. La auditoria pre-instalacion recomienda un flujo de
+; actualizacion/reparacion/desinstalacion controlada. Mientras
+; esa entrega no exista, la baja se realiza manualmente:
+;   1. Detener S_Hospital desde el acceso directo Mantenimiento.
+;   2. Ejecutar docker compose down -v en C:\S_Hospital.
+;   3. Opcional: borrar C:\S_Hospital y la tarea programada
+;      HospitalBackupAutomation.
+; Cualquier nueva version del instalador debe reemplazar la
+; existente y volver a invocar setup.bat para regenerar los
+; accesos directos y la programacion de respaldos.
 Uninstallable=no
 WizardStyle=modern
 Compression=lzma2/max
 SolidCompression=yes
-SetupIconFile={#SourceRoot}\offline-release\frontend\public\icons\hospital-app.ico
+SetupIconFile={#SourceRoot}\offline-release\frontend\public\icons\s-hospital-installer.ico
 SetupLogging=yes
 CloseApplications=no
 RestartIfNeededByRun=no

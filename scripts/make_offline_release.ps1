@@ -133,7 +133,7 @@ foreach ($file in $filesToCopy) {
     }
 }
 
-$shortcutIconRelativePath = 'frontend\public\icons\hospital-app.ico'
+$shortcutIconRelativePath = 'frontend\public\icons\s-hospital-app.ico'
 $shortcutIconSource = Join-Path $projectRoot $shortcutIconRelativePath
 $shortcutIconDestination = Join-Path $releaseDir $shortcutIconRelativePath
 if (-not (Test-Path -LiteralPath $shortcutIconSource -PathType Leaf)) {
@@ -141,6 +141,20 @@ if (-not (Test-Path -LiteralPath $shortcutIconSource -PathType Leaf)) {
 }
 $null = New-Item -ItemType Directory -Force -Path (Split-Path $shortcutIconDestination -Parent)
 Copy-Item -LiteralPath $shortcutIconSource -Destination $shortcutIconDestination -Force
+$maintenanceIconRelativePath = 'frontend\public\icons\s-hospital-maintenance.ico'
+$maintenanceIconSource = Join-Path $projectRoot $maintenanceIconRelativePath
+$maintenanceIconDestination = Join-Path $releaseDir $maintenanceIconRelativePath
+if (Test-Path -LiteralPath $maintenanceIconSource -PathType Leaf) {
+    $null = New-Item -ItemType Directory -Force -Path (Split-Path $maintenanceIconDestination -Parent)
+    Copy-Item -LiteralPath $maintenanceIconSource -Destination $maintenanceIconDestination -Force
+}
+$installerIconRelativePath = 'frontend\public\icons\s-hospital-installer.ico'
+$installerIconSource = Join-Path $projectRoot $installerIconRelativePath
+$installerIconDestination = Join-Path $releaseDir $installerIconRelativePath
+if (Test-Path -LiteralPath $installerIconSource -PathType Leaf) {
+    $null = New-Item -ItemType Directory -Force -Path (Split-Path $installerIconDestination -Parent)
+    Copy-Item -LiteralPath $installerIconSource -Destination $installerIconDestination -Force
+}
 # Copiar selectivamente Dockerfile.prod de backend (creando el árbol necesario)
 $destBackendDir = Join-Path $releaseDir "backend"
 $null = New-Item -ItemType Directory -Force -Path $destBackendDir

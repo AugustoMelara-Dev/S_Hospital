@@ -7,7 +7,8 @@ $testRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('s-hospital-shortcuts-'
 $projectRoot = Join-Path $testRoot 'Hospital con espacios'
 $outputRoot = Join-Path $testRoot 'Escritorio de prueba'
 $maintenanceScript = Join-Path $projectRoot 'scripts\restore_hospital_windows.ps1'
-$iconPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'frontend\public\icons\hospital-app.ico'
+$iconPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'frontend\public\icons\s-hospital-app.ico'
+$maintenanceIconPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'frontend\public\icons\s-hospital-maintenance.ico'
 $unrelatedShortcut = Join-Path $outputRoot 'Acceso ajeno.lnk'
 $script:Checks = 0
 
@@ -31,6 +32,7 @@ try {
         -MaintenanceScript $maintenanceScript `
         -OutputRoot $outputRoot `
         -IconPath $iconPath `
+        -MaintenanceIconPath $maintenanceIconPath `
         -WhatIfOnly
 
     Assert-ShortcutTest ($null -ne $plan) 'WhatIfOnly must return a shortcut plan.'
@@ -39,6 +41,7 @@ try {
     Assert-ShortcutTest ($plan.Maintenance.Name -eq 'Mantenimiento S_Hospital') 'Maintenance shortcut name is incorrect.'
     Assert-ShortcutTest ($plan.Maintenance.ScriptPath -eq $maintenanceScript) 'Maintenance script path is incorrect.'
     Assert-ShortcutTest ($plan.Application.IconPath -eq (Resolve-Path $iconPath).Path) 'Institutional icon path is incorrect.'
+    Assert-ShortcutTest ($plan.Maintenance.IconPath -eq (Resolve-Path $maintenanceIconPath).Path) 'Maintenance icon path is incorrect.'
     Assert-ShortcutTest ($plan.Maintenance.Arguments -match '-File\s+"[^"]*Hospital con espacios[^"]*restore_hospital_windows\.ps1"') 'Maintenance path with spaces must be quoted.'
     Assert-ShortcutTest (-not (Test-Path -LiteralPath (Join-Path $outputRoot 'S_Hospital.lnk'))) 'WhatIfOnly must not create the application shortcut.'
     Assert-ShortcutTest ((Get-Content -LiteralPath $unrelatedShortcut -Raw).TrimEnd() -eq 'do-not-touch') 'Unrelated shortcuts must never be overwritten.'
@@ -48,7 +51,8 @@ try {
         -Url 'http://127.0.0.1:8000' `
         -MaintenanceScript $maintenanceScript `
         -OutputRoot $outputRoot `
-        -IconPath $iconPath
+        -IconPath $iconPath `
+        -MaintenanceIconPath $maintenanceIconPath
 
     Assert-ShortcutTest $result.Success 'Shortcut installation must report success.'
     Assert-ShortcutTest (Test-Path -LiteralPath $result.ApplicationPath) 'Application shortcut was not created.'
@@ -59,7 +63,8 @@ try {
         $shell = New-Object -ComObject WScript.Shell
         $applicationShortcut = $shell.CreateShortcut($result.ApplicationPath)
         $maintenanceShortcut = $shell.CreateShortcut($result.MaintenancePath)
-        Assert-ShortcutTest ($applicationShortcut.IconLocation -like '*hospital-app.ico*') 'Generated application shortcut lost the institutional icon.'
+        Assert-ShortcutTest ($applicationShortcut.IconLocation -like '*s-hospital-app.ico*') 'Generated application shortcut lost the institutional icon.'
+        Assert-ShortcutTest ($maintenanceShortcut.IconLocation -like '*s-hospital-maintenance.ico*') 'Generated maintenance shortcut lost the dedicated maintenance icon.'
         Assert-ShortcutTest ($maintenanceShortcut.Arguments -match '-File\s+"[^"]*Hospital con espacios[^"]*restore_hospital_windows\.ps1"') 'Generated maintenance shortcut lost path quoting.'
     }
     else {

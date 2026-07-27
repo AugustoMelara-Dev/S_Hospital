@@ -33,12 +33,14 @@ try {
     Set-Content -LiteralPath $maintenanceStub -Value '# stub' -Encoding ASCII
 
     $iconPathForTest = if (Test-Path -LiteralPath $appIconPath) { $appIconPath } else { $legacyIconPath }
+    $maintenanceIconPathForTest = if (Test-Path -LiteralPath $maintenanceIconPath) { $maintenanceIconPath } else { $iconPathForTest }
 
     $plan = & $installerScript `
         -ProjectRoot $projectRoot `
         -Url 'http://127.0.0.1:8000' `
         -OutputRoot $outputRoot `
         -IconPath $iconPathForTest `
+        -MaintenanceIconPath $maintenanceIconPathForTest `
         -WhatIfOnly
 
     Assert-ShortcutAuditTest ($null -ne $plan) 'WhatIfOnly debe devolver un plan de accesos directos.'
