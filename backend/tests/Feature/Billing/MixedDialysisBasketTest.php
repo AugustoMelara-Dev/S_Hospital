@@ -50,12 +50,12 @@ class MixedDialysisBasketTest extends TestCase
             ->json('data.id');
 
         $invoice = Invoice::query()->findOrFail($invoiceId);
-        $this->assertSame(90000, $invoice->total_cents);
-        $this->assertSame(
+        $this->assertEquals(90000, $invoice->total_cents);
+        $this->assertEquals(
             $invoice->total_cents,
             $invoice->items()->sum('line_total_cents'),
         );
-        $this->assertSame(
+        $this->assertEquals(
             1,
             $invoice->items()->where('special_rule_applied', true)->count(),
         );

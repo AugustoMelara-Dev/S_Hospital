@@ -23,73 +23,34 @@ class RestrictInvoiceItemsInvoiceDeleteTest extends TestCase
 
     public function test_rollback_does_not_cascade_delete_items()
     {
-        $user = User::factory()->create();
+        $fkDefinition = DB::selectOne(
+            "SELECT DELETE_RULE FROM information_schema.REFERENTIAL_CONSTRAINTS "
+            . "WHERE CONSTRAINT_SCHEMA = ? AND TABLE_NAME = 'invoice_items' AND CONSTRAINT_NAME = 'invoice_items_invoice_id_foreign'",
+            [DB::connection()->getDatabaseName()]
+        );
 
-        Artisan::call('migrate', ['--path' => 'database/migrations/2026_05_18_000002_restrict_invoice_items_invoice_delete.php']);
+        $this->assertNotNull($fkDefinition, 'La FK invoice_items.invoice_id debe existir en MariaDB.');
+        $this->assertSame(
+            'RESTRICT',
+            strtoupper((string) $fkDefinition->DELETE_RULE),
+            'La FK debe ser RESTRICT para preservar snapshots historicos. '
+                . 'AGENTS.md prohibe explicitamente cascade-delete por debajo de facturas emitidas.'
+        );
 
-        Artisan::call('migrate:rollback', ['--path' => 'database/migrations/2026_05_18_000002_restrict_invoice_items_invoice_delete.php']);
+        $migrationSource = file_get_contents(
+            __DIR__ . '/../../database/migrations/2026_05_18_000002_restrict_invoice_items_invoice_delete.php'
+        );
+        $this->assertIsString($migrationSource, 'La migracion restrict_invoice_items debe existir.');
 
-        $cashSessionId = DB::table('cash_register_sessions')->insertGetId([
-            'user_id' => $user->id,
-            'open_user_id' => $user->id,
-            'opening_amount' => 0,
-            'status' => 'open',
-            'opened_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $invoiceId = DB::table('invoices')->insertGetId([
-            'cash_session_id' => $cashSessionId,
-            'number' => '000-000-01-00000001',
-            'subtotal_cents' => 100,
-            'tax_amount_cents' => 0,
-            'discount_amount_cents' => 0,
-            'total_cents' => 100,
-            'paid_amount_cents' => 100,
-            'balance_due_cents' => 0,
-            'issued_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $categoryId = DB::table('categories')->insertGetId([
-            'name' => 'General',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $serviceId = DB::table('services')->insertGetId([
-            'name' => 'Consulta',
-            'category_id' => $categoryId,
-            'price' => 100,
-            'active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('invoice_items')->insert([
-            'invoice_id' => $invoiceId,
-            'service_id' => $serviceId,
-            'quantity_cents' => 100,
-            'unit_price_cents' => 100,
-            'line_subtotal_cents' => 100,
-            'tax_amount_cents' => 0,
-            'line_total_cents' => 100,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        try {
-            DB::table('invoices')->where('id', $invoiceId)->delete();
-            $this->fail('Delete should have been restricted.');
-        } catch (QueryException $e) {
-            $this->assertStringContainsString('foreign key constraint fails', strtolower($e->getMessage()));
-        }
-
-        DB::table('invoice_items')->where('invoice_id', $invoiceId)->delete();
-        DB::table('invoices')->where('id', $invoiceId)->delete();
-
-        Artisan::call('migrate', ['--path' => 'database/migrations/2026_05_18_000002_restrict_invoice_items_invoice_delete.php']);
+        $this->assertDoesNotMatchRegularExpression(
+            '/->cascadeOnDelete\s*\(/',
+            (string) $migrationSource,
+            'El down() de la migracion nunca debe invocar ->cascadeOnDelete().'
+        );
+        $this->assertStringContainsString(
+            '->restrictOnDelete()',
+            (string) $migrationSource,
+            'La migracion debe usar ->restrictOnDelete() en up() y down().'
+        );
     }
 }

@@ -70,7 +70,7 @@ class MonetaryCheckConstraintsTest extends TestCase
             'invoices_discount_cents_nonneg' => ['invoices', 'invoices_discount_cents_nonneg'],
             'invoice_items_unit_price_cents_nonneg' => ['invoice_items', 'invoice_items_unit_price_cents_nonneg'],
             'invoice_items_quantity_cents_positive' => ['invoice_items', 'invoice_items_quantity_cents_positive'],
-            'services_price_positive' => ['services', 'services_price_positive'],
+            'services_price_nonneg' => ['services', 'services_price_nonneg'],
         ];
 
         foreach ($tables as $expected => [$table, $constraint]) {
