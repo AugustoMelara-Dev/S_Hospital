@@ -30,7 +30,18 @@ class HondurasDistributionSeeder extends Seeder
      */
     public function run(): void
     {
-        $setting = FiscalSetting::query()->first() ?? new FiscalSetting;
+        $setting = FiscalSetting::query()->first();
+
+        if (! $setting) {
+            $setting = new FiscalSetting;
+            $setting->fill([
+                'rtn' => '',
+                'default_tax_rate' => '15.00',
+                'receipt_width' => '80mm',
+                'primary_color' => 'indigo',
+                'receipt_paper_size' => 'half_letter',
+            ]);
+        }
 
         $defaults = [
             'hospital_name' => self::HOSPITAL_NAME,
@@ -44,6 +55,10 @@ class HondurasDistributionSeeder extends Seeder
             if ($current === null || trim((string) $current) === '') {
                 $setting->setAttribute($field, $value);
             }
+        }
+
+        if ($setting->getAttribute('rtn') === null) {
+            $setting->setAttribute('rtn', '');
         }
 
         $setting->save();
