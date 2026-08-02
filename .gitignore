@@ -29,6 +29,9 @@ backend/storage/logs/
 backend/bootstrap/cache/
 backend/vendor/
 
+# Local clean-Windows certification diagnostics; do not commit host/network details.
+qa/pre-installation-final/windows-clean/00-environment/
+
 frontend/dist/
 frontend/node_modules/
 frontend/.pnpm-store/

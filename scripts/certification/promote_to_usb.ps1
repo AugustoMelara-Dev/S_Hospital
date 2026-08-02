@@ -27,7 +27,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
-    $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..' '..')).Path
+    $ProjectRoot = (Resolve-Path (Join-Path (Join-Path $PSScriptRoot '..') '..')).Path
 }
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
 
@@ -46,7 +46,20 @@ $UsbHash = Join-Path $UsbDir 'S_Hospital-Instalador.exe.sha256'
 $UsbManifest = Join-Path $UsbDir 'CANDIDATE-MANIFEST.json'
 
 $ResultFile = Join-Path $EvidenceDir 'RESULT.json'
+$Validator = Join-Path $PSScriptRoot 'validate_windows_clean_result.ps1'
 $NoEntregarFile = Join-Path $UsbDir 'NO_ENTREGAR_AUN.txt'
+
+if (-not (Test-Path -LiteralPath $Validator -PathType Leaf)) {
+    throw "Falta el validador obligatorio: $Validator"
+}
+$validatorOutput = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Validator -ProjectRoot $ProjectRoot -EvidenceDir $EvidenceDir 2>&1
+$validatorExitCode = $LASTEXITCODE
+foreach ($line in @($validatorOutput)) {
+    Write-Host ([string]$line)
+}
+if ($validatorExitCode -ne 0) {
+    throw 'El validador de Windows limpio rechazo la promocion.'
+}
 
 function Assert-EqualHash {
     param([string]$PathA, [string]$PathB, [string]$Label)

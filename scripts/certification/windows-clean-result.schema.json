@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "windows-clean-result.schema.json",
+  "title": "S_Hospital Windows Clean Certification Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "source_commit",
+    "installer_sha256",
+    "installer_size_bytes",
+    "machine",
+    "tests",
+    "evidence",
+    "started_at_utc",
+    "completed_at_utc",
+    "operator",
+    "notes",
+    "certification"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "status": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+    "source_commit": { "type": "string", "minLength": 1 },
+    "installer_sha256": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" },
+    "installer_size_bytes": { "type": "integer", "minimum": 0 },
+    "machine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "windows_edition",
+        "windows_build",
+        "architecture",
+        "ram_bytes",
+        "free_space_bytes",
+        "docker_desktop_version",
+        "clean_environment_confirmed",
+        "repository_checkout_absent",
+        "host_mysql_mariadb_absent",
+        "previous_s_hospital_absent"
+      ],
+      "properties": {
+        "name": { "type": "string" },
+        "windows_edition": { "type": "string" },
+        "windows_build": { "type": "string" },
+        "architecture": { "const": "x64" },
+        "ram_bytes": { "type": "integer", "minimum": 0 },
+        "free_space_bytes": { "type": "integer", "minimum": 0 },
+        "docker_desktop_version": { "type": "string" },
+        "clean_environment_confirmed": { "type": "boolean" },
+        "repository_checkout_absent": { "type": "boolean" },
+        "host_mysql_mariadb_absent": { "type": "boolean" },
+        "previous_s_hospital_absent": { "type": "boolean" }
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hash_in_vm",
+        "installation",
+        "first_start",
+        "configuration",
+        "invoice_l900",
+        "logical_print",
+        "physical_print",
+        "reprint",
+        "cancellation",
+        "maintenance",
+        "backup",
+        "restore",
+        "rollback",
+        "windows_restart",
+        "offline_operation",
+        "uninstall_reinstall"
+      ],
+      "properties": {
+        "hash_in_vm": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "installation": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "first_start": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "configuration": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "invoice_l900": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "logical_print": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "physical_print": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "reprint": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "cancellation": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "maintenance": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "backup": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "restore": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "rollback": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "windows_restart": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "offline_operation": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "uninstall_reinstall": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "required_files", "by_test"],
+      "properties": {
+        "root": { "type": "string" },
+        "required_files": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "by_test": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "started_at_utc": { "type": "string" },
+    "completed_at_utc": { "type": "string" },
+    "operator": { "type": "string" },
+    "notes": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "certification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clean_windows_software",
+        "physical_printer",
+        "delivery_ready",
+        "delivery_ready_for_controlled_onsite_validation",
+        "production_certified"
+      ],
+      "properties": {
+        "clean_windows_software": { "enum": ["PENDING", "PASSED", "FAILED", "BLOCKED"] },
+        "physical_printer": { "enum": ["PENDING_ON_SITE", "PASSED", "FAILED", "BLOCKED"] },
+        "delivery_ready": { "enum": ["YES", "NO"] },
+        "delivery_ready_for_controlled_onsite_validation": { "enum": ["YES", "NO"] },
+        "production_certified": { "enum": ["YES", "NO"] }
+      }
+    }
+  }
+}
