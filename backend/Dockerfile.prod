@@ -14,7 +14,7 @@ RUN pnpm run build
 
 # === STAGE 2: Install backend Composer dependencies on runtime PHP ===
 FROM composer:2@sha256:c883af18892268b3b8369c4a39c08f80b393383e79d80b75140a3ea489dbbb78 AS composer-cli
-FROM php:8.3-fpm-alpine@sha256:9fcec48321d890240d700ccdc2b475420c87d398826e68c3d8830b8fca663e5c AS composer-builder
+FROM php:8.5-fpm-alpine@sha256:9dc81f4086ea5402227a6bcc489b04b4baba12394624d9621faa92ed812fb8ee AS composer-builder
 COPY --from=composer-cli /usr/bin/composer /usr/bin/composer
 RUN apk add --no-cache unzip
 WORKDIR /app
@@ -22,7 +22,7 @@ COPY backend/composer.json backend/composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-req='ext-*'
 
 # === STAGE 3: Final Production Image (PHP-FPM) ===
-FROM php:8.3-fpm-alpine@sha256:9fcec48321d890240d700ccdc2b475420c87d398826e68c3d8830b8fca663e5c
+FROM php:8.5-fpm-alpine@sha256:9dc81f4086ea5402227a6bcc489b04b4baba12394624d9621faa92ed812fb8ee
 WORKDIR /var/www/html
 
 # Install production system dependencies
