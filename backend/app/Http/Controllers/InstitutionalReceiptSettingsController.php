@@ -60,11 +60,17 @@ class InstitutionalReceiptSettingsController extends Controller
 
     public function updateInstitution(UpdateReceiptInstitutionRequest $request, UpdateFiscalInstitutionAction $action): JsonResponse
     {
+        // Validated by UpdateReceiptInstitutionRequest: only 'institutional' passes.
+        // The is_string guard keeps the typed contract with the action and the
+        // default fallback when the field is omitted.
+        $templateModeInput = $request->input('receipt_template_mode');
+        $receiptTemplateMode = is_string($templateModeInput) ? $templateModeInput : 'institutional';
+
         $setting = $action->execute(
             user: $this->authenticatedUser($request),
             validated: $request->validated(),
             request: $request,
-            receiptTemplateMode: $request->input('receipt_template_mode', 'institutional'),
+            receiptTemplateMode: $receiptTemplateMode,
         );
 
         return response()->json([
@@ -477,25 +483,6 @@ class InstitutionalReceiptSettingsController extends Controller
                 ],
             ],
         ], 403);
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function institutionFields(): array
-    {
-        return [
-            'hospital_name',
-            'rtn',
-            'address',
-            'phone',
-            'slogan',
-            'government_line',
-            'secretariat_line',
-            'receipt_location',
-            'receipt_footer_text',
-            'receipt_template_mode',
-        ];
     }
 
     /** @return Builder<InstitutionalReceiptSeries> */
