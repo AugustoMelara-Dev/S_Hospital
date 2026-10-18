@@ -40,3 +40,11 @@ frontend/playwright-report/
 frontend/debug.log
 
 .worktrees/
+
+# Local agent tooling artifacts (session-specific, never committed)
+.playwright-cli/
+.serena/
+frontend/.playwright-cli/
+
+# Bulky QA debugging output (failure traces); curated evidence goes to qa/redesign-proof/
+qa/current-report-traces/
