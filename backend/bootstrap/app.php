@@ -32,6 +32,13 @@ return Application::configure(basePath: dirname(__DIR__))
         __DIR__.'/../app/Console/Commands',
     ])
     ->withMiddleware(function (Middleware $middleware): void {
+        // This SPA uses /login as a client-side route; API authentication
+        // failures must remain JSON and must never resolve a named web route.
+        $middleware->redirectGuestsTo(
+            fn (Request $request): ?string => $request->is('api/*') || $request->expectsJson()
+                ? null
+                : '/login',
+        );
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [
             'api/system/csp-report',
