@@ -175,7 +175,7 @@ class CreateInvoiceAction
                     InvoiceChanged::dispatch($invoice->refresh(), 'created');
                 });
 
-                return $invoice->load('items', 'issuer:id,name,username');
+                return $invoice->load('items', 'issuer:id,name,username', 'payments');
             });
         } catch (ValidationException $exception) {
             if ($this->isDialysisPrescriptionDeniedValidation($payload, $issuer, $exception)) {

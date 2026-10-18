@@ -73,7 +73,9 @@ class InvoiceDialysisPrescriptionTest extends TestCase
             ->assertJsonPath('data.items.0.unit_price', '0.00')
             ->assertJsonPath('data.items.0.special_rule_applied', true)
             ->assertJsonPath('data.total', '0.00')
-            ->assertJsonPath('data.status', Invoice::STATUS_PAID);
+            ->assertJsonPath('data.status', Invoice::STATUS_PAID)
+            ->assertJsonPath('data.payments.0.method', 'other')
+            ->assertJsonPath('data.payments.0.status', 'posted');
     }
 
     public function test_erythropoietin_is_charged_when_dialysis_flag_absent(): void
