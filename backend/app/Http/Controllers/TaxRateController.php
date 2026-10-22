@@ -6,6 +6,7 @@ use App\Http\Requests\Fiscal\DestroyTaxRateRequest;
 use App\Http\Requests\Fiscal\IndexTaxRatesRequest;
 use App\Http\Requests\Fiscal\StoreTaxRateRequest;
 use App\Http\Requests\Fiscal\UpdateTaxRateRequest;
+use App\Models\Service;
 use App\Models\TaxRate;
 use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +32,58 @@ class TaxRateController extends Controller
 
         return response()->json([
             'data' => $query->get(),
+            'meta' => $this->catalogTaxStatus(),
         ]);
+    }
+
+    /**
+     * H-15/H-02: the catalog starts exempt until the hospital reviews it. This
+     * status powers the "Revise impuestos del catálogo antes de cobrar" notice
+     * in Catalogo/Cobrar. It is derived, never persisted, so it clears as soon
+     * as at least one billable service has a rate assigned.
+     */
+    public function catalogStatus(IndexTaxRatesRequest $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->catalogTaxStatus(),
+        ]);
+    }
+
+    /**
+     * @return array{
+     *     catalog_tax_review_required: bool,
+     *     message: string|null,
+     *     services_without_tax_rate: int,
+     *     active_billable_services: int,
+     *     tax_rate_count: int,
+     *     default_tax_rate: array{id: int, name: string, percentage: string}|null
+     * }
+     */
+    private function catalogTaxStatus(): array
+    {
+        $billable = Service::query()
+            ->where('active', true)
+            ->where('visible_in_billing', true)
+            ->where('is_billable', true);
+        $billableCount = (clone $billable)->count();
+        $withoutRateCount = (clone $billable)->whereNull('tax_rate_id')->count();
+        $defaultRate = TaxRate::query()->where('is_default', true)->first();
+        $reviewRequired = $billableCount > 0 && $withoutRateCount === $billableCount;
+
+        return [
+            'catalog_tax_review_required' => $reviewRequired,
+            'message' => $reviewRequired
+                ? 'Revise impuestos del catálogo antes de cobrar.'
+                : null,
+            'services_without_tax_rate' => $withoutRateCount,
+            'active_billable_services' => $billableCount,
+            'tax_rate_count' => TaxRate::query()->count(),
+            'default_tax_rate' => $defaultRate === null ? null : [
+                'id' => $defaultRate->id,
+                'name' => $defaultRate->name,
+                'percentage' => (string) $defaultRate->percentage,
+            ],
+        ];
     }
 
     public function store(StoreTaxRateRequest $request, AuditLogger $auditLogger): JsonResponse

@@ -111,6 +111,9 @@ class PreviewInvoiceTotalsAction
                 'discount_cents' => $totals['discount_amount_cents'],
                 'total_cents' => $totalCents,
             ],
+            // H-15: same per-rate breakdown the emission path calculates. The
+            // receipt renders this exact shape from the historical snapshot.
+            'tax_breakdown' => $taxAvailable ? $totals['tax_breakdown'] : [],
             'zero_reason' => $this->resolveZeroReason($status, $totals['items']),
             'items' => $items,
             // Contract guarantee, also asserted by InvoicePreviewContractTest.
@@ -181,6 +184,7 @@ class PreviewInvoiceTotalsAction
             'rule_adjustment' => $item['rule_adjustment'] ?? '0.00',
             'rule_adjustment_cents' => $item['rule_adjustment_cents'] ?? 0,
             'taxable' => $service->taxable,
+            'tax_rate_id' => $service->tax_rate_id,
             'tax_rate' => $item['tax_rate'],
             'line_subtotal_cents' => $item['line_subtotal_cents'],
             'tax_cents' => $taxAvailable ? $item['tax_amount_cents'] : null,

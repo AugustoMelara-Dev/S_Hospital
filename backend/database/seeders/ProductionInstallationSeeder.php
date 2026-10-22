@@ -49,6 +49,8 @@ class ProductionInstallationSeeder extends Seeder
 
         // Fuente productiva: CSV institucional. El seeder conserva precio,
         // impuestos y estado de los servicios ya administrados en reintentos.
-        $this->call(ServiceCatalogSeeder::class);
+        // En producción las filas nuevas nacen exentas (tax_rate_id null) y el
+        // administrador revisa las tasas; el aviso de catálogo lo expone la API.
+        $this->call(ServiceCatalogSeeder::class, false, ['seed_exempt' => true]);
     }
 }

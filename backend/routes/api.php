@@ -100,6 +100,9 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:20,1');
 
         // H-15: configurable tax rates (ISV 15 %, ISV 18 %, exempt, ...).
+        // H-15: visibility of the seed-catalog tax warning for Cobrar/Catalogo.
+        Route::get('/settings/catalog-tax-status', [TaxRateController::class, 'catalogStatus']);
+
         Route::get('/tax-rates', [TaxRateController::class, 'index']);
         Route::post('/tax-rates', [TaxRateController::class, 'store'])
             ->middleware('throttle.user:30,1');
@@ -152,6 +155,14 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
         Route::patch('/service-areas/{serviceArea}', [ServiceAreaController::class, 'update']);
 
         Route::get('/services', [ServiceController::class, 'index']);
+        // H-16/H-15: static catalog routes MUST be declared before
+        // `/services/{service}` so the model binding never swallows them.
+        Route::get('/services/export', [ServiceController::class, 'export'])
+            ->middleware('throttle.user:30,1');
+        Route::post('/services/import', [ServiceController::class, 'import'])
+            ->middleware('throttle.user:20,1');
+        Route::patch('/services/bulk-tax', [ServiceController::class, 'bulkTax'])
+            ->middleware('throttle.user:30,1');
         Route::get('/services/{service}', [ServiceController::class, 'show']);
         Route::get('/services/{service}/history', [ServiceController::class, 'history']);
         Route::post('/services', [ServiceController::class, 'store'])

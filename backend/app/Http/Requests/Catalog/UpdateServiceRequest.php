@@ -49,6 +49,7 @@ class UpdateServiceRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:255'],
             'internal_code' => ['nullable', 'string', 'max:80', Rule::unique('services', 'internal_code')->ignore($this->route('service'))],
             'taxable' => ['sometimes', 'boolean'],
+            'tax_rate_id' => ['nullable', 'integer', Rule::exists('tax_rates', 'id')->where('active', true)],
             'active' => ['sometimes', 'boolean'],
             'visible_in_billing' => ['sometimes', 'boolean'],
             'is_billable' => ['sometimes', 'boolean'],
@@ -170,7 +171,24 @@ class UpdateServiceRequest extends FormRequest
 
     private function taxChanged(Service $service): bool
     {
-        return $this->boolean('taxable') !== (bool) $service->taxable;
+        if ($this->has('tax_rate_id')) {
+            $requestedRateId = $this->input('tax_rate_id');
+            $normalizedRateId = null;
+
+            if (is_int($requestedRateId)) {
+                $normalizedRateId = $requestedRateId;
+            } elseif (is_string($requestedRateId) && ctype_digit($requestedRateId)) {
+                $normalizedRateId = (int) $requestedRateId;
+            }
+
+            $currentRateId = $service->tax_rate_id === null ? null : (int) $service->tax_rate_id;
+
+            if ($normalizedRateId !== $currentRateId) {
+                return true;
+            }
+        }
+
+        return $this->has('taxable') && $this->boolean('taxable') !== (bool) $service->taxable;
     }
 
     private function availabilityChanged(Service $service): bool

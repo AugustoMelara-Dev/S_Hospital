@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Fiscal;
 
+use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Service;
 use App\Models\TaxRate;
@@ -102,6 +103,80 @@ class TaxRateManagementTest extends TestCase
             ->getJson('/api/tax-rates')
             ->assertOk()
             ->assertJsonCount(1, 'data');
+    }
+
+    public function test_admin_updates_a_tax_rate_with_reason_and_audit(): void
+    {
+        $admin = $this->admin();
+        $rate = TaxRate::query()->create([
+            'name' => 'ISV 15 %',
+            'percentage' => '15.00',
+            'active' => true,
+            'is_default' => true,
+        ]);
+
+        $this->actingAs($admin)->patchJson("/api/tax-rates/{$rate->id}", [
+            'name' => 'ISV 18 %',
+            'percentage' => 18,
+            'active' => true,
+            'is_default' => true,
+            'reason' => 'Tasa vigente actualizada por el hospital.',
+        ])->assertOk()
+            ->assertJsonPath('data.name', 'ISV 18 %')
+            ->assertJsonPath('data.percentage', '18.00');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'tax_rate.updated',
+            'reason' => 'Tasa vigente actualizada por el hospital.',
+        ]);
+        $this->assertSame('15.00', (string) (AuditLog::query()
+            ->where('action', 'tax_rate.updated')
+            ->firstOrFail()
+            ->old_values['percentage'] ?? ''));
+    }
+
+    public function test_catalog_tax_warning_is_exposed_until_a_rate_is_assigned(): void
+    {
+        $admin = $this->admin();
+        $category = Category::factory()->create();
+        $service = Service::factory()->create([
+            'category_id' => $category->id,
+            'tax_rate_id' => null,
+            'taxable' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/api/tax-rates')
+            ->assertOk()
+            ->assertJsonPath('meta.catalog_tax_review_required', true)
+            ->assertJsonPath('meta.message', 'Revise impuestos del catálogo antes de cobrar.');
+
+        $this->actingAs($admin)
+            ->getJson('/api/settings/catalog-tax-status')
+            ->assertOk()
+            ->assertJsonPath('data.catalog_tax_review_required', true)
+            ->assertJsonPath('data.services_without_tax_rate', 1);
+
+        $rate = TaxRate::query()->create([
+            'name' => 'ISV 15 %',
+            'percentage' => '15.00',
+            'active' => true,
+            'is_default' => true,
+        ]);
+        $service->update(['tax_rate_id' => $rate->id, 'taxable' => true]);
+
+        $this->actingAs($admin)
+            ->getJson('/api/settings/catalog-tax-status')
+            ->assertOk()
+            ->assertJsonPath('data.catalog_tax_review_required', false)
+            ->assertJsonPath('data.message', null);
+    }
+
+    public function test_plain_user_cannot_read_the_fiscal_catalog_status(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->getJson('/api/settings/catalog-tax-status')
+            ->assertForbidden();
     }
 
     public function test_cannot_delete_a_tax_rate_assigned_to_a_service(): void

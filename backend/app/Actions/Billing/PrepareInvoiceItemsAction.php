@@ -24,7 +24,11 @@ class PrepareInvoiceItemsAction
     {
         $serviceIds = collect($items)->pluck('service_id')->unique()->values();
         $services = Service::query()
-            ->with(['category:id,name,active', 'area:id,name,slug'])
+            ->with([
+                'category:id,name,active',
+                'area:id,name,slug',
+                'taxRate:id,name,percentage,active',
+            ])
             ->whereIn('id', $serviceIds)
             ->get()
             ->keyBy('id');

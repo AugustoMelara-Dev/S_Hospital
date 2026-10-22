@@ -6,6 +6,7 @@ use App\Models\Service;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreServiceRequest extends FormRequest
@@ -44,6 +45,10 @@ class StoreServiceRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:255'],
             'internal_code' => ['nullable', 'string', 'max:80', 'unique:services,internal_code'],
             'taxable' => ['sometimes', 'boolean'],
+            // H-15: NULL means exempt. Only active rates may be assigned to a
+            // product; a rate deactivated later still applies to the services
+            // that already reference it (the snapshot is historical).
+            'tax_rate_id' => ['nullable', 'integer', Rule::exists('tax_rates', 'id')->where('active', true)],
             'active' => ['sometimes', 'boolean'],
             'visible_in_billing' => ['sometimes', 'boolean'],
             'is_billable' => ['sometimes', 'boolean'],
