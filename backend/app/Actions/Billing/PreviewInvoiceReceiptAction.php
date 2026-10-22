@@ -52,10 +52,10 @@ class PreviewInvoiceReceiptAction
             ->where('active', true)
             ->first();
 
-        $subtotalCents = (int) ($totals['subtotal_cents'] ?? 0);
-        $exemptCents = (int) ($totals['exempt_cents'] ?? 0);
-        $taxCents = (int) ($totals['tax_cents'] ?? 0);
-        $discountCents = (int) ($totals['discount_cents'] ?? 0);
+        $subtotalCents = $this->intValue($totals['subtotal_cents'] ?? null);
+        $exemptCents = $this->intValue($totals['exempt_cents'] ?? null);
+        $taxCents = $this->intValue($totals['tax_cents'] ?? null);
+        $discountCents = $this->intValue($totals['discount_cents'] ?? null);
         $concept = collect($valuationItems)
             ->pluck('service_name')
             ->filter(fn (mixed $name): bool => is_string($name) && trim($name) !== '')
@@ -72,7 +72,7 @@ class PreviewInvoiceReceiptAction
             'amount_total_note' => 'Total previsto de la operación.',
             'watermark' => 'BORRADOR - SIN VALIDEZ',
             'invoice' => [
-                'tax_label' => (string) ($tax['label'] ?? 'ISV'),
+                'tax_label' => $this->stringValue($tax['label'] ?? null, 'ISV'),
                 'tax_rate_snapshot' => $tax['rate'] ?? null,
                 'subtotal' => Money::formatCents($subtotalCents),
                 'exempt_amount' => Money::formatCents($exemptCents),
@@ -99,5 +99,23 @@ class PreviewInvoiceReceiptAction
             'html' => $plan->html(),
             'valuation' => $valuation,
         ];
+    }
+
+    private function intValue(mixed $value): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_float($value)) {
+            return (int) $value;
+        }
+
+        return is_string($value) && is_numeric($value) ? (int) $value : 0;
+    }
+
+    private function stringValue(mixed $value, string $fallback): string
+    {
+        return is_string($value) ? $value : $fallback;
     }
 }

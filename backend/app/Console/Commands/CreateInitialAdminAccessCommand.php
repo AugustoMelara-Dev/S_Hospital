@@ -32,11 +32,11 @@ final class CreateInitialAdminAccessCommand extends Command
             $input['password_confirmation'] = '';
             unset($input);
         } else {
-            $name = trim((string) $this->ask('Nombre del administrador'));
-            $username = trim((string) $this->ask('Usuario'));
-            $email = trim((string) $this->ask('Correo'));
-            $password = (string) $this->secret('Contraseña temporal');
-            $confirmation = (string) $this->secret('Repita la contraseña temporal');
+            $name = $this->promptText('Nombre del administrador');
+            $username = $this->promptText('Usuario');
+            $email = $this->promptText('Correo');
+            $password = $this->promptSecret('Contraseña temporal');
+            $confirmation = $this->promptSecret('Repita la contraseña temporal');
         }
 
         if ($password === '' || ! hash_equals($password, $confirmation)) {
@@ -104,5 +104,19 @@ final class CreateInitialAdminAccessCommand extends Command
             'password' => $decoded['password'],
             'password_confirmation' => $decoded['password_confirmation'],
         ];
+    }
+
+    private function promptText(string $question): string
+    {
+        $value = $this->ask($question);
+
+        return is_string($value) ? trim($value) : '';
+    }
+
+    private function promptSecret(string $question): string
+    {
+        $value = $this->secret($question);
+
+        return is_string($value) ? $value : '';
     }
 }

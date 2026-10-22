@@ -47,10 +47,10 @@ final class RecoverLocalAdminAccessCommand extends Command
             $input['password_confirmation'] = '';
             unset($input);
         } else {
-            $identity = trim((string) $this->ask('Usuario o correo del administrador'));
-            $reason = trim((string) $this->ask('Motivo de la recuperación'));
-            $password = (string) $this->secret('Nueva contraseña temporal');
-            $confirmation = (string) $this->secret('Repita la contraseña temporal');
+            $identity = $this->promptText('Usuario o correo del administrador');
+            $reason = $this->promptText('Motivo de la recuperación');
+            $password = $this->promptSecret('Nueva contraseña temporal');
+            $confirmation = $this->promptSecret('Repita la contraseña temporal');
         }
 
         if ($password === '' || ! hash_equals($password, $confirmation)) {
@@ -140,5 +140,19 @@ final class RecoverLocalAdminAccessCommand extends Command
             'password' => $decoded['password'],
             'password_confirmation' => $decoded['password_confirmation'],
         ];
+    }
+
+    private function promptText(string $question): string
+    {
+        $value = $this->ask($question);
+
+        return is_string($value) ? trim($value) : '';
+    }
+
+    private function promptSecret(string $question): string
+    {
+        $value = $this->secret($question);
+
+        return is_string($value) ? $value : '';
     }
 }
