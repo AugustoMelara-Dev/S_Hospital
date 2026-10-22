@@ -77,13 +77,14 @@ function Is-ExpressionValue {
 
     $normalized = $Value.Trim().Trim('"').Trim("'")
 
-    # Runtime expressions are not literals: $var, $env:VAR, ${VAR}, {0} format
-    # slots, -f formatting, sed regex (.*) and shell interpolation.
+    # Runtime expressions are not literals: $var, $env:VAR, ${VAR} as the whole
+    # value (handled by Is-PlaceholderValue), {0} format slots, -f formatting,
+    # sed regex (.*) and shell interpolation. A value that merely CONTAINS
+    # ${...} (e.g. "clave${x}") is not accepted: that is how a secret can hide.
     return $normalized -match '^\$[A-Za-z_]' -or
         $normalized -match '^\{[0-9]' -or
         $normalized -match '^-f\b' -or
-        $normalized -match '^\.\*' -or
-        $normalized -match '\$\{[A-Za-z_]'
+        $normalized -match '^\.\*'
 }
 
 function Test-DocumentationExample {

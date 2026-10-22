@@ -151,4 +151,13 @@ $exampleLiteralRepo = New-StagedRepo ".env.example" @(($dbPassword + '=Sup3rS3cr
 $exampleLiteralResult = Invoke-Guard -RepoRoot $exampleLiteralRepo
 Assert-True ($exampleLiteralResult.ExitCode -ne 0) "literal DB_PASSWORD in .env.example is still blocked"
 
+# A-02: a value that merely CONTAINS ${...} must not be treated as an expression.
+$embeddedVariableRepo = New-StagedRepo "leak.ps1" @(($dbPassword + '=clave${x}'))
+$embeddedVariableResult = Invoke-Guard -RepoRoot $embeddedVariableRepo
+Assert-True ($embeddedVariableResult.ExitCode -ne 0) "a literal with an embedded \${...} is blocked"
+
+$wholeVariableRepo = New-StagedRepo "installer.ps1" @(($dbPassword + '=${DEPLOY_PASSWORD}'))
+$wholeVariableResult = Invoke-Guard -RepoRoot $wholeVariableRepo
+Assert-True ($wholeVariableResult.ExitCode -eq 0) "a whole-value \${VAR} reference passes"
+
 Write-Host "pre-commit guard tests passed"
