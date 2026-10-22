@@ -28,3 +28,16 @@ export function requireE2eReleasePassword(env = process.env) {
     'Do not rely on a committed default password for release evidence.',
   ].join('\n'));
 }
+
+// The installed application on port 8000 is never a disposable target.
+export function assertExternalReleaseTarget(env = process.env) {
+  if (env.E2E_RELEASE_ALLOW_MUTATIONS !== '1') {
+    throw new Error('External release E2E requires E2E_RELEASE_ALLOW_MUTATIONS=1 for a disposable laboratory.');
+  }
+  for (const key of ['E2E_RELEASE_BASE_URL', 'E2E_RELEASE_API_BASE_URL']) {
+    const url = new URL(env[key] ?? '');
+    if (!['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname) || url.port === '8000') {
+      throw new Error(key + ' must target a loopback laboratory outside installed port 8000.');
+    }
+  }
+}

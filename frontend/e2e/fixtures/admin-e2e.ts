@@ -40,6 +40,7 @@ export type AdminTestCashSession = {
   pending_invoice_count?: number;
   pending_amount?: string;
   missing_institutional_receipt_count?: number;
+  reversed_payments_count?: number;
 };
 
 export type CatalogService = {
@@ -134,6 +135,9 @@ export async function installAdminApi(
   );
   await page.route(/\/api\/cash-sessions\/current(?:\?.*)?$/, (route) =>
     json(route, { data: currentCashSession }),
+  );
+  await page.route(/\/api\/cash-registers(?:\?.*)?$/, (route) =>
+    json(route, { data: [{ id: 1, name: 'Caja principal', code: 'PRINCIPAL', active: true }] }),
   );
 
   return {
@@ -240,6 +244,7 @@ export function openCashSessionFixture(overrides: Partial<AdminTestCashSession> 
     pending_invoice_count: 0,
     pending_amount: '0.00',
     missing_institutional_receipt_count: 0,
+    reversed_payments_count: 0,
     ...overrides,
   };
 }

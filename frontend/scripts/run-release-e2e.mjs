@@ -2,7 +2,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createWriteStream, mkdirSync, copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertBackendVendorPresent, requireE2eReleasePassword } from './release-e2e-preflight.mjs';
+import { assertBackendVendorPresent, assertExternalReleaseTarget, requireE2eReleasePassword } from './release-e2e-preflight.mjs';
 import { computeReleaseDatabaseHash } from './release-e2e-hash.mjs';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -23,24 +23,29 @@ const playwrightReportPath = resolve(frontendDir, 'test-results', 'release-e2e-p
 mkdirSync(artifactDir, { recursive: true });
 mkdirSync(testingDir, { recursive: true });
 
+const externalServer = process.env.E2E_RELEASE_EXTERNAL_SERVER === '1';
 let backendProcess;
 let frontendProcess;
 let exitCode = 0;
 
 try {
-  assertBackendVendorPresent(backendDir);
+  if (!externalServer) assertBackendVendorPresent(backendDir);
   const e2eReleasePassword = requireE2eReleasePassword();
   const backendEnv = buildBackendEnv(sqlitePath, e2eReleasePassword);
   const frontendEnv = buildFrontendEnv(e2eReleasePassword);
-  prepareGoldenDatabase(e2eReleasePassword);
-  cloneGoldenDatabase();
+  if (externalServer) {
+    assertExternalReleaseTarget(process.env);
+    await waitFor(backendUrl + '/api/system/health', 'External payload laboratory');
+  } else {
+    prepareGoldenDatabase(e2eReleasePassword);
+    cloneGoldenDatabase();
 
-  backendProcess = start('backend', 'php', ['artisan', 'serve', '--host=127.0.0.1', '--port=18081'], backendDir, backendEnv);
-  await waitFor(`${backendUrl}/api/system/health`, 'Laravel E2E backend');
+    backendProcess = start('backend', process.env.E2E_RELEASE_PHP ?? 'php', ['artisan', 'serve', '--host=127.0.0.1', '--port=18081'], backendDir, backendEnv);
+    await waitFor(`${backendUrl}/api/system/health`, 'Laravel E2E backend');
 
-  frontendProcess = start('frontend', process.execPath, [resolve(frontendDir, 'node_modules', 'vite', 'bin', 'vite.js'), '--host', '127.0.0.1', '--port', '5174'], frontendDir, frontendEnv);
-  await waitFor(frontendUrl, 'Vite E2E frontend');
-
+    frontendProcess = start('frontend', process.execPath, [resolve(frontendDir, 'node_modules', 'vite', 'bin', 'vite.js'), '--host', '127.0.0.1', '--port', '5174'], frontendDir, frontendEnv);
+    await waitFor(frontendUrl, 'Vite E2E frontend');
+  }
   run(process.execPath, [resolve(frontendDir, 'node_modules', '@playwright', 'test', 'cli.js'), 'test', '--config=playwright.release.config.ts'], frontendDir, frontendEnv);
   writeReleaseSummaryReport();
 } catch (error) {
@@ -49,7 +54,7 @@ try {
 } finally {
   stop(frontendProcess);
   stop(backendProcess);
-  cleanupDisposableSqlite(sqlitePath);
+  if (!externalServer) cleanupDisposableSqlite(sqlitePath);
 }
 
 process.exit(exitCode);
@@ -104,10 +109,11 @@ function prepareGoldenDatabase(e2eReleasePassword) {
 
   const buildingPath = `${goldenSqlitePath}.building-${process.pid}`;
   cleanupDisposableSqlite(buildingPath);
+  writeFileSync(buildingPath, '');
 
   console.log(`[release-e2e] Building golden SQLite database for migration hash ${migrationHash}`);
   const goldenEnv = buildBackendEnv(buildingPath, e2eReleasePassword);
-  runArtisan(['migrate:fresh', '--seed', '--force'], goldenEnv);
+  runArtisan(['migrate', '--seed', '--force'], goldenEnv);
   runArtisan(['hospital:prepare-e2e-release-data'], goldenEnv);
 
   rmSync(goldenSqlitePath, { force: true });
@@ -117,7 +123,7 @@ function prepareGoldenDatabase(e2eReleasePassword) {
 }
 
 function cloneGoldenDatabase() {
-  cleanupDisposableSqlite(sqlitePath);
+  if (!externalServer) cleanupDisposableSqlite(sqlitePath);
   copyFileSync(goldenSqlitePath, sqlitePath);
   console.log(`[release-e2e] Cloned golden SQLite database to ${sqlitePath}`);
 }
@@ -136,7 +142,8 @@ function writeReleaseSummaryReport() {
     base_url: frontendUrl,
     api_base_url: backendUrl,
     migration_hash: migrationHash,
-    golden_sqlite: goldenSqlitePath,
+    release_stack: process.env.E2E_RELEASE_STACK ?? (externalServer ? 'external-laboratory' : 'artisan-vite-sqlite'),
+    ...(externalServer ? {} : { golden_sqlite: goldenSqlitePath }),
     playwright_report_path: playwrightReportPath,
     playwright_summary: playwrightReport.stats ?? null,
     playwright_specs: collectPlaywrightSpecs(playwrightReport),
@@ -175,7 +182,7 @@ function collectPlaywrightSpecs(report) {
 }
 
 function runArtisan(args, env) {
-  run('php', ['artisan', ...args], backendDir, env);
+  run(process.env.E2E_RELEASE_PHP ?? 'php', ['artisan', ...args], backendDir, env);
 }
 
 function cleanupDisposableSqlite(databasePath) {

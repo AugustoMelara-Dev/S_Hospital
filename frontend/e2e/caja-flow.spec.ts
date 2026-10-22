@@ -58,10 +58,11 @@ test.describe('Caja — apertura y cierre', () => {
 
     await page.goto('/caja');
     await expect(page.getByRole('heading', { level: 1, name: /^caja$/i })).toBeVisible();
-    await expect(page.getByText(/sin sesión abierta/i)).toBeVisible();
+    await expect(page.getByText(/no hay una caja abierta actualmente/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /apertura de caja/i })).toBeVisible();
 
     await page.getByLabel(/monto inicial/i).fill('500.00');
+    await page.getByRole('combobox', { name: 'Caja física', exact: true }).selectOption('1');
     await page.getByRole('button', { name: /^abrir caja$/i }).click();
 
     const dialog = page.getByRole('dialog', { name: /confirmar apertura de caja/i });
@@ -69,9 +70,9 @@ test.describe('Caja — apertura y cierre', () => {
     await dialog.getByRole('button', { name: /^abrir caja$/i }).click();
 
     await expect.poll(() => openPayload).not.toBeNull();
-    expect(openPayload).toMatchObject({ opening_amount: '500.00' });
+    expect(openPayload).toMatchObject({ opening_amount: '500.00', cash_register_id: 1 });
     await expect(page.getByText('Caja abierta').first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/#7 · Abierta/i)).toBeVisible();
+    await expect(page.getByRole('region', { name: /caja, usuario y sesión/i })).toContainText('#7');
   });
 
   test('cierra la caja abierta con el monto contado y muestra el resumen', async ({ page }) => {

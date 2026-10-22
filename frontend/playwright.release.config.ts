@@ -5,7 +5,7 @@ const chromiumExecutablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: /release-(gate|rbac)\.spec\.ts/,
+  testMatch: /release-(gate|rbac|workflow)\.spec\.ts/,
   outputDir: 'test-results/release-e2e-artifacts',
   timeout: 90_000,
   workers: 1,

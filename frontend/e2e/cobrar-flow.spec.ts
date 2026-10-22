@@ -88,27 +88,49 @@ function buildPreview(input: PreviewInput): unknown {
   let taxCents = 0;
   let exemptCents = 0;
 
-  for (const item of input.items) {
+  // AccountZone consumes the authoritative per-line snapshots, just as it does
+  // against the API. Totals alone leave every line in "Calculando".
+  const items = input.items.map((item) => {
     const service = serviceById(item.service_id);
     const quantity = Number(item.quantity);
-    const lineCents = Math.round(Number(service.price) * 100) * quantity;
+    const unitPriceCents = Math.round(Number(service.price) * 100);
+    const registeredCents = unitPriceCents * quantity;
     const free = service.special_rule_code === ERYTHROPOIETIN_RULE && input.dialysis_prescription === true;
-
-    if (free) {
-      exemptCents += lineCents;
-      continue;
-    }
+    const lineCents = free ? 0 : registeredCents;
+    const lineTaxCents = service.taxable ? Math.round(lineCents * 0.15) : 0;
 
     subtotalCents += lineCents;
-    if (service.taxable) taxCents += Math.round(lineCents * 0.15);
-  }
+    taxCents += lineTaxCents;
+    if (!service.taxable) exemptCents += lineCents;
 
-  return currencyTotals({
-    subtotalCents,
-    taxCents,
-    totalCents: subtotalCents + taxCents,
-    exemptCents,
+    return {
+      service_id: service.id,
+      service_name: service.name,
+      quantity: item.quantity,
+      quantity_cents: Math.round(quantity * 100),
+      unit_price_cents: free ? 0 : unitPriceCents,
+      unit_price_registered_cents: unitPriceCents,
+      taxable: service.taxable,
+      tax_rate: service.taxable ? '15.00' : '0.00',
+      line_subtotal_cents: lineCents,
+      tax_cents: lineTaxCents,
+      line_total_cents: lineCents,
+      special_rule_code: service.special_rule_code,
+      special_rule_applied: free,
+      rule_adjustment_cents: free ? registeredCents : 0,
+      rule_cause: free ? 'Sin cobro por receta' : null,
+    };
   });
+
+  return {
+    ...currencyTotals({
+      subtotalCents,
+      taxCents,
+      totalCents: subtotalCents + taxCents,
+      exemptCents,
+    }),
+    items,
+  };
 }
 
 function invoiceFixture(patientName: string, total: string, balanceDue: string) {

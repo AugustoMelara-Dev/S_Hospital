@@ -2,9 +2,20 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { assertBackendVendorPresent, requireE2eReleasePassword } from './release-e2e-preflight.mjs';
+import { assertBackendVendorPresent, assertExternalReleaseTarget, requireE2eReleasePassword } from './release-e2e-preflight.mjs';
 
 describe('release E2E preflight', () => {
+  it('accepts only an explicitly authorized loopback laboratory for external servers', () => {
+    const env = {
+      E2E_RELEASE_BASE_URL: 'http://127.0.0.1:18082',
+      E2E_RELEASE_API_BASE_URL: 'http://127.0.0.1:18082',
+      E2E_RELEASE_ALLOW_MUTATIONS: '1',
+    };
+    expect(() => assertExternalReleaseTarget(env)).not.toThrow();
+    expect(() => assertExternalReleaseTarget({ ...env, E2E_RELEASE_ALLOW_MUTATIONS: '0' })).toThrow(/disposable laboratory/);
+    expect(() => assertExternalReleaseTarget({ ...env, E2E_RELEASE_BASE_URL: 'http://127.0.0.1:8000' })).toThrow(/installed port 8000/);
+    expect(() => assertExternalReleaseTarget({ ...env, E2E_RELEASE_API_BASE_URL: 'https://example.com' })).toThrow(/loopback laboratory/);
+  });
   it('passes when the backend Composer autoloader exists', () => {
     const root = mkdtempSync(join(tmpdir(), 's-hospital-e2e-preflight-'));
     try {

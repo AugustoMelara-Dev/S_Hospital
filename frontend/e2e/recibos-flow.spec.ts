@@ -203,11 +203,11 @@ test.describe('Recibos — historial, detalle y reimpresión', () => {
       .getByRole('row', { name: /A-0002/i })
       .getByRole('button', { name: /ver recibo/i })
       .click();
-    const receiptDialog = page.getByRole('dialog', { name: /comprobante de factura - A-0002/i });
+    const receiptDialog = page.getByRole('dialog', { name: /^comprobante A-0002$/i });
     await expect(receiptDialog).toBeVisible();
-    await expect(receiptDialog.getByTitle(/vista previa del recibo institucional REC-00000070/i)).toBeVisible();
+    await expect(receiptDialog.getByRole('region', { name: /vista previa del recibo/i }).locator('iframe')).toBeVisible();
 
-    await receiptDialog.getByRole('button', { name: /^reimprimir$/i }).click();
+    await receiptDialog.getByRole('button', { name: /^registrar reimpresión$/i }).click();
     const reprintDialog = page.getByRole('dialog', { name: /reimprimir A-0002/i });
     await expect(reprintDialog).toBeVisible();
 
