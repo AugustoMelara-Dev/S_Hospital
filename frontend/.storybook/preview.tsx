@@ -1,14 +1,14 @@
 import type { Preview } from "@storybook/react-vite";
 import React from 'react';
-import { DesignSystemProvider } from '../src/design-system';
+import { ThemeProvider } from '../src/design-system/providers/ThemeProvider';
 import '../src/styles.css';
 
 const preview: Preview = {
   decorators: [
     (Story) => (
-      <DesignSystemProvider>
+      <ThemeProvider>
         <Story />
-      </DesignSystemProvider>
+      </ThemeProvider>
     ),
   ],
   parameters: {

@@ -16,10 +16,10 @@ describe('CashMovementsTable', () => {
     );
 
     const mobileList = screen.getByRole('list', { name: /movimientos de caja en m.vil/i });
-    expect(within(mobileList).getByText('Pago').closest('li')).toHaveTextContent('+ L 51.75');
-    expect(within(mobileList).getByText('Reverso de pago').closest('li')).toHaveTextContent('- L 17.25');
+    expect(within(mobileList).getByText('Pago').closest('li')).toHaveTextContent('+ L. 51.75');
+    expect(within(mobileList).getByText('Reverso de pago').closest('li')).toHaveTextContent('- L. 17.25');
     expect(within(mobileList).getByText('Reverso de pago').closest('li')).not.toHaveTextContent('- -');
-    expect(within(mobileList).getByText('Cierre').closest('li')).toHaveTextContent('L 134.50');
+    expect(within(mobileList).getByText('Cierre').closest('li')).toHaveTextContent('L. 134.50');
     expect(screen.queryByText('payment_void')).not.toBeInTheDocument();
   });
 
@@ -65,7 +65,7 @@ describe('CashMovementsTable', () => {
     );
 
     expect(screen.getAllByRole('region', { name: /movimientos de caja/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole('list', { name: /movimientos de caja en m.vil/i })).toHaveTextContent('+ L 10.00');
+    expect(screen.getByRole('list', { name: /movimientos de caja en m.vil/i })).toHaveTextContent('+ L. 10.00');
     expect(screen.queryByRole('button', { name: /editar|eliminar|revertir/i })).not.toBeInTheDocument();
   });
 
@@ -90,7 +90,7 @@ describe('CashMovementsTable', () => {
     expect(document.body.textContent).not.toMatch(/fecha-danada|invalid date/i);
   });
 
-  it('links an auditable movement to its invoice and identifies its payment', () => {
+  it('links a movement to its public invoice number without exposing internal payment ids', () => {
     render(
       <MemoryRouter>
         <CashMovementsTable
@@ -112,15 +112,16 @@ describe('CashMovementsTable', () => {
     );
 
     expect(screen.getAllByRole('link', { name: /factura FAC-000022/i })[0])
-      .toHaveAttribute('href', '/invoices?invoice=22');
-    expect(screen.getAllByText(/pago #81/i).length).toBeGreaterThan(0);
+      .toHaveAttribute('href', '/recibos?operacion=22');
+    expect(screen.getAllByText(/^pago asociado$/i).length).toBeGreaterThan(0);
+    expect(document.body).not.toHaveTextContent(/pago #81|movimiento #30/i);
     expect(screen.getAllByText(/cobro validado en ventanilla/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('list', { name: /movimientos de caja en móvil/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole('button', { name: /ver detalle del movimiento 30/i })[0]);
-    const detail = screen.getByRole('dialog', { name: /detalle del movimiento 30/i });
+    fireEvent.click(screen.getAllByRole('button', { name: /^ver detalle del movimiento$/i })[0]);
+    const detail = screen.getByRole('dialog', { name: /^detalle del movimiento$/i });
     expect(within(detail).getByText(/factura FAC-000022/i)).toBeVisible();
-    expect(within(detail).getByText(/pago #81/i)).toBeVisible();
+    expect(within(detail).getByText(/^pago asociado$/i)).toBeVisible();
     expect(within(detail).getByText(/cobro validado en ventanilla/i)).toBeVisible();
   });
 
@@ -145,6 +146,32 @@ describe('CashMovementsTable', () => {
     expect(screen.getAllByText(/factura FAC-000023/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole('link', { name: /factura FAC-000023/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/reverso autorizado por supervisión/i).length).toBeGreaterThan(0);
+  });
+
+  it('ordena por monto y aplica la misma secuencia a la tabla y a la lista móvil', () => {
+    render(
+      <CashMovementsTable
+        movements={[
+          movement({ id: 1, type: 'payment', method: 'cash', amount: '51.75' }),
+          movement({ id: 2, type: 'payment', method: 'cash', amount: '10.00' }),
+        ]}
+      />,
+    );
+
+    const amountHeader = screen.getByRole('columnheader', { name: /monto/i });
+    expect(amountHeader).toHaveAttribute('aria-sort', 'none');
+
+    fireEvent.click(within(amountHeader).getByRole('button', { name: /monto/i }));
+    expect(amountHeader).toHaveAttribute('aria-sort', 'ascending');
+
+    const mobileList = screen.getByRole('list', { name: /movimientos de caja en m.vil/i });
+    const items = within(mobileList).getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('L. 10.00');
+    expect(items[1]).toHaveTextContent('L. 51.75');
+
+    fireEvent.click(within(amountHeader).getByRole('button', { name: /monto/i }));
+    expect(amountHeader).toHaveAttribute('aria-sort', 'descending');
+    expect(within(mobileList).getAllByRole('listitem')[0]).toHaveTextContent('L. 51.75');
   });
 });
 

@@ -59,24 +59,50 @@ describe('PaymentModal', () => {
     });
 
     expect(screen.getByText('Maria Lopez')).toBeInTheDocument();
-    expect(screen.getAllByText('L 0.00').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/L\.\s*0\.00/).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /confirmar cobro/i })).toBeDisabled();
 
     rerender(<PaymentModal {...props} patientName="" invoiceNumber="000-001-01-00000045" />);
     expect(screen.getByText('Paciente no especificado')).toBeInTheDocument();
   });
 
-  it('uses semantic theme colors for the invoice summary in light and dark themes', () => {
+  it('renders the invoice summary on admin surfaces instead of R2 tokens', () => {
     renderPaymentModal({
       paymentAmount: '10.00',
       partialPaymentsEnabled: true,
     });
 
     const summary = screen.getByRole('region', { name: 'Resumen de factura' });
-    expect(summary).toHaveClass('bg-surface');
+    expect(summary).toHaveAttribute('data-ui-surface', 'invoice-summary');
+    expect(summary.className).toContain('var(--ui-surface-alt)');
     expect(summary.innerHTML).not.toMatch(/(?:text|bg|border)-(?:white|black|neutral|amber)(?:-|\b)/);
     expect(screen.getByText('Saldo después del pago')).toBeInTheDocument();
-    expect(screen.getByText('L 7.25')).toHaveClass('text-warning-foreground');
+    expect(screen.getByText(/L\.\s*7\.25/)).toHaveClass('text-[color:var(--ui-warn)]');
+  });
+
+  it('keeps the invoice label legible on admin ink-soft (no primary-foreground text)', () => {
+    renderPaymentModal({ invoiceNumber: '000-001-01-00000049' });
+
+    const summary = screen.getByRole('region', { name: 'Resumen de factura' });
+    const invoiceLabel = within(summary).getByText('Factura');
+
+    expect(invoiceLabel).toHaveClass('text-[color:var(--ui-ink-soft)]');
+    expect(invoiceLabel).not.toHaveClass('text-primary-foreground');
+    expect(summary.querySelector('.text-primary-foreground')).toBeNull();
+  });
+
+  it('renders monetary summary values in sans with tabular figures, not monospace', () => {
+    renderPaymentModal({ balanceDue: '17.25', paymentAmount: '20.00' });
+
+    const summary = screen.getByRole('region', { name: /resumen del cobro/i });
+    const monetaryValues = [/L\.\s*17\.25/, /L\.\s*20\.00/, /L\.\s*2\.75/].map(
+      (amount) => within(summary).getByText(amount),
+    );
+
+    for (const value of monetaryValues) {
+      expect(value).toHaveClass('tabular-nums');
+      expect(value).not.toHaveClass('font-mono');
+    }
   });
 
   it('selects the prefilled amount when opened for quick overwrite', async () => {
@@ -96,7 +122,7 @@ describe('PaymentModal', () => {
 
     renderPaymentModal({ onConfirm: confirmSpy });
 
-    expect(screen.getAllByText('L 17.25').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/L\.\s*17\.25/).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     await waitFor(() => {
@@ -119,6 +145,21 @@ describe('PaymentModal', () => {
       expect(confirmSpy).toHaveBeenCalledTimes(1);
     });
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
+  });
+
+  it('prevents an implicit Enter submit from the reference field of a non-cash payment', () => {
+    const confirmSpy = vi.fn();
+    renderPaymentModal({
+      paymentMethod: 'transfer',
+      paymentReference: 'TX-101',
+      onConfirm: confirmSpy,
+    });
+
+    const referenceInput = screen.getByLabelText(/referencia de pago/i);
+    const notPrevented = fireEvent.keyDown(referenceInput, { key: 'Enter', code: 'Enter' });
+
+    expect(notPrevented).toBe(false);
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 
   it('submits the payment with Ctrl+Enter from the amount field', async () => {
@@ -149,10 +190,11 @@ describe('PaymentModal', () => {
       onConfirm: confirmSpy,
     });
 
-    expect(screen.getByText('Cambio:')).toBeInTheDocument();
-    expect(screen.getByText('L 32.75')).toBeInTheDocument();
+    expect(screen.getByText('Cambio')).toBeInTheDocument();
+    expect(screen.queryByText('Cambio:')).not.toBeInTheDocument();
+    expect(screen.getByText(/L\.\s*32\.75/)).toBeInTheDocument();
     expect(screen.getByText('Recibido')).toBeInTheDocument();
-    expect(screen.getAllByText('L 17.25').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/L\.\s*17\.25/).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
@@ -343,9 +385,9 @@ describe('PaymentModal', () => {
     expect(summary).toHaveTextContent(/Total/);
     expect(summary).toHaveTextContent(/Recibido/);
     expect(summary).toHaveTextContent(/Cambio/);
-    expect(summary).toHaveTextContent('L 17.25');
-    expect(summary).toHaveTextContent('L 20.00');
-    expect(summary).toHaveTextContent('L 2.75');
+    expect(summary).toHaveTextContent(/L\.\s*17\.25/);
+    expect(summary).toHaveTextContent(/L\.\s*20\.00/);
+    expect(summary).toHaveTextContent(/L\.\s*2\.75/);
   });
 
   it.each(['card', 'transfer', 'other'] as const)('hides change and uses two summary columns for %s', (paymentMethod) => {
@@ -368,7 +410,7 @@ describe('PaymentModal', () => {
 
     expect(screen.getByRole('radiogroup', { name: /método de pago/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Efectivo' })).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByRole('button', { name: /confirmar cobro de l 17\.25/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /confirmar cobro de l\.\s*17\.25/i })).toBeEnabled();
   });
 
   it('uses roving tab focus and arrow, Home and End navigation for payment methods', async () => {
@@ -466,11 +508,11 @@ describe('PaymentModal', () => {
     expect(confirmSpy).not.toHaveBeenCalled();
 
     rerender(<PaymentModal {...props} paymentAmount="5.00" partialPaymentsEnabled />);
-    const partialPaymentButton = screen.getByRole('button', { name: /registrar abono de l 5\.00/i });
-    expect(partialPaymentButton).toHaveTextContent(/registrar abono l 5\.00/i);
+    const partialPaymentButton = screen.getByRole('button', { name: /registrar abono de l\.\s*5\.00/i });
+    expect(partialPaymentButton).toHaveTextContent(/registrar abono l\.\s*5\.00/i);
     const paymentSummary = screen.getByRole('region', { name: /resumen del cobro/i });
     expect(within(paymentSummary).getByText(/abono aplicado/i)).toBeInTheDocument();
-    expect(within(paymentSummary).getByText('L 5.00')).toBeInTheDocument();
+    expect(within(paymentSummary).getByText(/L\.\s*5\.00/)).toBeInTheDocument();
     fireEvent.submit(screen.getByLabelText(/monto recibido/i).closest('form')!);
 
     await waitFor(() => {
@@ -497,7 +539,7 @@ describe('PaymentModal', () => {
   it('keeps amount guidance human and free of implementation wording', () => {
     renderPaymentModal();
 
-    expect(screen.getByText(/use hasta dos decimales/i)).toHaveTextContent(/se registrara el monto aplicado a la factura/i);
+    expect(screen.getByText(/use hasta dos decimales/i)).toHaveTextContent(/se registrará el monto aplicado a la factura/i);
     expect(document.body.textContent).not.toMatch(/\bbackend\b/i);
   });
 

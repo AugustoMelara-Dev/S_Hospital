@@ -6,6 +6,8 @@ import { BackupHistoryTable } from './BackupHistoryTable';
 const successfulBackup: BackupLog = {
   id: 11,
   size_bytes: 2048,
+  verification_scope: 'encrypted_file_integrity',
+  restore_tested: false,
   status: 'success',
   type: 'manual',
   created_by: 2,
@@ -43,6 +45,7 @@ describe('BackupHistoryTable responsive history', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByRole('list', { name: /historial de respaldos locales/i })).toBeInTheDocument();
     expect(screen.getByText(/caja principal/i)).toBeInTheDocument();
+    expect(screen.getByText(/integridad verificada.*restauración no probada/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /descargar respaldo del/i }));
     expect(onDownloadRequest).toHaveBeenCalledWith(successfulBackup);
   });

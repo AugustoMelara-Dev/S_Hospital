@@ -1,29 +1,143 @@
-import { InfoIcon, WalletIcon } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import type { CashRegister } from '@/lib/api/types';
+import { AdminCallout, AdminField, AdminPanel, AdminPanelHeader } from '@/design-system/admin/components';
 import { parseCents } from '@/lib/moneyCents';
+import { INPUT_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON } from '../cashUi';
 
-const openSessionSchema = z.object({ opening_amount: z.string().trim().regex(/^\d+(\.\d{1,2})?$/, 'Debe ser un número válido').refine((value) => (parseCents(value) ?? 0) >= 0, 'El monto no puede ser negativo') });
+const openSessionSchema = z.object({
+  opening_amount: z.string().trim().regex(/^\d+(\.\d{1,2})?$/, 'Debe ser un número válido').refine((value) => (parseCents(value) ?? 0) >= 0, 'El monto no puede ser negativo'),
+  cash_register_id: z.string().trim().regex(/^\d+$/, 'Seleccione una caja física.'),
+});
 type OpenSessionFormData = z.infer<typeof openSessionSchema>;
-interface OpenSessionFormProps { isSubmitting: boolean; onSubmit: (data: { opening_amount: string }) => void }
+interface OpenSessionFormProps {
+  cashRegisters: CashRegister[];
+  cashRegistersError?: string;
+  cashRegistersLoading?: boolean;
+  isSubmitting: boolean;
+  onRetryCashRegisters?: () => void;
+  onSubmit: (data: { opening_amount: string; cash_register_id: number }) => void;
+}
 
-export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps) {
+/**
+ * Apertura breve: un solo dato obligatorio (el efectivo inicial) y su
+ * confirmación auditada. Sin párrafos técnicos permanentes; la aclaración vive
+ * como ayuda del propio campo.
+ */
+export function OpenSessionForm({
+  cashRegisters,
+  cashRegistersError = '',
+  cashRegistersLoading = false,
+  isSubmitting,
+  onRetryCashRegisters,
+  onSubmit,
+}: OpenSessionFormProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { register, handleSubmit, formState: { errors } } = useForm<OpenSessionFormData>({ resolver: zodResolver(openSessionSchema), defaultValues: { opening_amount: '0.00' } });
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<OpenSessionFormData>({
+    resolver: zodResolver(openSessionSchema),
+    defaultValues: { opening_amount: '0.00', cash_register_id: '' },
+  });
   const registration = register('opening_amount');
   useEffect(() => { inputRef.current?.focus(); }, []);
-  return <section className="mx-auto w-full max-w-2xl overflow-hidden rounded-xl border border-border bg-card shadow-xs" aria-labelledby="cash-open-title">
-    <header className="flex items-start gap-3 border-b border-border p-5"><WalletIcon aria-hidden="true" className="size-5 text-primary" /><div><h2 id="cash-open-title" className="text-xl font-semibold">Apertura de caja</h2><p className="text-sm text-muted-foreground">Ingrese el efectivo real disponible al iniciar. Puede ser L 0.00.</p></div></header>
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-5" aria-busy={isSubmitting}>
-      <div className="grid gap-2"><Label htmlFor="opening_amount">Monto inicial (L.) *</Label><Input id="opening_amount" type="text" inputMode="decimal" defaultValue="0.00" disabled={isSubmitting} aria-invalid={Boolean(errors.opening_amount)} aria-describedby={errors.opening_amount ? 'opening-amount-error' : undefined} {...registration} ref={(element) => { registration.ref(element); inputRef.current = element; }} />{errors.opening_amount ? <p id="opening-amount-error" role="alert" className="text-sm text-destructive">{errors.opening_amount.message}</p> : null}</div>
-      <Alert><InfoIcon aria-hidden="true" /><AlertDescription>El monto inicial debe registrar el efectivo disponible en la caja al abrir.</AlertDescription></Alert>
-      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>{isSubmitting ? 'Abriendo...' : 'Abrir caja'}</Button>
-    </form>
-  </section>;
+  useEffect(() => {
+    if (cashRegisters.length === 1) {
+      setValue('cash_register_id', String(cashRegisters[0].id), { shouldValidate: true });
+    }
+  }, [cashRegisters, setValue]);
+
+  const unavailable = cashRegistersLoading || Boolean(cashRegistersError) || cashRegisters.length === 0;
+
+  return (
+    <AdminPanel className="w-full max-w-2xl" aria-labelledby="cash-open-title">
+      <AdminPanelHeader
+        id="cash-open-title"
+        title="Apertura de caja"
+        description="Registre el efectivo real disponible al iniciar el turno. Puede ser L 0.00."
+      />
+      <form
+        onSubmit={handleSubmit((data) => onSubmit({
+          opening_amount: data.opening_amount,
+          cash_register_id: Number(data.cash_register_id),
+        }))}
+        className="grid gap-4 px-4 py-4 sm:px-5"
+        aria-busy={isSubmitting || cashRegistersLoading}
+      >
+        {cashRegistersLoading ? (
+          <p role="status" className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
+            Consultando cajas habilitadas…
+          </p>
+        ) : cashRegistersError ? (
+          <AdminCallout tone="error" title="No se pudieron consultar las cajas">
+            <div className="flex flex-wrap items-center gap-2">
+              <span>{cashRegistersError}</span>
+              {onRetryCashRegisters ? (
+                <button type="button" className={SECONDARY_BUTTON} onClick={onRetryCashRegisters}>
+                  Reintentar
+                </button>
+              ) : null}
+            </div>
+          </AdminCallout>
+        ) : cashRegisters.length === 0 ? (
+          <AdminCallout tone="warn" title="No hay cajas habilitadas">
+            Un administrador debe habilitar una caja física antes de iniciar el turno.
+          </AdminCallout>
+        ) : (
+          <AdminField
+            htmlFor="cash_register_id"
+            label="Caja física"
+            required
+            error={errors.cash_register_id?.message}
+            hint={cashRegisters.length === 1 ? 'Caja habilitada para este puesto.' : 'Seleccione la gaveta donde se registrará el turno.'}
+          >
+            <select
+              id="cash_register_id"
+              disabled={isSubmitting}
+              aria-invalid={Boolean(errors.cash_register_id)}
+              className={INPUT_CLASS}
+              {...register('cash_register_id')}
+            >
+              {cashRegisters.length > 1 ? <option value="">Seleccione una caja</option> : null}
+              {cashRegisters.map((cashRegister) => (
+                <option key={cashRegister.id} value={cashRegister.id}>
+                  {cashRegister.name} · {cashRegister.code}
+                </option>
+              ))}
+            </select>
+          </AdminField>
+        )}
+
+        <AdminField
+          htmlFor="opening_amount"
+          label="Monto inicial (L.)"
+          required
+          error={errors.opening_amount?.message}
+          hint="Efectivo que ya está en la gaveta antes del primer cobro."
+        >
+          <input
+            id="opening_amount"
+            type="text"
+            inputMode="decimal"
+            defaultValue="0.00"
+            disabled={isSubmitting}
+            aria-invalid={Boolean(errors.opening_amount)}
+            className={`${INPUT_CLASS} h-[var(--ui-control-h-operational)] text-[length:var(--ui-text-lg)] font-semibold tabular-nums`}
+            {...registration}
+            ref={(element) => { registration.ref(element); inputRef.current = element; }}
+          />
+        </AdminField>
+        <div className="flex justify-end">
+          <button type="submit" data-ui-press className={`${PRIMARY_BUTTON} min-w-40`} disabled={isSubmitting || unavailable}>
+            {isSubmitting ? 'Abriendo...' : 'Abrir caja'}
+          </button>
+        </div>
+      </form>
+    </AdminPanel>
+  );
 }

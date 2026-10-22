@@ -13,7 +13,7 @@ describe('RecoveryReadinessCard', () => {
     const region = screen.getByRole('region', { name: /restauración local/i });
 
     expect(region).toContainElement(screen.getByRole('heading', { level: 2, name: /restauración local/i }));
-    expect(screen.getByText(/mantenimiento s_hospital/i)).toBeInTheDocument();
+    expect(screen.getByText(/respaldos y recuperación de s_hospital/i)).toBeInTheDocument();
     expect(screen.getByRole('list', { name: /pendientes para recuperación/i })).toBeInTheDocument();
     expect(screen.getByText('Validar una copia protegida')).toBeInTheDocument();
     expect(screen.getByText('Cerrar la caja abierta')).toBeInTheDocument();

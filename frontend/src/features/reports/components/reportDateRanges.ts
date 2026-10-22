@@ -3,7 +3,7 @@ export type PresetKey = 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'lastMon
 export const PRESET_LABELS: Record<PresetKey, string> = {
   today: 'Hoy',
   yesterday: 'Ayer',
-  last7: '7 dias',
+  last7: '7 días',
   thisMonth: 'Este mes',
   lastMonth: 'Mes anterior',
   custom: 'Personalizado',

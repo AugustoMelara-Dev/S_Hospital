@@ -43,6 +43,7 @@ describe('invoiceActionPolicy', () => {
         receipt_number_full: 'REC-4',
         issued_at: '2026-07-09T10:00:00-06:00',
         reprint_count: 0,
+        copy_mode: 'original_only',
         has_print_events: false,
       },
     }), permissions)).toMatchObject({
@@ -61,6 +62,7 @@ describe('invoiceActionPolicy', () => {
         receipt_number_full: 'REC-5',
         issued_at: '2026-07-09T10:00:00-06:00',
         reprint_count: 1,
+        copy_mode: 'original_only',
         has_print_events: true,
       },
     });

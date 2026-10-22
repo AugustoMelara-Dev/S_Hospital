@@ -131,4 +131,40 @@ describe('reports api client', () => {
 
     expect(mockedRequest).toHaveBeenCalledWith('/api/reports/operations?date_from=2026-07-01&date_to=2026-07-31');
   });
+
+  it('fetches the cash session consolidation from the real contract endpoint', async () => {
+    const report = {
+      registers: [],
+      consolidated: {},
+      date_from: '2026-09-01',
+      date_to: '2026-09-07',
+      range_basis: 'cash_sessions.opened_at_or_closed_at',
+      timezone: 'America/Tegucigalpa',
+    };
+    mockedRequest.mockResolvedValueOnce({ data: report });
+
+    await expect(reports.getCashSessionConsolidation({
+      date_from: '2026-09-01',
+      date_to: '2026-09-07',
+      cash_register_id: 3,
+    })).resolves.toBe(report);
+
+    expect(mockedRequest).toHaveBeenCalledWith(
+      '/api/cash-sessions/consolidated?date_from=2026-09-01&date_to=2026-09-07&cash_register_id=3',
+    );
+  });
+
+  it('omits the caja filter when consolidating every register', async () => {
+    mockedRequest.mockResolvedValueOnce({ data: { registers: [], consolidated: {} } });
+
+    await reports.getCashSessionConsolidation({
+      date_from: '2026-09-01',
+      date_to: '2026-09-02',
+      cash_register_id: null,
+    });
+
+    expect(mockedRequest).toHaveBeenCalledWith(
+      '/api/cash-sessions/consolidated?date_from=2026-09-01&date_to=2026-09-02',
+    );
+  });
 });

@@ -120,7 +120,8 @@ describe('resolveApiBaseUrl', () => {
       'fallback',
     );
 
-    expect(message).toMatch(/el servidor local no pudo completar la operación/i);
+    expect(message).toMatch(/no se pudo confirmar el resultado/i);
+    expect(message).toMatch(/recibos.*antes de repetir/i);
     expect(message).not.toMatch(/servidor LAN/i);
     expect(message).not.toMatch(/SQLSTATE/);
   });
@@ -131,8 +132,34 @@ describe('resolveApiBaseUrl', () => {
       'No se pudieron cargar las facturas recientes.',
     );
 
-    expect(message).toBe('La respuesta está tardando más de lo esperado. Intente nuevamente.');
+    expect(message).toMatch(/respuesta.*tardando/i);
+    expect(message).toMatch(/recibos.*antes de repetir/i);
     expect(message).not.toMatch(/GET|\/api\/|10s|per_page/i);
+  });
+
+  it('keeps raw server failures out of callers that display the error directly', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ message: 'SQLSTATE[HY000] at C:\\hospital\\invoice.php:42' }),
+    } as Response);
+
+    await expect(apiClient.request('/api/invoices')).rejects.toThrow(/no se pudo cargar la información/i);
+    await expect(apiClient.request('/api/invoices')).rejects.not.toThrow(/SQLSTATE|invoice\.php/);
+  });
+
+  it('uses the screen context for failed reads while preserving uncertain payment instructions', () => {
+    const read = new ApiError('SQLSTATE private detail', 503, undefined, undefined, 'GET');
+    expect(userSafeErrorMessage(read, 'No se pudieron cargar los respaldos.')).toBe('No se pudieron cargar los respaldos.');
+    expect(read.message).not.toMatch(/cobro|Recibos|SQLSTATE/);
+    const payment = new ApiError('SQLSTATE private detail', 503, undefined, undefined, 'POST');
+    expect(userSafeErrorMessage(payment, 'No se pudo cobrar.')).toMatch(/Recibos antes de repetir el cobro/);
+  });
+
+  it('keeps network failures on a read unrelated to payment recovery', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+    await expect(apiClient.request('/api/backups')).rejects.toThrow(/revise la conexión local/i);
+    await expect(apiClient.request('/api/backups')).rejects.not.toThrow(/cobro|Recibos/);
   });
 
   it('does not pass through internal request details from ordinary errors', () => {
@@ -148,7 +175,7 @@ describe('resolveApiBaseUrl', () => {
   it('stores safe local support evidence when the local server is unavailable', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('failed to fetch DB_PASSWORD=secret'));
 
-    await expect(apiClient.request('/api/health')).rejects.toThrow(/servidor local/i);
+    await expect(apiClient.request('/api/health')).rejects.toThrow(/no se pudo conectar con el sistema/i);
     await expect(apiClient.request('/api/health')).rejects.not.toThrow(/failed to fetch|DB_PASSWORD|secret/i);
 
     const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{
@@ -161,7 +188,7 @@ describe('resolveApiBaseUrl', () => {
       action: 'GET /api/health',
       module: 'api',
     });
-    expect(stored[0].safe_message).toMatch(/servidor local/i);
+    expect(stored[0].safe_message).toMatch(/no se pudo conectar con el sistema/i);
     expect(stored[0].safe_message).not.toMatch(/servidor LAN/i);
     expect(stored[0].safe_message).toMatch(/failed to fetch/i);
     expect(stored[0].safe_message).not.toMatch(/DB_PASSWORD|secret/i);
@@ -180,7 +207,7 @@ describe('resolveApiBaseUrl', () => {
     });
 
     await expect(apiClient.request('/api/payments', { method: 'POST', body: JSON.stringify({ amount: '1.00' }) }))
-      .rejects.toThrow(/servidor local/i);
+      .rejects.toThrow(/recibos.*antes de repetir/i);
 
     const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{
       action: string;

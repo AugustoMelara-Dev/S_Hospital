@@ -1,30 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { EditIcon, PlusIcon } from 'lucide-react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Textarea } from '@/components/ui/textarea';
+import { ChevronDownIcon, EditIcon, PlusIcon } from 'lucide-react';
+import { AdminCallout, AdminChip, AdminDialog, AdminField, AdminPageHeader, AdminPanel, StatusStamp } from '@/design-system/admin/components';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
+import { useCatalogService } from '@/hooks/useCatalogService';
 import { useServices } from '@/hooks/useServices';
 import { CatalogPagination } from './components/CatalogPagination';
 import { CatalogToolbar } from './components/CatalogToolbar';
 import { ServiceCatalogTable } from './components/ServiceCatalogTable';
 import { CategoryDrawer } from './components/CategoryDrawer';
 import { ServiceDrawer } from './components/ServiceDrawer';
+import { ServiceHistoryDialog } from './components/ServiceHistoryDialog';
 import { invalidateCatalogQueries } from '@/lib/queryInvalidation';
-import { PageHeader } from '@/design-system/components/PageHeader';
 import {
-  CATALOG_DEBOUNCE_MS,
   CATEGORY_FILTER_ALL,
   STATUS_FILTER_ACTIVE,
   STATUS_FILTER_ALL,
 } from './components/catalogTypes';
+import { DANGER_BUTTON, FOCUS_RING, PRIMARY_BUTTON, SECONDARY_BUTTON, TEXTAREA_CLASS } from './components/catalogUi';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type CatalogViewProps = {
@@ -39,7 +34,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const searchParamsRef = useRef(searchParams);
   const setSearchParamsRef = useRef(setSearchParams);
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
-  const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get('q') ?? '');
   const [categoryFilter, setCategoryFilter] = useState<string>(() => searchParams.get('category') ?? CATEGORY_FILTER_ALL);
   const [activeFilter, setActiveFilter] = useState<string>(() => searchParams.get('status') ?? STATUS_FILTER_ALL);
   const [page, setPage] = useState(() => positiveUrlInteger(searchParams.get('page'), 1));
@@ -48,19 +42,23 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const queryClient = useQueryClient();
 
   const [servicePendingStatusChange, setServicePendingStatusChange] = useState<Service | null>(null);
+  const [serviceStatusError, setServiceStatusError] = useState('');
+  const [serviceHistoryTarget, setServiceHistoryTarget] = useState<Service | null>(null);
 
   const canManageCatalog = useMemo(
     () => user.permissions.includes('catalog.manage'),
     [user.permissions],
   );
 
+  // El único debounce vive en `useServices` (250 ms, aplicado sólo a `search`).
+  // Aquí se pasa el término tal cual se teclea: el input nunca se retrasa.
   const serviceFilters = useMemo<ServiceFilters>(() => ({
-    search: debouncedSearch,
+    search,
     categoryId: categoryFilter !== CATEGORY_FILTER_ALL ? Number(categoryFilter) : undefined,
     active: activeFilter !== STATUS_FILTER_ALL ? activeFilter === STATUS_FILTER_ACTIVE : undefined,
     page,
     perPage,
-  }), [activeFilter, categoryFilter, debouncedSearch, page, perPage]);
+  }), [activeFilter, categoryFilter, page, perPage, search]);
 
   const servicesQuery = useServices(serviceFilters);
   const categoriesQuery = useCategories();
@@ -76,9 +74,14 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
   const areas = areasQuery.data ?? [];
   const services = useMemo(() => servicesData?.data ?? [], [servicesData]);
-  const overlayState = catalogOverlayState(searchParams, services, categories);
+  const requestedServiceId = positiveUrlInteger(searchParams.get('service'), 0) || null;
+  const requestedServiceOnPage = requestedServiceId
+    ? services.find((service) => service.id === requestedServiceId) ?? null
+    : null;
+  const serviceDetailQuery = useCatalogService(requestedServiceId && !requestedServiceOnPage ? requestedServiceId : null);
+  const overlayState = catalogOverlayState(searchParams, services, categories, serviceDetailQuery.data ?? null);
   const meta = servicesData?.meta ?? { current_page: 1, per_page: DEFAULT_PER_PAGE, total: 0 };
-  const serviceStatusActionLabel = servicePendingStatusChange?.active ? 'Desactivar servicio' : 'Activar servicio';
+  const serviceStatusActionLabel = servicePendingStatusChange?.active ? 'Desactivar concepto' : 'Activar concepto';
   const loadError = errorMessageFromQueries(servicesQuery.error, categoriesQuery.error, areasQuery.error);
   const isLoading = servicesQuery.isLoading && !servicesData;
 
@@ -90,26 +93,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     setSearchParamsRef.current = setSearchParams;
   }, [searchParams, setSearchParams]);
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-      const trimmedSearch = search.trim();
-      const currentParams = searchParamsRef.current;
-      if ((currentParams.get('q') ?? '') === trimmedSearch && !currentParams.has('page')) {
-        return;
-      }
-
-      const next = new URLSearchParams(currentParams);
-      setOrDelete(next, 'q', trimmedSearch);
-      next.delete('page');
-      searchParamsRef.current = next;
-
-      setSearchParamsRef.current(next, { replace: true });
-    }, CATALOG_DEBOUNCE_MS);
-    return () => clearTimeout(timeoutId);
-  }, [search]);
-
+  // Sincroniza el estado local cuando la URL cambia por navegación externa
+  // (atrás/adelante, enlaces profundos). Al teclear, `handleSearchChange` ya
+  // deja el `q` en la URL, por lo que este efecto no reescribe el input.
   useEffect(() => {
     const nextSearch = searchParams.get('q') ?? '';
     const nextCategory = searchParams.get('category') ?? CATEGORY_FILTER_ALL;
@@ -118,7 +104,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     const nextPerPage = positiveUrlInteger(searchParams.get('per_page'), DEFAULT_PER_PAGE);
 
     setSearch((current) => current === nextSearch ? current : nextSearch);
-    setDebouncedSearch((current) => current === nextSearch ? current : nextSearch);
     setCategoryFilter((current) => current === nextCategory ? current : nextCategory);
     setActiveFilter((current) => current === nextStatus ? current : nextStatus);
     setPage((current) => current === nextPage ? current : nextPage);
@@ -138,6 +123,15 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       areasQuery.refetch(),
     ]);
   }, [areasQuery, categoriesQuery, servicesQuery]);
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    setPage(1);
+    // La URL refleja lo tecleado al instante: `replace` evita una entrada de
+    // historial por pulsación y no se espera al debounce de la consulta (que
+    // ahora vive sólo en `useServices`).
+    updateCatalogUrl({ q: value, page: null }, { replace: true });
+  }
 
   function handleCategoryFilterChange(value: string) {
     setCategoryFilter(value);
@@ -159,7 +153,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   function clearFilters() {
     setSearch('');
-    setDebouncedSearch('');
     setCategoryFilter(CATEGORY_FILTER_ALL);
     setActiveFilter(STATUS_FILTER_ALL);
     setPage(1);
@@ -194,13 +187,16 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     if (!open) updateCatalogUrl({ panel: null, edit_category: null });
   }
 
-  function updateCatalogUrl(patch: Record<string, string | null>) {
+  function updateCatalogUrl(
+    patch: Record<string, string | null>,
+    options: { replace?: boolean } = {},
+  ) {
     const next = new URLSearchParams(searchParamsRef.current);
     setOrDelete(next, 'q', search.trim());
     Object.entries(patch).forEach(([key, value]) => setOrDelete(next, key, value));
     searchParamsRef.current = next;
 
-    setSearchParamsRef.current(next);
+    setSearchParamsRef.current(next, options);
   }
 
   function handlePageChange(nextPage: number) {
@@ -211,7 +207,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   function handleServiceSuccess() {
     void invalidateCatalogQueries(queryClient);
     void refetchCatalogData();
-    onStatus({ key: 'catalog:service:save', level: 'success', message: 'Servicio guardado exitosamente.' });
+    onStatus({ key: 'catalog:service:save', level: 'success', message: 'Producto o servicio guardado.' });
   }
 
   function handleCategorySuccess() {
@@ -221,6 +217,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   }
 
   const toggleServiceActive = useCallback((service: Service) => {
+    setServiceStatusError('');
     setServicePendingStatusChange(service);
   }, []);
 
@@ -238,9 +235,14 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       setServicePendingStatusChange(null);
       void invalidateCatalogQueries(queryClient);
       void refetchCatalogData();
-      onStatus({ key: 'catalog:service:status', level: 'success', message: nextActive ? 'Servicio activado.' : 'Servicio desactivado.' });
-    } catch {
-      onStatus({ key: 'catalog:service:status', level: 'error', message: 'No se pudo cambiar el estado del servicio.' });
+      onStatus({ key: 'catalog:service:status', level: 'success', message: nextActive ? 'Concepto activado.' : 'Concepto desactivado.' });
+    } catch (error) {
+      const safeMessage = userSafeErrorMessage(error, 'No se pudo cambiar la disponibilidad del producto o servicio.');
+      const message = safeMessage.includes('Si estaba cobrando')
+        ? 'No se pudo confirmar el cambio. Revise el estado del concepto en el catálogo antes de intentarlo otra vez.'
+        : safeMessage;
+      setServiceStatusError(message);
+      onStatus({ key: 'catalog:service:status', level: 'error', message });
     }
   }, [onStatus, queryClient, refetchCatalogData, servicePendingStatusChange]);
 
@@ -257,75 +259,103 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   }
 
   return (
-    <section
+    // La superficie ya vive dentro del landmark "Administración" (AdministracionView)
+    // y del `main` del shell. El panel de cabecera de abajo aporta el landmark
+    // "Catálogo institucional"; envolver todo en otro `region` con el mismo nombre
+    // duplicaba el landmark (`landmark-unique`). El contenedor no necesita ser
+    // landmark propio; conserva el `id` como ancla estable.
+    <div
       id="catalogo"
       className="flex flex-col gap-4"
-      aria-label="Catálogo institucional"
     >
-      <PageHeader
-        eyebrow="Servicios y productos facturables"
-        title="Catálogo institucional"
-        description={canManageCatalog
-          ? 'Administre categorías, servicios y precios para mantener operativo el catálogo de caja.'
-          : 'Consulte el catálogo y sus precios vigentes sin modificar servicios.'}
-        actions={canManageCatalog ? (
-          <>
-            <Button type="button" variant="outline" onClick={openNewCategory} aria-label="Crear nueva categoría"><PlusIcon data-icon="inline-start" />Nueva categoría</Button>
-            <Button type="button" onClick={openNewService} aria-label="Crear nuevo servicio"><PlusIcon data-icon="inline-start" />Nuevo servicio</Button>
-          </>
-        ) : undefined}
-      />
-      <div role="status" aria-label="Resumen de servicios en el catálogo"><Badge variant="secondary">{meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catálogo</Badge></div>
-      {!canManageCatalog ? (
-        <Alert><AlertTitle>Solo lectura</AlertTitle><AlertDescription>Esta cuenta puede consultar el catálogo, pero no modificar servicios ni categorías.</AlertDescription></Alert>
-      ) : null}
-
-      <CatalogToolbar
-        categories={categories}
-        categoryFilter={categoryFilter}
-        hasActiveFilters={hasFilters}
-        isLoading={isLoading}
-        onActiveFilterChange={handleActiveFilterChange}
-        onCategoryFilterChange={handleCategoryFilterChange}
-        onClearFilters={clearFilters}
-        onSearchChange={setSearch}
-        searchValue={search}
-        statusFilter={activeFilter}
-      />
-
-      <ServiceCatalogTable
-        canManage={canManageCatalog}
-        isLoading={isLoading}
-        loadError={loadError}
-        onClearFilters={clearFilters}
-        onRetry={refetchCatalogData}
-        onRowActions={{ canManage: canManageCatalog, onEdit: openEditService, onToggleActive: toggleServiceActive }}
-        services={services}
-        hasActiveFilters={hasFilters}
-        isEmpty={isEmpty}
-        categories={categories}
-        areas={areas}
-      />
-
-      {!isEmpty ? (
-        <CatalogPagination
-          isLoading={isLoading}
-          meta={meta}
-          perPage={perPage}
-          servicesCount={services.length}
-          onPageChange={handlePageChange}
-          onPerPageChange={handlePerPageChange}
+      <AdminPageHeader
+          headingId="catalog-title"
+          title="Productos y servicios"
+          description={canManageCatalog
+            ? 'Administre nombres, categorías, precios, impuestos y disponibilidad para los próximos cobros.'
+            : 'Consulte productos, servicios y precios vigentes.'}
+          meta={<AdminChip tone="neutral">
+            {isLoading
+              ? 'Cargando catálogo…'
+              : `${meta.total} concepto${meta.total !== 1 ? 's' : ''}`}
+          </AdminChip>}
+          actions={(
+            <>
+              {canManageCatalog ? (
+                <>
+                  <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={openNewCategory} aria-label="Crear nueva categoría">
+                    <PlusIcon aria-hidden="true" className="size-4" strokeWidth={1.5} />Nueva categoría
+                  </button>
+                  <button type="button" data-ui-press data-catalog-primary-action className={PRIMARY_BUTTON} onClick={openNewService} aria-label="Crear nuevo producto o servicio">
+                    <PlusIcon aria-hidden="true" className="size-4" strokeWidth={1.5} />Nuevo producto o servicio
+                  </button>
+                </>
+              ) : (
+                <AdminChip tone="neutral">Solo lectura</AdminChip>
+              )}
+            </>
+          )}
         />
+
+      <AdminPanel className="overflow-hidden">
+        <CatalogToolbar
+          categories={categories}
+          categoryFilter={categoryFilter}
+          hasActiveFilters={hasFilters}
+          isLoading={isLoading}
+          onActiveFilterChange={handleActiveFilterChange}
+          onCategoryFilterChange={handleCategoryFilterChange}
+          onClearFilters={clearFilters}
+          onSearchChange={handleSearchChange}
+          searchValue={search}
+          statusFilter={activeFilter}
+        />
+
+        <ServiceCatalogTable
+          canManage={canManageCatalog}
+          isLoading={isLoading}
+          loadError={loadError}
+          onClearFilters={clearFilters}
+          onRetry={refetchCatalogData}
+          onRowActions={{ canManage: canManageCatalog, onEdit: openEditService, onHistory: setServiceHistoryTarget, onToggleActive: toggleServiceActive }}
+          services={services}
+          hasActiveFilters={hasFilters}
+          isEmpty={isEmpty}
+          categories={categories}
+          areas={areas}
+        />
+
+        {!isEmpty ? (
+          <CatalogPagination
+            isLoading={isLoading}
+            meta={meta}
+            perPage={perPage}
+            servicesCount={services.length}
+            onPageChange={handlePageChange}
+            onPerPageChange={handlePerPageChange}
+          />
+        ) : null}
+      </AdminPanel>
+
+      {requestedServiceId && serviceDetailQuery.isError ? (
+        <AdminCallout tone="error" title="No se pudo abrir el producto o servicio solicitado">
+          <p>El enlace no corresponde a un concepto disponible o el servidor local no respondió.</p>
+          <button type="button" data-ui-press className={`${SECONDARY_BUTTON} mt-3`} onClick={() => updateCatalogUrl({ service: null }, { replace: true })}>
+            Volver al catálogo
+          </button>
+        </AdminCallout>
       ) : null}
 
       {canManageCatalog && categories.length > 0 ? (
-        <Accordion type="single" collapsible className="rounded-lg border border-border bg-card px-4">
-          <AccordionItem value="editable-categories">
-            <AccordionTrigger><span className="text-left"><span className="block text-sm font-semibold text-foreground">Categorías del catálogo</span><span className="block text-xs font-normal text-muted-foreground">{categories.length} disponibles · abrir para editar</span></span></AccordionTrigger>
-            <AccordionContent><ul className="flex flex-wrap gap-2" aria-label="Categorías editables">{categories.map((category) => <li key={category.id}><Button type="button" size="sm" variant="outline" aria-label={`Editar categoría ${category.name}`} onClick={() => openEditCategory(category)}><EditIcon data-icon="inline-start" />{category.name}</Button></li>)}</ul></AccordionContent>
-          </AccordionItem>
-        </Accordion>
+        <EditableCategoriesSection categories={categories} onEditCategory={openEditCategory} />
       ) : null}
+
+      <ServiceHistoryDialog
+        key={serviceHistoryTarget?.id ?? 'closed'}
+        open={serviceHistoryTarget !== null}
+        service={serviceHistoryTarget}
+        onOpenChange={(open) => { if (!open) setServiceHistoryTarget(null); }}
+      />
 
       {canManageCatalog ? (
         <>
@@ -348,21 +378,65 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           <ConfirmDialog
             danger={servicePendingStatusChange?.active === true}
             confirmLabel={serviceStatusActionLabel}
-            onCancel={() => setServicePendingStatusChange(null)}
+            onCancel={() => { setServicePendingStatusChange(null); setServiceStatusError(''); }}
             onConfirm={(reason) => void confirmServiceStatusChange(reason)}
             open={servicePendingStatusChange !== null}
-            reasonHelpText="Minimo 5 caracteres. El motivo quedara registrado en auditoria del catalogo."
+            reasonHelpText="Mínimo 5 caracteres. El motivo queda registrado en la auditoría del catálogo."
             requireReasonMinLength={5}
-            requireReasonTextarea
             title={serviceStatusActionLabel}
           >
             {servicePendingStatusChange?.active
-              ? `El servicio ${servicePendingStatusChange.name} quedara oculto para nuevos cobros. Las facturas historicas conservaran sus snapshots.`
-              : `El servicio ${servicePendingStatusChange?.name ?? ''} volvera a estar disponible para nuevos cobros. Las facturas historicas conservaran sus snapshots.`}
+              ? `El producto o servicio ${servicePendingStatusChange.name} quedará oculto para nuevos cobros. Los documentos ya emitidos no se modifican.`
+              : `El producto o servicio ${servicePendingStatusChange?.name ?? ''} volverá a estar disponible para nuevos cobros. Los documentos ya emitidos no se modifican.`}
+            {serviceStatusError ? <p role="alert" className="mt-3 text-[length:var(--ui-text-sm)] text-[color:var(--ui-danger)]">{serviceStatusError}</p> : null}
           </ConfirmDialog>
         </>
       ) : null}
-    </section>
+    </div>
+  );
+}
+
+function EditableCategoriesSection({ categories, onEditCategory }: { categories: Category[]; onEditCategory: (category: Category) => void }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <AdminPanel as="section" aria-labelledby="catalog-categories-title">
+      <h2 id="catalog-categories-title" className="sr-only">Categorías del catálogo</h2>
+      <button
+        type="button"
+        data-ui-press
+        aria-expanded={open}
+        aria-controls="catalog-categories-content"
+        onClick={() => setOpen((current) => !current)}
+        className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left ${FOCUS_RING}`}
+      >
+        <span className="min-w-0">
+          <span className="block text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Categorías del catálogo</span>
+          <span className="block text-[length:var(--ui-text-xs)] font-normal text-[color:var(--ui-ink-soft)]">{categories.length} categorías · abrir para revisar estado y orden</span>
+        </span>
+        <ChevronDownIcon aria-hidden="true" className={`size-4 shrink-0 text-[color:var(--ui-ink-soft)] transition-transform duration-[120ms] ease-[var(--ui-ease-out)] ${open ? 'rotate-180' : ''}`} strokeWidth={1.5} />
+      </button>
+      {open ? (
+        <div id="catalog-categories-content" className="border-t border-[var(--ui-line)] px-4 py-3">
+          <ul className="divide-y divide-[var(--ui-line)]" aria-label="Categorías editables">
+            {categories.map((category) => (
+              <li key={category.id} className="flex flex-wrap items-center gap-3 py-2 first:pt-0 last:pb-0">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-[color:var(--ui-ink)]">{category.name}</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
+                    Orden {category.sort_order} · {category.services_count ?? 0} producto(s) o servicio(s)
+                  </p>
+                </div>
+                <StatusStamp status={category.active ? 'cobrado' : 'borrador'} label={category.active ? 'Activa' : 'Inactiva'} />
+                <button type="button" data-ui-press className={SECONDARY_BUTTON} aria-label={`Editar categoría ${category.name}`} onClick={() => onEditCategory(category)}>
+                  <EditIcon aria-hidden="true" className="size-4" strokeWidth={1.5} />Editar
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </AdminPanel>
   );
 }
 
@@ -370,12 +444,14 @@ export function catalogOverlayState(
   searchParams: URLSearchParams,
   services: Service[],
   categories: Category[],
+  requestedService: Service | null = null,
 ) {
   const requestedServiceId = positiveUrlInteger(searchParams.get('service'), 0);
   const requestedCategoryId = positiveUrlInteger(searchParams.get('edit_category'), 0);
   const requestedPanel = searchParams.get('panel');
   const editingService = requestedServiceId
-    ? services.find((candidate) => candidate.id === requestedServiceId) ?? null
+    ? services.find((candidate) => candidate.id === requestedServiceId)
+      ?? (requestedService?.id === requestedServiceId ? requestedService : null)
     : null;
   const editingCategory = requestedCategoryId
     ? categories.find((candidate) => candidate.id === requestedCategoryId) ?? null
@@ -410,7 +486,11 @@ export function serviceStatusPayload(service: Service, active: boolean, availabi
 
 function errorMessageFromQueries(...errors: unknown[]): string {
   const firstError = errors.find(Boolean);
-  return firstError ? userSafeErrorMessage(firstError, 'No se pudo cargar el catálogo.') : '';
+  if (!firstError) return '';
+  const safeMessage = userSafeErrorMessage(firstError, 'No se pudo cargar el catálogo.');
+  return safeMessage.includes('Si estaba cobrando')
+    ? 'No se pudo cargar el catálogo. Revise la conexión local y vuelva a intentarlo.'
+    : safeMessage;
 }
 
 function positiveUrlInteger(value: string | null, fallback: number) {
@@ -433,16 +513,40 @@ export function ConfirmDialog({ open, title, children, confirmLabel, danger, onC
   onConfirm: (reason: string | null) => void;
   reasonHelpText?: string;
   requireReasonMinLength?: number;
-  requireReasonTextarea?: boolean;
 }) {
   const [reason, setReason] = useState('');
+  const reasonInvalid = reason.trim().length > 0 && reason.trim().length < requireReasonMinLength;
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) { setReason(''); onCancel(); } }}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{children}</DialogDescription></DialogHeader>
-        <Field data-invalid={reason.trim().length > 0 && reason.trim().length < requireReasonMinLength}><FieldLabel htmlFor="catalog-audit-reason">Motivo de auditoría</FieldLabel><Textarea id="catalog-audit-reason" value={reason} onChange={(event) => setReason(event.target.value)} aria-describedby="catalog-audit-help" aria-invalid={reason.trim().length > 0 && reason.trim().length < requireReasonMinLength} /><FieldDescription id="catalog-audit-help">{reasonHelpText}</FieldDescription></Field>
-        <DialogFooter><Button type="button" variant="outline" onClick={() => { setReason(''); onCancel(); }}>Cancelar</Button><Button type="button" variant={danger ? 'destructive' : 'default'} disabled={reason.trim().length < requireReasonMinLength} onClick={() => { onConfirm(reason.trim() || null); setReason(''); }}>{confirmLabel}</Button></DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <AdminDialog
+      open={open}
+      onOpenChange={(nextOpen) => { if (!nextOpen) { setReason(''); onCancel(); } }}
+      title={title}
+      description={children}
+      footer={(
+        <>
+          <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={() => { setReason(''); onCancel(); }}>Cancelar</button>
+          <button
+            type="button"
+            data-ui-press
+            className={danger ? DANGER_BUTTON : PRIMARY_BUTTON}
+            disabled={reason.trim().length < requireReasonMinLength}
+            onClick={() => { onConfirm(reason.trim() || null); setReason(''); }}
+          >
+            {confirmLabel}
+          </button>
+        </>
+      )}
+    >
+      <AdminField htmlFor="catalog-audit-reason" label="Motivo de auditoría" hint={reasonHelpText} error={reasonInvalid ? `El motivo debe tener al menos ${requireReasonMinLength} caracteres.` : undefined}>
+        <textarea
+          id="catalog-audit-reason"
+          className={TEXTAREA_CLASS}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          aria-invalid={reasonInvalid}
+          aria-describedby="catalog-audit-reason-hint"
+        />
+      </AdminField>
+    </AdminDialog>
   );
 }

@@ -7,6 +7,7 @@ import type {
   Service,
   ServiceArea,
   ServiceFilters,
+  ServiceHistoryPage,
   ServicePayload,
 } from './types';
 
@@ -83,6 +84,15 @@ export const catalog = {
   async getServices(filters: ServiceFilters = {}, options: { signal?: AbortSignal } = {}): Promise<Service[]> {
     const response = await this.getServicesPage(filters, options);
     return response.data;
+  },
+
+  async getService(id: number): Promise<Service> {
+    const response = await apiClient.request<{ data: Service }>(`/api/services/${id}`);
+    return response.data;
+  },
+
+  async getServiceHistory(id: number, page = 1): Promise<ServiceHistoryPage> {
+    return apiClient.request<ServiceHistoryPage>(`/api/services/${id}/history?page=${page}&per_page=20`);
   },
 
   async saveService(payload: ServicePayload, id?: number): Promise<Service> {

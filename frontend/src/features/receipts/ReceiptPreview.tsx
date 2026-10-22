@@ -1,9 +1,7 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type React from 'react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { FreeMedicationBadge, AdminCallout } from '@/design-system/admin/components';
+import { PRIMARY_BUTTON, SECONDARY_BUTTON } from '@/features/invoices/history/adminOverlayUi';
 import { type ReceiptData } from '../../lib/api';
 import { receiptPrintPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
@@ -20,9 +18,11 @@ type ReceiptPreviewProps = {
 export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPreviewProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [printError, setPrintError] = useState('');
+  const [printPending, setPrintPending] = useState(false);
   const receiptWidth = receiptPrintPaperSize(receipt.width);
   const receiptPresentation = receiptPaperPresentation(receiptWidth);
   const isThermal = receiptWidth === '80mm' || receiptWidth === '58mm';
+  const copyLabel = receivedCopyLabel(receipt);
   const customPaper = receiptWidth === 'custom'
     ? customReceiptPaper(receipt.institutional)
     : undefined;
@@ -40,6 +40,19 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
 
     }
 
+    // The authorized callback may have queued a receipt update (for example the
+    // audited REIMPRESIÓN response). Defer the browser print to the next committed
+    // render so the printed copy label is the one from the response, never a stale
+    // chip; this uses React commit timing, not timers. If the callback never
+    // resolves (interactive reprint still pending/cancelled), no print happens.
+    setPrintPending(true);
+  }
+
+  useLayoutEffect(() => {
+    if (!printPending) return;
+
+    setPrintPending(false);
+
     try {
       printReceiptDocument(receiptWidth);
     } catch {
@@ -47,8 +60,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
         'No se pudo abrir la ventana de impresión. Verifique la impresora y reimprima desde Historial con motivo cuando el supervisor lo autorice.',
       );
     }
-
-  }
+  }, [printPending, receiptWidth]);
 
   useEffect(() => {
     setPrintError('');
@@ -58,32 +70,36 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
   const taxLabel = `${receipt.invoice.tax_label ?? 'ISV'}${receipt.invoice.tax_rate ? ` ${receipt.invoice.tax_rate}%` : ''}`;
 
   return (
-    <div className="receipt-preview-panel" aria-label="Vista previa del comprobante histórico">
+    <div
+      className="receipt-preview-panel text-[length:var(--ui-text-base)] text-[color:var(--ui-ink)]"
+      aria-label="Vista previa del comprobante histórico"
+    >
       {customPaper ? (
         <style data-receipt-custom-page>{customPaper.pageRule}</style>
       ) : null}
-      <Card className="no-print">
-        <CardContent className="p-3 sm:p-4">
-          <div className="receipt-preview-controls border-0 bg-transparent p-0" role="group" aria-label="Acciones del comprobante histórico">
-            <Button type="button" className="min-h-11" onClick={handlePrintClick}>
-              Imprimir
-            </Button>
-            {onNewInvoice ? (
-              <Button type="button" variant="outline" className="min-h-11" onClick={onNewInvoice}>
-                Nueva factura
-              </Button>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-[var(--ui-line)] pb-3">
+        <p className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
+          Copia histórica conservada para consulta.
+        </p>
+        <div className="receipt-preview-controls" role="group" aria-label="Acciones del comprobante histórico">
+          <button type="button" className={`${PRIMARY_BUTTON} min-h-11`} onClick={handlePrintClick}>
+            Imprimir
+          </button>
+          {onNewInvoice ? (
+            <button type="button" className={`${SECONDARY_BUTTON} min-h-11`} onClick={onNewInvoice}>
+              Nueva operación
+            </button>
+          ) : null}
+        </div>
+      </div>
 
       {printError ? (
         <div className="no-print mb-3">
-          <Alert><AlertTitle>Impresión no completada</AlertTitle><AlertDescription>{printError}</AlertDescription></Alert>
+          <AdminCallout tone="error" title="Impresión no completada">{printError}</AdminCallout>
         </div>
       ) : null}
 
-      <div className="receipt-preview-container">
+      <div className="receipt-preview-container bg-[var(--ui-surface-alt)]">
         <div
           ref={receiptRef}
           className={`institutional-receipt ${receiptPresentation.printClass}`}
@@ -105,11 +121,21 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
 
           <div className="receipt-title-row">
             <h1 className="receipt-title">COMPROBANTE HISTÓRICO DE FACTURA</h1>
-            <span>No institucional</span>
           </div>
 
+          {copyLabel ? (
+            <div
+              className={copyLabel.isReprint ? 'receipt-copy-label receipt-copy-label--reprint' : 'receipt-copy-label'}
+              data-receipt-copy-label
+              data-receipt-reprint-label={copyLabel.isReprint ? 'true' : undefined}
+            >
+              {copyLabel.label}
+            </div>
+          ) : null}
+
+
           <p className="receipt-historical-notice">
-            Documento histórico no institucional. No corresponde a un recibo institucional. No asigna correlativo de recibo.
+            No sustituye el recibo institucional.
           </p>
 
           <table className="receipt-meta-table">
@@ -278,7 +304,7 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
       <span className="name">{item.service_name}</span>
       {Number(item.quantity) !== 1 ? <span className="qty"> x {item.quantity}</span> : null}
       {item.special_rule_applied ? (
-        <Badge variant="secondary" className="special-rule-badge">Regla</Badge>
+        <FreeMedicationBadge className="special-rule-badge" />
       ) : null}
     </span>
   );
@@ -286,6 +312,33 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
 
 function ItemPrice({ item }: { item: ReceiptData['items'][number] }) {
   return <strong className="item-price">{moneyLabel(item.line_total)}</strong>;
+}
+
+type ReceivedCopyLabel = {
+  label: string;
+  isReprint: boolean;
+};
+
+/**
+ * Secondary compatibility path for historical (non-institutional) invoices.
+ *
+ * The backend decides the copy semantics and sends them in `copy_label`: the
+ * first authorized print/view arrives as "Original" and an explicit legacy
+ * reprint arrives as "REIMPRESIÓN #n", numbered from the durable per-invoice
+ * counter `invoices.legacy_reprint_count` (T3-004; never from prunable audit
+ * logs). This component renders exactly the received label: it never adds a
+ * copy legend, never invents nor renumbers a reprint and never marks a first
+ * print as a reprint. The institutional receipt PDF is the primary document
+ * and keeps its own persistent `REIMPRESIÓN #n` legend.
+ */
+function receivedCopyLabel(receipt: ReceiptData): ReceivedCopyLabel | null {
+  const label = receipt.institutional?.copy_label?.trim();
+  if (!label) return null;
+
+  return {
+    label,
+    isReprint: /reimpresi[oó]n/i.test(label),
+  };
 }
 
 function customReceiptPaper(
@@ -319,7 +372,12 @@ function ReceiptTotalRow({ label, value, strong }: { label: string; value: strin
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  const cents = parseCents(value);
+  // Receipt-surface contract: a missing/invalid amount must never be painted as
+  // a legitimate zero. `formatLempirasFromCents(null)` still yields "L. 0.00"
+  // (owned by hs-frontend), so the receipt surface guards here and shows a
+  // neutral placeholder instead.
+  return cents === null ? '—' : formatLempirasFromCents(cents);
 }
 
 function formatDate(value: string): string {

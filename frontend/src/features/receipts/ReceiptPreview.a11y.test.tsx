@@ -65,6 +65,7 @@ function buildReceipt(): ReceiptData {
       },
     ],
     width: 'half_letter' as const,
+    legacy_reprint_count: 0,
   };
 }
 

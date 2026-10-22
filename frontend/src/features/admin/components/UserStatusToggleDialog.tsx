@@ -1,19 +1,8 @@
 import { useEffect, useState } from 'react';
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
+import { AdminDialog, AdminField } from '@/design-system/admin/components';
 import type { AuthUser } from '@/lib/api';
+import { DANGER_BUTTON, PRIMARY_BUTTON, SECONDARY_BUTTON, TEXTAREA_CLASS } from '../adminUi';
 
 type Props = {
   isToggling: boolean;
@@ -33,70 +22,56 @@ export function UserStatusToggleDialog({
   const [reason, setReason] = useState('');
   const requiresReason = Boolean(targetUser?.active);
   const reasonInvalid = requiresReason && reason.trim().length < 5;
+  const deactivating = Boolean(targetUser?.active);
 
   useEffect(() => {
     if (!open) setReason('');
   }, [open]);
 
-  const title = targetUser?.active ? 'Desactivar usuario?' : 'Activar usuario?';
+  const title = deactivating ? 'Desactivar usuario?' : 'Activar usuario?';
 
   return (
-    <AlertDialog
+    <AdminDialog
       open={open}
-      onOpenChange={(next) => {
-        if (!next) onCancel();
-      }}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {targetUser?.active ? (
-              <>
-                Al desactivar a <strong>{targetUser.name}</strong>, no podrá iniciar sesión ni operar. Sus
-                transacciones históricas permanecerán intactas.
-              </>
-            ) : (
-              <>
-                Al reactivar a <strong>{targetUser?.name}</strong>, recuperará el acceso operativo con sus
-                credenciales habituales.
-              </>
-            )}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
-        {requiresReason ? (
-          <Field data-invalid={reason.length > 0 && reasonInvalid}>
-            <FieldLabel htmlFor="user-status-reason">Motivo</FieldLabel>
-            <Textarea
-              id="user-status-reason"
-              aria-label="Motivo"
-              aria-invalid={reason.length > 0 && reasonInvalid}
-              value={reason}
-              disabled={isToggling}
-              onChange={(event) => setReason(event.target.value)}
-            />
-            <FieldDescription>
-              Explique por qué se desactiva este usuario. Quedará registrado en auditoría.
-            </FieldDescription>
-            {reason.length > 0 && reasonInvalid ? (
-              <FieldError>El motivo debe tener al menos 5 caracteres.</FieldError>
-            ) : null}
-          </Field>
-        ) : null}
-
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isToggling}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            variant={targetUser?.active ? 'destructive' : 'default'}
+      onOpenChange={(next) => { if (!next) onCancel(); }}
+      title={title}
+      description={deactivating ? (
+        <>Al desactivar a <strong>{targetUser?.name}</strong>, no podrá iniciar sesión ni operar. Sus transacciones históricas permanecerán intactas.</>
+      ) : (
+        <>Al reactivar a <strong>{targetUser?.name}</strong>, recuperará el acceso operativo con sus credenciales habituales.</>
+      )}
+      footer={(
+        <>
+          <button type="button" data-ui-press className={SECONDARY_BUTTON} disabled={isToggling} onClick={onCancel}>Cancelar</button>
+          <button
+            type="button"
+            data-ui-press
+            className={deactivating ? DANGER_BUTTON : PRIMARY_BUTTON}
             disabled={isToggling || reasonInvalid}
             onClick={() => onConfirm(requiresReason ? reason.trim() : null)}
           >
-            {isToggling ? <Spinner data-icon="inline-start" /> : null}
-            {isToggling ? 'Cambiando…' : targetUser?.active ? 'Desactivar' : 'Activar'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            {isToggling ? 'Cambiando…' : deactivating ? 'Desactivar' : 'Activar'}
+          </button>
+        </>
+      )}
+    >
+      {requiresReason ? (
+        <AdminField
+          htmlFor="user-status-reason"
+          label="Motivo"
+          hint="Explique por qué se desactiva este usuario. Quedará registrado en auditoría."
+          error={reason.length > 0 && reasonInvalid ? 'El motivo debe tener al menos 5 caracteres.' : undefined}
+        >
+          <textarea
+            id="user-status-reason"
+            aria-invalid={reason.length > 0 && reasonInvalid}
+            value={reason}
+            disabled={isToggling}
+            onChange={(event) => setReason(event.target.value)}
+            className={TEXTAREA_CLASS}
+          />
+        </AdminField>
+      ) : null}
+    </AdminDialog>
   );
 }

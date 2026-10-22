@@ -21,6 +21,27 @@ function criticalPermission(name: string, label: string) {
 }
 
 describe('RoleFormDialog', () => {
+  it('keeps role actions in the fixed dialog footer while targeting one form', () => {
+    render(
+      <RoleFormDialog
+        open
+        onOpenChange={vi.fn()}
+        editingRole={null}
+        permissionCatalog={permissionCatalog}
+        selectedPermissions={[]}
+        onTogglePermission={vi.fn()}
+        globalError={null}
+        onSubmit={vi.fn()}
+        isSaving={false}
+      />,
+    );
+
+    const submit = screen.getByRole('button', { name: /crear rol/i });
+    expect(submit).toHaveAttribute('form', 'role-form');
+    expect(submit.closest('form')).toBeNull();
+    expect(document.querySelectorAll('form#role-form')).toHaveLength(1);
+  });
+
   it('renders the role name input and disables it for protected roles', () => {
     const { rerender } = render(
       <RoleFormDialog

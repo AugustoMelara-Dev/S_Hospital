@@ -1,17 +1,18 @@
 import { formatDateTimeEs } from '@/lib/format/formatDate';
-import { formatLempirasUI } from '@/lib/money';
+import { parseCents } from '@/lib/moneyCents';
+import { formatCashCents } from './cashMoney';
 import type { CashClosingBreakdown } from '@/lib/api/types';
 
 export type CashCloseSummaryPayload = {
   cashSessionId?: number;
   closedAt?: string | null;
-  openingAmount: number;
-  expectedAmount: number;
-  methods: { cash: string; transfer: string; card: string; other: string };
-  pendingAmount: number;
+  openingAmountCents: number | null;
+  expectedAmountCents: number | null;
+  methodsCents: { cash: number | null; transfer: number | null; card: number | null; other: number | null };
+  pendingAmountCents: number | null;
   pendingInvoiceCount: number;
-  closingAmount: string;
-  difference: number;
+  closingAmountCents: number | null;
+  differenceCents: number | null;
   closingNotes: string;
   closingBreakdown?: CashClosingBreakdown | null;
 };
@@ -19,36 +20,36 @@ export type CashCloseSummaryPayload = {
 export function buildCloseSummaryCsv({
   cashSessionId,
   closedAt,
-  openingAmount,
-  expectedAmount,
-  methods,
-  pendingAmount,
+  openingAmountCents,
+  expectedAmountCents,
+  methodsCents,
+  pendingAmountCents,
   pendingInvoiceCount,
-  closingAmount,
-  difference,
+  closingAmountCents,
+  differenceCents,
   closingNotes,
   closingBreakdown,
 }: CashCloseSummaryPayload): string {
   const rows = [
     ['Campo', 'Valor'],
-    ...(cashSessionId ? [['Caja', `Caja #${cashSessionId}`]] : []),
+    ...(cashSessionId ? [['Sesión de caja', `#${cashSessionId}`]] : []),
     ...(closedAt ? [['Cerrada', formatDateTimeEs(closedAt)]] : []),
-    ['Monto apertura', formatLempirasUI(openingAmount)],
-    ['Efectivo esperado', formatLempirasUI(expectedAmount)],
-    ['Efectivo', formatLempirasUI(methods.cash)],
-    ['Transferencia', formatLempirasUI(methods.transfer)],
-    ['Tarjeta', formatLempirasUI(methods.card)],
-    ['Otros', formatLempirasUI(methods.other)],
+    ['Monto apertura', formatCashCents(openingAmountCents)],
+    ['Efectivo esperado', formatCashCents(expectedAmountCents)],
+    ['Efectivo', formatCashCents(methodsCents.cash)],
+    ['Transferencia', formatCashCents(methodsCents.transfer)],
+    ['Tarjeta', formatCashCents(methodsCents.card)],
+    ['Otros', formatCashCents(methodsCents.other)],
     ['Facturas pendientes', String(pendingInvoiceCount)],
-    ['Saldo pendiente', formatLempirasUI(pendingAmount)],
-    ['Monto contado', formatLempirasUI(closingAmount || '0.00')],
+    ['Saldo pendiente', formatCashCents(pendingAmountCents)],
+    ['Monto contado', formatCashCents(closingAmountCents)],
     ...(closingBreakdown
       ? Object.entries(closingBreakdown.bills)
         .filter(([, count]) => count > 0)
         .map(([denomination, count]) => [`Billetes L ${denomination}`, String(count)])
       : []),
-    ...(closingBreakdown ? [['Monedas y otros', formatLempirasUI(closingBreakdown.other_amount)]] : []),
-    ['Diferencia', formatLempirasUI(difference)],
+    ...(closingBreakdown ? [['Monedas y otros', formatCashCents(parseCents(closingBreakdown.other_amount))]] : []),
+    ['Diferencia', formatCashCents(differenceCents)],
     ['Nota', closingNotes.trim() || 'Sin nota'],
   ];
 

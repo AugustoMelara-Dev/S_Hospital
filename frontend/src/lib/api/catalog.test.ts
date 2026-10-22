@@ -57,4 +57,16 @@ describe('catalog api client', () => {
       { signal: controller.signal },
     );
   });
+
+  it('loads one service and its paginated audit history for deep links', async () => {
+    mockedRequest
+      .mockResolvedValueOnce({ data: { id: 37, name: 'Hemograma' } })
+      .mockResolvedValueOnce({ data: [], meta: { current_page: 2, per_page: 20, total: 21 } });
+
+    await catalog.getService(37);
+    await catalog.getServiceHistory(37, 2);
+
+    expect(mockedRequest).toHaveBeenNthCalledWith(1, '/api/services/37');
+    expect(mockedRequest).toHaveBeenNthCalledWith(2, '/api/services/37/history?page=2&per_page=20');
+  });
 });

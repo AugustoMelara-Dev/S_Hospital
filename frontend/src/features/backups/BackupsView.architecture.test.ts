@@ -8,8 +8,14 @@ const moduleDir = dirname(fileURLToPath(import.meta.url));
 describe('BackupsView module architecture', () => {
   it('keeps backup operations separate from presentation and support-status formatting', () => {
     const source = readFileSync(join(moduleDir, 'BackupsView.tsx'), 'utf8');
-    const lines = source.split(/\r?\n/).length;
 
-    expect(lines).toBeLessThanOrEqual(360);
+    expect(source).toMatch(/useBackups/);
+    expect(source).toMatch(/useCreateBackup/);
+    expect(source).toMatch(/useSystemStatusSnapshot/);
+    expect(source).toMatch(/<BackupHealthPanel/);
+    expect(source).toMatch(/<BackupHistoryTable/);
+    expect(source).toMatch(/<BackupDownloadDialog/);
+    expect(source).not.toMatch(/\bfetch\s*\(/);
+    expect(source).not.toMatch(/apiClient\.(?:restore|delete)Backup/);
   });
 });

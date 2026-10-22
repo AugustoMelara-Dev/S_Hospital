@@ -47,7 +47,7 @@ describe('ui legacy audit', () => {
   it('limits strict mode to migrated surfaces while final mode keeps all runtime violations', () => {
     const violations = [
       ...scanSource('src/components/ui/button.tsx', "import 'antd';"),
-      ...scanSource('src/features/reports/Report.tsx', "import 'echarts';"),
+      ...scanSource('src/features/reportes/ReporteExtra.tsx', "import 'echarts';"),
     ];
 
     expect(filterViolationsForMode(violations, 'inventory')).toHaveLength(2);
@@ -57,11 +57,23 @@ describe('ui legacy audit', () => {
 
   it('keeps migrated shell and authentication surfaces in strict mode', () => {
     const violations = [
-      ...scanSource('src/shell/LegacyShell.tsx', "import 'antd';"),
-      ...scanSource('src/features/auth/LegacyLogin.tsx', "import '@ant-design/icons';"),
+      ...scanSource('src/shell/admin/AdminTopBar.tsx', "import 'antd';"),
+      ...scanSource('src/features/auth/LoginView.tsx', "import '@ant-design/icons';"),
     ];
 
     expect(filterViolationsForMode(violations, 'strict')).toHaveLength(2);
+  });
+
+  it('excludes retired R2 route prefixes from strict scope while final keeps detecting them', () => {
+    const violations = [
+      ...scanSource('src/features/dashboard/DashboardView.tsx', "import 'antd';"),
+      ...scanSource('src/components/keyboard-shortcuts-palette.tsx', "import 'antd';"),
+      ...scanSource('src/navigation/appNavigation.ts', "import 'antd';"),
+    ];
+
+    expect(filterViolationsForMode(violations, 'inventory')).toHaveLength(3);
+    expect(filterViolationsForMode(violations, 'strict')).toHaveLength(0);
+    expect(filterViolationsForMode(violations, 'final')).toHaveLength(3);
   });
 
   it('keeps migrated billing and receipt surfaces in strict mode', () => {
@@ -138,8 +150,6 @@ describe('ui legacy audit', () => {
   it.each([
     'src/features/receipts/ReceiptPreview.tsx',
     'src/features/receipt-settings/components/ReceiptSettingsPreview.tsx',
-    'src/features/reports/components/PaymentMethodPanel.tsx',
-    'src/features/reports/components/TrendChart.tsx',
   ])('allows the documented semantic table in %s', (file) => {
     expect(scanSource(file, '<table />')).toEqual([]);
   });
@@ -155,5 +165,83 @@ describe('ui legacy audit', () => {
 
   it('allows Sheet as the target responsive shadcn pattern', () => {
     expect(scanSource('src/features/catalog/ServiceSheet.tsx', 'export const ServiceSheet = () => null;')).toEqual([]);
+  });
+
+  it('allows admin token utilities, neutral geometry and native controls on admin surfaces', () => {
+    const admin = scanSource(
+      'src/design-system/admin/components.tsx',
+      '<button data-ui-press className="bg-[var(--ui-navy)] text-[length:var(--ui-text-base)] rounded-[var(--ui-radius-control)] duration-[140ms] scale-[0.96] text-white" />',
+    );
+
+    expect(admin).toEqual([]);
+  });
+
+  it('allows white ink over admin navy surfaces but not outside the admin identity', () => {
+    expect(scanSource(
+      'src/shell/admin/TopAdminBar.tsx',
+      '<button className="bg-[var(--ui-navy)] text-white" />',
+    )).toEqual([]);
+
+    expect(scanSource('src/features/example/Example.tsx', '<div className="text-white" />')).toEqual([
+      expect.objectContaining({ kind: 'local-palette-class', cssClass: 'text-white' }),
+    ]);
+  });
+
+  it('keeps flagging R2 identity tokens and palette even inside admin files', () => {
+    const violations = scanSource(
+      'src/features/auth/LoginView.tsx',
+      '<div className="bg-[var(--ui-surface)]"><h1 className="text-[length:var(--type-h1)] text-teal-600" /></div>',
+    );
+
+    expect(violations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'arbitrary-tailwind', cssClass: 'text-[length:var(--type-h1)]' }),
+      expect.objectContaining({ kind: 'local-palette-class', cssClass: 'text-teal-600' }),
+    ]));
+  });
+
+  it('does not flag domain vocabulary that mentions legacy receipts', () => {
+    const source = 'export function requiresLegacyReprintReason() { return legacy_reprint_count; }';
+    expect(scanSource('src/features/invoices/history/invoiceHistoryReceiptRules.ts', source)).toEqual([]);
+  });
+
+  it('flags shadcn primitive imports outside the restyled admin allowlist', () => {
+    expect(scanSource(
+      'src/features/example/Example.tsx',
+      "import { Carousel } from '@/components/ui/carousel';",
+    )).toEqual([
+      expect.objectContaining({ kind: 'unrestyled-ui-primitive', dependency: '@/components/ui/carousel' }),
+    ]);
+
+    expect(scanSource(
+      'src/features/example/Example.tsx',
+      "import { Button } from '@/components/ui/button';",
+    )).toEqual([]);
+  });
+
+  it('flags the institutional R2 bridge outside the archive file', () => {
+    expect(scanSource(
+      'src/styles.css',
+      ':root { --primary: var(--institutional-primary); }',
+    )).toEqual([
+      expect.objectContaining({ kind: 'institutional-bridge-leak', file: 'src/styles.css' }),
+    ]);
+
+    // El archivo histórico declara --institutional-* pero no alimenta el puente.
+    expect(scanSource(
+      'src/design-system/tokens/institutional-tokens.css',
+      ':root { --focus-ring-color: var(--institutional-ring); }',
+    )).toEqual([]);
+  });
+
+  it('flags presentation classes coupled to the shadcn bridge outside primitives', () => {
+    expect(scanSource(
+      'src/features/example/Example.tsx',
+      '<button className="bg-[var(--primary)] ring-[var(--ring)]" />',
+    )).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'shadcn-bridge-class', cssClass: 'bg-[var(--primary)]' }),
+      expect.objectContaining({ kind: 'shadcn-bridge-class', cssClass: 'ring-[var(--ring)]' }),
+    ]));
+
+    expect(scanSource('src/components/ui/button.tsx', '<div className="bg-[var(--primary)]" />')).toEqual([]);
   });
 });

@@ -1,8 +1,12 @@
-import { Search } from 'lucide-react';
 import { useState } from 'react';
+import {
+  AdminChip,
+  AdminPanel,
+  AdminPanelHeader,
+  AdminSearch,
+  AdminToolbar,
+} from '@/design-system/admin/components';
 import { type AuthUser } from '@/lib/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { UsersTable } from './UsersTable';
 import { UserDetailDialog } from './UserDetailDialog';
 
@@ -21,6 +25,11 @@ type UsersDirectoryPanelProps = {
   users: AuthUser[];
 };
 
+/**
+ * Directorio: una sola superficie con encabezado (título + búsqueda) y una
+ * banda de trabajo con el conteo visible y el estado de permiso. La tabla no se
+ * envuelve en tarjetas anidadas.
+ */
 export function UsersDirectoryPanel({
   canAssignAdminRole,
   canDisableUsers,
@@ -39,28 +48,33 @@ export function UsersDirectoryPanel({
 
   return (
     <>
-      {readOnly && (
-        <p className="text-sm text-muted-foreground">Solo lectura</p>
-      )}
-
-      <Card>
-        <CardHeader className="flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <CardTitle><h2>Directorio de usuarios</h2></CardTitle>
-            <CardDescription>Identidades, acceso y estado operativo de cada cuenta.</CardDescription>
-          </div>
-          <div className="relative w-full sm:max-w-md">
-            <Input
-              aria-label="Buscar usuarios"
-              placeholder="Buscar por nombre, correo o usuario..."
-              className="min-h-12 pl-10"
+      <AdminPanel as="section" aria-labelledby="users-directory-title">
+        <AdminPanelHeader
+          id="users-directory-title"
+          title="Directorio de usuarios"
+          description="Identidades, acceso y estado operativo de cada cuenta."
+          actions={(
+            <AdminSearch
+              id="users-search"
+              label="Buscar usuarios"
               value={searchTerm}
-              onChange={(event) => onSearchTermChange(event.target.value)}
+              onValueChange={onSearchTermChange}
+              placeholder="Buscar por nombre, correo o usuario..."
+              className="w-full sm:max-w-md"
             />
-            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          </div>
-        </CardHeader>
-        <CardContent>
+          )}
+        />
+        <AdminToolbar className="justify-between border-b border-[var(--ui-line)] px-3 py-2">
+          <span className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
+            {users.length} cuenta{users.length === 1 ? '' : 's'} visible{users.length === 1 ? '' : 's'}
+          </span>
+          {readOnly ? (
+            <AdminChip tone="neutral">Solo lectura</AdminChip>
+          ) : (
+            <AdminChip tone="neutral">Edición autorizada</AdminChip>
+          )}
+        </AdminToolbar>
+        <div className="p-3">
           <UsersTable
             canAssignAdminRole={canAssignAdminRole}
             canDisableUsers={canDisableUsers}
@@ -74,8 +88,8 @@ export function UsersDirectoryPanel({
             searchTerm={searchTerm}
             users={users}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </AdminPanel>
       <UserDetailDialog
         user={detailUser}
         onOpenChange={(open) => {

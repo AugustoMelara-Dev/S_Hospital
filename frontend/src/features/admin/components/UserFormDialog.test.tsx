@@ -75,6 +75,31 @@ describe('UserFormDialog', () => {
     cleanup();
   });
 
+  it('keeps create and edit actions in the fixed dialog footer while targeting one form', () => {
+    const props = {
+      open: true,
+      onOpenChange: vi.fn(),
+      roles,
+      canManageRoles: false,
+      selectedUserPermissions: ['invoices.create'],
+      onToggleUserPermission: vi.fn(),
+      permissionCatalog,
+      globalError: null,
+      onSubmit: vi.fn(),
+    };
+    const { rerender } = render(<UserFormDialog {...props} editingUser={null} />);
+
+    const create = screen.getByRole('button', { name: /crear usuario/i });
+    expect(create).toHaveAttribute('form', 'user-form');
+    expect(create.closest('form')).toBeNull();
+    expect(document.querySelectorAll('form#user-form')).toHaveLength(1);
+
+    rerender(<UserFormDialog {...props} editingUser={baseUser} />);
+    const save = screen.getByRole('button', { name: /guardar cambios/i });
+    expect(save).toHaveAttribute('form', 'user-form');
+    expect(save.closest('form')).toBeNull();
+  });
+
   it('trims user identity fields before creating an operational account', async () => {
     const onSubmit = vi.fn();
 
@@ -324,9 +349,7 @@ describe('UserFormDialog', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('combobox', { name: /rol operativo/i }));
-    const adminOption = await screen.findByRole('option', { name: /^Admin/i });
-    fireEvent.click(adminOption);
+    fireEvent.change(screen.getByRole('combobox', { name: /rol operativo/i }), { target: { value: 'admin' } });
 
     await waitFor(() => expect(screen.getByText(/rol critico/i)).toBeInTheDocument());
 

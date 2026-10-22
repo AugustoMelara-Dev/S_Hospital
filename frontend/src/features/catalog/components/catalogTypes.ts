@@ -37,6 +37,7 @@ export type ServiceBillingBadges = {
 export type ServiceRowActions = {
   canManage: boolean;
   onEdit: (service: Service) => void;
+  onHistory: (service: Service) => void;
   onToggleActive: (service: Service) => void;
 };
 
@@ -102,5 +103,3 @@ export const STATUS_FILTER_ACTIVE = 'active';
 export const STATUS_FILTER_INACTIVE = 'inactive';
 
 export const PER_PAGE_OPTIONS = [10, 15, 25, 50] as const;
-
-export const CATALOG_DEBOUNCE_MS = 300;

@@ -9,7 +9,11 @@ export function useHospitalSession() {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
 
-  const [status, setStatus] = useState('Listo para iniciar sesión local.');
+  // Estado operativo de la sesión. Vacío = sin novedad: la superficie no
+  // muestra un bloque técnico permanente («Listo para iniciar sesión local» o
+  // «Sesión activa»). Solo se informa cuando hay carga, error o un mensaje
+  // operativo real.
+  const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [loginSubmitting, setLoginSubmitting] = useState(false);
@@ -44,6 +48,8 @@ export function useHospitalSession() {
   const canViewBackups = permissions.has('backups.view');
   const canViewSystemStatus = permissions.has('system.status.view');
   const canViewReceiptSettings = permissions.has('receipt_settings.view');
+  const canEditReceiptSettings = permissions.has('receipt_settings.update');
+  const canEditAdvancedReceiptSettings = permissions.has('receipt_settings.advanced');
   const canViewUsers = permissions.has('users.view');
   const canCreateUsers = permissions.has('users.create');
   const canUpdateUsers = permissions.has('users.update');
@@ -114,7 +120,7 @@ export function useHospitalSession() {
           setStatus(
             currentUser.must_change_password
               ? 'Actualice su contraseña para continuar.'
-              : 'Sesión activa.',
+              : '',
           );
           setSessionExpired(false);
         }
@@ -123,7 +129,7 @@ export function useHospitalSession() {
         if (!isCurrentBootstrap()) return;
         setUser(null);
         setSessionExpired(false);
-        setStatus('Listo para iniciar sesión local.');
+        setStatus('');
       })
       .finally(() => {
         if (isCurrentBootstrap()) setLoading(false);
@@ -240,6 +246,8 @@ export function useHospitalSession() {
     canViewReports,
     canViewBackups,
     canViewReceiptSettings,
+    canEditReceiptSettings,
+    canEditAdvancedReceiptSettings,
     canViewUsers,
     canCreateUsers,
     canUpdateUsers,

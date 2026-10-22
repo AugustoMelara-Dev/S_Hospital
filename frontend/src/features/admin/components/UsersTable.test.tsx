@@ -75,6 +75,19 @@ describe('UsersTable', () => {
     expect(screen.getByRole('button', { name: /acciones de usuario caja principal/i })).toBeInTheDocument();
   });
 
+  it.each([
+    ['', 'No hay usuarios cargados', 'Los usuarios autorizados aparecerán aquí.'],
+    ['zzz', 'Sin coincidencias', 'Ajuste la búsqueda por nombre, correo o usuario.'],
+  ] as const)('explains the empty mobile directory (searchTerm=%j)', (searchTerm, title, description) => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({ matches: query.includes('max-width'), media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }));
+    render(<UsersTable canAssignAdminRole={false} canDisableUsers canUpdateUsers onEdit={vi.fn()} onResetPassword={vi.fn()} onToggleActive={vi.fn()} onViewDetail={vi.fn()} searchTerm={searchTerm} users={[]} />);
+
+    const emptyState = screen.getByRole('status', { name: /usuarios autorizados/i });
+    expect(emptyState).toHaveTextContent(title);
+    expect(emptyState).toHaveTextContent(description);
+    expect(screen.queryByRole('list', { name: /usuarios autorizados/i })).not.toBeInTheDocument();
+  });
+
   it('keeps long mobile identity values readable instead of truncating them', () => {
     vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({ matches: query.includes('max-width'), media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }));
     const user = { ...activeUser, name: 'Paciente administrativo con nombre excepcionalmente largo', email: 'cuenta.operativa.extremadamente.larga@hospital-institucional.local' };

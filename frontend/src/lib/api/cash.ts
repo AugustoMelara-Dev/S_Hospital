@@ -1,7 +1,12 @@
 import { apiClient } from './base';
-import type { CashClosingBreakdown, CashSession, PaginatedMeta } from './types';
+import type { CashClosingBreakdown, CashRegister, CashSession, PaginatedMeta } from './types';
 
 export const cash = {
+  async getCashRegisters(): Promise<CashRegister[]> {
+    const response = await apiClient.request<{ data: CashRegister[] }>('/api/cash-registers');
+    return response.data;
+  },
+
   async getCashSessions(
     filters: { page?: number; perPage?: number; status?: CashSession['status'] } = {},
   ): Promise<{ data: CashSession[]; meta: PaginatedMeta }> {
@@ -26,7 +31,7 @@ export const cash = {
   },
 
   async openCashSession(
-    payload: { opening_amount: string; notes?: string | null },
+    payload: { opening_amount: string; cash_register_id?: number; notes?: string | null },
     options: { idempotencyKey?: string } = {},
   ): Promise<CashSession> {
     const response = await apiClient.request<{ data: CashSession }>('/api/cash-sessions/open', {

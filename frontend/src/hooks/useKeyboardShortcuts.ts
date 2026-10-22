@@ -1,6 +1,6 @@
-import { useCallback, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
-type KeyboardShortcut = {
+export type KeyboardShortcut = {
   key: string;
   ctrl?: boolean;
   alt?: boolean;
@@ -11,11 +11,18 @@ type KeyboardShortcut = {
 
 /**
  * Hook for global keyboard shortcuts in the POS/hospital billing app.
- * Shortcuts are disabled when the user is typing in an input, textarea, or select.
+ * Shortcuts are disabled when the user is typing in an input, textarea, or select
+ * and when a composite UI (dialog, menu, listbox, combobox) is open.
+ *
+ * The listener is registered once; the latest shortcut list is read from a ref so
+ * screens can pass an inline array without re-registering on every render.
  */
 export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
+  const shortcutsRef = useRef(shortcuts);
+  shortcutsRef.current = shortcuts;
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
       const target = event.target instanceof HTMLElement ? event.target : document.body;
       const tagName = target.tagName.toLowerCase();
       const isEditable = target.isContentEditable;
@@ -25,7 +32,7 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
         return;
       }
 
-      for (const shortcut of shortcuts) {
+      for (const shortcut of shortcutsRef.current) {
         const keyMatch = event.key.toLowerCase() === shortcut.key.toLowerCase()
           || event.code.toLowerCase() === shortcut.key.toLowerCase();
 
@@ -40,14 +47,11 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
           return;
         }
       }
-    },
-    [shortcuts],
-  );
+    }
 
-  useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+  }, []);
 }
 
 function hasOpenCompositeUi(target: HTMLElement): boolean {
@@ -60,14 +64,3 @@ function hasOpenCompositeUi(target: HTMLElement): boolean {
   ) !== null;
 }
 
-/**
- * Returns a human-readable label for a keyboard shortcut.
- */
-export function shortcutLabel(shortcut: Pick<KeyboardShortcut, 'key' | 'ctrl' | 'alt' | 'shift'>): string {
-  const parts: string[] = [];
-  if (shortcut.ctrl) parts.push('Ctrl');
-  if (shortcut.alt) parts.push('Alt');
-  if (shortcut.shift) parts.push('Shift');
-  parts.push(shortcut.key.toUpperCase());
-  return parts.join('+');
-}

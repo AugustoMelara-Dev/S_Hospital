@@ -37,7 +37,11 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        // Scrim separado de la superficie: `--ui-scrim` declara la capa sobre el
+        // dark (un alpha 0.30–0.35 es invisible sobre #090A0C). La superficie
+        // opaca vive en `DialogContent`. Mismo valor que `AdminDialog` para que
+        // ambas familias de diálogo se lean igual.
+        "fixed inset-0 isolate z-50 bg-[var(--ui-scrim)]",
         className
       )}
       {...props}
@@ -58,8 +62,12 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        data-dialog-content
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // Superficie 100 % opaca (`ui-portal-surface` → `--ui-surface`), nunca
+          // translúcida: `bg-popover`/`ring-foreground` quedaban fuera del
+          // sistema y el velo tenue hacía legible el fondo a través del modal.
+          "ui-portal ui-portal-surface fixed top-1/2 left-1/2 z-50 flex max-h-[var(--dialog-max-h)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-[var(--ui-radius-overlay)] p-4 text-[length:var(--ui-text-base)] text-[color:var(--ui-ink)] outline-none sm:max-w-sm",
           className
         )}
         {...props}
@@ -72,9 +80,8 @@ function DialogContent({
               className="absolute top-2 right-2"
               size="icon-sm"
             >
-              <XIcon
-              />
-              <span className="sr-only">Close</span>
+              <XIcon aria-hidden="true" />
+              <span className="sr-only">Cerrar</span>
             </Button>
           </DialogPrimitive.Close>
         )}
@@ -112,8 +119,8 @@ function DialogFooter({
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close asChild>
-          <Button variant="outline">Close</Button>
+        <DialogPrimitive.Close asChild data-slot="dialog-close">
+          <Button variant="outline">Cerrar</Button>
         </DialogPrimitive.Close>
       )}
     </div>

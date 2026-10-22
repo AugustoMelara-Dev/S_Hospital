@@ -22,10 +22,58 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={onStatus} />);
 
-    expect(await screen.findByText(/respaldo protegido m.s reciente/i)).toBeInTheDocument();
+    expect(await screen.findByText(/copia creada m.s reciente.*revise su integridad/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/restauración no probada en este equipo/i)).not.toHaveLength(0);
+    expect(screen.getByText(/sin fallos desde la última copia exitosa/i)).toBeInTheDocument();
+    expect(screen.getByText(/0 pendientes · 0 fallidos recientes/i)).toBeInTheDocument();
     await waitFor(() => expect(apiClient.getBackups).toHaveBeenCalledTimes(1));
     expect(onStatus).not.toHaveBeenCalled();
     expect(screen.getByText(/.ltima actualizaci.n/i)).toBeInTheDocument();
+  });
+
+  it('shows authorized system status without requesting backup history', async () => {
+    renderWithQueryClient(
+      <BackupsView
+        user={{ ...adminUser, permissions: ['system.status.view'] }}
+        onStatus={() => undefined}
+      />,
+    );
+
+    expect(await screen.findByRole('heading', { level: 1, name: /^respaldos$/i })).toBeInTheDocument();
+    expect(apiClient.getSystemStatus).toHaveBeenCalled();
+    expect(apiClient.getBackups).not.toHaveBeenCalled();
+    expect(screen.queryByRole('group', { name: /historial de respaldos locales/i })).not.toBeInTheDocument();
+  });
+
+  it('does not present a legacy successful copy as restorable without explicit integrity scope', async () => {
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue(systemStatusFixture());
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [backupFixture({ verification_scope: null, restore_tested: false })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    await waitFor(() => expect(screen.getByRole('status', { name: /salud del respaldo/i })).toHaveTextContent(/estado: sin verificar/i));
+    const health = screen.getByRole('status', { name: /salud del respaldo/i });
+    expect(health).toHaveTextContent(/sin integridad confirmada/i);
+    expect(health).toHaveTextContent(/restauración no probada en este equipo/i);
+    expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).toHaveTextContent(
+      /integridad no verificada.*restauración no probada/i,
+    );
+  });
+
+  it('names file integrity and restoration as separate states', async () => {
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue(systemStatusFixture());
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [backupFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    await waitFor(() => expect(screen.getByRole('status', { name: /salud del respaldo/i })).toHaveTextContent(/estado: integridad verificada/i));
+    const health = screen.getByRole('status', { name: /salud del respaldo/i });
+    expect(health).toHaveTextContent(/restauración no probada en este equipo/i);
   });
 
   beforeEach(() => {
@@ -55,9 +103,10 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    expect(await screen.findByRole('heading', { level: 1, name: /protección y recuperación/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /^respaldos$/i })).toBeInTheDocument();
+    expect(screen.getByText(/cree, revise y descargue copias locales/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /restauración local/i })).toBeInTheDocument();
-    expect(screen.getByText(/use el acceso “mantenimiento s_hospital” en esta computadora/i)).toBeInTheDocument();
+    expect(screen.getByText(/use el acceso “respaldos y recuperación de s_hospital” en esta computadora/i)).toBeInTheDocument();
     expect(screen.getByText(/la restauración detiene temporalmente el sistema y crea un respaldo preventivo/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /abrir centro de soporte/i })).toHaveAttribute('href', '/support');
     expect(screen.queryByRole('button', { name: /restaurar ahora/i })).not.toBeInTheDocument();
@@ -75,6 +124,7 @@ describe('BackupsView', () => {
 
     expect(await screen.findByText(/no hay respaldos/i)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^crear respaldo$/i })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeEnabled();
   });
 
   it('describes restore validation blockers as support recovery work in the normal view', async () => {
@@ -369,7 +419,7 @@ describe('BackupsView', () => {
     await waitFor(() => {
       expect(within(kpis).queryByText(/^Sin respaldo$/i)).not.toBeInTheDocument();
     });
-    expect(within(kpis).getByText(/respaldo protegido mas reciente/i)).toBeInTheDocument();
+    expect(within(kpis).getByText(/copia creada m.s reciente.*revise su integridad/i)).toBeInTheDocument();
   });
 
   it('shows a safe backup age when the last successful timestamp is malformed', async () => {
@@ -386,7 +436,7 @@ describe('BackupsView', () => {
 
     const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
     const lastSuccessLabel = within(kpis).getByText(/^ultimo exitoso$/i);
-    const lastSuccessCard = lastSuccessLabel.closest('article');
+    const lastSuccessCard = lastSuccessLabel.closest('div');
 
     expect(lastSuccessCard).not.toBeNull();
     await waitFor(() => expect(lastSuccessCard as HTMLElement).not.toHaveTextContent(/sin respaldo/i));
@@ -419,7 +469,7 @@ describe('BackupsView', () => {
 
     const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
     const pendingLabel = within(kpis).getByText(/^pendientes$/i);
-    const pendingCard = pendingLabel.closest('article');
+    const pendingCard = pendingLabel.closest('div');
 
     expect(pendingCard).not.toBeNull();
     await waitFor(() => {
@@ -446,13 +496,13 @@ describe('BackupsView', () => {
 
     const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
     const failedLabel = within(kpis).getByText(/^fallidos$/i);
-    const failedCard = failedLabel.closest('article');
+    const failedCard = failedLabel.closest('div');
 
     expect(failedCard).not.toBeNull();
     await waitFor(() => {
       expect(within(failedCard as HTMLElement).getByText('2')).toBeInTheDocument();
     });
-    expect(within(failedCard as HTMLElement).getByText(/revise con soporte antes de confiar en respaldos/i)).toBeInTheDocument();
+    expect(within(failedCard as HTMLElement).getByText(/fallos desde la última copia exitosa.*revise con soporte/i)).toBeInTheDocument();
   });
 
   it('warns when the latest successful backup cannot be confirmed on disk', async () => {
@@ -468,8 +518,8 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    expect(await screen.findByText(/respaldo reciente no confirmado/i)).toBeInTheDocument();
-    expect(screen.getByText(/cree un respaldo nuevo antes de confiar en la recuperación/i)).toBeInTheDocument();
+    expect(await screen.findByText(/integridad del respaldo no confirmada/i)).toBeInTheDocument();
+    expect(screen.getByText(/cree uno nuevo antes de usarlo para una recuperación/i)).toBeInTheDocument();
     expect(screen.queryByText(/hospital-backup-.*\.sql/i)).not.toBeInTheDocument();
   });
 
@@ -497,6 +547,145 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     expect(await screen.findByText(/cargando respaldos locales/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Conteo pendiente$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^0 respaldos visibles$/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /verificando salud del respaldo/i })).toHaveTextContent(/Estado: Verificando/i);
+    expect(screen.getByText(/confirmando si hay respaldos pendientes/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeDisabled();
+  });
+
+  it('does not invent a zero count when the initial backup request fails', async () => {
+    vi.mocked(apiClient.getBackups).mockRejectedValue(new Error('backup history unavailable'));
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/^Conteo no disponible$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^0 respaldos visibles$/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/error al cargar respaldos/i)).toBeInTheDocument();
+  });
+
+  it('shows the current error state when system health cannot be verified', async () => {
+    vi.mocked(apiClient.getSystemStatus).mockRejectedValue(new Error('system status unavailable'));
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/estado operativo no disponible/i)).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /salud del respaldo/i })).toHaveTextContent(/Estado: Error/i);
+    expect(screen.getByText(/no se puede crear un respaldo porque no se confirmó si existe otro pendiente/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /reintentar estado/i })).toBeEnabled();
+  });
+
+  it('keeps creation blocked until unavailable global status recovers', async () => {
+    const getSystemStatus = vi.mocked(apiClient.getSystemStatus)
+      .mockRejectedValueOnce(new Error('system status unavailable'))
+      .mockResolvedValueOnce(systemStatusFixture());
+    const createBackup = vi.spyOn(apiClient, 'createBackup');
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByRole('button', { name: /reintentar estado/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeDisabled();
+    expect(createBackup).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /reintentar estado/i }));
+
+    await waitFor(() => expect(getSystemStatus).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeEnabled());
+    expect(screen.queryByText(/no se puede crear un respaldo porque no se confirmó/i)).not.toBeInTheDocument();
+  });
+
+  it('uses the confirmed global history count without requiring system status permission', async () => {
+    const operator = {
+      ...adminUser,
+      permissions: ['backups.view', 'backups.create'],
+    };
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0, global_pending_count: 0 },
+    });
+
+    renderWithQueryClient(<BackupsView user={operator} onStatus={() => undefined} />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeEnabled());
+    expect(apiClient.getSystemStatus).not.toHaveBeenCalled();
+    expect(screen.queryByText(/solicite acceso al estado operativo/i)).not.toBeInTheDocument();
+  });
+
+  it('blocks creation from the global history count even when the visible page has no pending row', async () => {
+    const operator = {
+      ...adminUser,
+      permissions: ['backups.view', 'backups.create'],
+    };
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [backupFixture()],
+      meta: { current_page: 1, per_page: 15, total: 20, global_pending_count: 1 },
+    });
+
+    renderWithQueryClient(<BackupsView user={operator} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/espere a que termine el respaldo pendiente/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeDisabled();
+    expect(apiClient.getSystemStatus).not.toHaveBeenCalled();
+  });
+
+  it('distinguishes an absent global history count and recovers after retry', async () => {
+    const operator = {
+      ...adminUser,
+      permissions: ['backups.view', 'backups.create'],
+    };
+    const getBackups = vi.mocked(apiClient.getBackups)
+      .mockResolvedValueOnce({
+        data: [],
+        meta: { current_page: 1, per_page: 15, total: 0 },
+      })
+      .mockResolvedValueOnce({
+        data: [],
+        meta: { current_page: 1, per_page: 15, total: 0, global_pending_count: 0 },
+      });
+
+    renderWithQueryClient(<BackupsView user={operator} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/no se pudo confirmar si hay respaldos pendientes/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /reintentar estado/i }));
+
+    await waitFor(() => expect(getBackups).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeEnabled());
+    expect(apiClient.getSystemStatus).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid global counts instead of interpreting them as an empty queue', async () => {
+    const operator = {
+      ...adminUser,
+      permissions: ['backups.view', 'backups.create'],
+    };
+    vi.mocked(apiClient.getBackups).mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0, global_pending_count: -1 },
+    });
+
+    renderWithQueryClient(<BackupsView user={operator} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/no se pudo confirmar si hay respaldos pendientes/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeDisabled();
+  });
+
+  it('explains a missing pending count even when system status otherwise loads', async () => {
+    const status = systemStatusFixture();
+    vi.mocked(apiClient.getSystemStatus).mockResolvedValue({
+      ...status,
+      backups: {
+        ...status.backups,
+        pending_count: null,
+      },
+    } as unknown as SystemStatus);
+
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/no se pudo confirmar si hay respaldos pendientes/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /reintentar estado/i })).toBeEnabled();
   });
 
   it('renders the table with caption, numeric size column and text status descriptions', async () => {
@@ -523,13 +712,13 @@ describe('BackupsView', () => {
     ]);
     expect(screen.getByRole('columnheader', { name: /fecha/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /estado/i })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: /tamaño/i })).toHaveAttribute('data-numeric', 'true');
+    expect(screen.getByRole('columnheader', { name: /tamaño/i })).toHaveClass('text-right');
     expect(screen.getByRole('columnheader', { name: /usuario/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /acciones/i })).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: /nombre/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/hospital-backup-.*\.sql\.enc/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).not.toHaveTextContent(/restaur/i);
-    expect(screen.getAllByRole('cell').some((cell) => cell.getAttribute('data-numeric') === 'true')).toBe(true);
+    expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).toHaveTextContent(/integridad verificada.*restauración no probada/i);
+    expect(screen.getAllByRole('cell').some((cell) => cell.className.includes('text-right'))).toBe(true);
     expect(screen.getByText(/respaldo en proceso/i)).toBeInTheDocument();
     expect(screen.getByText(/archivo creado correctamente/i)).toBeInTheDocument();
     expect(screen.getByText(/no se pudo completar\. revise con soporte/i)).toBeInTheDocument();
@@ -629,6 +818,18 @@ describe('BackupsView', () => {
     expect(apiClient.downloadBackup).not.toHaveBeenCalled();
   });
 
+  it('declares the read-only condition instead of hiding the create action without explanation', async () => {
+    const readonlyUser = {
+      ...adminUser,
+      permissions: ['backups.view'],
+    };
+
+    renderWithQueryClient(<BackupsView user={readonlyUser} onStatus={() => undefined} />);
+
+    expect(await screen.findByText(/solo consulta/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^crear respaldo$/i })).not.toBeInTheDocument();
+  });
+
   it('does not request support status for backup viewers without system status permission', async () => {
     const readonlyUser = {
       ...adminUser,
@@ -662,12 +863,14 @@ describe('BackupsView', () => {
 
     const kpis = await screen.findByRole('region', { name: /indicadores principales de respaldos/i });
     for (const label of ['Ultimo exitoso', 'Pendientes', 'Fallidos']) {
-      const card = within(kpis).getByText(new RegExp(`^${label}$`, 'i')).closest('article');
+      const card = within(kpis).getByText(new RegExp(`^${label}$`, 'i')).closest('div');
       expect(card).not.toBeNull();
       expect(within(card as HTMLElement).getByText(/^No disponible$/i)).toBeVisible();
     }
     expect(within(kpis).queryByText(/^Sin respaldo$/i)).not.toBeInTheDocument();
-    expect(within(kpis).getAllByText(/historial visible no resume todos los respaldos/i)).toHaveLength(3);
+    // Los indicadores declaran el dato ausente en lugar de un cero o de un
+    // veredicto que el historial visible no puede sostener.
+    expect(within(kpis).getAllByText(/^No disponible$/i)).toHaveLength(3);
     expect(await screen.findByRole('table', { name: /historial de respaldos locales/i })).toBeVisible();
   });
 
@@ -682,7 +885,7 @@ describe('BackupsView', () => {
     await waitFor(() => {
       expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'success' });
     });
-    expect(screen.getByRole('radio', { name: /completados/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /completados/i })).toBeChecked();
   });
 
   it('labels failed backup filters for operators while preserving the API status contract', async () => {
@@ -698,7 +901,7 @@ describe('BackupsView', () => {
     await waitFor(() => {
       expect(getBackups).toHaveBeenLastCalledWith({ page: 1, status: 'failed' });
     });
-    expect(screen.getByRole('radio', { name: /^fallidos$/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /^fallidos$/i })).toBeChecked();
   });
 
   it('keeps the current backup history visible while a status filter refetch is pending', async () => {
@@ -743,7 +946,9 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /^crear respaldo$/i }));
+    await screen.findByRole('button', { name: /^crear respaldo$/i });
+    await waitFor(() => expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /^crear respaldo$/i }));
     const dialog = screen.getByRole('dialog');
     const confirm = within(dialog).getByRole('button', { name: /^crear respaldo$/i });
     fireEvent.click(confirm);
@@ -798,13 +1003,15 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={onStatus} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /^crear respaldo$/i }));
+    await screen.findByRole('button', { name: /^crear respaldo$/i });
+    await waitFor(() => expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /^crear respaldo$/i }));
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^crear respaldo$/i }));
 
     await waitFor(() => {
       expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
         level: 'success',
-        message: 'Respaldo completado correctamente.',
+        message: 'Respaldo creado con integridad verificada. La restauración se prueba por separado.',
       }));
     });
     expect(onStatus.mock.calls.map(([status]) => (
@@ -978,6 +1185,8 @@ function backupFixture(overrides: Partial<BackupLog> = {}): BackupLog {
     id: 1,
     size_bytes: 3_145_728,
     checksum_sha256: 'abc1234567890defabc1234567890defabc1234567890defabc1234567890def',
+    verification_scope: 'encrypted_file_integrity',
+    restore_tested: false,
     status: 'success',
     type: 'manual',
     created_by: 1,

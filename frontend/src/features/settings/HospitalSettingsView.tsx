@@ -1,18 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
-import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Save, TriangleAlert } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
+import { AdminCallout, AdminDialog, AdminField, AdminPanel, AdminPanelHeader } from '@/design-system/admin/components';
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { INPUT_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON, STICKY_ACTIONS, TEXTAREA_CLASS } from './settingsUi';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type HospitalSettingsViewProps = {
@@ -44,37 +38,22 @@ function isPlaceholderHospitalName(value: string | null | undefined): boolean {
   return new RegExp(`^hospital ${'de' + 'mo'}$`, 'i').test(value?.trim() ?? '');
 }
 
-function HospitalField({ children, error, id, label, required }: {
-  children: (props: { id: string; invalid: boolean; describedBy: string | undefined }) => ReactNode;
+function HospitalField({ children, error, hint, id, label, required }: {
+  children: ReactNode;
   error?: string;
+  hint?: ReactNode;
   id: string;
   label: string;
   required?: boolean;
-  hint?: ReactNode;
 }) {
-  return (
-    <Field data-invalid={Boolean(error)} data-required={required}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      {children({ id, invalid: Boolean(error), describedBy: error ? `${id}-error` : undefined })}
-      <FieldError id={`${id}-error`}>{error}</FieldError>
-    </Field>
-  );
-}
-
-function RegisteredInput({ registration, ...props }: ComponentProps<typeof Input> & { registration: UseFormRegisterReturn }) {
-  const { ref, ...field } = registration;
-  return <Input {...field} {...props} ref={ref} />;
-}
-
-function RegisteredTextArea({ registration, ...props }: ComponentProps<typeof Textarea> & { registration: UseFormRegisterReturn }) {
-  const { ref, ...field } = registration;
-  return <Textarea {...field} {...props} ref={ref} />;
+  return <AdminField htmlFor={id} label={label} required={required} hint={hint} error={error}>{children}</AdminField>;
 }
 
 export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsViewProps) {
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
   const [pendingChange, setPendingChange] = useState<HospitalFormData | null>(null);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -97,6 +76,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const data = await apiClient.getFiscalSettings();
       setSettings(data);
@@ -114,11 +94,12 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
       });
     } catch (err) {
       const message = safeClientMessage(userSafeErrorMessage(err, 'No se pudo cargar los datos del hospital.'));
-      setError(message);
+      setLoadError(message);
+      onStatus({ key: 'settings:hospital:load', level: 'error', message, toast: false });
     } finally {
       setLoading(false);
     }
-  }, [form]);
+  }, [form, onStatus]);
 
   useEffect(() => {
     void load();
@@ -126,6 +107,9 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
 
   const watchedRtn = form.watch('rtn') ?? '';
   const rtnChanged = settings !== null && watchedRtn.trim() !== (settings.rtn ?? '').trim();
+  const draft = form.watch();
+
+  useUnsavedChangesGuard(form.formState.isDirty);
 
   async function onSubmit(data: HospitalFormData) {
     const fiscalReason = data.reason?.trim() ?? '';
@@ -193,211 +177,242 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
 
   if (loading) {
     return (
-      <div role="status" aria-live="polite" className="text-sm text-muted-foreground">
+      <div role="status" aria-live="polite" className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
         Cargando datos del hospital...
       </div>
     );
   }
 
+  // Sin los datos vigentes no se dibuja el formulario: un formulario vacío
+  // parece «el hospital no tiene nombre» y permitiría sobrescribir el registro
+  // real con datos parciales.
+  if (loadError) {
+    return (
+      <AdminPanel as="section" aria-labelledby="hospital-settings-title">
+        <AdminPanelHeader
+          id="hospital-settings-title"
+          title="Datos del hospital"
+          description="Información legal y de contacto que usan los recibos nuevos."
+        />
+        <div className="p-4">
+          <AdminCallout tone="error" title="No se pudieron cargar los datos del hospital">
+            {loadError}
+            <div className="mt-3">
+              <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={() => void load()}>
+                Reintentar carga
+              </button>
+            </div>
+          </AdminCallout>
+        </div>
+      </AdminPanel>
+    );
+  }
+
   return (
-    <section className="grid gap-4">
-      <header><h2 className="text-lg font-semibold">Datos del hospital</h2><p className="text-sm text-muted-foreground">Información legal y de contacto visible en recibos y en la aplicación.</p></header>
-      {error ? (
-        <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
-      ) : null}
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
+      <AdminPanel as="section" aria-labelledby="hospital-settings-title">
+        <AdminPanelHeader
+          id="hospital-settings-title"
+          title="Datos del hospital"
+          description="Información legal y de contacto que usan los recibos nuevos."
+        />
+        <div className="p-4">
+          {error ? (
+            <AdminCallout tone="error" title="No se pudo guardar">{error}</AdminCallout>
+          ) : null}
 
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="grid gap-4"
-        aria-busy={form.formState.isSubmitting || saving}
-      >
-        <Card>
-          <CardHeader><CardTitle>Identidad</CardTitle><CardDescription>Nombre legal y datos fiscales básicos.</CardDescription></CardHeader>
-          <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <HospitalField id="hospital_name" label="Nombre del hospital" required error={form.formState.errors.hospital_name?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  registration={form.register('hospital_name')}
-                  placeholder="Hospital Nacional..."
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </HospitalField>
-            <HospitalField id="rtn" label="RTN" hint="Opcional. Si no aplica, dejar vacío." error={form.formState.errors.rtn?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  registration={form.register('rtn')}
-                  placeholder="0801-XXXX-XXXXX"
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </HospitalField>
-            {rtnChanged ? (
-              <HospitalField id="reason" label="Motivo del cambio fiscal" required hint="Obligatorio al modificar el RTN." error={form.formState.errors.reason?.message}>
-                {({ id, invalid, describedBy }) => (
-                  <RegisteredTextArea
-                    id={id}
-                    registration={form.register('reason')}
-                    rows={2}
-                    aria-invalid={invalid}
-                    aria-describedby={describedBy}
-                    disabled={!canEdit}
-                  />
-                )}
-              </HospitalField>
-            ) : null}
-          </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Encabezado institucional</CardTitle><CardDescription>Líneas opcionales que aparecen en el encabezado de recibos.</CardDescription></CardHeader>
-          <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <HospitalField id="government_line" label="Dependencia superior" hint="Encabezado autorizado." error={form.formState.errors.government_line?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  registration={form.register('government_line')}
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </HospitalField>
-            <HospitalField id="secretariat_line" label="Secretaría o unidad" error={form.formState.errors.secretariat_line?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  registration={form.register('secretariat_line')}
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </HospitalField>
-            <HospitalField id="address" label="Dirección" error={form.formState.errors.address?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  registration={form.register('address')}
-                  placeholder="Barrio Centro, Avenida Principal..."
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </HospitalField>
-            <HospitalField id="phone" label="Teléfono" error={form.formState.errors.phone?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  registration={form.register('phone')}
-                  placeholder="2444-0000"
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </HospitalField>
-            <HospitalField id="slogan" label="Lema" error={form.formState.errors.slogan?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  registration={form.register('slogan')}
-                  placeholder="Al servicio de tu salud..."
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </HospitalField>
-          </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Pie de recibo</CardTitle><CardDescription>Textos opcionales que aparecen al pie del recibo.</CardDescription></CardHeader>
-          <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <HospitalField id="receipt_location" label="Lugar del recibo" hint="Ciudad o lugar autorizado." error={form.formState.errors.receipt_location?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  registration={form.register('receipt_location')}
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </HospitalField>
-            <HospitalField id="receipt_footer_text" label="Texto al pie" error={form.formState.errors.receipt_footer_text?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredTextArea
-                  id={id}
-                  registration={form.register('receipt_footer_text')}
-                  rows={2}
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </HospitalField>
-          </div>
-          </CardContent>
-        </Card>
-
-        {canEdit && form.formState.isDirty ? (
-          <div
-            data-sticky-actions="true"
-            className="sticky bottom-20 z-20 flex items-center justify-between gap-3 border-t border-operational-border bg-operational-surface p-3 lg:bottom-0"
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="grid gap-5"
+            aria-busy={form.formState.isSubmitting || saving}
           >
-            <span className="text-xs text-muted-foreground">Hay cambios sin guardar.</span>
-            <Button type="submit" disabled={form.formState.isSubmitting || saving}>
-              {saving ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}Guardar datos del hospital
-            </Button>
-          </div>
-        ) : null}
-      </form>
+            <fieldset className="grid gap-4">
+              <legend className="text-[length:var(--ui-text-sm)] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-ink-soft)]">Identidad</legend>
+              <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Nombre legal, RTN y datos de contacto.</p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <HospitalField id="hospital_name" label="Nombre del hospital" required error={form.formState.errors.hospital_name?.message}>
+                  <input id="hospital_name" placeholder="Hospital Nacional..." {...form.register('hospital_name')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.hospital_name)} className={INPUT_CLASS} />
+                </HospitalField>
+                <HospitalField id="rtn" label="RTN" hint="Opcional. Si no aplica, dejar vacío." error={form.formState.errors.rtn?.message}>
+                  <input id="rtn" placeholder="0801-XXXX-XXXXX" {...form.register('rtn')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.rtn)} className={INPUT_CLASS} />
+                </HospitalField>
+                <HospitalField id="address" label="Dirección" error={form.formState.errors.address?.message}>
+                  <input id="address" placeholder="Barrio Centro, Avenida Principal..." {...form.register('address')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.address)} className={INPUT_CLASS} />
+                </HospitalField>
+                <HospitalField id="phone" label="Teléfono" error={form.formState.errors.phone?.message}>
+                  <input id="phone" placeholder="2444-0000" {...form.register('phone')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.phone)} className={INPUT_CLASS} />
+                </HospitalField>
+                <HospitalField id="slogan" label="Lema" error={form.formState.errors.slogan?.message}>
+                  <input id="slogan" placeholder="Al servicio de tu salud..." {...form.register('slogan')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.slogan)} className={INPUT_CLASS} />
+                </HospitalField>
+                {rtnChanged ? (
+                  <HospitalField id="hospital_reason" label="Motivo del cambio fiscal" required hint="Obligatorio al modificar el RTN." error={form.formState.errors.reason?.message}>
+                    <textarea id="hospital_reason" rows={2} {...form.register('reason')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.reason)} className={TEXTAREA_CLASS} />
+                  </HospitalField>
+                ) : null}
+              </div>
+            </fieldset>
 
-      <AlertDialog open={pendingChange !== null} onOpenChange={(next) => { if (!next && !saving) setPendingChange(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Revisar cambio de RTN</AlertDialogTitle>
-            <AlertDialogDescription>Confirme el cambio fiscal antes de guardar.</AlertDialogDescription>
-          </AlertDialogHeader>
+            <fieldset className="grid gap-4">
+              <legend className="text-[length:var(--ui-text-sm)] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-ink-soft)]">Encabezado y pie del recibo</legend>
+              <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Líneas opcionales que se imprimen arriba y al pie del recibo.</p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <HospitalField id="government_line" label="Dependencia superior" hint="Encabezado autorizado." error={form.formState.errors.government_line?.message}>
+                  <input id="government_line" {...form.register('government_line')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.government_line)} className={INPUT_CLASS} />
+                </HospitalField>
+                <HospitalField id="secretariat_line" label="Secretaría o unidad" error={form.formState.errors.secretariat_line?.message}>
+                  <input id="secretariat_line" {...form.register('secretariat_line')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.secretariat_line)} className={INPUT_CLASS} />
+                </HospitalField>
+                <HospitalField id="receipt_location" label="Lugar del recibo" hint="Ciudad o lugar autorizado." error={form.formState.errors.receipt_location?.message}>
+                  <input id="receipt_location" {...form.register('receipt_location')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.receipt_location)} className={INPUT_CLASS} />
+                </HospitalField>
+                <HospitalField id="receipt_footer_text" label="Texto al pie" error={form.formState.errors.receipt_footer_text?.message}>
+                  <textarea id="receipt_footer_text" rows={2} {...form.register('receipt_footer_text')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.receipt_footer_text)} className={TEXTAREA_CLASS} />
+                </HospitalField>
+              </div>
+            </fieldset>
+
+            {canEdit && form.formState.isDirty ? (
+              <div data-sticky-actions="true" className={STICKY_ACTIONS}>
+                <span className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Hay cambios sin guardar.</span>
+                <button type="submit" data-ui-press className={PRIMARY_BUTTON} disabled={form.formState.isSubmitting || saving}>
+                  {saving ? 'Guardando…' : 'Guardar datos del hospital'}
+                </button>
+              </div>
+            ) : null}
+          </form>
+        </div>
+      </AdminPanel>
+
+      <HospitalDraftPreview
+        hospitalName={draft.hospital_name}
+        rtn={draft.rtn}
+        address={draft.address}
+        phone={draft.phone}
+        slogan={draft.slogan}
+        governmentLine={draft.government_line}
+        secretariatLine={draft.secretariat_line}
+        receiptLocation={draft.receipt_location}
+        receiptFooterText={draft.receipt_footer_text}
+        isDirty={form.formState.isDirty}
+      />
+
+      <AdminDialog
+        open={pendingChange !== null}
+        onOpenChange={(next) => { if (!next && !saving) setPendingChange(null); }}
+        title="Revisar cambio de RTN"
+        description="Confirme el cambio fiscal antes de guardar."
+        footer={(
+          <>
+            <button type="button" data-ui-press className={SECONDARY_BUTTON} disabled={saving} onClick={() => setPendingChange(null)}>Cancelar</button>
+            <button type="button" data-ui-press className={PRIMARY_BUTTON} disabled={saving} onClick={() => { if (pendingChange) void saveHospital(pendingChange); }}>
+              {saving ? 'Guardando…' : 'Confirmar y guardar'}
+            </button>
+          </>
+        )}
+      >
         {pendingChange ? (
           <div className="space-y-3">
-            {error ? <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
+            {error ? <AdminCallout tone="error" title="No se pudo guardar">{error}</AdminCallout> : null}
             <p>El RTN se usará en recibos y documentos institucionales emitidos después del cambio.</p>
-            <dl className="grid gap-3 border border-operational-border bg-muted/40 p-4 sm:grid-cols-2">
+            <dl className="grid gap-3 rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[var(--ui-surface-alt)] p-4 sm:grid-cols-2">
               <div>
-                <dt className="text-xs font-medium">RTN actual</dt>
+                <dt className="text-[length:var(--ui-text-xs)] font-medium text-[color:var(--ui-ink-soft)]">RTN actual</dt>
                 <dd className="break-all font-mono tabular-nums">{settings?.rtn || 'Sin RTN'}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium">RTN nuevo</dt>
+                <dt className="text-[length:var(--ui-text-xs)] font-medium text-[color:var(--ui-ink-soft)]">RTN nuevo</dt>
                 <dd className="break-all font-mono tabular-nums">{pendingChange.rtn?.trim() || 'Sin RTN'}</dd>
               </div>
             </dl>
-            <p className="font-medium text-foreground">El motivo se enviará al servidor para auditoría.</p>
+            <p className="font-medium text-[color:var(--ui-ink)]">El motivo queda registrado en la auditoría del cambio.</p>
           </div>
         ) : null}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction disabled={saving} onClick={() => { if (pendingChange) void saveHospital(pendingChange); }}>
-              {saving ? <Spinner data-icon="inline-start" /> : null}{saving ? 'Guardando…' : 'Confirmar y guardar'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      </AdminDialog>
     </section>
+  );
+}
+
+type HospitalDraftPreviewProps = {
+  hospitalName?: string;
+  rtn?: string;
+  address?: string;
+  phone?: string;
+  slogan?: string;
+  governmentLine?: string;
+  secretariatLine?: string;
+  receiptLocation?: string;
+  receiptFooterText?: string;
+  isDirty: boolean;
+};
+
+/**
+ * Vista previa del borrador del encabezado/pie. Reutiliza los valores editados
+ * (no persistidos) para que el operador vea el resultado antes de guardar; no
+ * promete nada sobre documentos ya emitidos.
+ */
+function HospitalDraftPreview({
+  address,
+  governmentLine,
+  hospitalName,
+  isDirty,
+  phone,
+  receiptFooterText,
+  receiptLocation,
+  rtn,
+  secretariatLine,
+  slogan,
+}: HospitalDraftPreviewProps) {
+  const name = hospitalName?.trim() ?? '';
+
+  return (
+    <AdminPanel as="aside" aria-labelledby="hospital-draft-preview-title" className="xl:sticky xl:top-4">
+      <AdminPanelHeader
+        headingLevel={2}
+        id="hospital-draft-preview-title"
+        title="Vista previa del borrador"
+        description="Así se verán los recibos nuevos antes de guardar."
+      />
+      <div role="status" aria-live="polite" className="flex flex-col gap-3 p-4">
+        <div className="rounded-[var(--ui-radius)] border border-dashed border-[var(--ui-line-strong)] bg-[var(--ui-surface-alt)] px-4 py-4 text-center">
+          {governmentLine?.trim() ? (
+            <p className="text-[length:var(--ui-text-xs)] uppercase tracking-[0.08em] text-[color:var(--ui-ink-soft)]">{governmentLine}</p>
+          ) : null}
+          {secretariatLine?.trim() ? (
+            <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">{secretariatLine}</p>
+          ) : null}
+          <p className="mt-1 text-[length:var(--ui-text-md)] font-semibold text-[color:var(--ui-ink)]">
+            {name || 'Nombre del hospital pendiente'}
+          </p>
+          {rtn?.trim() ? (
+            <p className="mt-0.5 text-[length:var(--ui-text-xs)] tabular-nums text-[color:var(--ui-ink-soft)]">RTN {rtn}</p>
+          ) : null}
+          {address?.trim() ? (
+            <p className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
+              {address}
+              {phone?.trim() ? ` · ${phone}` : ''}
+            </p>
+          ) : null}
+          {slogan?.trim() ? (
+            <p className="mt-1 text-[length:var(--ui-text-xs)] italic text-[color:var(--ui-ink-soft)]">{slogan}</p>
+          ) : null}
+        </div>
+
+        <dl className="grid gap-2 text-[length:var(--ui-text-xs)]">
+          <div>
+            <dt className="text-[color:var(--ui-ink-soft)]">Lugar del recibo</dt>
+            <dd className="font-medium text-[color:var(--ui-ink)]">{receiptLocation?.trim() || 'Sin definir'}</dd>
+          </div>
+          <div>
+            <dt className="text-[color:var(--ui-ink-soft)]">Texto al pie</dt>
+            <dd className="font-medium text-[color:var(--ui-ink)]">{receiptFooterText?.trim() || 'Sin definir'}</dd>
+          </div>
+        </dl>
+
+        <p className="border-t border-[var(--ui-line)] pt-2 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
+          {isDirty ? 'Borrador sin guardar.' : 'Sin cambios pendientes.'} Los documentos ya emitidos no se modifican.
+        </p>
+      </div>
+    </AdminPanel>
   );
 }

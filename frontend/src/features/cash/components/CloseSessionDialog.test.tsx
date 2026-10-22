@@ -25,7 +25,7 @@ describe('CloseSessionDialog', () => {
         }}
         closingAmount="90.00"
         closingNotes=""
-        difference={-10}
+        differenceCents={-1000}
         isSubmitting={false}
         onClosingNotesChange={vi.fn()}
         onConfirm={onConfirm}
@@ -63,7 +63,7 @@ describe('CloseSessionDialog', () => {
         }}
         closingAmount="105.00"
         closingNotes="x"
-        difference={5}
+        differenceCents={500}
         isSubmitting={false}
         onClosingNotesChange={onClosingNotesChange}
         onConfirm={onConfirm}
@@ -101,7 +101,7 @@ describe('CloseSessionDialog', () => {
         }}
         closingAmount="125.00"
         closingNotes=""
-        difference={0}
+        differenceCents={0}
         isSubmitting={false}
         onClosingNotesChange={vi.fn()}
         onConfirm={onConfirm}
@@ -143,7 +143,7 @@ describe('CloseSessionDialog', () => {
         }}
         closingAmount="124.00"
         closingNotes="Faltante revisado"
-        difference={-1}
+        differenceCents={-100}
         isSubmitting={false}
         onClosingNotesChange={vi.fn()}
         onConfirm={onConfirm}
@@ -189,7 +189,7 @@ describe('CloseSessionDialog', () => {
         }}
         closingAmount="125.00"
         closingNotes="   "
-        difference={0}
+        differenceCents={0}
         isSubmitting={false}
         onClosingNotesChange={vi.fn()}
         onConfirm={vi.fn()}
@@ -229,7 +229,7 @@ describe('CloseSessionDialog', () => {
         }}
         closingAmount="125.00"
         closingNotes="Turno entregado"
-        difference={0}
+        differenceCents={0}
       />,
     );
 
@@ -237,7 +237,7 @@ describe('CloseSessionDialog', () => {
 
     const exportedBlob = createObjectURL.mock.calls[0]?.[0] as Blob;
     const exportedText = await readBlobText(exportedBlob);
-    expect(exportedText).toContain('"Caja","Caja #12"');
+    expect(exportedText).toContain('"Sesión de caja","#12"');
     expect(exportedText).toContain('"Cerrada","06/07/2026');
     expect(exportedText).toContain('"Nota","Turno entregado"');
   });
@@ -258,7 +258,7 @@ describe('CloseSessionDialog', () => {
         }}
         closingAmount="125.00"
         closingNotes=""
-        difference={0}
+        differenceCents={0}
         isSubmitting={false}
         onClosingNotesChange={vi.fn()}
         onConfirm={onConfirm}
@@ -290,7 +290,7 @@ describe('CloseSessionDialog', () => {
         }}
         closingAmount="125.00"
         closingNotes=""
-        difference={0}
+        differenceCents={0}
         isSubmitting={false}
         onClosingNotesChange={vi.fn()}
         onConfirm={onConfirm}
@@ -322,7 +322,7 @@ describe('CloseSessionDialog', () => {
         }}
         closingAmount="100.00"
         closingNotes=""
-        difference={0}
+        differenceCents={0}
         isSubmitting={false}
         onClosingNotesChange={vi.fn()}
         onConfirm={vi.fn()}
@@ -330,8 +330,8 @@ describe('CloseSessionDialog', () => {
     );
 
     const dialog = screen.getByRole('dialog', { name: /cierre de caja/i });
-    expect(dialog).toHaveTextContent(/monto apertura:\s*L 100\.00/i);
-    expect(dialog).toHaveTextContent(/efectivo esperado:\s*L 100\.00/i);
+    expect(dialog).toHaveTextContent(/monto apertura\s*L\. 100\.00/i);
+    expect(dialog).toHaveTextContent(/efectivo esperado\s*L\. 100\.00/i);
   });
 });
 

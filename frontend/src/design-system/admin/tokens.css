@@ -1,0 +1,334 @@
+/*
+ * Design tokens — "Panel administrativo dark" (identidad 2026-10-16).
+ * Fuente vinculante: hospital-ai/diseno/IDENTIDAD_DARK_20261016.md (§1–§8).
+ * Sustituye la identidad azul-blanco light-first del 2026-09-20 (revocada por
+ * decisión de dirección; IDENTIDAD/TOKENS_V2 quedan como históricos).
+ *
+ * Identidad: dark institucional ÚNICO, sin toggle y sin tema claro. Base casi
+ * negra, superficies por niveles (paper -> surface -> elevated), un único
+ * acento cobalto verificado WCAG 2.2 AA y tres semánticos. Excepción declarada:
+ * recibos/documentos fiduciarios sobre papel blanco (regla `paper`, tokens
+ * `--ui-doc-*`); el papel no participa de la inversión.
+ *
+ * Este archivo se importa desde frontend/src/styles.css y alimenta tanto a los
+ * componentes del sistema (prefijo `--ui-*`) como al puente semántico shadcn
+ * declarado en styles.css.
+ *
+ * Dark en todo el panel. Sin gradientes decorativos, sin glassmorphism, sin
+ * glows/neones. Radios 6/8/12/14, press 0.96, curvas custom y foco 2 px/2 px
+ * no cambian con la identidad.
+ */
+
+:root {
+  /* Neutros — jerarquía por luminancia relativa + borde (§1.1). La separación
+     entre superficies NO exige ratio 3:1; la lectura del nivel la aporta el
+     hairline `--ui-line`. */
+  --ui-ink: #F5F7FA;
+  --ui-ink-soft: #A1A8B3;
+  --ui-ink-faint: #7B8494;
+  --ui-paper: #090A0C;
+  --ui-surface: #111318;
+  --ui-surface-alt: #151A21;
+  --ui-surface-hover: #14181F;
+  --ui-line: #2A2E36;
+  --ui-line-strong: #464E5A;
+  /* Nivel de portal elevado (§1.1/§3): diálogos, menús y overlays flotan un
+     paso por encima de la superficie base (1.5:1 de salto de luminancia con
+     el hairline `--ui-line`). Nunca décou widgets de fondo con este nivel. */
+  --ui-elevated: #191C22;
+  /* Contorno de campos y controles: 3.40:1 sobre surface / 3.13:1 sobre
+     elevated (1.4.11). Los separadores estructurales permanecen en `--ui-line`
+     y no cargan con esta función. */
+  --ui-control-border: #616A79;
+
+  /* Acento cobalto (hue 217) — ÚNICA fuente de verdad del acento de acción.
+   *
+   * En dark el acento de hover sube luminancia (más claro); `active` baja un
+   * paso. `--ui-action-foreground` es la etiqueta OBLIGATORIA sobre relleno de
+   * acción: el blanco #FFFFFF suspende AA en dark (2.20).
+   *
+   * `--ui-navy` / `--ui-navy-strong` son alias de compatibilidad con los
+   * consumidores escritos antes de que existiera `--ui-action`. Declararlos como
+   * alias (y no como un segundo azul) elimina la incoherencia de dos acentos
+   * distintos entre pantallas: las diferencias deben venir de la tarea, no del
+   * autor. No introduzcas nuevos usos de `--ui-navy*`; usa `--ui-action*`. */
+  --ui-action: #70A8FF;
+  --ui-action-hover: #8FBAFF;
+  --ui-action-active: #5B9EFF;
+  --ui-action-subtle: rgb(112 168 255 / 0.14);
+  --ui-action-subtle-strong: rgb(112 168 255 / 0.22);
+  --ui-action-border: rgb(112 168 255 / 0.36);
+  --ui-action-foreground: #0B0E14;
+  --ui-navy: var(--ui-action);
+  --ui-navy-strong: var(--ui-action-active);
+
+  /* Semánticos (texto + fondo suave + borde, para badges y avisos). Los
+     sutiles son tinte translúcido sobre la superficie propia, nunca un sólido
+     claro: los composites dan success #1B2C29, warn #2E2820, danger #2F1F24
+     sobre surface (§2). */
+  --ui-success: #5BD697;
+  --ui-success-subtle: rgb(91 214 151 / 0.13);
+  --ui-success-border: rgb(91 214 151 / 0.36);
+  --ui-warn: #F0B657;
+  --ui-warn-subtle: rgb(240 182 87 / 0.13);
+  --ui-warn-border: rgb(240 182 87 / 0.36);
+  --ui-danger: #F87171;
+  --ui-danger-subtle: rgb(248 113 113 / 0.13);
+  --ui-danger-border: rgb(248 113 113 / 0.36);
+
+  --ui-focus: var(--ui-action);
+
+  /* Supervisión de overlays (§3): el velo SÍ se declara sobre dark un alpha
+     0.30–0.35 es invisible; 0.66 declara la capa sin apagarla. */
+  --ui-scrim: rgb(3 5 9 / 0.66);
+
+  /* Selección de texto (§8): tintado cobalto translúcido con tinta del
+     sistema (10.46 sobre composite; sobre papel hereda el mismo tintado y
+     #111827 sigue legible). Los literales impuestos por el spec viven en esta
+     capa auditada; los consumidores solo bridgan. */
+  --ui-selection-tint: rgb(112 168 255 / 0.28);
+
+  /* Serie de datos (§1.4): sky distinguible del cobalto (hue 196; 10.07 vs
+     surface). Puente: `--chart-3: var(--ui-data-series-3)` en styles.css. */
+  --ui-data-series-3: #67CBF0;
+
+  /* Excepción papel (§4): matrices documentales que conservan fondo blanco.
+     Nunca vistan widgets de UI como papel. */
+  --ui-doc-surface: #FFFFFF;
+  --ui-doc-ink: #111827;
+  --ui-doc-muted: #4B5563;
+  --ui-doc-border: #E2E5EB;
+
+  /* Esqueleto (§5): delta sutil de dos tonos del sistema + pulso de opacidad;
+     sin barrido luminoso ("shimmer"). */
+  --ui-skel-from: #111318;
+  --ui-skel-to: #1A1E26;
+
+  /* Tipografía — sans en todo el panel (sin serif editorial) */
+  --ui-font-sans: var(--font-sans, system-ui, -apple-system, sans-serif);
+  --ui-font-doc: var(--ui-font-sans);
+  --ui-text-2xs: 0.6875rem;
+  --ui-text-xs: 0.75rem;
+  --ui-text-sm: 0.875rem;
+  --ui-text-base: 0.9375rem;
+  --ui-text-md: 1rem;
+  --ui-text-lg: 1.125rem;
+  --ui-text-xl: 1.25rem;
+  --ui-text-2xl: 1.75rem;
+  --ui-text-metric: 1.875rem;
+
+  /* Radios (concentricidad: radio exterior = interior + padding) */
+  --ui-radius: 6px;
+  --ui-radius-control: 8px;
+  --ui-radius-panel: 10px;
+  --ui-radius-overlay: 14px;
+
+  /* Geometría */
+  --ui-shell-h: 56px;
+  --ui-control-h: 40px;
+  --ui-control-h-compact: 32px;
+  --ui-control-h-operational: 44px;
+  --ui-row-h: 48px;
+
+  /* Foco visible */
+  --ui-focus-ring-width: 2px;
+  --ui-focus-ring-offset: 2px;
+
+  /* Movimiento (better-ui/emil): curvas custom, nunca `ease-in`. Las salidas
+     son más rápidas y suaves que las entradas (overlay-out 150 < overlay-in 200).
+     Duración de UI 120–200 ms; press 140 ms (rango 100–160). El intercambio de
+     iconos es la excepción sancionada por las skills: 300 ms. */
+  --ui-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ui-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ui-ease-icon: cubic-bezier(0.2, 0, 0, 1);
+  --ui-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ui-duration-press: 140ms;
+  --ui-duration-state: 120ms;
+  --ui-duration-overlay-in: 200ms;
+  --ui-duration-overlay-out: 150ms;
+  --ui-duration-icon: 300ms;
+  --ui-press-scale: 0.96;
+}
+
+.ui-root {
+  min-height: 100dvh;
+  background-color: var(--ui-paper);
+  color: var(--ui-ink);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-base);
+  /* Identidad dark única: color-scheme fijo, no un toggle. Los controles
+     nativos (scrollbars, date/select) se renderizan en dark sin widget extra. */
+  color-scheme: dark;
+}
+
+/*
+ * Alcance de portales — CONTRATO `ui-portal`. Los tokens --ui-* viven en :root
+ * (no en .ui-root) para que Radix pueda portear a document.body sin perderlos.
+ * Radix saca diálogos y menús del .ui-root; estas clases re-declaran tipografía,
+ * tinta y superficie en el contenido portaleado.
+ *
+ * CONTRATO (cerrado en §6-postfix): TODO contenido portaleado nuevo —nodo
+ * montado con `Portal`/`*Content` de Radix (o equivalente) fuera de `.ui-root`—
+ * DEBE declarar `ui-portal` en su raíz, y `ui-portal-surface` además cuando sea
+ * superficie sólida (diálogo, menú, popover, sheet). No es decorativa: sin la
+ * clase el portal pierde tipografía/tinta y, sobre todo, el anillo de foco de la
+ * regla `:focus-visible` de este archivo, que vive SIN capa; las utilidades
+ * `outline-none` de Tailwind viven en `@layer utilities` y le ganan a
+ * `@layer base`, dejando los tabstops del portal con `outline-style: none`
+ * (WCAG 2.4.7 / 1.4.11). Consumidores actuales: AdminDialog y AdminShell
+ * (cajón), CommandPalette, dialog.tsx, alert-dialog.tsx y los menús
+ * portaleados. Medido en navegador (cajón móvil 390 px): con la clase, anillo
+ * solid 2 px rgb(112 168 255) (`--ui-action`), 7.73:1 sobre surface (WCAG
+ * 2.4.7 / 1.4.11), 8/8 paradas con foco.
+ */
+.ui-portal {
+  color-scheme: dark;
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-base);
+  color: var(--ui-ink);
+}
+
+.ui-portal
+  :where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: var(--ui-focus-ring-width) solid var(--ui-focus);
+  outline-offset: var(--ui-focus-ring-offset);
+}
+
+/* Superficie de overlays portaleados (diálogo/menú). En dark la profundidad es
+   "sombra-como-borde": anillo blanco + ambiente corto (§3). La clase vive aquí,
+   sin capa: cualquier clase keyframe de sombra de los consumidores queda
+   subordinada y el vaadin nunca se apaga. */
+.ui-portal-surface {
+  background-color: var(--ui-elevated);
+  color: var(--ui-ink);
+  border: 1px solid var(--ui-line);
+  box-shadow: var(--shadow-overlay);
+}
+
+/* Tarjeta con elevación discreta (sombra-como-borde de better-ui/surfaces.md). */
+.ui-card-raised {
+  box-shadow: var(--shadow-border);
+}
+
+/* Menú portaleado (Administración): mismo lenguaje que las pestañas. */
+.ui-menu [data-slot='dropdown-menu-label'] {
+  color: var(--ui-ink-soft);
+}
+
+.ui-menu [data-slot='dropdown-menu-separator'] {
+  background-color: var(--ui-line);
+}
+
+.ui-menu [data-slot='dropdown-menu-item'],
+.ui-menu [data-slot='dropdown-menu-sub-trigger'] {
+  color: var(--ui-ink);
+  border-radius: var(--ui-radius-control);
+}
+
+.ui-menu [data-slot='dropdown-menu-item']:focus,
+.ui-menu [data-slot='dropdown-menu-item'][data-highlighted],
+.ui-menu [data-slot='dropdown-menu-sub-trigger']:focus,
+.ui-menu [data-slot='dropdown-menu-sub-trigger'][data-highlighted] {
+  background-color: var(--ui-surface-alt);
+  color: var(--ui-ink);
+}
+
+/* Foco visible en todo elemento interactivo (nunca outline:none sin reemplazo). */
+.ui-root
+  :where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: var(--ui-focus-ring-width) solid var(--ui-focus);
+  outline-offset: var(--ui-focus-ring-offset);
+}
+
+/* Un control dentro de un marco que ya dibuja el anillo (`focus-within`) no
+   duplica el outline: el indicador de 2 px + offset 2 es el del marco. */
+.ui-root [data-ui-focus-frame] :where(input, textarea, select):focus-visible {
+  outline: none;
+}
+
+/* Feedback táctil de presión (better-ui: scale 0.96). Se declara por propiedad
+   exacta y se desactiva con movimiento reducido. */
+[data-ui-press] {
+  transition-property: transform, scale, background-color, border-color, color, box-shadow, opacity;
+  transition-duration: var(--ui-duration-press);
+  transition-timing-function: var(--ui-ease-out);
+}
+
+/* El `:active` se omite cuando el foco es visible (activación por teclado):
+   las acciones de teclado de alta frecuencia no deben animarse. */
+[data-ui-press]:not(:disabled):not(:focus-visible):active {
+  scale: var(--ui-press-scale);
+}
+
+/*
+ * Intercambio contextual de iconos (better-ui/icon-transitions.md): ambos
+ * iconos permanecen en el DOM, uno absoluto sobre el otro, y se cruzan con
+ * opacity + scale(0.25→1) + blur(4px→0). Nunca se alternan assets distintos.
+ */
+[data-ui-icon-swap] {
+  opacity: 0;
+  scale: 0.25;
+  filter: blur(4px);
+  transition-property: opacity, scale, filter;
+  transition-duration: var(--ui-duration-icon);
+  transition-timing-function: var(--ui-ease-icon);
+}
+
+[data-ui-icon-swap][data-active='true'] {
+  opacity: 1;
+  scale: 1;
+  filter: blur(0);
+}
+
+/*
+ * Popovers: escalan desde su disparador (emil). Radix expone el origen por
+ * primitivo; se normaliza a `--transform-origin`. Los modales (AdminDialog)
+ * NO lo usan: permanecen centrados.
+ */
+.ui-menu {
+  --transform-origin: var(--radix-dropdown-menu-content-transform-origin, center);
+  transform-origin: var(--transform-origin);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Desplazamientos fuera; se conservan color y opacidad (emil). La regla
+     global de styles.css apaga toda transición, así que la excepción re-declara
+     con mayor especificidad. */
+  [data-ui-press] {
+    transition-property: background-color, border-color, color, opacity !important;
+    transition-duration: var(--ui-duration-state) !important;
+  }
+
+  [data-ui-press]:not(:disabled):not(:focus-visible):active {
+    scale: 1;
+  }
+
+  [data-ui-icon-swap] {
+    scale: 1 !important;
+    filter: none !important;
+    transition-property: opacity !important;
+    transition-duration: var(--ui-duration-state) !important;
+  }
+
+  /* Overlays: sin zoom ni desplazamiento; el fundido lo acota la regla global
+     de styles.css (transition-duration 0.001 ms en reduced motion). */
+  [data-slot='dialog-content'],
+  [data-slot='alert-dialog-content'],
+  [data-slot='select-content'],
+  [data-slot='popover-content'],
+  [data-slot='dropdown-menu-content'],
+  [data-slot='dropdown-menu-sub-content'] {
+    scale: 1 !important;
+  }
+
+  [data-slot='sheet-content'] {
+    scale: 1 !important;
+    translate: 0 0 !important;
+  }
+}
+
+@media print {
+  .ui-root {
+    background: #ffffff;
+  }
+}

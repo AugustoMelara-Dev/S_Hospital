@@ -3,7 +3,7 @@ import { parseCents } from './moneyCents';
 
 export type ServiceBillingBadge = {
   label: string;
-  tone: 'default' | 'secondary' | 'outline' | 'destructive';
+  tone: 'default' | 'secondary' | 'outline' | 'destructive' | 'warning';
 };
 
 export type ServiceBillingSummary = {
@@ -22,7 +22,8 @@ export function getServiceBillingSummary(service: Service): ServiceBillingSummar
   const isActive = service.active !== false;
   const isVisibleInBilling = service.visible_in_billing !== false;
   const isBillable = service.is_billable !== false;
-  const hasConfiguredPrice = (parseCents(service.price) ?? 0) > 0;
+  const priceCents = parseCents(service.price);
+  const hasConfiguredPrice = priceCents !== null && priceCents > 0;
 
   const reasons: string[] = [];
 
@@ -43,7 +44,7 @@ export function getServiceBillingSummary(service: Service): ServiceBillingSummar
   }
 
   if (service.special_rule_code === ERYTHROPOIETIN_DIALYSIS_RULE) {
-    reasons.push('Gratis con receta de dialisis; cobra L 25.00 sin receta.');
+    reasons.push('Gratis con receta de diálisis autorizada; sin receta se cobra la tarifa vigente del catálogo.');
   }
 
   const blockReason = !isActive
@@ -64,26 +65,18 @@ export function getServiceBillingSummary(service: Service): ServiceBillingSummar
     hasConfiguredPrice,
     warning,
     blockReason,
+    // R2-FE-STRUCT S6: solo se etiquetan las EXCEPCIONES. Los valores por
+    // defecto (activo, visible en facturación, facturable, tarifa
+    // configurada) no generan ruido repetido; el estado activo se muestra
+    // como token textual propio (no como badge).
     badges: [
-      {
-        label: isActive ? 'Activo' : 'Inactivo',
-        tone: isActive ? 'default' : 'outline',
-      },
-      {
-        label: isVisibleInBilling ? 'Visible en facturación' : 'Oculto en facturación',
-        tone: isVisibleInBilling ? 'secondary' : 'outline',
-      },
-      {
-        label: isBillable ? 'Facturable' : 'No facturable',
-        tone: isBillable ? 'secondary' : 'destructive',
-      },
-      {
-        label: hasConfiguredPrice ? 'Tarifa configurada' : 'Sin tarifa',
-        tone: hasConfiguredPrice ? 'secondary' : 'outline',
-      },
+      ...(!isActive ? [{ label: 'Inactivo', tone: 'warning' as const }] : []),
+      ...(!isVisibleInBilling ? [{ label: 'Oculto en facturación', tone: 'warning' as const }] : []),
+      ...(!isBillable ? [{ label: 'No facturable', tone: 'destructive' as const }] : []),
+      ...(!hasConfiguredPrice ? [{ label: 'Sin tarifa', tone: 'warning' as const }] : []),
       ...(service.special_rule_code === ERYTHROPOIETIN_DIALYSIS_RULE
         ? [{
-            label: 'Receta dialisis',
+            label: 'Receta diálisis',
             tone: 'outline' as const,
           }]
         : []),

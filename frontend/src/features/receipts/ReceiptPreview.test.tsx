@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useState } from 'react';
 import { ReceiptPreview } from './ReceiptPreview';
 import type { ReceiptData } from '../../lib/api';
 
@@ -124,10 +125,8 @@ describe('ReceiptPreview', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Imprimir' }));
-    await Promise.resolve();
-    await Promise.resolve();
 
-    expect(printSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
     expect(document.body.dataset.receiptWidth).toBeUndefined();
     expect(document.body.dataset.printingReceipt).toBeUndefined();
   });
@@ -155,7 +154,7 @@ describe('ReceiptPreview', () => {
 
     const actions = screen.getByRole('group', { name: 'Acciones del comprobante histórico' });
     expect(within(actions).getByRole('button', { name: 'Imprimir' })).toHaveClass('min-h-11');
-    expect(within(actions).getByRole('button', { name: 'Nueva factura' })).toHaveClass('min-h-11');
+    expect(within(actions).getByRole('button', { name: 'Nueva operación' })).toHaveClass('min-h-11');
     expect(within(document.querySelector('[data-receipt-print-root]') as HTMLElement).queryByRole('button')).toBeNull();
   });
 
@@ -192,11 +191,14 @@ describe('ReceiptPreview', () => {
     );
   });
 
-  it('renders malformed historical receipt amounts as safe financial values', () => {
+  it('separates absent or malformed historical receipt amounts from a legitimate zero', () => {
     const receipt = receiptFixture();
     receipt.invoice.subtotal = 'monto-danado';
     receipt.invoice.tax_amount = 'NaN';
     receipt.invoice.total = 'no-numero';
+    // `exempt_amount` vive en la RAIZ del recibo (types.ts:368) y ReceiptPreview
+    // lo lee como `receipt.exempt_amount`; no dentro de `invoice`.
+    receipt.exempt_amount = '0.00';
     receipt.invoice.paid_amount = '1.00';
     receipt.invoice.balance_due = '2.00';
     receipt.items[0].line_total = 'monto-danado';
@@ -209,12 +211,16 @@ describe('ReceiptPreview', () => {
       />,
     );
 
+    const printRoot = document.querySelector('[data-receipt-print-root]');
     expect(screen.getByText('Glucosa')).toBeInTheDocument();
     expect(screen.getByText('Maria Lopez')).toBeInTheDocument();
-    expect(document.body.textContent).toContain('L. 0.00');
-    expect(document.body.textContent).toContain('L. 1.00');
-    expect(document.body.textContent).toContain('L. 2.00');
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
+    // An absent/malformed amount is not painted as a legitimate zero.
+    expect(printRoot?.textContent).toContain('—');
+    // A real zero and real amounts keep the receipt format.
+    expect(printRoot?.textContent).toContain('L. 0.00');
+    expect(printRoot?.textContent).toContain('L. 1.00');
+    expect(printRoot?.textContent).toContain('L. 2.00');
+    expect(printRoot?.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
   it('clearly labels the legacy fallback as a historical non-institutional invoice', () => {
@@ -227,8 +233,7 @@ describe('ReceiptPreview', () => {
 
     expect(screen.getByRole('heading', { name: 'COMPROBANTE HISTÓRICO DE FACTURA' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'RECIBO INSTITUCIONAL' })).not.toBeInTheDocument();
-    expect(screen.getByText(/documento histórico no institucional/i)).toBeInTheDocument();
-    expect(screen.getByText(/no asigna correlativo de recibo/i)).toBeInTheDocument();
+    expect(screen.getByText(/no sustituye el recibo institucional/i)).toBeInTheDocument();
     expect(screen.getByRole('rowheader', { name: 'Factura No.' })).toBeInTheDocument();
     expect(screen.getByText('Estado')).toBeInTheDocument();
     expect(screen.getByText('RTN: 08011999123456')).toBeInTheDocument();
@@ -347,11 +352,161 @@ describe('ReceiptPreview', () => {
     expect(printRoot?.querySelector('svg,img,canvas')).toBeNull();
     expect(printRoot?.textContent).not.toMatch(/qr|barcode|codigo de barras|scan|codigo interno/i);
   });
+
+  it('renders the copy label exactly as received for a first legacy print', () => {
+    const receipt = receiptFixture();
+    receipt.institutional = { ...receipt.institutional!, copy_label: 'Original' };
+
+    render(<ReceiptPreview receipt={receipt} onPrint={vi.fn()} />);
+
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    const label = within(printRoot as HTMLElement).getByText('Original');
+
+    expect(label).toHaveAttribute('data-receipt-copy-label');
+    expect(label).not.toHaveAttribute('data-receipt-reprint-label');
+    expect(label).not.toHaveClass('receipt-copy-label--reprint');
+    expect(printRoot?.textContent).not.toMatch(/reimpresi/i);
+  });
+
+  it('renders the numbered legacy reprint label received from the durable backend counter', () => {
+    const receipt = receiptFixture();
+    receipt.institutional = { ...receipt.institutional!, copy_label: 'REIMPRESIÓN #2' };
+
+    render(<ReceiptPreview receipt={receipt} onPrint={vi.fn()} />);
+
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    const label = within(printRoot as HTMLElement).getByText('REIMPRESIÓN #2');
+
+    expect(label).toHaveAttribute('data-receipt-copy-label');
+    expect(label).toHaveAttribute('data-receipt-reprint-label', 'true');
+    expect(label).toHaveClass('receipt-copy-label--reprint');
+    // El componente imprime la etiqueta tal cual llega: no renumera ni fabrica
+    // una primera reimpresion falsa.
+    expect(printRoot?.textContent).not.toMatch(/#1\b/);
+    expect(printRoot?.textContent).not.toMatch(/#3\b/);
+  });
+
+  it('does not invent a copy or reprint label when the backend omits it', () => {
+    const receipt = receiptFixture();
+    receipt.institutional = { ...receipt.institutional!, copy_label: null };
+
+    render(<ReceiptPreview receipt={receipt} onPrint={vi.fn()} />);
+
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    expect(printRoot?.querySelector('[data-receipt-copy-label]')).toBeNull();
+    expect(within(printRoot as HTMLElement).queryByText('Original')).toBeNull();
+    expect(printRoot?.textContent).not.toMatch(/reimpresi/i);
+  });
+
+  it('prints the first authorized copy without a reprint mark and without requesting a reason', async () => {
+    const onPrint = vi.fn(async () => undefined);
+
+    render(<ReceiptPreview receipt={receiptFixture()} onPrint={onPrint} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimir' }));
+
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
+
+    expect(onPrint).toHaveBeenCalledTimes(1);
+    // The first authorized print never carries a reason: the component asks the
+    // parent for no argument and the parent must not open the reprint dialog.
+    expect(onPrint.mock.calls[0]).toEqual([]);
+    const printRoot = document.querySelector('[data-receipt-print-root]');
+    expect(printRoot?.textContent).toContain('Original');
+    expect(printRoot?.querySelector('[data-receipt-reprint-label]')).toBeNull();
+    expect(printRoot?.textContent).not.toMatch(/reimpresi/i);
+  });
+
+  it('prints the numbered reprint label only after the response receipt is committed', async () => {
+    const initial = receiptFixture();
+    const audited: ReceiptData = {
+      ...initial,
+      institutional: { ...initial.institutional!, copy_label: 'REIMPRESIÓN #1' },
+      legacy_reprint_count: 1,
+    };
+
+    function Harness() {
+      const [current, setCurrent] = useState(initial);
+
+      return (
+        <ReceiptPreview
+          receipt={current}
+          onPrint={async () => {
+            // Simulates the audited POST /reprint response arriving in the same
+            // event that resolves the authorized print callback (new props queued).
+            setCurrent(audited);
+          }}
+        />
+      );
+    }
+
+    let labelAtPrintTime: string | null = null;
+    printSpy.mockImplementation(() => {
+      const printRoot = document.querySelector('[data-receipt-print-root]');
+      labelAtPrintTime = printRoot?.querySelector('[data-receipt-reprint-label="true"]')?.textContent ?? null;
+    });
+
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimir' }));
+
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
+    expect(labelAtPrintTime).toBe('REIMPRESIÓN #1');
+    expect(document.querySelector('[data-receipt-reprint-label="true"]')).not.toBeNull();
+  });
+
+  it('uses admin controls and callouts for the receipt chrome (no R2 Card/Badge/Button/Alert)', async () => {
+    const receipt = receiptFixture();
+    receipt.items[0].special_rule_applied = true;
+    printSpy.mockImplementation(() => {
+      throw new Error('Printer dialog failed');
+    });
+
+    render(<ReceiptPreview receipt={receipt} onPrint={vi.fn()} onNewInvoice={vi.fn()} />);
+
+    const actions = screen.getByRole('group', { name: 'Acciones del comprobante histórico' });
+    const printButton = within(actions).getByRole('button', { name: 'Imprimir' });
+    const newButton = within(actions).getByRole('button', { name: 'Nueva operación' });
+    // Acento único: `--ui-navy` quedó como alias histórico de `--ui-action`
+    // (la clase la define `features/invoices/history/adminOverlayUi.ts`, de otro
+    // lote). La prueba sólo exige que el control primario use el acento del
+    // sistema, nunca una clase R2.
+    expect(printButton.className).toMatch(/bg-\[var\(--ui-(?:action|navy)\)\]/);
+    expect(newButton).toHaveClass('border-[var(--ui-control-border)]');
+    // Las acciones forman una barra continua dentro del diálogo: no agregan
+    // otra tarjeta ni una superficie R2 alrededor del documento.
+    expect(actions.parentElement).toHaveClass('border-b', 'border-[var(--ui-line)]');
+    expect(actions.parentElement).not.toHaveClass('rounded-[var(--ui-radius-panel)]');
+
+    // La línea con regla usa el badge admin reservado a la gratuidad.
+    expect(document.querySelector('[data-ui-free-badge="true"]')).toBeInTheDocument();
+
+    fireEvent.click(printButton);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveClass('border-l-[var(--ui-danger)]');
+    expect(within(alert).getByText('Impresión no completada')).toBeInTheDocument();
+  });
+
+  it('does not print while the interactive reprint authorization is still pending', async () => {
+    const onPrint = vi.fn(() => new Promise<void>(() => undefined));
+
+    render(<ReceiptPreview receipt={receiptFixture()} onPrint={onPrint} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimir' }));
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Dialog open or cancelled: the authorized callback has not resolved, so the
+    // component must not print and must not call the backend on its own.
+    expect(onPrint).toHaveBeenCalledTimes(1);
+    expect(printSpy).not.toHaveBeenCalled();
+  });
 });
 
 function receiptFixture(): ReceiptData {
   return {
     width: 'half_letter',
+    legacy_reprint_count: 0,
     hospital: {
       name: 'Hospital San Isidro',
       rtn: '08011999123456',

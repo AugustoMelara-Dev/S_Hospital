@@ -1,27 +1,13 @@
 import { HardDrive, Server, ShieldAlert } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { AdminPanel } from '@/design-system/admin/components';
 import type { SystemStatus } from '@/lib/api';
-import {
-  automaticBackupHeartbeatLabel,
-  formatBytes,
-  formatDate,
-  formatRelativeTime,
-  friendlyProductionCheck,
-  friendlyProductionDetail,
-  localAccessIsReady,
-  localAccessLabel,
-  statusClass,
-  statusLabel,
-  type OperationalStatus,
-} from '../backupPresentation';
+import { SECONDARY_BUTTON } from '../backupsUi';
+import { automaticBackupHeartbeatLabel, formatBytes, formatDate, formatRelativeTime, friendlyProductionCheck, friendlyProductionDetail, localAccessIsReady, localAccessLabel, statusLabel, type OperationalStatus } from '../backupPresentation';
 
 type OperationalSummary = {
   level: OperationalStatus;
   label: string;
   description: string;
-  className: string;
 };
 
 type BackupSupportStatusPanelProps = {
@@ -33,6 +19,25 @@ type BackupSupportStatusPanelProps = {
   stalePendingCount: number;
   systemStatus: SystemStatus;
 };
+
+/**
+ * Fórmula dark §2 para badges de estado: tono + subtle 13 % + borde 36 %.
+ * "Pendiente"/"Sin dato" nunca se pintan de error (§5): advierten en warn,
+ * igual que el resto de estados sin verificar. "Parcial" es informativo → acento.
+ */
+function adminStatusTag(status: 'pending' | 'partial' | 'validated' | 'manual_required') {
+  if (status === 'validated') return 'border-[var(--ui-success-border)] bg-[var(--ui-success-subtle)] text-[color:var(--ui-success)]';
+  if (status === 'manual_required') return 'border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] text-[color:var(--ui-warn)]';
+  if (status === 'partial') return 'border-[var(--ui-action-border)] bg-[var(--ui-action-subtle)] text-[color:var(--ui-action)]';
+  return 'border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] text-[color:var(--ui-warn)]';
+}
+
+/** Gobernanza general: correcto/atencion/error. IDs no solo color: texto del tag. */
+function badgeVariantClass(level: 'success' | 'pending' | 'failed' | 'ok' | 'review' | 'error') {
+  if (level === 'success' || level === 'ok') return 'border-[var(--ui-success-border)] bg-[var(--ui-success-subtle)] text-[color:var(--ui-success)]';
+  if (level === 'error' || level === 'failed') return 'border-[var(--ui-danger-border)] bg-[var(--ui-danger-subtle)] text-[color:var(--ui-danger)]';
+  return 'border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] text-[color:var(--ui-warn)]';
+}
 
 export function BackupSupportStatusPanel({
   advancedStatusId,
@@ -46,209 +51,148 @@ export function BackupSupportStatusPanel({
   const automaticBackupHeartbeat = automaticBackupHeartbeatLabel(systemStatus.backups.queue.scheduler_heartbeat);
   const recoveryStatus = recoverySupportStatus(systemStatus, latestBackupNotConfirmed);
 
+  // Chip con tono semántico: la forma del ADMIN_TAG pero sin su borde/tinta
+  // neutrales, para que `border-*`/`text-*` del tono no compitan en cascada.
+  const TONE_CHIP_BASE = 'inline-flex w-fit items-center gap-1.5 rounded-[var(--ui-radius)] border px-1.5 py-0.5 text-[length:var(--ui-text-xs)] font-semibold';
+
   return (
     <div className="flex flex-col gap-4">
-      <Card className={`${operationalStatus.className} overflow-hidden `}>
-        <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <AdminPanel as="div" className={operationalStatus.level === 'error' ? 'border-[var(--ui-danger-border)]' : operationalStatus.level === 'ok' ? 'border-[var(--ui-success-border)]' : 'border-[var(--ui-warn-border)]'}>
+        <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-normal">Estado operativo</p>
+            <p className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-ink-soft)]">Estado operativo</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <h3 className="text-xl font-semibold">{operationalStatus.label}</h3>
-              <Badge variant={operationalStatus.level === 'error' ? 'destructive' : operationalStatus.level === 'ok' ? 'default' : 'secondary'}>
+              <h3 className="text-[length:var(--ui-text-xl)] font-semibold text-[color:var(--ui-ink)]">{operationalStatus.label}</h3>
+              <span className={`${TONE_CHIP_BASE} ${badgeVariantClass(operationalStatus.level)}`}>
                 {operationalStatus.level === 'ok' ? 'Correcto' : operationalStatus.level === 'error' ? 'Error' : 'Atencion'}
-              </Badge>
+              </span>
             </div>
-            <p className="mt-1 max-w-3xl text-sm leading-6">{operationalStatus.description}</p>
+            <p className="mt-1 max-w-3xl text-[length:var(--ui-text-sm)] leading-6 text-[color:var(--ui-ink-soft)]">{operationalStatus.description}</p>
           </div>
-          <Button
+          <button
             type="button"
-            size="sm"
+            data-ui-press
+            className={SECONDARY_BUTTON}
             aria-controls={advancedStatusId}
             aria-expanded={showAdvancedStatus}
             onClick={onToggleAdvancedStatus}
           >
             {showAdvancedStatus ? 'Ocultar detalle de soporte' : 'Ver detalle de soporte'}
-          </Button>
-        </CardContent>
-      </Card>
+          </button>
+        </div>
+      </AdminPanel>
 
       <section aria-labelledby="backup-recovery-support-title">
-        <Card className={`${recoveryStatus.className} overflow-hidden `}>
-          <CardContent>
+        <AdminPanel as="div" className={recoveryStatus.badgeStatus === 'success' ? 'border-[var(--ui-success-border)]' : 'border-[var(--ui-warn-border)]'}>
+          <div className="p-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-normal">Guia de soporte</p>
-                <h3 id="backup-recovery-support-title" className="mt-1 text-lg font-semibold">
+                <p className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-ink-soft)]">Guia de soporte</p>
+                <h3 id="backup-recovery-support-title" className="mt-1 text-[length:var(--ui-text-lg)] font-semibold text-[color:var(--ui-ink)]">
                   Recuperacion con soporte
                 </h3>
-                <p className="mt-1 max-w-3xl text-sm leading-6">
+                <p className="mt-1 max-w-3xl text-[length:var(--ui-text-sm)] leading-6 text-[color:var(--ui-ink-soft)]">
                   {recoveryStatus.description}
                 </p>
               </div>
-              <Badge variant={recoveryStatus.badgeStatus === 'failed' ? 'destructive' : recoveryStatus.badgeStatus === 'success' ? 'default' : 'secondary'}>{recoveryStatus.label}</Badge>
+              <span className={`${TONE_CHIP_BASE} ${badgeVariantClass(recoveryStatus.badgeStatus)}`}>{recoveryStatus.label}</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </AdminPanel>
       </section>
 
       {showAdvancedStatus ? (
         <>
           <div id={advancedStatusId} className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-            <Card className={`${systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && localAccessIsReady(systemStatus) ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'} `}>
-              <CardContent>
-                <div className="flex items-start gap-3">
-                  <div className="bg-background/80 p-2.5">
-                    <Server aria-hidden="true" className="size-5 text-muted-foreground" />
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <p className="text-sm font-semibold">Servidor, datos y red local</p>
-                    <p className="text-xs text-muted-foreground">
-                      Base de datos: {systemStatus.database.connected ? 'conectada' : 'pendiente'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Interfaz: {systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present ? 'lista' : 'requiere build'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Acceso cliente: {localAccessLabel(systemStatus)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {systemStatus.network.guidance}
-                    </p>
-                  </div>
+            <AdminPanel as="div" className={systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && localAccessIsReady(systemStatus) ? 'border-[var(--ui-success-border)]' : 'border-[var(--ui-warn-border)]'}>
+              <div className="flex items-start gap-3 p-4">
+                <Server aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-[color:var(--ui-ink-soft)]" strokeWidth={1.5} />
+                <div className="flex min-w-0 flex-col gap-1">
+                  <p className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Servidor, datos y red local</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Base de datos: {systemStatus.database.connected ? 'conectada' : 'pendiente'}</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Interfaz: {systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present ? 'lista' : 'requiere build'}</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Acceso cliente: {localAccessLabel(systemStatus)}</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">{systemStatus.network.guidance}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </AdminPanel>
 
-            <Card className={`${systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'border-success/30 bg-success/10 text-success-foreground' : 'border-warning/30 bg-warning/10 text-warning-foreground'} `}>
-              <CardContent>
-                <div className="flex items-start gap-3">
-                  <div className="bg-background/80 p-2.5">
-                    <HardDrive aria-hidden="true" className="size-5 text-muted-foreground" />
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <p className="text-sm font-semibold">Preparacion de respaldos</p>
-                    <p className="text-xs text-muted-foreground">
-                      Creacion de archivos: {systemStatus.backups.dump_binary.available ? 'lista' : 'pendiente'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Carpeta de respaldo: {systemStatus.backups.storage.writable ? 'lista' : 'pendiente'} - libre {formatBytes(systemStatus.backups.storage.free_bytes)}
-                    </p>
-                    {systemStatus.backups.last_success_at ? (
-                      <p className="text-xs text-muted-foreground">
-                        Ultimo protegido: {formatRelativeTime(systemStatus.backups.last_success_at)}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-warning">Sin respaldo protegido registrado.</p>
-                    )}
-                  </div>
+            <AdminPanel as="div" className={systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'border-[var(--ui-success-border)]' : 'border-[var(--ui-warn-border)]'}>
+              <div className="flex items-start gap-3 p-4">
+                <HardDrive aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-[color:var(--ui-ink-soft)]" strokeWidth={1.5} />
+                <div className="flex min-w-0 flex-col gap-1">
+                  <p className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Preparacion de respaldos</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Creacion de archivos: {systemStatus.backups.dump_binary.available ? 'lista' : 'pendiente'}</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Carpeta de respaldo: {systemStatus.backups.storage.writable ? 'lista' : 'pendiente'} - libre {formatBytes(systemStatus.backups.storage.free_bytes)}</p>
+                  {systemStatus.backups.last_success_at ? (
+                    <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Ultimo protegido: {formatRelativeTime(systemStatus.backups.last_success_at)}</p>
+                  ) : (
+                    <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-warn)]">Sin respaldo protegido registrado.</p>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </AdminPanel>
 
-            <Card className={`${systemStatus.backups.pending_count > 0 ? 'border-warning/30 bg-warning/10 text-warning-foreground' : 'bg-muted/30'} `}>
-              <CardContent>
-                <div className="flex items-start gap-3">
-                  <div className="bg-background/80 p-2.5">
-                    <Server aria-hidden="true" className="size-5 text-muted-foreground" />
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <p className="text-sm font-semibold">Proceso de respaldo</p>
-                    <p className="text-xs text-muted-foreground">
-                      Respaldos esperando: {systemStatus.backups.queue.pending_backup_jobs ?? 'pendiente de revision'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      En proceso registrados: {systemStatus.backups.pending_count}
-                    </p>
-                    <p className={stalePendingCount > 0 ? 'text-xs text-warning' : 'text-xs text-muted-foreground'}>
-                      Atascados: {stalePendingCount}
-                    </p>
-                    <p className={`text-xs ${
-                      automaticBackupHeartbeat.tone === 'success'
-                        ? 'text-success-foreground'
-                        : automaticBackupHeartbeat.tone === 'warning'
-                          ? 'text-warning'
-                          : 'text-muted-foreground'
-                    }`}>
-                      {automaticBackupHeartbeat.label}
-                    </p>
-                  </div>
+            <AdminPanel as="div" className={systemStatus.backups.pending_count > 0 ? 'border-[var(--ui-warn-border)]' : undefined}>
+              <div className="flex items-start gap-3 p-4">
+                <Server aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-[color:var(--ui-ink-soft)]" strokeWidth={1.5} />
+                <div className="flex min-w-0 flex-col gap-1">
+                  <p className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Proceso de respaldo</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Respaldos esperando: {systemStatus.backups.queue.pending_backup_jobs ?? 'pendiente de revision'}</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">En proceso registrados: {systemStatus.backups.pending_count}</p>
+                  <p className={`text-[length:var(--ui-text-xs)] ${stalePendingCount > 0 ? 'text-[color:var(--ui-warn)]' : 'text-[color:var(--ui-ink-soft)]'}`}>Atascados: {stalePendingCount}</p>
+                  <p className={`text-[length:var(--ui-text-xs)] ${automaticBackupHeartbeat.tone === 'success' ? 'text-[color:var(--ui-success)]' : automaticBackupHeartbeat.tone === 'warning' ? 'text-[color:var(--ui-warn)]' : 'text-[color:var(--ui-ink-soft)]'}`}>
+                    {automaticBackupHeartbeat.label}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </AdminPanel>
 
-            <Card className="border-info/30 bg-info/10 text-info-foreground ">
-              <CardContent>
-                <div className="flex items-start gap-3">
-                  <div className="bg-background/80 p-2.5">
-                    <ShieldAlert aria-hidden="true" className="size-5 text-muted-foreground" />
-                  </div>
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <p className="text-sm font-semibold">Estado general</p>
-                    <p className="text-xs text-muted-foreground">
-                      Instalacion: {systemStatus.readiness.production_ready ? 'lista para operar' : 'con pendientes'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Hora del servidor: {formatDate(systemStatus.environment.server_time)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Version instalada: {systemStatus.environment.app_version}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Zona horaria: {systemStatus.environment.timezone}
-                    </p>
-                    <p className="text-xs text-info">
-                      {systemStatus.readiness.production_ready ? 'Sin pendientes criticos' : 'Faltan pruebas finales'}
-                    </p>
-                  </div>
+            <AdminPanel as="div" className="border-[var(--ui-action-border)]">
+              <div className="flex items-start gap-3 p-4">
+                <ShieldAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-[color:var(--ui-action)]" strokeWidth={1.5} />
+                <div className="flex min-w-0 flex-col gap-1">
+                  <p className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Estado general</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Instalacion: {systemStatus.readiness.production_ready ? 'lista para operar' : 'con pendientes'}</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Hora del servidor: {formatDate(systemStatus.environment.server_time)}</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Version instalada: {systemStatus.environment.app_version}</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Zona horaria: {systemStatus.environment.timezone}</p>
+                  <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-action)]">{systemStatus.readiness.production_ready ? 'Sin pendientes criticos' : 'Faltan pruebas finales'}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </AdminPanel>
           </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <Card className="border-operational-border bg-operational-surface ">
-              <CardContent>
+            <AdminPanel as="div">
+              <div className="p-4">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-semibold">Checklist operativo</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Estos puntos ayudan a confirmar que los respaldos y la instalacion estan listos.
-                    </p>
+                    <h3 className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Checklist operativo</h3>
+                    <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Estos puntos ayudan a confirmar que los respaldos y la instalacion estan listos.</p>
                   </div>
-                  <span className="border border-info/30 bg-info/10 px-2 py-1 text-xs font-semibold text-info">
+                  <span className={`${TONE_CHIP_BASE} ${systemStatus.readiness.production_ready ? 'border-[var(--ui-success-border)] bg-[var(--ui-success-subtle)] text-[color:var(--ui-success)]' : 'border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] text-[color:var(--ui-warn)]'}`}>
                     {systemStatus.readiness.production_ready ? 'Listo' : 'Pendiente'}
                   </span>
                 </div>
                 <div className="grid gap-2 md:grid-cols-2">
                   {systemStatus.preflight.production_checks.map((check) => (
-                    <div key={check.code} className="border border-border p-3">
+                    <div key={check.code} className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] p-3">
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-sm font-medium">{friendlyProductionCheck(check.code, check.label)}</p>
-                        <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${statusClass(check.status)}`}>
-                          {statusLabel(check.status)}
-                        </span>
+                        <p className="text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]">{friendlyProductionCheck(check.code, check.label)}</p>
+                        <span className={`shrink-0 rounded-[var(--ui-radius)] border px-2 py-0.5 text-[length:var(--ui-text-xs)] font-semibold ${adminStatusTag(check.status)}`}>{statusLabel(check.status)}</span>
                       </div>
-                      <p className="mt-1 break-words text-xs text-muted-foreground">{friendlyProductionDetail(check.code, check.detail)}</p>
+                      <p className="mt-1 break-words text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">{friendlyProductionDetail(check.code, check.detail)}</p>
                     </div>
                   ))}
-                  <div className="border border-border p-3">
+                  <div className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] p-3">
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">Estado de datos</p>
-                      <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${
-                        systemStatus.runtime.pending_migration_count === null
-                          ? 'border-warning/30 bg-warning/10 text-warning'
-                          : systemStatus.runtime.pending_migration_count > 0
-                            ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                            : 'border-success/30 bg-success/10 text-success-foreground'
-                      }`}>
-                        {systemStatus.runtime.pending_migration_count === null
-                          ? 'Sin dato'
-                          : systemStatus.runtime.pending_migration_count > 0
-                            ? 'Requiere revision'
-                            : 'Actualizada'}
+                      <p className="text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]">Estado de datos</p>
+                      <span className={`shrink-0 rounded-[var(--ui-radius)] border px-2 py-0.5 text-[length:var(--ui-text-xs)] font-semibold ${systemStatus.runtime.pending_migration_count === null ? 'border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] text-[color:var(--ui-warn)]' : systemStatus.runtime.pending_migration_count > 0 ? 'border-[var(--ui-danger-border)] bg-[var(--ui-danger-subtle)] text-[color:var(--ui-danger)]' : 'border-[var(--ui-success-border)] bg-[var(--ui-success-subtle)] text-[color:var(--ui-success)]'}`}>
+                        {systemStatus.runtime.pending_migration_count === null ? 'Sin dato' : systemStatus.runtime.pending_migration_count > 0 ? 'Requiere revision' : 'Actualizada'}
                       </span>
                     </div>
-                    <p className="mt-1 break-words text-xs text-muted-foreground">
+                    <p className="mt-1 break-words text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
                       {systemStatus.runtime.pending_migration_count === null
                         ? 'No se pudo verificar el estado de la base de datos.'
                         : systemStatus.runtime.pending_migration_count > 0
@@ -256,84 +200,74 @@ export function BackupSupportStatusPanel({
                           : `Migraciones aplicadas: ${systemStatus.runtime.migration_count ?? 0}.`}
                     </p>
                   </div>
-                  <div className="border border-border p-3">
+                  <div className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] p-3">
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">Tareas con problema</p>
-                      <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-warning/30 bg-warning/10 text-warning' : 'border-success/30 bg-success/10 text-success-foreground'}`}>
+                      <p className="text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]">Tareas con problema</p>
+                      <span className={`shrink-0 rounded-[var(--ui-radius)] border px-2 py-0.5 text-[length:var(--ui-text-xs)] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] text-[color:var(--ui-warn)]' : 'border-[var(--ui-success-border)] bg-[var(--ui-success-subtle)] text-[color:var(--ui-success)]'}`}>
                         {systemStatus.backups.queue.failed_jobs_count ?? 'Sin dato'}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Si aparece un numero mayor a cero, revise el ultimo respaldo con error.
-                    </p>
+                    <p className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Si aparece un numero mayor a cero, revise el ultimo respaldo con error.</p>
                   </div>
-                  <div className="border border-border p-3">
+                  <div className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] p-3">
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">Registro operativo</p>
-                      <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${systemStatus.runtime.laravel_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
+                      <p className="text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]">Registro operativo</p>
+                      <span className={`shrink-0 rounded-[var(--ui-radius)] border px-2 py-0.5 text-[length:var(--ui-text-xs)] font-semibold ${systemStatus.runtime.laravel_log.exists ? 'border-[var(--ui-action-border)] bg-[var(--ui-action-subtle)] text-[color:var(--ui-action)]' : 'border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] text-[color:var(--ui-warn)]'}`}>
                         {systemStatus.runtime.laravel_log.exists ? formatBytes(systemStatus.runtime.laravel_log.size_bytes) : 'no existe'}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Ultima actividad: {systemStatus.runtime.laravel_log.modified_at ? formatDate(systemStatus.runtime.laravel_log.modified_at) : 'sin registro'}
-                    </p>
+                    <p className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Ultima actividad: {systemStatus.runtime.laravel_log.modified_at ? formatDate(systemStatus.runtime.laravel_log.modified_at) : 'sin registro'}</p>
                   </div>
-                  <div className="border border-border p-3">
+                  <div className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] p-3">
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">Actividad de respaldos</p>
-                      <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${systemStatus.runtime.backup_automation_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
+                      <p className="text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]">Actividad de respaldos</p>
+                      <span className={`shrink-0 rounded-[var(--ui-radius)] border px-2 py-0.5 text-[length:var(--ui-text-xs)] font-semibold ${systemStatus.runtime.backup_automation_log.exists ? 'border-[var(--ui-action-border)] bg-[var(--ui-action-subtle)] text-[color:var(--ui-action)]' : 'border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] text-[color:var(--ui-warn)]'}`}>
                         {systemStatus.runtime.backup_automation_log.exists ? formatBytes(systemStatus.runtime.backup_automation_log.size_bytes) : 'no existe'}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Si no hay actividad reciente, pida revisar los respaldos automaticos.
-                    </p>
+                    <p className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Si no hay actividad reciente, pida revisar los respaldos automaticos.</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </AdminPanel>
 
-            <Card className="border-operational-border bg-operational-surface ">
-              <CardContent>
-                <h3 className="text-sm font-semibold">Pruebas de campo obligatorias</h3>
+            <AdminPanel as="div">
+              <div className="p-4">
+                <h3 className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Pruebas de campo obligatorias</h3>
                 <div className="mt-3 flex flex-col gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Prueba en red local</p>
+                    <p className="text-[length:var(--ui-text-xs)] font-semibold uppercase text-[color:var(--ui-ink-soft)]">Prueba en red local</p>
                     <ul className="mt-2 flex flex-col gap-2">
                       {systemStatus.preflight.public_routes.map((route) => (
-                        <li key={route.path} className="flex items-start justify-between gap-3 border border-border p-2">
+                        <li key={route.path} className="flex items-start justify-between gap-3 rounded-[var(--ui-radius)] border border-[var(--ui-line)] p-2">
                           <span>
-                            <span className="block text-sm font-medium">
+                            <span className="block text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]">
                               {route.path === '/up' ? 'Servidor responde' : route.path === '/login' ? 'Pantalla de ingreso abre' : 'Pantalla de verificacion abre'}
                             </span>
-                            <span className="text-xs text-muted-foreground">{route.expected}</span>
+                            <span className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">{route.expected}</span>
                           </span>
-                          <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${statusClass(route.status)}`}>
-                            {statusLabel(route.status)}
-                          </span>
+                          <span className={`shrink-0 rounded-[var(--ui-radius)] border px-2 py-0.5 text-[length:var(--ui-text-xs)] font-semibold ${adminStatusTag(route.status)}`}>{statusLabel(route.status)}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Pruebas fisicas</p>
+                    <p className="text-[length:var(--ui-text-xs)] font-semibold uppercase text-[color:var(--ui-ink-soft)]">Pruebas fisicas</p>
                     <ul className="mt-2 flex flex-col gap-2">
                       {systemStatus.preflight.physical_proofs.map((proof) => (
-                        <li key={proof.code} className="border border-border p-2">
+                        <li key={proof.code} className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] p-2">
                           <div className="flex items-start justify-between gap-3">
-                            <span className="text-sm font-medium">{proof.label}</span>
-                            <span className={`shrink-0 border px-2 py-0.5 text-xs font-semibold ${statusClass(proof.status)}`}>
-                              {statusLabel(proof.status)}
-                            </span>
+                            <span className="text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]">{proof.label}</span>
+                            <span className={`shrink-0 rounded-[var(--ui-radius)] border px-2 py-0.5 text-[length:var(--ui-text-xs)] font-semibold ${adminStatusTag(proof.status)}`}>{statusLabel(proof.status)}</span>
                           </div>
-                          <p className="mt-1 text-xs text-muted-foreground">{proof.detail}</p>
+                          <p className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">{proof.detail}</p>
                         </li>
                       ))}
                     </ul>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </AdminPanel>
           </div>
         </>
       ) : null}
@@ -344,13 +278,12 @@ export function BackupSupportStatusPanel({
 function recoverySupportStatus(
   systemStatus: SystemStatus,
   latestBackupNotConfirmed: boolean,
-): { badgeStatus: 'success' | 'pending' | 'failed'; className: string; description: string; label: string } {
+): { badgeStatus: 'success' | 'pending' | 'failed'; description: string; label: string } {
   const hasRestoreBlocker = systemStatus.readiness.blockers.some((blocker) => blocker.code === 'PENDING_RESTORE_VALIDATION');
 
   if (!systemStatus.backups.last_success_at) {
     return {
       badgeStatus: 'pending',
-      className: 'border-warning/30 bg-warning/10 text-warning-foreground',
       description: 'Cree un respaldo local y pida a soporte validar una copia protegida antes de operar sin supervision.',
       label: 'Requiere soporte',
     };
@@ -359,7 +292,6 @@ function recoverySupportStatus(
   if (latestBackupNotConfirmed || hasRestoreBlocker) {
     return {
       badgeStatus: 'pending',
-      className: 'border-warning/30 bg-warning/10 text-warning-foreground',
       description: 'Pida a soporte validar una copia protegida antes de confiar en la recuperacion del sistema.',
       label: 'Requiere soporte',
     };
@@ -367,7 +299,6 @@ function recoverySupportStatus(
 
   return {
     badgeStatus: 'success',
-    className: 'border-success/30 bg-success/10 text-success-foreground',
     description: 'Hay respaldo protegido reciente. Mantenga la validacion de recuperacion como tarea de soporte controlada.',
     label: 'Guia lista',
   };

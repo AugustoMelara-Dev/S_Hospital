@@ -1,5 +1,7 @@
 import { apiClient } from './base';
 import type {
+  CashSessionConsolidationFilters,
+  CashSessionConsolidationReport,
   CashSessionReport,
   ReportFilters,
   PdfReportFilters,
@@ -8,7 +10,7 @@ import type {
   OperationsReportFilters,
 } from './types';
 
-function buildReportParams(filters: ReportFilters): URLSearchParams {
+function buildReportParams(filters: Record<string, string | number | boolean | null | undefined>): URLSearchParams {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -40,6 +42,21 @@ export const reports = {
     const params = buildReportParams(filters);
     const response = await apiClient.request<{ data: import('./types').ExecutiveReport }>(
       `/api/reports/executive?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  /**
+   * M-W2-FE-04: consolidado por caja (`GET /api/cash-sessions/consolidated`).
+   * Consume el contrato existente tal cual: `registers` + `consolidated` +
+   * grupo `unassigned`. No recalcula totales en el cliente.
+   */
+  async getCashSessionConsolidation(
+    filters: CashSessionConsolidationFilters,
+  ): Promise<CashSessionConsolidationReport> {
+    const params = buildReportParams(filters);
+    const response = await apiClient.request<{ data: CashSessionConsolidationReport }>(
+      `/api/cash-sessions/consolidated?${params.toString()}`,
     );
     return response.data;
   },

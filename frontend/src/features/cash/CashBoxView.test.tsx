@@ -5,35 +5,68 @@ import { type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from '../../App';
-import { ApiError, apiClient, type CashSession } from '../../lib/api';
+import { ApiError, apiClient, cash, type CashSession, type CashSessionReport } from '../../lib/api';
 import { queryClient } from '../../lib/query-client';
 import { resetRequestChain } from '../../lib/api/base';
 import { CashBoxView } from './CashBoxView';
 
 describe('CashBoxView', () => {
+  it('distingue datos pendientes ausentes de un cero confirmado y se recupera al reintentar', async () => {
+    const incompleteSession = {
+      ...cashSessionFixture(),
+      pending_invoice_count: null,
+      pending_amount: null,
+      missing_institutional_receipt_count: undefined,
+      reversed_payments_count: undefined,
+    } as unknown as CashSession;
+    const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession')
+      .mockResolvedValueOnce(incompleteSession)
+      .mockResolvedValue(cashSessionFixture());
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    const pendingRegion = await screen.findByRole('region', { name: /trabajo pendiente/i });
+    expect(within(pendingRegion).getByText(/no se pudo confirmar el trabajo pendiente/i)).toBeVisible();
+    expect(screen.getByText('Saldo pendiente').closest('div')).toHaveTextContent(/no disponible/i);
+
+    await activateCashView('Cierre');
+    expect(await screen.findByText(/no se pudo confirmar el cierre/i)).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^cerrar caja$/i })).not.toBeInTheDocument();
+
+    await activateCashView('Resumen');
+    fireEvent.click(within(screen.getByRole('region', { name: /trabajo pendiente/i })).getByRole('button', { name: /reintentar/i }));
+
+    await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText(/sin pendientes: el turno puede conciliarse/i)).toBeVisible();
+    expect(screen.getByText('Saldo pendiente').closest('div')).toHaveTextContent(/L\.\s*0\.00/i);
+
+    await activateCashView('Cierre');
+    expect(await screen.findByRole('button', { name: /^cerrar caja$/i })).toBeEnabled();
+  });
+
   it('opens on Resumen and focuses the counted amount only when Cierre is activated', async () => {
     vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
 
     renderCashBox(<CashBoxView canViewCashSessionReport onStatus={vi.fn()} />);
 
-    const summaryTab = await screen.findByRole('radio', { name: /^resumen$/i });
-    expect(summaryTab).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByRole('radio', { name: /^movimientos$/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /^arqueo$/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /^cierre$/i })).toBeInTheDocument();
+    const summaryTab = await screen.findByRole('tab', { name: /^resumen$/i });
+    expect(summaryTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /^movimientos$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^arqueo$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^cierre$/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/monto contado/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /control contable de caja/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /control del cierre/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /cierre guiado/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: /Conciliaci.n de caja/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('radio', { name: /^cierre$/i }));
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /^cierre$/i }));
 
     const countedAmount = await screen.findByLabelText(/monto contado/i);
     await waitFor(() => expect(countedAmount).toHaveFocus());
 
-    fireEvent.click(screen.getByRole('radio', { name: /^resumen$/i }));
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /^resumen$/i }));
     expect(screen.queryByLabelText(/monto contado/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /^resumen$/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('tab', { name: /^resumen$/i })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('reports the manual refresh as a typed user action', async () => {
@@ -41,7 +74,7 @@ describe('CashBoxView', () => {
     const onStatus = vi.fn();
 
     renderCashBox(<CashBoxView onStatus={onStatus} />);
-    await screen.findByRole('radio', { name: /^resumen$/i });
+    await screen.findByRole('tab', { name: /^resumen$/i });
     onStatus.mockClear();
 
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
@@ -61,6 +94,9 @@ describe('CashBoxView', () => {
     queryClient.clear();
     window.history.pushState({}, '', '/');
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
+    vi.spyOn(cash, 'getCashRegisters').mockResolvedValue([
+      { id: 2, code: 'AZB-QA', name: 'Caja Azul QA', active: true },
+    ]);
     document.body.removeAttribute('data-printing-receipt');
     document.body.removeAttribute('data-receipt-width');
   });
@@ -73,7 +109,7 @@ describe('CashBoxView', () => {
   });
 
   it('shows cash status and allows opening a cash session', async () => {
-    window.history.pushState({}, '', '/cashbox');
+    window.history.pushState({}, '', '/caja');
     const openedSession = {
       id: 7,
       user_id: 2,
@@ -102,7 +138,7 @@ describe('CashBoxView', () => {
               username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
-              permissions: ['cash.view', 'cash.open', 'cash.close', 'invoices.create'],
+              permissions: ['cash.view', 'cash.open', 'cash.close'],
               must_change_password: false,
             },
           }),
@@ -132,7 +168,7 @@ describe('CashBoxView', () => {
 
     render(<App />);
 
-    expect((await screen.findAllByRole('link', { name: /caja/i }))[0]).toHaveAttribute('href', '/cashbox');
+    expect((await screen.findAllByRole('link', { name: /caja/i }))[0]).toHaveAttribute('href', '/caja');
     expect(screen.queryByRole('link', { name: /backups/i })).not.toBeInTheDocument();
     expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
     expect(await screen.findByText(/no hay una caja abierta actualmente/i)).toBeInTheDocument();
@@ -156,7 +192,7 @@ describe('CashBoxView', () => {
   });
 
   it('keeps close-session difference hidden until counted amount is entered', async () => {
-    window.history.pushState({}, '', '/cashbox');
+    window.history.pushState({}, '', '/caja');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
 
@@ -197,6 +233,10 @@ describe('CashBoxView', () => {
                 card: '0.00',
                 other: '0.00',
               },
+              pending_invoice_count: 0,
+              pending_amount: '0.00',
+              missing_institutional_receipt_count: 0,
+              reversed_payments_count: 0,
               status: 'open',
               opening_notes: null,
               closing_notes: null,
@@ -227,7 +267,7 @@ describe('CashBoxView', () => {
   });
 
   it('shows pending balance and prevents client-side close while invoices are partial', async () => {
-    window.history.pushState({}, '', '/cashbox');
+    window.history.pushState({}, '', '/caja');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
 
@@ -271,6 +311,8 @@ describe('CashBoxView', () => {
               },
               pending_invoice_count: 1,
               pending_amount: '23.75',
+              missing_institutional_receipt_count: 0,
+              reversed_payments_count: 0,
               status: 'open',
               opening_notes: null,
               closing_notes: null,
@@ -312,18 +354,18 @@ describe('CashBoxView', () => {
 
     render(<App />);
 
-    expect(await screen.findByText(/^Ingresos$/i)).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText(/^Ingresos$/i).closest('dl')).toHaveTextContent(/33\.75/));
-    expect(screen.getByText(/^Recibos pendientes$/i).closest('dl')).toHaveTextContent('0');
+    expect(await screen.findByText(/^Cobros registrados$/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/^Cobros registrados$/i).closest('div')).toHaveTextContent(/33\.75/));
+    expect(await screen.findByRole('region', { name: /trabajo pendiente/i })).toBeInTheDocument();
     expect((await screen.findAllByText(/saldo pendiente/i)).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/L 23\.75/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/L\.\s*23\.75/i).length).toBeGreaterThan(0);
     await activateCashView('Cierre');
     expect(await screen.findByText(/revise los cobros antes de cerrar/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
   });
 
-  it('renders malformed cash reconciliation amounts as zero instead of NaN', async () => {
-    window.history.pushState({}, '', '/cashbox');
+  it('renders malformed cash reconciliation amounts as unavailable instead of a false L 0.00', async () => {
+    window.history.pushState({}, '', '/caja');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
 
@@ -385,18 +427,25 @@ describe('CashBoxView', () => {
 
     render(<App />);
 
+    expect((await screen.findAllByText(/^Cobros registrados$/i)).length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getAllByText('No disponible').length).toBeGreaterThanOrEqual(2));
+    expect(screen.queryByText('L 0.00')).not.toBeInTheDocument();
+
+    await activateCashView('Arqueo');
     expect((await screen.findAllByText(/efectivo esperado/i)).length).toBeGreaterThan(0);
-    await waitFor(() => expect(screen.getAllByText('L 0.00').length).toBeGreaterThanOrEqual(5));
+    expect(screen.getByRole('status', { name: /total contado por denominaciones/i })).toHaveTextContent('Pendiente');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
   });
 
-  it('renders one accessible cashbox heading and textual status without extra requests', async () => {
+  it('renders without a second page title and shows textual status without extra requests', async () => {
     const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
 
-    expect(await screen.findByRole('heading', { level: 1, name: /^caja$/i })).toBeInTheDocument();
     expect(await screen.findByLabelText(/monto inicial/i)).toHaveValue('0.00');
+    // Un solo título por región: el título de página («Caja») vive en
+    // CajaView; el módulo no encadena un segundo título de página.
+    expect(screen.queryByRole('heading', { name: /^turno de caja$/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/caja cerrada/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/no hay una caja abierta actualmente/i)).toBeInTheDocument();
     expect(getCurrentCashSession).toHaveBeenCalledTimes(1);
@@ -409,7 +458,7 @@ describe('CashBoxView', () => {
 
     renderCashBox(<CashBoxView canCloseAnyCash currentUserId={2} onStatus={vi.fn()} />);
 
-    expect(await screen.findByRole('heading', { level: 1, name: /^caja$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: /caja, usuario y sesión/i })).toBeInTheDocument();
     expect(getCurrentCashSession).toHaveBeenCalledWith({ scope: 'closable' });
     expect(await screen.findByText(/cajero #77/i)).toBeVisible();
     expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
@@ -424,12 +473,14 @@ describe('CashBoxView', () => {
       <CashBoxView canCreateInvoices currentUserId={2} onStatus={vi.fn()} />,
     );
 
-    expect(await screen.findByRole('link', { name: /nueva factura/i })).toHaveAttribute('href', '/billing/new');
+    expect(await screen.findByRole('link', { name: /nueva operación/i })).toHaveAttribute('href', '/cobrar');
     expect(screen.queryByText(/caja lista para facturar/i)).not.toBeInTheDocument();
     const operationalHeader = screen.getByRole('region', { name: /estado operativo de caja/i });
     expect(within(operationalHeader).getByText(/^apertura$/i)).toBeVisible();
-    expect(within(operationalHeader).getByText(/^efectivo esperado$/i)).toBeVisible();
+    expect(within(operationalHeader).getByText(/^cobros registrados$/i)).toBeVisible();
     expect(within(operationalHeader).getByText(/^saldo pendiente$/i)).toBeVisible();
+    // El efectivo esperado vive una sola vez, en el arqueo.
+    expect(within(operationalHeader).queryByText(/^efectivo esperado$/i)).toBeNull();
   });
 
   it('shows a sanitized load error with retry and does not present a closed cashbox as loaded data', async () => {
@@ -451,7 +502,7 @@ describe('CashBoxView', () => {
   it('requires confirmation before opening cash and prevents duplicate opening while pending', async () => {
     let resolveOpen!: (session: CashSession) => void;
     const opened = cashSessionFixture({ id: 51, opening_amount: '0.00' });
-    const openCashSession = vi.spyOn(apiClient, 'openCashSession')
+    const openCashSession = vi.spyOn(cash, 'openCashSession')
       .mockReturnValue(new Promise((resolve) => { resolveOpen = resolve; }));
 
     vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
@@ -460,8 +511,10 @@ describe('CashBoxView', () => {
 
     const amount = await screen.findByLabelText(/monto inicial/i);
     expect(amount).toHaveValue('0.00');
+    await waitFor(() => expect(screen.getByLabelText(/caja física/i)).toHaveValue('2'));
 
     const openButton = screen.getByRole('button', { name: /abrir caja/i });
+    expect(openButton).toBeEnabled();
     fireEvent.click(openButton);
     fireEvent.click(openButton);
 
@@ -469,13 +522,13 @@ describe('CashBoxView', () => {
 
     const dialog = await screen.findByRole('dialog', { name: /confirmar apertura de caja/i });
     expect(dialog).toHaveTextContent(/monto inicial/i);
-    expect(dialog).toHaveTextContent(/L 0\.00/i);
+    expect(dialog).toHaveTextContent(/L\.\s*0\.00/i);
 
     fireEvent.click(within(dialog).getByRole('button', { name: /^abrir caja$/i }));
 
     await waitFor(() => expect(openCashSession).toHaveBeenCalledTimes(1));
     expect(openCashSession).toHaveBeenCalledWith(
-      { opening_amount: '0.00' },
+      { opening_amount: '0.00', cash_register_id: 2 },
       { idempotencyKey: expect.any(String) },
     );
 
@@ -486,7 +539,7 @@ describe('CashBoxView', () => {
 
   it('shows a clear local drawer conflict when another cash session is already open', async () => {
     const onStatus = vi.fn();
-    const openCashSession = vi.spyOn(apiClient, 'openCashSession').mockRejectedValue(new ApiError(
+    const openCashSession = vi.spyOn(cash, 'openCashSession').mockRejectedValue(new ApiError(
       'Revise los datos del formulario.',
       422,
       {
@@ -498,6 +551,7 @@ describe('CashBoxView', () => {
     renderCashBox(<CashBoxView onStatus={onStatus} />);
 
     expect(await screen.findByLabelText(/monto inicial/i)).toHaveValue('0.00');
+    await waitFor(() => expect(screen.getByLabelText(/caja física/i)).toHaveValue('2'));
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
     fireEvent.click(within(await screen.findByRole('dialog', { name: /confirmar apertura de caja/i }))
       .getByRole('button', { name: /^abrir caja$/i }));
@@ -513,12 +567,13 @@ describe('CashBoxView', () => {
   });
 
   it('locks the open cash form while the opening confirmation is active', async () => {
-    vi.spyOn(apiClient, 'openCashSession').mockResolvedValue(cashSessionFixture({ id: 53, opening_amount: '75.00' }));
+    vi.spyOn(cash, 'openCashSession').mockResolvedValue(cashSessionFixture({ id: 53, opening_amount: '75.00' }));
     vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
 
     const amount = await screen.findByLabelText(/monto inicial/i);
+    await waitFor(() => expect(screen.getByLabelText(/caja física/i)).toHaveValue('2'));
     fireEvent.change(amount, { target: { value: '75.00' } });
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
 
@@ -529,21 +584,22 @@ describe('CashBoxView', () => {
 
   it('accepts a pasted opening amount with spaces and sends the trimmed value', async () => {
     const opened = cashSessionFixture({ id: 52, opening_amount: '100.00' });
-    const openCashSession = vi.spyOn(apiClient, 'openCashSession').mockResolvedValue(opened);
+    const openCashSession = vi.spyOn(cash, 'openCashSession').mockResolvedValue(opened);
     vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
 
     renderCashBox(<CashBoxView onStatus={vi.fn()} />);
 
     const amount = await screen.findByLabelText(/monto inicial/i);
+    await waitFor(() => expect(screen.getByLabelText(/caja física/i)).toHaveValue('2'));
     fireEvent.change(amount, { target: { value: ' 100.00 ' } });
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
 
     const dialog = await screen.findByRole('dialog', { name: /confirmar apertura de caja/i });
-    expect(dialog).toHaveTextContent(/L 100\.00/i);
+    expect(dialog).toHaveTextContent(/L\.\s*100\.00/i);
     fireEvent.click(within(dialog).getByRole('button', { name: /^abrir caja$/i }));
 
     await waitFor(() => expect(openCashSession).toHaveBeenCalledWith(
-      { opening_amount: '100.00' },
+      { opening_amount: '100.00', cash_register_id: 2 },
       { idempotencyKey: expect.any(String) },
     ));
   });
@@ -597,7 +653,7 @@ describe('CashBoxView', () => {
     });
 
     expect(screen.getByRole('status', { name: /diferencia en vivo/i }))
-      .toHaveTextContent(/- L 5\.00/i);
+      .toHaveTextContent(/- L\.\s*5\.00/i);
     expect(screen.queryByRole('dialog', { name: /cierre de caja/i })).not.toBeInTheDocument();
   });
 
@@ -653,10 +709,12 @@ describe('CashBoxView', () => {
     fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
 
     const confirmedSummary = await screen.findByRole('region', { name: /resumen de cierre confirmado/i });
-    expect(confirmedSummary).toHaveTextContent(/caja:\s*caja #12/i);
-    expect(confirmedSummary).toHaveTextContent(/cerrada:\s*06\/07\/2026/i);
-    expect(confirmedSummary).toHaveTextContent(/monto contado:\s*L 101\.00/i);
-    expect(confirmedSummary).toHaveTextContent(/diferencia:\s*L 1\.00/i);
+    expect(confirmedSummary).toHaveTextContent(/sesión de caja\s*#12/i);
+    expect(confirmedSummary).toHaveTextContent(/cerrada\s*06\/07\/2026/i);
+    expect(confirmedSummary).toHaveTextContent(/monto contado\s*L\.\s*101\.00/i);
+    // La diferencia va con signo explícito ("+ L. 1.00" sobrante): el color
+    // warn nunca es el único canal en la presentación dark.
+    expect(confirmedSummary).toHaveTextContent(/diferencia\s*(?:\+\s*)?L\.\s*1\.00/i);
     expect(closeCashSession).toHaveBeenCalledTimes(1);
 
     fireEvent.click(within(confirmedSummary).getByRole('button', { name: /imprimir resumen/i }));
@@ -766,12 +824,109 @@ describe('CashBoxView', () => {
     renderCashBox(<CashBoxView canViewInvoices onStatus={vi.fn()} />);
     await activateCashView('Arqueo');
 
-    expect(await screen.findByRole('heading', { name: /control contable de caja/i })).toBeInTheDocument();
-    expect(screen.getByText(/2 recibos institucionales pendientes/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /control del cierre/i })).toBeInTheDocument();
+    expect(screen.getByText(/2 recibos institucionales por emitir/i)).toBeInTheDocument();
     expect(screen.getByText(/1 pago reversado/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /resolver en historial/i })).toHaveAttribute('href', '/invoices');
     await activateCashView('Cierre');
     expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
+  });
+
+  it('shows the movements search only inside the Movimientos tab without switching tabs while typing', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
+    vi.spyOn(apiClient, 'getCashSessionReport').mockResolvedValue({
+      movements: [
+        {
+          id: 1,
+          cash_session_id: 1,
+          payment_id: null,
+          user_id: 2,
+          type: 'cash_in',
+          method: 'cash',
+          amount: '100.00',
+          notes: null,
+          occurred_at: '2026-05-17T09:30:00-06:00',
+        },
+        {
+          id: 2,
+          cash_session_id: 1,
+          payment_id: null,
+          user_id: 2,
+          type: 'cash_out',
+          method: 'cash',
+          amount: '20.00',
+          notes: null,
+          occurred_at: '2026-05-17T10:30:00-06:00',
+        },
+      ],
+      payments: [],
+    } as unknown as CashSessionReport);
+
+    renderCashBox(<CashBoxView canViewCashSessionReport onStatus={vi.fn()} />);
+    await screen.findByRole('tab', { name: /^resumen$/i });
+
+    expect(screen.queryByLabelText(/buscar movimientos/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/buscar movimiento/i)).not.toBeInTheDocument();
+
+    await activateCashView('Movimientos');
+
+    const search = await screen.findByLabelText(/buscar movimientos/i);
+    const mobileList = screen.getByRole('list', { name: /movimientos de caja en m.vil/i });
+    expect(within(mobileList).getByText('Entrada')).toBeInTheDocument();
+    expect(within(mobileList).getByText('Salida')).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: 'Entrada' } });
+
+    expect(screen.getByRole('tab', { name: /^movimientos$/i })).toHaveAttribute('aria-selected', 'true');
+    expect(within(mobileList).getByText('Entrada')).toBeInTheDocument();
+    expect(within(mobileList).queryByText('Salida')).not.toBeInTheDocument();
+
+    await activateCashView('Arqueo');
+    expect(screen.queryByLabelText(/buscar movimientos/i)).not.toBeInTheDocument();
+  });
+
+  it('does not present an unentered arqueo count as L 0.00', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Arqueo');
+
+    const total = await screen.findByRole('status', { name: /total contado por denominaciones/i });
+    expect(total).toHaveTextContent('Pendiente');
+    expect(total).not.toHaveTextContent(/L\s*0\.00/);
+
+    await activateCashView('Cierre');
+    expect(screen.getByLabelText(/monto contado/i)).toHaveValue('');
+    expect(screen.getByText(/ingrese monto contado/i)).toBeInTheDocument();
+  });
+
+  it('distingue un conteo en cero confirmado de un conteo no realizado', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture({
+      expected_cash_amount: '100.00',
+    }));
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Arqueo');
+
+    // Sin conteo: no realizado, nunca un L 0.00 implícito.
+    expect(await screen.findByText(/conteo no realizado/i)).toBeInTheDocument();
+    expect(screen.queryByText(/conteo en cero confirmado/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /total contado por denominaciones/i }))
+      .toHaveTextContent('Pendiente');
+
+    fireEvent.click(screen.getByRole('button', { name: /confirmar conteo en cero/i }));
+
+    expect(screen.getByText(/conteo en cero confirmado/i)).toBeInTheDocument();
+    expect(screen.queryByText(/conteo no realizado/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /total contado por denominaciones/i }))
+      .toHaveTextContent(/L\.\s*0\.00/);
+    // El cero confirmado calcula la diferencia contra el esperado completo.
+    expect(screen.getByText('Diferencia').closest('div')).toHaveTextContent(/-?\s*L\.\s*100\.00/);
+
+    await activateCashView('Cierre');
+    expect(screen.getByLabelText(/monto contado/i)).toHaveValue('0.00');
+    expect(screen.getByText(/conteo en cero confirmado en el arqueo/i)).toBeInTheDocument();
+    expect(screen.getByText(/la gaveta se declara sin efectivo/i)).toBeInTheDocument();
   });
 
   it('carries a denomination count from Arqueo into the audited close amount', async () => {
@@ -817,11 +972,11 @@ describe('CashBoxView', () => {
     });
 
     expect(screen.getByRole('status', { name: /total contado por denominaciones/i }))
-      .toHaveTextContent(/L 125\.50/i);
+      .toHaveTextContent(/L\.\s*125\.50/i);
 
     fireEvent.click(screen.getByRole('button', { name: /continuar al cierre/i }));
 
-    expect(screen.getByRole('radio', { name: /^cierre$/i })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('tab', { name: /^cierre$/i })).toHaveAttribute('aria-selected', 'true');
     expect(await screen.findByLabelText(/monto contado/i)).toHaveValue('125.50');
     expect(screen.getByLabelText(/monto contado/i)).toHaveAttribute('readonly');
     expect(screen.getByText(/calculado desde el arqueo por denominaciones/i)).toBeInTheDocument();
@@ -851,7 +1006,7 @@ describe('CashBoxView', () => {
       .getByRole('region', { name: /desglose del conteo físico/i });
     expect(confirmedBreakdown).toHaveTextContent(/Billetes L 50\s*2/i);
     expect(confirmedBreakdown).toHaveTextContent(/Billetes L 20\s*1/i);
-    expect(confirmedBreakdown).toHaveTextContent(/Monedas y otros\s*L 5\.50/i);
+    expect(confirmedBreakdown).toHaveTextContent(/Monedas y otros\s*L\.\s*5\.50/i);
   });
 
   it('does not open close confirmation when the reconciliation refresh fails', async () => {
@@ -870,6 +1025,32 @@ describe('CashBoxView', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(await screen.findByText(/no se pudo actualizar caja antes de cerrar/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|LAN timeout/i);
+    expect(closeCashSession).not.toHaveBeenCalled();
+  });
+
+  it('does not reuse stale zeroes when the refreshed reconciliation is incomplete', async () => {
+    const incompleteSession = {
+      ...cashSessionFixture(),
+      pending_invoice_count: undefined,
+      pending_amount: null,
+      missing_institutional_receipt_count: undefined,
+      reversed_payments_count: undefined,
+    } as unknown as CashSession;
+    const getCurrentCashSession = vi.spyOn(apiClient, 'getCurrentCashSession')
+      .mockResolvedValueOnce(cashSessionFixture())
+      .mockResolvedValueOnce(incompleteSession);
+    const closeCashSession = vi.spyOn(apiClient, 'closeCashSession')
+      .mockResolvedValue(cashSessionFixture({ status: 'closed' }));
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await activateCashView('Cierre');
+
+    fireEvent.change(await screen.findByLabelText(/monto contado/i), { target: { value: '100.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+
+    await waitFor(() => expect(getCurrentCashSession).toHaveBeenCalledTimes(2), { timeout: 250 });
+    expect(screen.queryByRole('dialog', { name: /cierre de caja/i })).not.toBeInTheDocument();
+    expect(await screen.findByText(/no se pudo confirmar el trabajo pendiente antes de cerrar/i)).toBeVisible();
     expect(closeCashSession).not.toHaveBeenCalled();
   });
 
@@ -896,6 +1077,31 @@ describe('CashBoxView', () => {
       resolveClose(cashSessionFixture({ status: 'closed' }));
     });
   });
+
+  it('F2 devuelve el foco al monto inicial cuando no hay turno activo', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(null);
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+
+    const amount = await screen.findByLabelText(/monto inicial/i);
+    amount.blur();
+    expect(amount).not.toHaveFocus();
+
+    fireEvent.keyDown(window, { key: 'F2' });
+
+    expect(amount).toHaveFocus();
+  });
+
+  it('F2 no abre ni enfoca apertura cuando ya existe un turno activo', async () => {
+    vi.spyOn(apiClient, 'getCurrentCashSession').mockResolvedValue(cashSessionFixture());
+
+    renderCashBox(<CashBoxView onStatus={vi.fn()} />);
+    await screen.findByRole('tab', { name: /^resumen$/i });
+
+    fireEvent.keyDown(window, { key: 'F2' });
+
+    expect(screen.queryByLabelText(/monto inicial/i)).not.toBeInTheDocument();
+  });
 });
 
 function renderCashBox(node: ReactNode) {
@@ -909,12 +1115,14 @@ function renderCashBox(node: ReactNode) {
 }
 
 async function activateCashView(name: 'Resumen' | 'Movimientos' | 'Arqueo' | 'Cierre') {
-  fireEvent.click(await screen.findByRole('radio', { name: new RegExp(`^${name}$`, 'i') }));
+  fireEvent.mouseDown(await screen.findByRole('tab', { name: new RegExp(`^${name}$`, 'i') }));
 }
 
 function cashSessionFixture(overrides: Partial<CashSession> = {}): CashSession {
   return {
     id: 1,
+    cash_register_id: 2,
+    cash_register: { id: 2, code: 'AZB-QA', name: 'Caja Azul QA' },
     user_id: 2,
     opening_amount: '100.00',
     closing_amount: null,
@@ -931,6 +1139,9 @@ function cashSessionFixture(overrides: Partial<CashSession> = {}): CashSession {
     },
     pending_invoice_count: 0,
     pending_amount: '0.00',
+    missing_institutional_receipt_count: 0,
+    reversed_payments_count: 0,
+    reversed_payments_total: '0.00',
     status: 'open',
     opening_notes: null,
     closing_notes: null,

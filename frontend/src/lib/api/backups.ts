@@ -1,14 +1,34 @@
 import { apiClient } from './base';
-import type { BackupLog } from './types';
+import type { BackupLog, PaginatedMeta } from './types';
+
+export type BackupPaginatedMeta = PaginatedMeta & {
+  /** Conteo global, independiente de página y filtro. `null` significa no confirmado. */
+  global_pending_count?: number | null;
+};
+
+function confirmedGlobalPendingCount(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : null;
+}
 
 export const backups = {
-  async getBackups(filters: { page?: number; perPage?: number; status?: BackupLog['status'] | 'all' } = {}): Promise<{ data: BackupLog[]; meta: import('./types').PaginatedMeta }> {
+  async getBackups(filters: { page?: number; perPage?: number; status?: BackupLog['status'] | 'all' } = {}): Promise<{ data: BackupLog[]; meta: BackupPaginatedMeta }> {
     const params = new URLSearchParams();
     if (filters.page) params.set('page', String(filters.page));
     if (filters.perPage) params.set('per_page', String(filters.perPage));
     if (filters.status && filters.status !== 'all') params.set('status', filters.status);
     const query = params.toString() ? `?${params.toString()}` : '';
-    return apiClient.request<{ data: BackupLog[]; meta: import('./types').PaginatedMeta }>(`/api/backups${query}`);
+    const response = await apiClient.request<{
+      data: BackupLog[];
+      meta: PaginatedMeta & { global_pending_count?: unknown };
+    }>(`/api/backups${query}`);
+
+    return {
+      ...response,
+      meta: {
+        ...response.meta,
+        global_pending_count: confirmedGlobalPendingCount(response.meta.global_pending_count),
+      },
+    };
   },
 
   async createBackup(options: { idempotencyKey?: string } = {}): Promise<BackupLog> {

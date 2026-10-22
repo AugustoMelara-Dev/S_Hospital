@@ -1,14 +1,28 @@
 @import "tailwindcss";
-@import "./design-system/tokens/institutional-tokens.css";
+@import "./design-system/admin/tokens.css";
+@import "./design-system/tokens/receipt-paper.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
-@custom-variant dark (&:is(.dark *));
+/*
+ * El variante `dark` de clase se retiró: la identidad dark es única y fija
+ * (ThemeProvider siempre declara `html.dark`), ningún consumidor usa utilidades
+ * `dark:*` (check-ui-rules lo prohíbe en primitivos) y sin la redefinición
+ * no hay toggling de variant por clase que sorprenda.
+ */
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/*
+ * better-ui/emil: los efectos de hover solo se activan con un puntero fino
+ * capaz de hover. En táctil el tap no debe disparar estados hover. Sustituye
+ * el variante `hover` por defecto de Tailwind (que solo exige `hover: hover`).
+ */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
 }
 
 @layer base {
@@ -27,11 +41,20 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
-    color-scheme: light;
+    /* Identidad dark única (IDENTIDAD_DARK_20261016 §8): color-scheme fijo,
+       sin toggle. Fija scrollbars y popups nativos en dark. */
+    color-scheme: dark;
     @apply bg-background text-foreground;
   }
 
   html.dark body { color-scheme: dark; }
+
+  /* Selección de texto (§8): tintado cobalto 28 %; sobre papel el texto del
+     documento sigue `#111827` y legible. */
+  ::selection {
+    background: var(--ui-selection-tint);
+    color: var(--ui-ink);
+  }
 
   button,
   input,
@@ -49,12 +72,28 @@
     touch-action: manipulation;
   }
 
+  /* better-ui/icons.md: el trazo del icono carga el peso óptico del texto
+     adyacente (1.5 junto a 400, 2 junto a 500–600, 2.5 junto a 700). */
   :where([data-icon]) {
-    stroke-width: 1.75;
+    stroke-width: var(--icon-stroke-regular);
+  }
+
+  :where(button, [data-slot='button'], label, .font-medium, .font-semibold) :where([data-icon]) {
+    stroke-width: var(--icon-stroke-medium);
+  }
+
+  :where(h1, h2, h3, .font-bold) :where([data-icon]) {
+    stroke-width: var(--icon-stroke-strong);
+  }
+
+  :where(a, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
   }
 
   :where(.tabular-nums, [data-numeric="true"]) {
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -82,7 +121,35 @@
   }
 
   .billing-account-viewport {
-    height: calc(100dvh - 13rem);
+    height: calc(100dvh - 12.5rem);
+  }
+
+  /* R2-FE-STRUCT: altura operativa obligatoria en acciones monetarias y de
+     caja (>=44px, WCAG 2.5.5). El token tiene consumidor en el boton de
+     cobro; no se declaran tokens sin uso. */
+  [data-control-size='operational'] {
+    min-height: var(--control-h-operational);
+  }
+
+  /* Feedback tactil de presion (better-ui: scale 0.96; emil: feedback de
+     baja frecuencia). Se aplica SOLO a acciones operativas; el resto de
+     botones conserva active:translate-y-px (instantaneo, alta frecuencia). */
+  [data-slot='button'][data-control-size='operational'] {
+    transition-property: transform, scale, color, background-color, border-color, box-shadow, opacity;
+    transition-duration: var(--duration-press);
+    transition-timing-function: var(--ease-out);
+  }
+
+  [data-slot='button'][data-control-size='operational']:not(:disabled):active {
+    scale: var(--press-scale);
+  }
+
+  /* R2-FE-STRUCT: un unico contenedor con scroll por dialogo. El cuerpo
+     variable se desplaza; cabecera y pie permanecen fijos. */
+  [data-dialog-scroll] {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .quick-cash-dialog {
@@ -135,6 +202,209 @@
   }
 }
 
+/*
+ * Movimiento de overlays compartidos (better-ui/animations.md, emil-design-eng).
+ *
+ * Los primitivos Radix (dialog, select, popover, dropdown-menu, sheet) usan
+ * transiciones CSS por `data-state` en vez de las clases keyframe de
+ * `tw-animate-css`: una transición se interrumpe y se retargetea a mitad de
+ * camino, una animación reinicia desde cero. Duraciones y curva salen de los
+ * tokens admin (`--ui-duration-overlay-in` 200 ms, `--ui-duration-overlay-out`
+ * 150 ms, `--ui-ease-out`); la entrada arranca en scale(0.95) + opacity, nunca
+ * scale(0).
+ *
+ * `@radix-ui/react-presence` (1.1.7) mantiene el nodo montado durante la salida
+ * escuchando `animationend` (no `transitionend`). El keyframe
+ * `ui-presence-out` no pinta nada (anima `outline-color` transparente a
+ * transparente): solo existe para que Radix espere la duración de salida
+ * mientras la transición real (opacity/scale/translate) se reproduce.
+ */
+@keyframes ui-presence-out {
+  from { outline-color: transparent; }
+  to { outline-color: transparent; }
+}
+
+/*
+ * Esqueleto dark (identidad 2026-10-16 §5): pulso de opacidad 0.55→1, 1.6 s,
+ * `--ui-ease-in-out`, sin barrido luminoso ("shimmer"). La superficie delta
+ * (two-tone) la pintan los consumidores con `--ui-skel-from/--ui-skel-to`;
+ * esta clase solo aporta el ritmo. Los consumidores la usan como
+ * `motion-safe:ui-skel` (movimiento reducido resta animación, nunca estado).
+ */
+@keyframes ui-skel {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.ui-skel {
+  animation: ui-skel 1.6s var(--ui-ease-in-out) infinite;
+}
+
+/* Velos y modales centrados: fundido; el modal añade zoom contenido. */
+[data-slot='dialog-overlay'],
+[data-slot='sheet-overlay'],
+[data-slot='alert-dialog-overlay'],
+[data-slot='dialog-content'],
+[data-slot='alert-dialog-content'] {
+  transition-property: opacity;
+  transition-timing-function: var(--ui-ease-out);
+}
+
+[data-slot='dialog-content'],
+[data-slot='alert-dialog-content'] {
+  transition-property: opacity, scale;
+}
+
+[data-slot='dialog-overlay'][data-state='open'],
+[data-slot='sheet-overlay'][data-state='open'],
+[data-slot='alert-dialog-overlay'][data-state='open'] {
+  opacity: 1;
+  transition-duration: var(--ui-duration-overlay-in);
+}
+
+[data-slot='dialog-overlay'][data-state='closed'],
+[data-slot='sheet-overlay'][data-state='closed'],
+[data-slot='alert-dialog-overlay'][data-state='closed'] {
+  opacity: 0;
+  transition-duration: var(--ui-duration-overlay-out);
+  animation: ui-presence-out var(--ui-duration-overlay-out) linear;
+}
+
+[data-slot='dialog-content'][data-state='open'],
+[data-slot='alert-dialog-content'][data-state='open'] {
+  opacity: 1;
+  scale: 1;
+  transition-duration: var(--ui-duration-overlay-in);
+}
+
+[data-slot='dialog-content'][data-state='closed'],
+[data-slot='alert-dialog-content'][data-state='closed'] {
+  opacity: 0;
+  scale: 0.95;
+  transition-duration: var(--ui-duration-overlay-out);
+  animation: ui-presence-out var(--ui-duration-overlay-out) linear;
+}
+
+/* Cajón lateral: fundido + desplazamiento corto de 2.5rem (exit más sutil). */
+[data-slot='sheet-content'] {
+  transition-property: opacity, translate;
+  transition-timing-function: var(--ui-ease-out);
+}
+
+[data-slot='sheet-content'][data-state='open'] {
+  opacity: 1;
+  translate: 0 0;
+  transition-duration: var(--ui-duration-overlay-in);
+}
+
+[data-slot='sheet-content'][data-state='closed'] {
+  opacity: 0;
+  transition-duration: var(--ui-duration-overlay-out);
+  animation: ui-presence-out var(--ui-duration-overlay-out) linear;
+}
+
+[data-slot='sheet-content'][data-state='closed'][data-side='right'] { translate: 2.5rem 0; }
+[data-slot='sheet-content'][data-state='closed'][data-side='left'] { translate: -2.5rem 0; }
+[data-slot='sheet-content'][data-state='closed'][data-side='top'] { translate: 0 -2.5rem; }
+[data-slot='sheet-content'][data-state='closed'][data-side='bottom'] { translate: 0 2.5rem; }
+
+/*
+ * Popovers (select/popover/menús): fundido + zoom desde el disparador.
+ * `--transform-origin` normaliza las variables de Radix por primitivo. Los
+ * modales no usan esta receta porque permanecen centrados.
+ */
+[data-slot='select-content'],
+[data-slot='popover-content'],
+[data-slot='dropdown-menu-content'],
+[data-slot='dropdown-menu-sub-content'] {
+  transition-property: opacity, scale;
+  transition-timing-function: var(--ui-ease-out);
+  transform-origin: var(--transform-origin);
+}
+
+[data-slot='select-content'] {
+  --transform-origin: var(--radix-select-content-transform-origin, center);
+}
+
+[data-slot='popover-content'] {
+  --transform-origin: var(--radix-popover-content-transform-origin, center);
+}
+
+[data-slot='dropdown-menu-content'],
+[data-slot='dropdown-menu-sub-content'] {
+  --transform-origin: var(--radix-dropdown-menu-content-transform-origin, center);
+}
+
+[data-slot='select-content'][data-state='open'],
+[data-slot='popover-content'][data-state='open'],
+[data-slot='dropdown-menu-content'][data-state='open'],
+[data-slot='dropdown-menu-sub-content'][data-state='open'] {
+  opacity: 1;
+  scale: 1;
+  transition-duration: var(--ui-duration-overlay-in);
+}
+
+[data-slot='select-content'][data-state='closed'],
+[data-slot='popover-content'][data-state='closed'],
+[data-slot='dropdown-menu-content'][data-state='closed'],
+[data-slot='dropdown-menu-sub-content'][data-state='closed'] {
+  opacity: 0;
+  scale: 0.95;
+  transition-duration: var(--ui-duration-overlay-out);
+  animation: ui-presence-out var(--ui-duration-overlay-out) linear;
+}
+
+/* Select `item-aligned`: Radix mide y coloca el panel, así que no se escala
+   (evita un zoom desde un origen equivocado); solo funde. */
+[data-slot='select-content'][data-align-trigger='true'] {
+  scale: 1 !important;
+}
+
+/* Entrada desde el estado oculto (equivalente moderno a @starting-style). */
+@starting-style {
+  [data-slot='dialog-overlay'][data-state='open'],
+  [data-slot='sheet-overlay'][data-state='open'],
+  [data-slot='alert-dialog-overlay'][data-state='open'] {
+    opacity: 0;
+  }
+
+  [data-slot='dialog-content'][data-state='open'],
+  [data-slot='alert-dialog-content'][data-state='open'] {
+    opacity: 0;
+    scale: 0.95;
+  }
+
+  [data-slot='sheet-content'][data-state='open'] {
+    opacity: 0;
+  }
+
+  [data-slot='sheet-content'][data-state='open'][data-side='right'] { translate: 2.5rem 0; }
+  [data-slot='sheet-content'][data-state='open'][data-side='left'] { translate: -2.5rem 0; }
+  [data-slot='sheet-content'][data-state='open'][data-side='top'] { translate: 0 -2.5rem; }
+  [data-slot='sheet-content'][data-state='open'][data-side='bottom'] { translate: 0 2.5rem; }
+
+  [data-slot='select-content'][data-state='open'],
+  [data-slot='popover-content'][data-state='open'],
+  [data-slot='dropdown-menu-content'][data-state='open'],
+  [data-slot='dropdown-menu-sub-content'][data-state='open'] {
+    opacity: 0;
+    scale: 0.95;
+  }
+}
+
+/*
+ * Cierre de overlays: el texto accesible en español vive en el primitivo; aquí
+ * se sustituye el anillo teal de R2 por el foco visible admin de 2 px.
+ */
+[data-slot='dialog-close']:focus-visible,
+[data-slot='sheet-close']:focus-visible {
+  outline: var(--ui-focus-ring-width) solid var(--ui-focus);
+  outline-offset: var(--ui-focus-ring-offset);
+  border-color: transparent;
+  box-shadow: none;
+  border-radius: var(--ui-radius);
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", system-ui, -apple-system, sans-serif;
@@ -154,6 +424,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-subtle: var(--border-subtle);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
@@ -173,42 +445,138 @@
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* TOKENS_V2 §5: el gate E2E falla con radio >16px en los data-slot
+     auditados; la escala superior se acota a 14/15/16px. */
+  --radius-2xl: 0.875rem;
+  --radius-3xl: 0.9375rem;
+  --radius-4xl: 1rem;
 }
 
-:root {
-  --background: var(--institutional-background);
-  --foreground: var(--institutional-text);
-  --card: var(--institutional-surface);
-  --card-foreground: var(--institutional-text);
-  --popover: var(--institutional-surface);
-  --popover-foreground: var(--institutional-text);
-  --primary: var(--institutional-primary);
-  --primary-foreground: var(--institutional-primary-foreground);
-  --secondary: var(--institutional-muted);
-  --secondary-foreground: var(--institutional-text);
-  --muted: var(--institutional-muted);
-  --muted-foreground: var(--institutional-muted-foreground);
-  --accent: var(--institutional-accent);
-  --accent-foreground: var(--institutional-accent-foreground);
-  --destructive: var(--institutional-error);
-  --border: var(--institutional-border);
-  --input: var(--institutional-border);
-  --ring: var(--institutional-primary);
-  --chart-1: var(--institutional-primary);
-  --chart-2: var(--institutional-info);
-  --chart-3: var(--institutional-success);
-  --chart-4: var(--institutional-warning);
-  --chart-5: var(--institutional-secondary);
-  --radius: 0.625rem;
-  --sidebar: var(--institutional-sidebar);
-  --sidebar-foreground: var(--institutional-sidebar-foreground);
-  --sidebar-primary: var(--institutional-sidebar-primary);
-  --sidebar-primary-foreground: var(--institutional-sidebar-primary-foreground);
-  --sidebar-accent: var(--institutional-sidebar-accent);
-  --sidebar-accent-foreground: var(--institutional-sidebar-accent-foreground);
-  --sidebar-border: var(--institutional-sidebar-border);
-  --sidebar-ring: var(--institutional-sidebar-ring);
+.dark {
+  /* Elevación dark canónica (IDENTIDAD_DARK_20261016 §3): la profundidad es
+     "sombra-como-borde" blanca; el ambiente de overlay es corto (12/24 px), no
+     la sombra de 80 px de la identidad light revocada. */
+  --shadow-border: 0 0 0 1px oklch(1 0 0 / 0.08);
+  --shadow-border-hover: 0 0 0 1px oklch(1 0 0 / 0.13);
+  --shadow-overlay:
+    0 0 0 1px oklch(1 0 0 / 0.08),
+    0 12px 32px -12px oklch(0 0 0 / 0.55),
+    0 24px 64px -24px oklch(0 0 0 / 0.45);
+  /* El anillo de foco nunca vuelve al teal institucional ni a paletas antiguas:
+     es `--ui-focus` (= --ui-action cobalto) en la identidad única. */
+  --focus-ring-color: var(--ui-focus);
+  --ring: var(--ui-focus);
 }
+
+/*
+ * Puente semántico shadcn → identidad dark institucional (IDENTIDAD_DARK_20261016).
+ *
+ * R2 mapeaba cada token semántico a --institutional-* (--primary y --ring =
+ * teal), así que cualquier primitiva shadcn heredada (`bg-primary`,
+ * `text-primary`, `ring-ring`, `bg-accent`) pintaba teal. El puente resuelve a
+ * --ui-*: las primitivas heredadas quedan dentro de la identidad admin y
+ * ninguna puede reintroducir la paleta institucional ni la light revocada.
+ *
+ * La identidad es dark ÚNICA (sin toggle): los --ui-* canónicos viven en :root
+ * de tokens.css y el puente no cambia con html.dark. La clase .dark la fija
+ * ThemeProvider siempre y solo activa la elevación dark (sombras §3).
+ *
+ * Los tokens R2 `--institutional-*` y su archivo fueron retirados con la
+ * identidad revocada (2026-10-16): ninguna capa los consume. La excepción
+ * de papel (`--color-receipt-*`, §4) vive tras este bloque como `:root`
+ * plano; `check:ui-legacy` detecta cualquier reintroducción de paleta R2.
+ */
+:root {
+  --background: var(--ui-paper);
+  --foreground: var(--ui-ink);
+  --card: var(--ui-surface);
+  --card-foreground: var(--ui-ink);
+  --popover: var(--ui-surface);
+  --popover-foreground: var(--ui-ink);
+  --primary: var(--ui-action);
+  /* Etiqueta sobre relleno de acción (§1.3 regla 2): el blanco #FFFFFF
+     suspende AA en dark (2.20); --ui-action-foreground (#0B0E14) da 8.03. */
+  --primary-foreground: var(--ui-action-foreground);
+  --secondary: var(--ui-surface-alt);
+  --secondary-foreground: var(--ui-ink);
+  --muted: var(--ui-surface-alt);
+  --muted-foreground: var(--ui-ink-soft);
+  --accent: var(--ui-surface-alt);
+  --accent-foreground: var(--ui-ink);
+  --destructive: var(--ui-danger);
+  --border: var(--ui-line);
+  --ring: var(--ui-focus);
+  /* El foco global (styles.css base) comparte el anillo admin. */
+  --focus-ring-color: var(--ui-focus);
+  /* Series de datos dark (§1.4): cinco colores **distinguibles**, sin morado.
+     `--chart-3` es sky (#67CBF0, hue 196) distinguible del cobalto; el indigo
+     de la identidad anterior quedó retirado. */
+  --chart-1: var(--ui-action);
+  --chart-2: var(--ui-success);
+  --chart-3: var(--ui-data-series-3);
+  --chart-4: var(--ui-warn);
+  --chart-5: var(--ui-ink-soft);
+  --radius: 0.625rem;
+  --input: var(--ui-control-border);
+  /* Contorno de control: ink-soft mantiene >=3:1 (1.4.11) sobre papel. */
+  --border-strong: var(--ui-ink-soft);
+  --border-subtle: var(--ui-line);
+  /* TOKENS_V2 §6: sombra-como-borde (valores exactos de better-ui/surfaces.md).
+     La sombra es capa, no un segundo borde; el fallback light (3 capas) es la
+     excepción de papel/imprenta y el bloque .dark lo sustituye (§3). */
+  --shadow-border:
+    0px 0px 0px 1px oklch(0 0 0 / 0.06),
+    0px 1px 2px -1px oklch(0 0 0 / 0.06),
+    0px 2px 4px 0px oklch(0 0 0 / 0.04);
+  --shadow-border-hover:
+    0px 0px 0px 1px oklch(0 0 0 / 0.08),
+    0px 1px 2px -1px oklch(0 0 0 / 0.08),
+    0px 2px 4px 0px oklch(0 0 0 / 0.06);
+  --shadow-overlay:
+    0 0 0 1px oklch(0 0 0 / 0.08),
+    0 8px 16px -4px oklch(0 0 0 / 0.10),
+    0 16px 32px -8px oklch(0 0 0 / 0.08);
+  /* TOKENS_V2 §2: escala tipográfica operativa. */
+  --type-display: 30px;
+  --type-metric: 28px;
+  --type-total: 24px;
+  --type-h1: 24px;
+  --type-h2: 18px;
+  --type-h3: 16px;
+  --type-body: 14px;
+  --type-sm: 13px;
+  --type-xs: 12px;
+  /* R2-FE-STRUCT §2: presupuesto estructural medido. */
+  --header-h: 56px;
+  --rail-w: 232px;
+  --row-service: 56px;
+  --row-cart: 72px;
+  --row-table: 44px;
+  --control-h-operational: 44px;
+  --control-h-default: 36px;
+  --control-h-compact: 32px;
+  --dialog-max-h: 85dvh;
+  --press-scale: 0.96;
+  --duration-press: 150ms;
+  --duration-state: 120ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --sidebar: var(--ui-surface);
+  --sidebar-foreground: var(--ui-ink);
+  --sidebar-primary: var(--ui-action);
+  /* Mismo caso que --primary-foreground: etiqueta sobre relleno de acción. */
+  --sidebar-primary-foreground: var(--ui-action-foreground);
+  --sidebar-accent: var(--ui-surface-alt);
+  --sidebar-accent-foreground: var(--ui-ink);
+  --sidebar-border: var(--ui-line);
+  --sidebar-ring: var(--ui-focus);
+}
+
+/* Vista previa del recibo: proporción real del papel sin estilo inline.
+   El atributo data-receipt-preview-paper lo emite ReceiptSettingsPreview. */
+.receipt-preview-frame { aspect-ratio: 215.9 / 279.4; }
+[data-receipt-preview-paper="letter"] .receipt-preview-frame { aspect-ratio: 11 / 8.5; }
+[data-receipt-preview-paper="letter_portrait"] .receipt-preview-frame { aspect-ratio: 215.9 / 279.4; }
+[data-receipt-preview-paper="half_letter"] .receipt-preview-frame { aspect-ratio: 8.5 / 5.5; }
+[data-receipt-preview-paper="a5"] .receipt-preview-frame { aspect-ratio: 210 / 148; }
+[data-receipt-preview-paper="a4"] .receipt-preview-frame { aspect-ratio: 210 / 297; }
+[data-receipt-preview-paper="custom"] .receipt-preview-frame { aspect-ratio: 215.9 / 139.7; }

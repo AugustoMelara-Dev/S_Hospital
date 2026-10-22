@@ -22,9 +22,14 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.ts',
     exclude: [
-      'node_modules/**',
+      // Defaults de Vitest 4.1.x + especificos del proyecto. `qa-e2e/**` usa
+      // `@playwright/test` y este runner tambien debe dejarlo fuera para no
+      // romper `test:coverage` con una specs de Playwright.
+      '**/node_modules/**',
+      '**/.git/**',
       'dist/**',
       'e2e/**',
+      'qa-e2e/**',
       'scripts/mock-e2e-plan.test.mjs',
       'scripts/segmented-tests-lib.test.mjs',
     ],

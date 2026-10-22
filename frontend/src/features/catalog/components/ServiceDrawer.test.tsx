@@ -126,10 +126,16 @@ describe('ServiceDrawer', () => {
     fireEvent.click(screen.getByLabelText(/visible en caja/i));
 
     expect(await screen.findByText(/cambios auditados/i)).toBeInTheDocument();
-    expect(screen.getByText(/precio: l\. 15\.00 -> l\. 20\.00/i)).toBeInTheDocument();
-    expect(screen.getByText(/isv: aplica -> no aplica/i)).toBeInTheDocument();
-    expect(screen.getByText(/visible en caja: si -> no/i)).toBeInTheDocument();
-    expect(screen.getByText(/el backend exigira motivo y guardara auditoria/i)).toBeInTheDocument();
+    const summary = (await screen.findByText(/cambios auditados/i)).closest('[role="alert"]') as HTMLElement;
+
+    expect(summary).toHaveTextContent(/tarifa/i);
+    expect(summary).toHaveTextContent(/L\. 15\.00/);
+    expect(summary).toHaveTextContent(/L\. 20\.00/);
+    expect(summary).toHaveTextContent(/isv/i);
+    expect(summary).toHaveTextContent(/visible en caja/i);
+    expect(summary).toHaveTextContent(/estos cambios requieren un motivo y quedan registrados en la auditoría/i);
+    expect(summary).not.toHaveTextContent(/backend/i);
+    expect(summary.querySelectorAll('[data-ui-money="true"]')).toHaveLength(2);
   });
 
   it('blocks short price change reasons before saving', async () => {
@@ -279,7 +285,7 @@ describe('ServiceDrawer', () => {
 
     expect(screen.queryByLabelText(/motivo del cambio de disponibilidad/i)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText(/servicio activo/i));
+    fireEvent.click(screen.getByLabelText(/concepto activo/i));
     fireEvent.click(screen.getByLabelText(/visible en caja/i));
     expect(await screen.findByLabelText(/motivo del cambio de disponibilidad/i)).toBeInTheDocument();
 
@@ -348,7 +354,7 @@ describe('ServiceDrawer', () => {
       />,
     );
 
-    fireEvent.click(screen.getByLabelText(/servicio activo/i));
+    fireEvent.click(screen.getByLabelText(/concepto activo/i));
     fireEvent.change(await screen.findByLabelText(/motivo del cambio de disponibilidad/i), {
       target: { value: 'x' },
     });
@@ -448,10 +454,88 @@ describe('ServiceDrawer contract preservation', () => {
       />,
     );
 
-    expect(screen.getByRole('dialog', { name: /nuevo servicio/i })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /nuevo producto o servicio/i })).toBeInTheDocument();
     expect(
-      screen.getByText(/agregue un nuevo servicio al cat[aá]logo/i),
+      screen.getByText(/agregue un producto o servicio al cat[aá]logo/i),
     ).toBeInTheDocument();
+  });
+
+  it('preserves typed fields when catalog options refresh with new references', () => {
+    const baseProps = {
+      open: true,
+      onOpenChange: noop,
+      service: null,
+      onSuccess: noop,
+    };
+    const { rerender } = render(
+      <ServiceDrawer
+        {...baseProps}
+        categories={[]}
+        areas={[]}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/^nombre/i), { target: { value: 'Consulta pediátrica' } });
+    fireEvent.change(screen.getByLabelText(/precio/i), { target: { value: '350.00' } });
+
+    rerender(
+      <ServiceDrawer
+        {...baseProps}
+        categories={[{ id: 4, name: 'Consulta externa' }]}
+        areas={[{ id: 7, name: 'Atención ambulatoria' }]}
+      />,
+    );
+
+    expect(screen.getByLabelText(/^nombre/i)).toHaveValue('Consulta pediátrica');
+    expect(screen.getByLabelText(/precio/i)).toHaveValue('350.00');
+    expect(screen.getByRole('combobox', { name: /categoría/i })).toHaveValue('4');
+    expect(screen.getByRole('combobox', { name: /área/i })).toHaveValue('7');
+
+    rerender(
+      <ServiceDrawer
+        {...baseProps}
+        categories={[{ id: 4, name: 'Consulta externa' }]}
+        areas={[{ id: 7, name: 'Atención ambulatoria' }]}
+      />,
+    );
+
+    expect(screen.getByLabelText(/^nombre/i)).toHaveValue('Consulta pediátrica');
+    expect(screen.getByLabelText(/precio/i)).toHaveValue('350.00');
+  });
+
+  it('reinitializes the form when the open drawer changes to a different service id', () => {
+    const categories = [{ id: 1, name: 'Laboratorio' }];
+    const areas = [{ id: 1, name: 'Laboratorio' }];
+    const service = {
+      id: 9,
+      category_id: 1,
+      area_id: 1,
+      name: 'Hemograma',
+      price: '275.50',
+      taxable: false,
+      active: true,
+      visible_in_billing: true,
+      is_billable: true,
+      special_rule_code: null,
+    };
+    const { rerender } = render(
+      <ServiceDrawer open onOpenChange={noop} service={service} categories={categories} areas={areas} onSuccess={noop} />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/^nombre/i), { target: { value: 'Edición en curso' } });
+    rerender(
+      <ServiceDrawer
+        open
+        onOpenChange={noop}
+        service={{ ...service, id: 10, name: 'Química sanguínea', price: '410.00' }}
+        categories={[...categories]}
+        areas={[...areas]}
+        onSuccess={noop}
+      />,
+    );
+
+    expect(screen.getByLabelText(/^nombre/i)).toHaveValue('Química sanguínea');
+    expect(screen.getByLabelText(/precio/i)).toHaveValue('410.00');
   });
 
   it('organizes the service drawer into the required Phase 8 sections', () => {
@@ -556,7 +640,7 @@ describe('ServiceDrawer contract preservation', () => {
     });
   });
 
-  it('shows the erythropoietin institutional rule as read-only and locks price and tax fields', () => {
+  it('keeps the erythropoietin rule read-only while price and tax remain catalog-managed', () => {
     render(
       <ServiceDrawer
         open
@@ -582,11 +666,16 @@ describe('ServiceDrawer contract preservation', () => {
       />,
     );
 
-    expect(screen.getByLabelText(/precio/i)).toBeDisabled();
+    expect(screen.getByLabelText(/precio/i)).toBeEnabled();
     expect(screen.queryByRole('combobox', { name: /regla especial/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /aplica isv/i })).toBeDisabled();
-    expect(screen.getByText(/regla institucional de eritropoyetina/i)).toBeInTheDocument();
-    expect(screen.getByText(/eritropoyetina mantiene precio fijo/i)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /aplica isv/i })).toBeEnabled();
+    const rule = screen.getByText(/regla institucional de eritropoyetina/i).closest('[role="status"]') as HTMLElement;
+    expect(rule).toHaveTextContent(/sin cobro cuando la factura indica receta de diálisis/i);
+    expect(rule).toHaveTextContent(/la gratuidad no decide el isv/i);
+    // La tarifa se lee del catálogo: la nota no fija una cifra propia.
+    expect(rule).toHaveTextContent(/tarifa vigente del catálogo/i);
+    expect(rule).toHaveTextContent(/L\. 25\.00/);
+    expect(rule).not.toHaveTextContent(/precio fijo de/i);
   });
 
   it('submits the create payload with the same field names and category/area IDs', async () => {
@@ -820,9 +909,10 @@ describe('ServiceDrawer contract preservation', () => {
     });
 
     expect(
-      await screen.findByText(/el servidor local no pudo completar la operaci[oó]n/i),
+      await screen.findByText(/no se pudo confirmar si el producto o servicio se guardó.*revise el catálogo/i),
     ).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/);
+    expect(document.body.textContent).not.toMatch(/si estaba cobrando|revise recibos/i);
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 
@@ -922,7 +1012,7 @@ describe('ServiceDrawer contract preservation', () => {
     expect(screen.getByLabelText(/precio/i)).toBeDisabled();
     expect(screen.getByRole('combobox', { name: /categor/i })).toBeDisabled();
     expect(screen.getByRole('checkbox', { name: /aplica isv/i })).toBeDisabled();
-    expect(screen.getByRole('checkbox', { name: /servicio activo/i })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /concepto activo/i })).toBeDisabled();
 
     await waitFor(() => {
       resolveSave();

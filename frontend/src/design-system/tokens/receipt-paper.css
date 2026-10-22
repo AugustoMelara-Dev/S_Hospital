@@ -1,0 +1,23 @@
+/*
+ * Papel de recibo (§4 IDENTIDAD_DARK_20261016): paleta fija de impresión,
+ * independiente de la identidad dark de la interfaz; el documento histórico
+ * y la vista previa siempre resuelven papel blanco.
+ *
+ * Vive en design-system/tokens/ (capa de literales auditada por el gate
+ * ui-legacy: los literales de color solo pueden habitar archivos de tokens)
+ * y como custom properties planas -- NO como `@theme inline` -- porque los
+ * consumidores (receipt-print.css, .receipt-preview-frame) leen
+ * `var(--color-receipt-*)` en runtime y `@theme inline` no emite custom
+ * properties. Antes habitaba el @theme de institutional-tokens.css,
+ * retirado con la identidad R2 (2026-10-17).
+ */
+:root {
+  --color-receipt-border: #1f2937;
+  --color-receipt-border-soft: #d1d5db;
+  --color-receipt-paper: #ffffff;
+  --color-receipt-ink: #111827;
+  --color-receipt-muted: #374151;
+  --color-receipt-panel: #f3f4f6;
+  --color-receipt-accent: #334155;
+  --color-receipt-accent-foreground: #0f172a;
+}

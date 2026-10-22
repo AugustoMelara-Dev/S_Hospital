@@ -1,25 +1,69 @@
-import { lazy, Suspense, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './AppRoutes';
 import { useHospitalSession } from './app/useHospitalSession';
 import { useCashSession } from './hooks/useCashSession';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Empty, EmptyDescription, EmptyHeader } from '@/components/ui/empty';
-import { Spinner } from '@/components/ui/spinner';
+import { AdminEmpty, AdminSpinner } from './design-system/admin/components';
 import { LoginView } from './features/auth/LoginView';
 import { PasswordChangeView } from './features/auth/PasswordChangeView';
-import { InstitutionalShell } from './shell/InstitutionalShell';
+import { AdminShell } from './shell/admin/AdminShell';
+import { AdminSessionProvider } from './shell/admin/AdminSessionContext';
 import { queryClient } from './lib/query-client';
 import { apiClient } from './lib/api';
 import { FeedbackProvider, useFeedback } from './design-system/providers/FeedbackProvider';
 import { ThemeProvider } from './design-system/providers/ThemeProvider';
-import { appRoutes, canAccessRoute } from './navigation/appNavigation';
-import { normalizeOperationalStatus, type OperationalStatusReporter } from './app/operationalStatus';
+import {
+  normalizeOperationalStatus,
+  type OperationalStatusEvent,
+  type OperationalStatusReporter,
+} from './app/operationalStatus';
 
-const CashBoxView = lazy(() => import('./features/cash/CashBoxView').then((module) => ({ default: module.CashBoxView })));
+export type ShellStatus = Pick<OperationalStatusEvent, 'key' | 'level' | 'message'> & {
+  ownerUserId: number | null;
+};
+
+type NormalizedOperationalStatus = OperationalStatusEvent & { toast: boolean };
+
+/**
+ * La banda del shell queda reservada para problemas contextuales que deben
+ * permanecer visibles. El feedback rutinario vive en su propia superficie o
+ * en toast. Una recuperación solo limpia el problema que comparte una clave
+ * explícita; claves ausentes o distintas nunca borran un error previo.
+ */
+export function reduceShellStatus(
+  previous: ShellStatus | null,
+  status: NormalizedOperationalStatus,
+  ownerUserId: number | null,
+): ShellStatus | null {
+  if (!status.toast && (status.level === 'error' || status.level === 'warning')) {
+    return { key: status.key, level: status.level, message: status.message, ownerUserId };
+  }
+
+  const resolvesPrevious =
+    (status.level === 'info' || status.level === 'success')
+    && typeof status.key === 'string'
+    && status.key.length > 0
+    && status.key === previous?.key;
+
+  return resolvesPrevious ? null : previous;
+}
+
+export function clearShellStatusForUserChange(
+  previous: ShellStatus | null,
+  previousUserId: number | null,
+  nextUserId: number | null,
+): ShellStatus | null {
+  return previousUserId === nextUserId ? previous : null;
+}
+
+export function visibleShellStatusMessage(
+  status: ShellStatus | null,
+  visibleUserId: number | null,
+): string {
+  return status?.ownerUserId === visibleUserId ? status.message : '';
+}
 
 export function App() {
   return (
@@ -41,27 +85,43 @@ function HospitalApp() {
   const session = useHospitalSession();
   const navigate = useNavigate();
   const feedback = useFeedback();
-  const setSessionStatus = session.setStatus;
-  const [quickCashOpen, setQuickCashOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [shellStatus, setShellStatus] = useState<ShellStatus | null>(null);
+  const shellUserIdRef = useRef<number | null>(session.user?.id ?? null);
   const shouldLoadCashSession = Boolean(
     session.user &&
-    !session.user.must_change_password &&
-    (session.canViewCash || session.canOpenCash || session.canCreateInvoices || session.canCreatePayments),
+      !session.user.must_change_password &&
+      (session.canViewCash ||
+        session.canOpenCash ||
+        session.canCreateInvoices ||
+        session.canCreatePayments),
   );
-  const { data: cashSession } = useCashSession({ enabled: shouldLoadCashSession });
+  const { data: cashSession, isLoading: cashSessionLoading } = useCashSession({
+    enabled: shouldLoadCashSession,
+  });
 
-  // Augment the onStatus callback: any message that features dispatch
-  // is also surfaced as a real toast (top-right). The status string
-  // continues to drive the topbar pill, but cashiers no longer miss
-  // errors that were previously hidden in an sr-only footer.
-  const handleStatus = useCallback<OperationalStatusReporter>((input) => {
-    const status = normalizeOperationalStatus(input);
-    setSessionStatus(status.message);
-    if (status.toast && status.message && status.message !== 'Listo para iniciar sesión local.') {
-      feedback.notify(status);
-    }
-  }, [feedback, setSessionStatus]);
+  useEffect(() => {
+    const previousUserId = shellUserIdRef.current;
+    const nextUserId = session.user?.id ?? null;
+    setShellStatus((previous) =>
+      clearShellStatusForUserChange(previous, previousUserId, nextUserId),
+    );
+    shellUserIdRef.current = nextUserId;
+  }, [session.user?.id]);
+
+  // Los eventos con toast se notifican allí. La banda persistente se limita a
+  // errores/advertencias contextuales marcados `toast:false`; los estados
+  // informativos locales (p. ej. agregar una línea) no desplazan el contenido.
+  const handleStatus = useCallback<OperationalStatusReporter>(
+    (input) => {
+      const status = normalizeOperationalStatus(input);
+      setShellStatus((previous) => reduceShellStatus(previous, status, session.user?.id ?? null));
+      if (status.toast && status.message) {
+        feedback.notify(status);
+      }
+    },
+    [feedback, session.user?.id],
+  );
 
   useEffect(() => {
     if (session.sessionExpired) {
@@ -70,13 +130,22 @@ function HospitalApp() {
   }, [session.sessionExpired, navigate]);
 
   useEffect(() => {
-    apiClient.getLogo()
+    apiClient
+      .getLogo()
       .then((url) => setLogoUrl(url))
       .catch(() => {});
   }, [session.user]); // Refresh when user changes/logs in
 
   if (session.loading) {
-    return <div role="status" aria-label="Cargando sesión" className="flex min-h-screen items-center justify-center"><Spinner className="size-8" /></div>;
+    return (
+      <div
+        role="status"
+        aria-label="Cargando sesión"
+        className="ui-root flex min-h-dvh items-center justify-center"
+      >
+        <AdminSpinner className="size-8" />
+      </div>
+    );
   }
 
   if (!session.user) {
@@ -105,17 +174,25 @@ function HospitalApp() {
   }
 
   return (
-    <InstitutionalShell
+    <AdminSessionProvider
+      user={session.user}
       cashSession={cashSession ?? null}
+      cashSessionLoading={shouldLoadCashSession && cashSessionLoading}
+      onStatus={handleStatus}
+    >
+    <AdminShell
+      cashSession={cashSession ?? null}
+      cashSessionLoading={shouldLoadCashSession && cashSessionLoading}
       onLogout={session.handleLogout}
-      status={session.status}
+      status={visibleShellStatusMessage(shellStatus, session.user.id)}
       user={session.user}
       logoUrl={logoUrl}
     >
       {!session.hasAnyOperationalPermission ? (
-        <Empty><EmptyHeader><EmptyDescription>No tiene permisos operativos asignados.</EmptyDescription></EmptyHeader></Empty>
-      ) : session.loading ? (
-        <div role="status" aria-label="Validando caja para facturación" className="flex min-h-48 items-center justify-center"><Spinner /></div>
+        <AdminEmpty
+          title="Sin permisos operativos"
+          description="Su usuario no tiene permisos operativos asignados. Pida a un supervisor que revise su rol."
+        />
       ) : (
         <AppRoutes
           canCreateInvoices={session.canCreateInvoices}
@@ -131,6 +208,9 @@ function HospitalApp() {
           canViewCatalog={session.canViewCatalog}
           canViewReceipts={session.canViewReceipts}
           canViewFiscalSettings={session.canViewFiscalSettings}
+          canViewReceiptSettings={session.canViewReceiptSettings}
+          canEditReceiptSettings={session.canEditReceiptSettings}
+          canEditAdvancedReceiptSettings={session.canEditAdvancedReceiptSettings}
           canViewInvoices={session.canViewInvoices}
           canViewReports={session.canViewReports}
           canViewManagerialReports={session.canViewManagerialReports}
@@ -144,36 +224,11 @@ function HospitalApp() {
           canManageRoles={session.canManageRoles}
           canMarkDialysisPrescription={session.canMarkDialysisPrescription}
           cashSession={cashSession ?? null}
-          defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
-          onQuickCash={() => setQuickCashOpen(true)}
           onStatus={handleStatus}
           user={session.user}
         />
       )}
-
-
-      <Dialog open={quickCashOpen} onOpenChange={setQuickCashOpen}>
-        <DialogContent className="quick-cash-dialog overflow-y-auto sm:max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>{cashSession ? 'Caja activa' : 'Abrir caja'}</DialogTitle>
-            <DialogDescription>Apertura y cierre de turno sin navegar a otra pantalla.</DialogDescription>
-          </DialogHeader>
-          <Suspense fallback={<div role="status" aria-label="Cargando caja rápida" className="flex min-h-48 items-center justify-center"><Spinner /></div>}>
-            <CashBoxView
-              cashSession={cashSession ?? null}
-              canCloseAnyCash={session.canCloseAnyCash}
-              canCloseCash={session.canCloseCash}
-              canCreateInvoices={canAccessRoute(appRoutes.newInvoice, session.user.permissions)}
-              canOpenCash={session.canOpenCash}
-              canViewInvoices={session.canViewInvoices}
-              canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}
-              currentUserId={session.user.id}
-              onStatus={handleStatus}
-              compact
-            />
-          </Suspense>
-        </DialogContent>
-      </Dialog>
-    </InstitutionalShell>
+    </AdminShell>
+    </AdminSessionProvider>
   );
 }

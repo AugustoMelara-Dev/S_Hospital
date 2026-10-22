@@ -6,7 +6,7 @@
   .receipt-preview-panel {
     display: grid;
     gap: 1rem;
-    color: var(--color-foreground);
+    color: var(--ui-ink);
   }
 
   .receipt-preview-controls {
@@ -23,9 +23,9 @@
     max-width: 100%;
     overflow-x: auto;
     overscroll-behavior-inline: contain;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-muted);
+    border: 1px solid var(--ui-line);
+    border-radius: var(--ui-radius-control);
+    background: var(--ui-surface-alt);
     padding: clamp(0.75rem, 2vw, 1.5rem);
   }
 
@@ -67,6 +67,14 @@
     max-width: 48rem;
   }
 
+  .receipt-paper-preview--letter-portrait {
+    --receipt-preview-canvas-min-height: 44.8rem;
+  }
+
+  .receipt-paper-preview--a4 {
+    --receipt-preview-canvas-min-height: 47.1rem;
+  }
+
   .receipt-paper-preview--a5 {
     --receipt-preview-canvas-min-height: 33.83rem;
   }
@@ -96,6 +104,16 @@
   .institutional-receipt.receipt-letter {
     width: min(10.1in, 100%);
     min-height: 7.6in;
+  }
+
+  .institutional-receipt.receipt-letter-portrait {
+    width: min(8.5in, 100%);
+    min-height: 11in;
+  }
+
+  .institutional-receipt.receipt-a4 {
+    width: min(8.27in, 100%);
+    min-height: 11.69in;
   }
 
   .institutional-receipt.receipt-half-letter {
@@ -167,6 +185,23 @@
     color: var(--color-receipt-accent-foreground);
     font-size: 1.2em;
     letter-spacing: 0;
+  }
+
+  .receipt-copy-label {
+    display: inline-block;
+    margin: 0.02in 0 0.08in;
+    border: 1px solid var(--color-receipt-border-soft);
+    padding: 0.035in 0.08in;
+    color: var(--color-receipt-muted);
+    font-size: 0.82em;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .receipt-copy-label--reprint {
+    border: 2px solid var(--color-receipt-ink);
+    color: var(--color-receipt-ink);
   }
 
   .receipt-meta,
@@ -409,6 +444,18 @@
     min-height: 7.6in;
   }
 
+  .institutional-receipt.receipt-letter-portrait {
+    page: receipt-letter-portrait;
+    width: 8.5in;
+    min-height: 11in;
+  }
+
+  .institutional-receipt.receipt-a4 {
+    page: receipt-a4;
+    width: 8.27in;
+    min-height: 11.69in;
+  }
+
   .institutional-receipt.receipt-half-letter {
     page: receipt-half-letter;
     width: 7.8in;
@@ -452,6 +499,12 @@
     background: var(--color-receipt-paper) !important;
     color: var(--color-receipt-ink) !important;
     box-shadow: none !important;
+    /* Guardia papel físico: el navegador de economías de tinta no puede
+       vaciar los fondos del documento (panel de tabla, líneas hairline);
+       sin esto una impresora con "sin fondos" pierde la legibilidad de la
+       firma y los totales. No introduce color: solo conserva el papel. */
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
 
   .receipt-preview-controls,
@@ -474,6 +527,16 @@
   @page receipt-letter {
     size: letter landscape;
     margin: 0.45in;
+  }
+
+  @page receipt-letter-portrait {
+    size: letter portrait;
+    margin: 0.47in;
+  }
+
+  @page receipt-a4 {
+    size: A4 portrait;
+    margin: 0.47in;
   }
 
   @page receipt-a5 {

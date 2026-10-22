@@ -12,21 +12,24 @@ vi.mock('react-hook-form', () => ({
       ref: () => undefined,
     }),
     handleSubmit: (cb: unknown) => () => cb,
+    setValue: () => undefined,
     formState: { errors: {} },
   }),
 }));
 
 describe('OpenSessionForm accessibility', () => {
+  const cashRegisters = [{ id: 2, code: 'CAJA-02', name: 'Caja Emergencia', active: true }];
+
   it('has no axe-core violations on the default render', async () => {
     const { container } = render(
-      <OpenSessionForm isSubmitting={false} onSubmit={() => undefined} />,
+      <OpenSessionForm cashRegisters={cashRegisters} isSubmitting={false} onSubmit={() => undefined} />,
     );
 
     expect(await axe(container)).toHaveNoViolations();
   });
 
   it('exposes the opening amount input with an associated label', () => {
-    render(<OpenSessionForm isSubmitting={false} onSubmit={() => undefined} />);
+    render(<OpenSessionForm cashRegisters={cashRegisters} isSubmitting={false} onSubmit={() => undefined} />);
 
     const input = screen.getByLabelText(/monto inicial/i);
     expect(input).toBeInTheDocument();
@@ -34,7 +37,7 @@ describe('OpenSessionForm accessibility', () => {
   });
 
   it('marks the submit button as busy when the form is submitting', () => {
-    render(<OpenSessionForm isSubmitting={true} onSubmit={() => undefined} />);
+    render(<OpenSessionForm cashRegisters={cashRegisters} isSubmitting={true} onSubmit={() => undefined} />);
 
     const button = screen.getByRole('button', { name: /abriendo/i });
     expect(button).toBeInTheDocument();
@@ -42,7 +45,7 @@ describe('OpenSessionForm accessibility', () => {
   });
 
   it('prevents editing the opening amount while the cashbox is opening', () => {
-    render(<OpenSessionForm isSubmitting={true} onSubmit={() => undefined} />);
+    render(<OpenSessionForm cashRegisters={cashRegisters} isSubmitting={true} onSubmit={() => undefined} />);
 
     expect(screen.getByLabelText(/monto inicial/i)).toBeDisabled();
   });

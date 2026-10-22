@@ -73,7 +73,7 @@ export function formatMonthYear(value: string | Date | null | undefined): string
 
 // Locale-aware datetime formatter. Replaces the per-view
 // `function formatDate(value) { return new Intl.DateTimeFormat('es-HN', ...).format(...) }`
-// copies that were duplicated across ReceiptPreview, InvoiceHistoryView,
+// copies that were duplicated across ReceiptPreview,
 // CashSessionReportPanel, BackupsView, and ReportsAudit.
 export function formatLocalizedDateTime(value: string | Date | null | undefined): string {
   const date = parseDate(value);

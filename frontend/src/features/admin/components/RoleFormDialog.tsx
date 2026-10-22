@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Info, Save, Search, TriangleAlert } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
+import { Search } from 'lucide-react';
+import { AdminCallout, AdminDialog, AdminEmpty, AdminField } from '@/design-system/admin/components';
 import { type RoleDefinition, type RolePermission } from '@/lib/api';
+import { CHECKBOX_CLASS, INPUT_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON } from '../adminUi';
 import { isCriticalPermission, permissionRiskLabel } from './permission-risk';
 
 export type RoleFormPayload = {
@@ -109,28 +103,47 @@ export function RoleFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => { if (!isSaving) onOpenChange(next); }}>
-      <DialogContent className="max-h-svh overflow-y-auto sm:max-w-3xl" onInteractOutside={(event) => { if (isSaving) event.preventDefault(); }}>
-        <DialogHeader>
-          <DialogTitle>{editingRole ? 'Editar rol' : 'Nuevo rol'}</DialogTitle>
-          <DialogDescription>Seleccione los permisos exactos que tendrá este rol operativo.</DialogDescription>
-        </DialogHeader>
-      <form onSubmit={handleSubmit} className="grid gap-4">
-        {globalError && (
-          <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{globalError}</AlertDescription></Alert>
-        )}
+    <AdminDialog
+      open={open}
+      onOpenChange={(next) => { if (!isSaving) onOpenChange(next); }}
+      className="sm:max-w-3xl"
+      title={editingRole ? 'Editar rol' : 'Nuevo rol'}
+      description="Seleccione los permisos exactos que tendrá este rol operativo."
+      footer={(
+        <>
+          <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={() => onOpenChange(false)} disabled={isSaving}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="role-form"
+            data-ui-press
+            className={PRIMARY_BUTTON}
+            disabled={isSaving || (requiresCriticalConfirmation && !criticalAccessConfirmed)}
+          >
+            {isSaving ? 'Guardando…' : editingRole ? 'Guardar rol' : 'Crear rol'}
+          </button>
+        </>
+      )}
+    >
+      <form id="role-form" onSubmit={handleSubmit} className="grid gap-4">
+        {globalError ? (
+          <AdminCallout tone="error" title="No se pudo guardar">{globalError}</AdminCallout>
+        ) : null}
 
-        <Alert><Info /><AlertTitle>Permisos por módulo</AlertTitle><AlertDescription>Seleccione exactamente los accesos del rol para evitar asignaciones accidentales.</AlertDescription></Alert>
+        <AdminCallout tone="info" title="Permisos por módulo">
+          Seleccione exactamente los accesos del rol para evitar asignaciones accidentales.
+        </AdminCallout>
 
-        {requiresCriticalConfirmation && (
-          <div className="border border-warning/40 bg-warning/10 p-4 text-sm text-warning-foreground">
-            <p className="font-semibold">Permisos criticos seleccionados</p>
-            <p className="mt-1 text-xs text-current/80">
+        {requiresCriticalConfirmation ? (
+          <div className="rounded-[var(--ui-radius)] border border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] p-4 text-[length:var(--ui-text-sm)]">
+            <p className="font-semibold text-[color:var(--ui-ink)]">Permisos criticos seleccionados</p>
+            <p className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
               Estos accesos pueden modificar caja, recibos, anulaciones, respaldos o usuarios. Confirme que el rol realmente los necesita.
             </p>
             {criticalAdded.length > 0 ? (
               <div className="mt-3" role="region" aria-label="Permisos críticos añadidos">
-                <p className="text-xs font-semibold uppercase tracking-wide">Accesos añadidos</p>
+                <p className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-wide text-[color:var(--ui-ink-soft)]">Accesos añadidos</p>
                 <ul className="mt-1 space-y-1">
                   {criticalAdded.map((permission) => (
                     <li key={permission.name}><strong>{permission.label}</strong>{permissionRiskLabel(permission) ? ` — ${permissionRiskLabel(permission)}` : ''}</li>
@@ -140,7 +153,7 @@ export function RoleFormDialog({
             ) : null}
             {criticalRemoved.length > 0 ? (
               <div className="mt-3" role="region" aria-label="Permisos críticos retirados">
-                <p className="text-xs font-semibold uppercase tracking-wide">Accesos retirados</p>
+                <p className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-wide text-[color:var(--ui-ink-soft)]">Accesos retirados</p>
                 <ul className="mt-1 space-y-1">
                   {criticalRemoved.map((permission) => (
                     <li key={permission.name}><strong>{permission.label}</strong>{permissionRiskLabel(permission) ? ` — ${permissionRiskLabel(permission)}` : ''}</li>
@@ -149,62 +162,63 @@ export function RoleFormDialog({
               </div>
             ) : null}
             <label htmlFor="critical-role-confirmation" className="mt-3 flex items-start gap-2">
-              <Checkbox
+              <input
                 id="critical-role-confirmation"
+                type="checkbox"
+                className={CHECKBOX_CLASS}
                 checked={criticalAccessConfirmed}
                 disabled={isSaving}
-                onCheckedChange={(checked) => setCriticalAccessConfirmed(Boolean(checked))}
+                onChange={(event) => setCriticalAccessConfirmed(event.target.checked)}
               />
               <span>Confirmo que este rol necesita permisos criticos</span>
             </label>
           </div>
-        )}
+        ) : null}
 
-        <Field className="rounded-xl border bg-muted/40 p-4">
-          <FieldLabel htmlFor="role-name">Nombre del rol *</FieldLabel>
-          <Input
-            id="role-name"
-            value={roleName}
-            onChange={(event) => setRoleName(event.target.value)}
-            placeholder="ejemplo: caja_turno_tarde"
-            disabled={isSaving || isProtected}
-            autoComplete="off"
-          />
-          {isProtected && (
-            <FieldDescription>
-              Los roles protegidos no pueden renombrarse para preservar la asignacion administrativa.
-            </FieldDescription>
-          )}
-        </Field>
+        <div className="border-y border-[var(--ui-line)] py-4">
+          <AdminField
+            htmlFor="role-name"
+            label="Nombre del rol"
+            required
+            hint={isProtected ? 'Los roles protegidos no pueden renombrarse para preservar la asignacion administrativa.' : undefined}
+          >
+            <input
+              id="role-name"
+              type="text"
+              value={roleName}
+              onChange={(event) => setRoleName(event.target.value)}
+              placeholder="ejemplo: caja_turno_tarde"
+              disabled={isSaving || isProtected}
+              autoComplete="off"
+              className={INPUT_CLASS}
+            />
+          </AdminField>
+        </div>
 
         <div className="relative">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <Input
+          <label htmlFor="role-permission-filter" className="sr-only">Buscar permiso</label>
+          <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--ui-ink-soft)]" strokeWidth={1.5} />
+          <input
+            id="role-permission-filter"
             type="search"
             value={permissionFilter}
             onChange={(event) => setPermissionFilter(event.target.value)}
             placeholder="Buscar permiso por nombre visible o descripcion..."
-            aria-label="Buscar permiso"
-            className="pl-9"
+            className={`${INPUT_CLASS} pl-9`}
             disabled={isSaving}
             autoComplete="off"
           />
         </div>
 
-        <div className="max-h-96 space-y-3 overflow-y-auto border border-operational-border bg-muted/40 p-4">
+        <div className="max-h-96 space-y-3 overflow-y-auto border-y border-[var(--ui-line)] py-3">
           {filteredCatalog.length === 0 ? (
-            <p className="border border-dashed border-operational-border bg-operational-surface p-4 text-center text-sm text-muted-foreground">
-              No se encontraron permisos para «{permissionFilter}».
-            </p>
+            <AdminEmpty title="Sin coincidencias" description={`No se encontraron permisos para «${permissionFilter}».`} />
           ) : (
             filteredCatalog.map((group) => (
-              <fieldset key={group.module} className="border border-operational-border bg-operational-surface p-4">
-                <legend className="px-1 text-sm font-semibold text-foreground">
+              <fieldset key={group.module} className="border-t border-[var(--ui-line)] pt-3 first:border-t-0 first:pt-0">
+                <legend className="px-1 text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">
                   {group.label}
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  <span className="ml-2 text-[length:var(--ui-text-xs)] font-normal text-[color:var(--ui-ink-soft)]">
                     {group.permissions.length} permiso{group.permissions.length === 1 ? '' : 's'}
                   </span>
                 </legend>
@@ -215,21 +229,23 @@ export function RoleFormDialog({
                     const critical = isCriticalPermission(permission);
                     const riskLabel = permissionRiskLabel(permission);
                     return (
-                      <label key={permission.name} htmlFor={id} className="flex items-start gap-3 border border-transparent p-3 text-sm hover:border-border hover:bg-accent/35">
-                        <Checkbox
+                      <label key={permission.name} htmlFor={id} className="flex items-start gap-3 rounded-[var(--ui-radius)] border border-transparent p-3 text-[length:var(--ui-text-sm)] hover:bg-[var(--ui-surface-alt)]">
+                        <input
                           id={id}
+                          type="checkbox"
+                          className={CHECKBOX_CLASS}
                           checked={checked}
                           disabled={isSaving}
-                          onCheckedChange={(checked) => onTogglePermission(permission.name, Boolean(checked))}
+                          onChange={(event) => onTogglePermission(permission.name, event.target.checked)}
                         />
                         <span>
-                          <span className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+                          <span className="flex flex-wrap items-center gap-2 font-medium text-[color:var(--ui-ink)]">
                             {permission.label}
-                            {critical && <Badge variant="secondary">Permiso critico</Badge>}
+                            {critical ? <span className="inline-flex items-center rounded-[var(--ui-radius)] border border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] px-1.5 py-0.5 text-[length:var(--ui-text-xs)] font-semibold text-[color:var(--ui-warn)]">Permiso critico</span> : null}
                           </span>
-                          {critical && riskLabel && (
-                            <span className="block text-xs text-warning-foreground">{riskLabel}</span>
-                          )}
+                          {critical && riskLabel ? (
+                            <span className="block text-[length:var(--ui-text-xs)] text-[color:var(--ui-warn)]">{riskLabel}</span>
+                          ) : null}
                         </span>
                       </label>
                     );
@@ -240,17 +256,7 @@ export function RoleFormDialog({
           )}
         </div>
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSaving || (requiresCriticalConfirmation && !criticalAccessConfirmed)}>
-            {isSaving ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}
-            {isSaving ? 'Guardando…' : editingRole ? 'Guardar rol' : 'Crear rol'}
-          </Button>
-        </DialogFooter>
       </form>
-      </DialogContent>
-    </Dialog>
+    </AdminDialog>
   );
 }

@@ -8,7 +8,7 @@ import {
   UnplugIcon,
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
+import { AdminCallout, type AdminCalloutTone } from '@/design-system/admin/components';
 
 export type RouteStateKind = 'loading' | 'empty' | 'error' | 'denied' | 'offline' | 'not-found';
 
@@ -45,34 +45,69 @@ const stateLabels: Record<RouteStateKind, string> = {
   'not-found': 'Ruta no disponible',
 };
 
+/* El detalle técnico es un aviso; el tono sigue el estado sin cambiar su semántica. */
+const detailTones: Record<RouteStateKind, AdminCalloutTone> = {
+  denied: 'warn',
+  empty: 'info',
+  error: 'error',
+  loading: 'info',
+  offline: 'warn',
+  'not-found': 'info',
+};
+
+/*
+ * Acciones admin: control nativo (permitido en superficie admin) con el
+ * lenguaje "Panel administrativo": acción cobalto, contorno hairline y foco
+ * navy de 2 px. `data-variant` conserva el contrato observable de la acción
+ * secundaria (denied) sin depender del primitivo shadcn.
+ */
+const actionBase =
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--ui-radius-control)] px-4 text-[length:var(--ui-text-base)] font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-focus)]';
+const actionPrimary =
+  'bg-[var(--ui-action)] text-[color:var(--ui-action-foreground)] hover:bg-[var(--ui-action-hover)]';
+const actionOutline =
+  'border border-[var(--ui-line-strong)] bg-[var(--ui-surface)] text-[color:var(--ui-ink)] hover:bg-[var(--ui-surface-alt)]';
+
 export function RouteState({ action, description, detail, headingLevel = 1, kind, title }: RouteStateProps) {
   const Heading = `h${headingLevel}` as 'h1' | 'h2' | 'h3';
   const headingId = `route-state-${useId()}-title`.replaceAll(':', '');
   const role = kind === 'error' ? 'alert' : kind === 'loading' ? 'status' : undefined;
   const actionable = action?.href || action?.onClick ? action : undefined;
+  const actionVariant = kind === 'denied' ? 'outline' : 'default';
+  const actionClassName = `${actionBase} ${actionVariant === 'outline' ? actionOutline : actionPrimary}`;
 
   return (
     <section
       aria-labelledby={headingId}
-      className="w-full overflow-hidden rounded-xl bg-card px-5 py-8 text-card-foreground ring-1 ring-foreground/10 sm:px-8 sm:py-10"
+      className="w-full overflow-hidden rounded-[var(--ui-radius-panel)] border border-[var(--ui-line)] bg-[var(--ui-surface)] px-5 py-8 text-[color:var(--ui-ink)] sm:px-8 sm:py-10"
       role={role}
     >
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-5 text-center">
-        <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground [&_svg]:size-6">
+        <span className="flex size-14 shrink-0 items-center justify-center rounded-[var(--ui-radius-control)] border border-[var(--ui-line)] bg-[var(--ui-surface-alt)] text-[color:var(--ui-navy)] [&_svg]:size-6">
           {stateIcons[kind]}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{stateLabels[kind]}</p>
-          <Heading id={headingId} className="mt-2 text-balance text-2xl font-semibold leading-tight sm:text-3xl">
+          <p className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-wider text-[color:var(--ui-ink-soft)]">
+            {stateLabels[kind]}
+          </p>
+          <Heading
+            id={headingId}
+            className="mt-2 text-balance text-[length:var(--ui-text-xl)] font-semibold leading-tight text-[color:var(--ui-ink)] sm:text-[length:var(--ui-text-2xl)]"
+          >
             {title}
           </Heading>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">{description}</p>
+          <p className="mx-auto mt-3 max-w-xl text-[length:var(--ui-text-sm)] leading-6 text-[color:var(--ui-ink-soft)] sm:text-[length:var(--ui-text-base)]">
+            {description}
+          </p>
           {detail ? (
             <Accordion type="single" collapsible className="mt-4 text-left">
-              <AccordionItem value="detail" className="rounded-lg border px-3">
+              <AccordionItem
+                value="detail"
+                className="rounded-[var(--ui-radius-control)] border border-[var(--ui-line)] px-3"
+              >
                 <AccordionTrigger>Ver detalle</AccordionTrigger>
                 <AccordionContent forceMount>
-                  <p className="border-l border-border pl-3 leading-6 text-muted-foreground">{detail}</p>
+                  <AdminCallout tone={detailTones[kind]}>{detail}</AdminCallout>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -80,9 +115,24 @@ export function RouteState({ action, description, detail, headingLevel = 1, kind
           {actionable ? (
             <div className="mt-6">
               {actionable.href ? (
-                <Button asChild size="lg" variant={kind === 'denied' ? 'outline' : 'default'}><a href={actionable.href}>{actionable.label}</a></Button>
+                <a
+                  href={actionable.href}
+                  data-variant={actionVariant}
+                  data-ui-press
+                  className={actionClassName}
+                >
+                  {actionable.label}
+                </a>
               ) : (
-                <Button size="lg" onClick={actionable.onClick}>{actionable.label}</Button>
+                <button
+                  type="button"
+                  data-variant={actionVariant}
+                  data-ui-press
+                  className={actionClassName}
+                  onClick={actionable.onClick}
+                >
+                  {actionable.label}
+                </button>
               )}
             </div>
           ) : null}

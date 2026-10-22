@@ -7,13 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CatalogView, ConfirmDialog, serviceStatusPayload } from './CatalogView';
 import { apiClient, ApiError, type AuthUser, type Service } from '../../lib/api';
 
-function renderWithQueryClient(node: ReactNode) {
+function renderWithQueryClient(node: ReactNode, initialEntries?: string[]) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{node}</MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>{node}</MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -37,7 +37,7 @@ describe('CatalogView', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders malformed service prices as safe financial values', async () => {
+  it('renders malformed service prices as "No disponible", never as L. 0.00', async () => {
     setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [serviceFixture({ price: 'monto-danado' })],
@@ -48,7 +48,8 @@ describe('CatalogView', () => {
 
     await waitFor(() => expect(screen.getByText('Glucosa')).toBeInTheDocument());
 
-    expect(document.body.textContent).toContain('L 0.00');
+    expect(document.body.textContent).toContain('No disponible');
+    expect(document.body.textContent).not.toContain('L. 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
   });
 
@@ -62,6 +63,28 @@ describe('CatalogView', () => {
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(apiClient.getServicesPage).toHaveBeenCalled());
+  });
+
+  it('keeps the initial service count pending until the catalog responds', async () => {
+    setupBasicMocks();
+    let resolveServices: (value: Awaited<ReturnType<typeof apiClient.getServicesPage>>) => void = () => undefined;
+    vi.spyOn(apiClient, 'getServicesPage').mockImplementation(() => new Promise((resolve) => {
+      resolveServices = resolve;
+    }));
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText('Cargando catálogo…')).toBeInTheDocument();
+    expect(screen.getByText('Conteo de conceptos pendiente')).toBeInTheDocument();
+    expect(screen.queryByText(/^0 conceptos$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/mostrando 0 de 0 servicios/i)).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveServices({ data: [], meta: { current_page: 1, per_page: 15, total: 0 } });
+    });
+
+    expect(await screen.findByText('0 conceptos')).toBeInTheDocument();
+    expect(screen.getByText(/no hay productos ni servicios/i)).toBeInTheDocument();
   });
 
   it('shows billing visibility, billable state and tariff warnings', async () => {
@@ -80,7 +103,7 @@ describe('CatalogView', () => {
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Glucosa')).toBeInTheDocument());
-    expect(screen.getByText('Buscar servicio')).toBeInTheDocument();
+    expect(screen.getByText('Buscar producto o servicio')).toBeInTheDocument();
     expect(screen.getByLabelText('Categoría')).toBeInTheDocument();
     expect(screen.getByLabelText('Estado')).toBeInTheDocument();
     expect(screen.getByText('Oculto en facturación')).toBeInTheDocument();
@@ -98,7 +121,7 @@ describe('CatalogView modernized structure', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders a single accessible h1 from the page header', async () => {
+  it('renders a specific h1 for the catalog route', async () => {
     setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [],
@@ -107,12 +130,28 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    const headings = await screen.findAllByRole('heading', { level: 1 });
-    expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent(/cat[aá]logo institucional/i);
+    expect(await screen.findByRole('heading', { level: 1, name: /productos y servicios/i })).toBeInTheDocument();
+    expect(screen.queryAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
-  it('shows the total services summary with the existing wording', async () => {
+  it('keeps the catalog wrapper non-landmark under its single page heading', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    await screen.findByRole('heading', { level: 1, name: /productos y servicios/i });
+    expect(screen.queryByRole('region', { name: /^cat[aá]logo de productos y servicios$/i })).not.toBeInTheDocument();
+    const surface = document.getElementById('catalogo');
+    expect(surface?.tagName).toBe('DIV');
+    expect(surface).not.toHaveAttribute('role');
+    expect(surface).not.toHaveAttribute('aria-label');
+  });
+
+  it('shows the singular total without repeating the page title', async () => {
     setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [serviceFixture()],
@@ -121,7 +160,7 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    expect(await screen.findByText('1 servicio en el catálogo')).toBeInTheDocument();
+    expect(await screen.findByText('1 concepto')).toBeInTheDocument();
   });
 
   it('shows the plural summary when the total is not 1', async () => {
@@ -133,7 +172,7 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    expect(await screen.findByText('2 servicios en el catálogo')).toBeInTheDocument();
+    expect(await screen.findByText('2 conceptos')).toBeInTheDocument();
   });
 
   it('puts filters and results before category maintenance without decorative metric cards', async () => {
@@ -155,7 +194,7 @@ describe('CatalogView modernized structure', () => {
     renderWithQueryClient(<CatalogView user={catalogUser(['catalog.view', 'catalog.manage'])} onStatus={vi.fn()} />);
 
     const filters = await screen.findByRole('heading', { name: /filtros del cat[aá]logo/i });
-    const results = screen.getByRole('heading', { name: /servicios disponibles/i });
+    const results = screen.getByRole('heading', { name: /productos y servicios disponibles/i });
     const categories = await screen.findByRole('button', { name: /categorías del catálogo/i });
     expect(screen.queryByText(/total cat[aá]logo/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^categor[ií]as$/i)).not.toBeInTheDocument();
@@ -194,9 +233,43 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    const search = await screen.findByLabelText(/buscar servicio/i);
-    expect(search).toHaveAttribute('placeholder', 'Buscar por nombre, categoria o area...');
+    const search = await screen.findByLabelText(/buscar producto o servicio/i);
+    expect(search).toHaveAttribute('placeholder', 'Buscar por nombre, categoría o área…');
     expect(search).not.toHaveAttribute('placeholder', expect.stringMatching(/c[oó]digo/i));
+  });
+
+  it('reflects what is typed in the input and URL immediately, without a second local debounce', async () => {
+    setupBasicMocks();
+    const getServicesPage = vi
+      .spyOn(apiClient, 'getServicesPage')
+      .mockResolvedValue({ data: [], meta: { current_page: 1, per_page: 15, total: 0 } });
+
+    renderWithQueryClient(
+      <>
+        <CatalogView user={catalogUser()} onStatus={vi.fn()} />
+        <LocationSearchProbe />
+      </>,
+    );
+
+    const search = await screen.findByLabelText(/buscar producto o servicio/i);
+
+    // Ráfaga con espacio intermedio: el input y la URL no se retrasan ni se
+    // recortan por el debounce de la consulta (que sólo vive en useServices).
+    fireEvent.change(search, { target: { value: 'glucosa' } });
+    fireEvent.change(search, { target: { value: 'glucosa ' } });
+    fireEvent.change(search, { target: { value: 'glucosa basal' } });
+
+    expect(search).toHaveValue('glucosa basal');
+    const params = new URLSearchParams(screen.getByTestId('location-search').textContent ?? '');
+    expect(params.get('q')).toBe('glucosa basal');
+    expect(params.has('page')).toBe(false);
+
+    // El único temporizador es el de useServices: la consulta sale con el
+    // término asentado y no se dispara una por pulsación intermedia.
+    await waitFor(() => {
+      expect(getServicesPage.mock.calls.some((call) => call[0]?.search === 'glucosa basal')).toBe(true);
+    });
+    expect(getServicesPage.mock.calls.some((call) => call[0]?.search === 'glucosa ')).toBe(false);
   });
 
   it('clears the search input and resets the filter state via the clear button', async () => {
@@ -207,7 +280,7 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    const search = await screen.findByLabelText(/buscar servicio/i);
+    const search = await screen.findByLabelText(/buscar producto o servicio/i);
     fireEvent.change(search, { target: { value: 'glucosa' } });
 
     await waitFor(() => {
@@ -242,12 +315,11 @@ describe('CatalogView modernized structure', () => {
       </>,
     );
 
-    const search = await screen.findByLabelText(/buscar servicio/i);
-    await user.click(screen.getByLabelText(/categor/i));
-    const laboratoryOption = await screen.findByRole('option', { name: 'Laboratorio' });
+    const search = await screen.findByLabelText(/buscar producto o servicio/i);
+    const categorySelect = screen.getByLabelText(/categor/i);
 
     fireEvent.change(search, { target: { value: 'glucosa' } });
-    await user.click(laboratoryOption);
+    await user.selectOptions(categorySelect, '7');
 
     await waitFor(() => {
       const params = new URLSearchParams(screen.getByTestId('location-search').textContent ?? '');
@@ -283,14 +355,14 @@ describe('CatalogView modernized structure', () => {
 
     await waitFor(() => expect(screen.getByText('Glucosa basal')).toBeInTheDocument());
 
-    fireEvent.change(screen.getByLabelText(/buscar servicio/i), { target: { value: 'hemo' } });
+    fireEvent.change(screen.getByLabelText(/buscar producto o servicio/i), { target: { value: 'hemo' } });
 
     await waitFor(() => {
       expect(getServicesPage.mock.calls.some((call) => call[0]?.search === 'hemo')).toBe(true);
     });
 
     expect(screen.getByText('Glucosa basal')).toBeInTheDocument();
-    expect(screen.queryByRole('status', { name: /cargando servicios/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: /cargando productos y servicios/i })).not.toBeInTheDocument();
 
     await act(async () => {
       resolveSecondPage({
@@ -301,6 +373,7 @@ describe('CatalogView modernized structure', () => {
   });
 
   it('hides create actions for users without catalog.manage permission', async () => {
+    const user = userEvent.setup();
     setupBasicMocks();
     vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
       data: [serviceFixture()],
@@ -311,14 +384,14 @@ describe('CatalogView modernized structure', () => {
 
     await waitFor(() => expect(screen.getByText('Glucosa')).toBeInTheDocument());
     expect(
-      screen.queryByRole('button', { name: /crear nuevo servicio/i }),
+      screen.queryByRole('button', { name: /crear nuevo producto o servicio/i }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /crear nueva categor[ií]a/i }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /acciones de servicio glucosa/i }),
-    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /acciones de servicio glucosa/i }));
+    expect(screen.getByRole('menuitem', { name: /ver historial/i })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /^editar$/i })).not.toBeInTheDocument();
   });
 
   it('shows create actions for users with catalog.manage permission', async () => {
@@ -333,7 +406,7 @@ describe('CatalogView modernized structure', () => {
     );
 
     expect(
-      await screen.findByRole('button', { name: /crear nuevo servicio/i }),
+      await screen.findByRole('button', { name: /crear nuevo producto o servicio/i }),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('button', { name: /crear nueva categor[ií]a/i }),
@@ -408,9 +481,10 @@ describe('CatalogView modernized structure', () => {
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
     expect(
-      await screen.findByText(/el servidor local no pudo completar la operaci[oó]n/i),
+      await screen.findByText(/no se pudo cargar el catálogo.*conexión local/i),
     ).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/i);
+    expect(document.body.textContent).not.toMatch(/si estaba cobrando|revise recibos/i);
 
     const retry = await screen.findByRole('button', { name: /reintentar/i });
     await act(async () => {
@@ -431,9 +505,10 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    expect(await screen.findByText(/no hay servicios/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no hay productos ni servicios/i)).toBeInTheDocument();
+    expect(screen.getByText('0 conceptos')).toBeInTheDocument();
     expect(
-      screen.getByText(/comience agregando su primer servicio al cat[aá]logo/i),
+      screen.getByText(/agregando el primer concepto/i),
     ).toBeInTheDocument();
   });
 
@@ -448,7 +523,7 @@ describe('CatalogView modernized structure', () => {
 
     await waitFor(() => expect(screen.getByText('Consulta General Larga Para Validar Caption')).toBeInTheDocument());
     expect(
-      screen.getByRole('region', { name: /listado de servicios del cat[aá]logo/i }),
+      screen.getByRole('region', { name: /listado de productos y servicios del cat[aá]logo/i }),
     ).toBeInTheDocument();
   });
 
@@ -461,8 +536,8 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('L 1,234.50')).toBeInTheDocument());
-    const priceCell = screen.getByText('L 1,234.50');
+    await waitFor(() => expect(screen.getByText('L. 1,234.50')).toBeInTheDocument());
+    const priceCell = screen.getByText('L. 1,234.50');
     expect(priceCell).toBeInTheDocument();
     expect(priceCell.className).toMatch(/tabular-nums/);
   });
@@ -476,8 +551,28 @@ describe('CatalogView modernized structure', () => {
 
     renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
-    const zeroLabels = await screen.findAllByText('L 0.00');
+    const zeroLabels = await screen.findAllByText('L. 0.00');
     expect(zeroLabels.length).toBeGreaterThan(0);
+  });
+
+  it('opens a service from a deep link even when it is outside the current page', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture({ id: 1, name: 'Glucosa' })],
+      meta: { current_page: 1, per_page: 15, total: 30 },
+    });
+    vi.spyOn(apiClient, 'getService').mockResolvedValue(
+      serviceFixture({ id: 37, name: 'Hemograma completo', price: '120.00' }),
+    );
+
+    renderWithQueryClient(
+      <CatalogView user={catalogUser(['catalog.manage'])} onStatus={vi.fn()} />,
+      ['/?service=37'],
+    );
+
+    expect(await screen.findByRole('dialog', { name: /editar producto o servicio/i })).toBeInTheDocument();
+    expect(apiClient.getService).toHaveBeenCalledWith(37);
+    expect(screen.getByRole('textbox', { name: /nombre/i })).toHaveValue('Hemograma completo');
   });
 
   it('does not call the dashboard or system endpoints while rendering the catalog', async () => {

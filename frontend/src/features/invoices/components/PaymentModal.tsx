@@ -1,11 +1,14 @@
-import { BanknoteIcon as Banknote, PrinterIcon as Printer, ReceiptTextIcon as ReceiptText } from 'lucide-react';
+import { BanknoteIcon as Banknote, CheckCircle2Icon, ReceiptTextIcon as ReceiptText } from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { AdminCallout, AdminDialog, MoneyText } from '@/design-system/admin/components';
+import { cn } from '@/lib/utils';
 import type { Payment } from '../../../lib/api';
-import { formatLempirasUIFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
+import { formatLempirasUIFromCents, parseCents, toExchangeDecimal } from '../../../lib/moneyCents';
+const FOCUS_RING = 'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-focus)]';
+const INPUT_CLASS = `h-11 w-full rounded-[var(--ui-radius-control)] border border-[var(--ui-control-border)] bg-[var(--ui-surface)] px-3 text-[length:var(--ui-text-base)] text-[color:var(--ui-ink)] placeholder:text-[color:var(--ui-ink-soft)] ${FOCUS_RING}`;
+const PRIMARY_BUTTON = `inline-flex h-11 items-center justify-center gap-2 rounded-[var(--ui-radius-control)] bg-[var(--ui-action)] px-4 text-[length:var(--ui-text-base)] font-semibold text-[color:var(--ui-action-foreground)] transition-[background-color,transform] duration-[140ms] ease-out enabled:hover:bg-[var(--ui-action-hover)] enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${FOCUS_RING}`;
+const SECONDARY_BUTTON = `inline-flex h-11 items-center justify-center gap-2 rounded-[var(--ui-radius-control)] border border-[var(--ui-line-strong)] bg-[var(--ui-surface)] px-3 text-[length:var(--ui-text-base)] font-medium text-[color:var(--ui-ink)] transition-[background-color,transform] duration-[140ms] ease-out enabled:hover:bg-[var(--ui-surface-alt)] enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${FOCUS_RING}`;
+const METRIC_LABEL = 'text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-[0.06em] text-[color:var(--ui-ink-soft)]';
 
 type PaymentModalProps = {
   open: boolean;
@@ -40,6 +43,9 @@ const paymentMethods: Array<{ value: Payment['method']; label: string }> = [
   { value: 'other', label: 'Otro' },
 ];
 
+const methodTileClass =
+  `inline-flex min-h-11 items-center justify-center rounded-[var(--ui-radius-control)] border px-2 text-[length:var(--ui-text-base)] font-medium transition-[background-color,border-color,color,transform] duration-[140ms] ease-out enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${FOCUS_RING}`;
+
 export function PaymentModal({
   open,
   onOpenChange,
@@ -65,8 +71,8 @@ export function PaymentModal({
   const formRef = useRef<HTMLFormElement | null>(null);
   const submitLockRef = useRef(false);
 
-  const balanceCents = parseMoneyCents(balanceDue);
-  const paymentCents = parseMoneyCents(paymentAmount);
+  const balanceCents = parseCents(balanceDue);
+  const paymentCents = parseCents(paymentAmount);
   const cashCanReturnChange = paymentMethod === 'cash';
   const effectivePaymentCents = cashCanReturnChange ? paymentCents : balanceCents;
   const overpaymentCents = cashCanReturnChange && paymentCents !== null && balanceCents !== null && paymentCents > balanceCents
@@ -84,7 +90,7 @@ export function PaymentModal({
     && appliedAmountCents > 0
     && balanceCents !== null
     && appliedAmountCents < balanceCents;
-  const actionAmountLabel = moneyLabelFromCents(appliedAmountCents ?? 0);
+  const actionAmountLabel = moneyLabelFromCents(appliedAmountCents);
   const actionLabel = errorMessage
     ? isPartialPayment ? 'Reintentar abono' : 'Reintentar cobro'
     : isPartialPayment ? 'Registrar abono' : 'Confirmar cobro';
@@ -138,7 +144,7 @@ export function PaymentModal({
 
   function applyCashPreset(cents: number) {
     setError(null);
-    onPaymentAmountChange(formatMoneyCents(cents));
+    onPaymentAmountChange(toExchangeDecimal(cents));
     window.setTimeout(() => amountInputRef.current?.focus(), 0);
   }
 
@@ -192,7 +198,7 @@ export function PaymentModal({
       return;
     }
 
-    const amountCents = cashCanReturnChange ? parseMoneyCents(paymentAmount) : balanceCents;
+    const amountCents = cashCanReturnChange ? parseCents(paymentAmount) : balanceCents;
     if (amountCents === null || amountCents <= 0) {
       setError('Ingrese un monto válido');
       amountInputRef.current?.focus();
@@ -211,16 +217,23 @@ export function PaymentModal({
     setError(null);
     setReferenceError(null);
     submitLockRef.current = true;
-    onConfirm(formatMoneyCents(appliedAmountCents ?? amountCents));
+    onConfirm(toExchangeDecimal(appliedAmountCents ?? amountCents));
   }
 
-  function handleAmountKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (!e.ctrlKey || e.key !== 'Enter' || submitting) {
+  /**
+   * El cobro es irreversible. Un Enter suelto en un campo no puede disparar el
+   * envío implícito del formulario; solo Ctrl/Cmd+Enter confirma. Los botones
+   * conservan su activación nativa con Enter/Espacio porque son interactivos.
+   */
+  function handleFieldKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') {
       return;
     }
 
     e.preventDefault();
-    formRef.current?.requestSubmit();
+    if ((e.ctrlKey || e.metaKey) && !submitting) {
+      formRef.current?.requestSubmit();
+    }
   }
 
   function requestClose() {
@@ -230,239 +243,221 @@ export function PaymentModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) requestClose(); }}>
-      <DialogContent className="payment-modal-compact max-h-screen overflow-y-auto sm:max-w-2xl">
-      <DialogHeader><DialogTitle>Registrar pago</DialogTitle><DialogDescription id="payment-dialog-description">Factura {invoiceNumber} ya fue emitida. Si sale de este paso quedará pendiente de cobro.</DialogDescription></DialogHeader>
+    <AdminDialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) requestClose();
+      }}
+      closeDisabled={Boolean(submitting)}
+      title="Registrar pago"
+      description={`Factura ${invoiceNumber} ya fue emitida. Si sale de este paso quedará pendiente de cobro.`}
+      className="sm:max-w-3xl"
+      footer={
+        <>
+          <button
+            type="button"
+            className={SECONDARY_BUTTON}
+            onClick={requestClose}
+            disabled={submitting}
+          >
+            Dejar pendiente
+          </button>
+          <button
+            type="submit"
+            form="payment-form"
+            className={PRIMARY_BUTTON}
+            disabled={submitting || needsAmount}
+            aria-label={`${actionLabel} de ${actionAmountLabel}`}
+          >
+            {submitting ? 'Cobrando…' : (
+              <>
+                <CheckCircle2Icon className="size-4" aria-hidden="true" strokeWidth={2} />
+                {visibleActionLabel}
+              </>
+            )}
+          </button>
+        </>
+      }
+    >
       <form
+        id="payment-form"
         ref={formRef}
         aria-busy={submitting ? 'true' : undefined}
         onSubmit={handleSubmit}
-        className="flex min-w-0 flex-col gap-3"
+        className="flex min-w-0 flex-col gap-5"
       >
-        {submitting ? <p role="status">Registrando cobro...</p> : null}
+        {submitting ? <p role="status" className="sr-only">Registrando cobro…</p> : null}
+
         <section
           aria-label="Resumen de factura"
-          className="overflow-hidden border border-border bg-surface p-3"
+          data-ui-surface="invoice-summary"
+          className="border-b border-[var(--ui-line)] bg-[var(--ui-surface-alt)] px-4 py-4"
         >
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div className="min-w-0">
-              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-foreground">
-                <ReceiptText className="size-3.5 text-primary" aria-hidden="true" />
+              <p className={cn(METRIC_LABEL, 'flex items-center gap-2')}>
+                <ReceiptText className="size-3.5" aria-hidden="true" strokeWidth={2} />
                 Factura
               </p>
-              <p className="break-words font-semibold tabular-nums text-foreground">{invoiceNumber}</p>
+              <p className="mt-1 break-words font-semibold tabular-nums text-[color:var(--ui-ink)]">{invoiceNumber}</p>
             </div>
             <div className="min-w-0 sm:text-right">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Paciente</p>
-              <p className="break-words font-medium text-foreground">{patientLabel}</p>
+              <p className={METRIC_LABEL}>Paciente</p>
+              <p className="mt-1 break-words font-medium text-[color:var(--ui-ink)]">{patientLabel}</p>
             </div>
           </div>
+
           <section
             aria-label="Resumen del cobro"
             data-summary-columns={String(summaryColumnCount)}
-            className={`mt-3 grid border border-border bg-muted ${summaryColumnCount === 4 ? 'grid-cols-2 sm:grid-cols-4' : summaryColumnCount === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}
+            className={cn(
+              'mt-4 grid divide-x divide-[var(--ui-line)] border-y border-[var(--ui-line)] bg-[var(--ui-surface)]',
+              summaryColumnCount === 4 ? 'grid-cols-2 sm:grid-cols-4' : summaryColumnCount === 3 ? 'grid-cols-3' : 'grid-cols-2',
+            )}
           >
-            <div className="border-r border-border p-3">
-              <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Total</span>
-              <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabel(total)}</strong>
+            <div className="p-3">
+              <span className={cn(METRIC_LABEL, 'block')}>Total</span>
+              <MoneyText as="p" cents={parseCents(total)} emphasis="total" className="mt-1" />
             </div>
             <div className="p-3">
-              <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <span className={cn(METRIC_LABEL, 'block')}>
                 {isPartialPayment ? 'Abono aplicado' : cashCanReturnChange ? 'Recibido' : 'A cobrar'}
               </span>
-              <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabelFromCents(effectivePaymentCents ?? 0)}</strong>
+              <MoneyText as="p" cents={effectivePaymentCents} emphasis="strong" className="mt-1" />
             </div>
             {cashCanReturnChange ? (
               <div className="p-3">
-                <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Cambio:</span>
-                <strong className="mt-1 block font-mono text-lg tabular-nums text-foreground">{moneyLabelFromCents(changeCents ?? 0)}</strong>
+                <span className={cn(METRIC_LABEL, 'block')}>Cambio</span>
+                <MoneyText as="p" cents={changeCents} emphasis="strong" className="mt-1" />
               </div>
             ) : null}
             {remainingBalanceCents !== null ? (
-              <div className="border-l border-border p-3">
-                <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">Saldo después del pago</span>
-                <strong className="mt-1 block font-mono text-lg tabular-nums text-warning-foreground">{moneyLabelFromCents(remainingBalanceCents)}</strong>
+              <div className="p-3">
+                <span className={cn(METRIC_LABEL, 'block')}>Saldo después del pago</span>
+                <MoneyText as="p" cents={remainingBalanceCents} emphasis="strong" className="mt-1 text-[color:var(--ui-warn)]" />
               </div>
             ) : null}
           </section>
         </section>
 
-        <div className="grid gap-3">
-          {errorMessage ? (
-            <PaymentAlert destructive title="No se completó el cobro" description={`${errorMessage} Revise los datos y vuelva a intentar.`} />
-          ) : null}
-          {needsAmount && !error ? (
-            <PaymentAlert title="Ingrese el monto recibido para registrar el cobro." />
-          ) : null}
+        {errorMessage ? (
+          <AdminCallout tone="error" title="No se completó el cobro">
+            {errorMessage} Revise los datos y vuelva a intentar.
+          </AdminCallout>
+        ) : null}
+        {needsAmount && !error ? <AdminCallout tone="info">Ingrese el monto recibido para registrar el cobro.</AdminCallout> : null}
+        {remainingBalanceCents !== null && !partialPaymentsEnabled ? <AdminCallout tone="error">El monto recibido es menor al total.</AdminCallout> : null}
+        {remainingBalanceCents !== null && partialPaymentsEnabled ? <AdminCallout tone="warn">Este pago quedará como abono parcial y mantendrá saldo pendiente.</AdminCallout> : null}
+        {submitting ? <AdminCallout tone="info">Registrando cobro, no repita la operación.</AdminCallout> : null}
 
-          {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
-            <PaymentAlert destructive title="El monto recibido es menor al total." />
-          ) : null}
-
-          {remainingBalanceCents !== null && partialPaymentsEnabled ? (
-            <PaymentAlert title="Este pago quedará como abono parcial y mantendrá saldo pendiente." />
-          ) : null}
-
-          {submitting ? (
-            <PaymentAlert title="Registrando cobro, no repita la operación." />
-          ) : null}
-        </div>
-
-        <section aria-label="Datos del pago" className="grid gap-3 border border-operational-border bg-card p-3">
-          <fieldset className="grid gap-1.5">
-            <legend className="text-sm font-medium">Método de pago</legend>
+        <section aria-label="Datos del pago" className="grid gap-4">
+          <fieldset className="grid gap-2">
+            <legend className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Método de pago</legend>
             <div
               role="radiogroup"
               aria-label="Método de pago"
               aria-describedby="payment-method-help"
               tabIndex={-1}
-              className="grid grid-cols-2 gap-2 bg-muted p-2 sm:grid-cols-4"
+              className="grid grid-cols-2 gap-2 sm:grid-cols-4"
               onKeyDown={handlePaymentMethodKeyDown}
             >
-              {paymentMethods.map((method) => (
-                <Button
-                  key={method.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={paymentMethod === method.value}
-                  aria-label={method.label}
-                  tabIndex={paymentMethod === method.value ? 0 : -1}
-                  variant={paymentMethod === method.value ? 'default' : 'outline'}
-                  className="min-h-11"
-                  disabled={submitting}
-                  onClick={() => handlePaymentMethodChange(method.value)}
-                >
-                  {method.label}
-                </Button>
-              ))}
+              {paymentMethods.map((method) => {
+                const selected = paymentMethod === method.value;
+                return (
+                  <button
+                    key={method.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    aria-label={method.label}
+                    tabIndex={selected ? 0 : -1}
+                    className={cn(
+                      methodTileClass,
+                      selected
+                        ? 'border-[var(--ui-action)] bg-[var(--ui-action)] text-[color:var(--ui-action-foreground)]'
+                        : 'border-[var(--ui-line-strong)] bg-[var(--ui-surface)] text-[color:var(--ui-ink)] enabled:hover:bg-[var(--ui-surface-alt)]',
+                    )}
+                    disabled={submitting}
+                    onClick={() => handlePaymentMethodChange(method.value)}
+                  >
+                    {method.label}
+                  </button>
+                );
+              })}
             </div>
-            <p id="payment-method-help" className="text-xs text-muted-foreground">
+            <p id="payment-method-help" className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
               {methodHelp[paymentMethod]}
             </p>
           </fieldset>
 
-          {cashCanReturnChange ? <div className="grid gap-1.5">
-            <label htmlFor="payment-amount">Monto recibido (L.)</label>
-            <div className="relative">
-              <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-primary" aria-hidden="true" />
-              <Input
-                ref={amountInputRef}
-                id="payment-amount"
-                type="text"
-                inputMode="decimal"
-                value={paymentAmount}
-                onChange={(e) => handleAmountChange(e.target.value)}
-                onKeyDown={handleAmountKeyDown}
-                placeholder="0.00"
-                disabled={submitting}
-                aria-invalid={error ? 'true' : 'false'}
-                aria-describedby={amountDescribedBy || undefined}
-                className="min-h-12 pl-10 text-lg font-semibold tabular-nums"
-              />
-            </div>
-            <div className="grid grid-cols-4 gap-2" aria-label="Montos rápidos de efectivo">
-              <Button type="button" variant="outline" disabled={submitting} onClick={() => applyCashPreset(balanceCents ?? 0)}>Exacto</Button>
-              {[100, 200, 500].map((amount) => (
-                <Button key={amount} type="button" variant="outline" disabled={submitting} onClick={() => applyCashPreset(amount * 100)}>
-                  L {amount}
-                </Button>
-              ))}
-            </div>
-            <p id="payment-amount-help" className="text-xs text-muted-foreground">
-              Use hasta dos decimales. Se registrara el monto aplicado a la factura.
-            </p>
-            {error ? (
-              <p id="payment-amount-error" className="text-sm text-destructive" role="alert">
-                {error}
+          {cashCanReturnChange ? (
+            <div className="grid gap-2 border-t border-[var(--ui-line)] pt-4">
+              <label htmlFor="payment-amount" className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">
+                Monto recibido (L.)
+              </label>
+              <div className="relative">
+                <Banknote className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--ui-ink-soft)]" aria-hidden="true" />
+                <input
+                  ref={amountInputRef}
+                  id="payment-amount"
+                  type="text"
+                  inputMode="decimal"
+                  value={paymentAmount}
+                  onChange={(event) => handleAmountChange(event.target.value)}
+                  onKeyDown={handleFieldKeyDown}
+                  placeholder="0.00"
+                  disabled={submitting}
+                  aria-invalid={error ? 'true' : 'false'}
+                  aria-describedby={amountDescribedBy || undefined}
+                  className={cn(INPUT_CLASS, 'pl-10 text-[length:var(--ui-text-lg)] font-semibold tabular-nums')}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Montos rápidos de efectivo">
+                <button type="button" className={SECONDARY_BUTTON} disabled={submitting} onClick={() => applyCashPreset(balanceCents ?? 0)}>Exacto</button>
+                {[100, 200, 500].map((amount) => (
+                  <button key={amount} type="button" className={SECONDARY_BUTTON} disabled={submitting} onClick={() => applyCashPreset(amount * 100)}>
+                    L {amount}
+                  </button>
+                ))}
+              </div>
+              <p id="payment-amount-help" className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
+                Use hasta dos decimales. Se registrará el monto aplicado a la factura.
               </p>
-            ) : null}
-          </div> : null}
+              {error ? <p id="payment-amount-error" className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-danger)]" role="alert">{error}</p> : null}
+            </div>
+          ) : null}
 
           {requiresReference ? (
-            <div className="grid gap-1.5">
-              <label htmlFor="payment-reference">Referencia de pago</label>
-              <Input
+            <div className="grid gap-2 border-t border-[var(--ui-line)] pt-4">
+              <label htmlFor="payment-reference" className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">
+                Referencia de pago
+              </label>
+              <input
                 ref={referenceInputRef}
                 id="payment-reference"
                 value={paymentReference}
-                onChange={(e) => handleReferenceChange(e.target.value)}
+                onChange={(event) => handleReferenceChange(event.target.value)}
+                onKeyDown={handleFieldKeyDown}
                 disabled={submitting}
                 placeholder="Número de transacción o comprobante"
                 aria-invalid={referenceError ? 'true' : 'false'}
                 aria-describedby={referenceError ? 'payment-reference-help payment-reference-error' : 'payment-reference-help'}
-                className="break-words"
+                className={INPUT_CLASS}
               />
-              <p id="payment-reference-help" className="text-xs text-muted-foreground">
-                Use la referencia real del comprobante cuando aplique.
-              </p>
-              {referenceError ? (
-                <p id="payment-reference-error" className="text-sm text-destructive" role="alert">
-                  {referenceError}
-                </p>
-              ) : null}
+              <p id="payment-reference-help" className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Use la referencia real del comprobante.</p>
+              {referenceError ? <p id="payment-reference-error" className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-danger)]" role="alert">{referenceError}</p> : null}
             </div>
           ) : null}
         </section>
 
-        <p className="text-xs text-muted-foreground">
-          Confirmar registra el cobro. Ver, guardar o imprimir el recibo son acciones separadas y no revierten el pago.
+        <p className="border-t border-[var(--ui-line)] pt-3 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
+          El cobro se registra una sola vez. Ver, guardar o imprimir el recibo son acciones posteriores.
         </p>
-
-        <div className="flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" className="sm:min-w-36" onClick={requestClose} disabled={submitting}>
-            Dejar pendiente
-          </Button>
-          <Button
-            type="submit"
-            className="min-h-11 sm:min-w-56"
-            disabled={submitting || needsAmount}
-            aria-label={`${actionLabel} de ${actionAmountLabel}`}
-          >
-            {submitting ? 'Cobrando...' : (
-              <span className="inline-flex items-center gap-2">
-                <Printer className="size-4" aria-hidden="true" />
-                {visibleActionLabel}
-              </span>
-            )}
-          </Button>
-        </div>
       </form>
-      </DialogContent>
-    </Dialog>
+    </AdminDialog>
   );
 }
 
-function PaymentAlert({ title, description, destructive = false }: { title: string; description?: string; destructive?: boolean }) {
-  return <Alert variant={destructive ? 'destructive' : 'default'} className="py-3"><AlertTitle>{title}</AlertTitle>{description ? <AlertDescription>{description}</AlertDescription> : null}</Alert>;
-}
-
-function parseMoneyCents(value: string): number | null {
-  const normalized = value.trim();
-  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
-    return null;
-  }
-
-  const [integer, decimal = '00'] = normalized.split('.');
-  return Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2));
-}
-
-function formatMoneyCents(cents: number): string {
-  const isNegative = cents < 0;
-  const abs = Math.abs(cents);
-  const str = String(abs).padStart(3, '0');
-  const integer = str.slice(0, -2);
-  const decimal = str.slice(-2);
-  return `${isNegative ? '-' : ''}${integer}.${decimal}`;
-}
-
-function moneyLabel(value: string | number | null | undefined): string {
-  if (value === null || value === undefined) {
-    return formatLempirasUIFromCents(0);
-  }
-
-  return formatLempirasUIFromCents(parseCentsNullable(value));
-}
-
-function moneyLabelFromCents(cents: number): string {
-  return formatLempirasUIFromCents(cents);
+function moneyLabelFromCents(cents: number | null | undefined): string {
+  return formatLempirasUIFromCents(cents) ?? 'No disponible';
 }

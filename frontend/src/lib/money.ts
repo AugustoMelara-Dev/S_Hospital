@@ -1,18 +1,18 @@
 /**
- * Money helpers. All math lives in integer cents; use this helper for
- * any user input parsing or display formatting. The backend is the
- * source of truth for fiscal totals (see InvoiceResource). The frontend
- * uses these helpers to:
- *  - parse user-typed amounts from the cashier UI without float drift
- *  - format integer cents into a display string with the right prefix
- *  - hand cents to/from the backend without losing precision
+ * Helpers de presentación por valor decimal.
  *
- * Display policy (locked in DECISIONS.md):
- *  - UI:    "L 1,234.50"  → formatLempirasUI / formatLempirasUIFromCents
- *  - Receipt (institutional): "L. 1,234.50" → formatLempirasReceipt
+ * Estos helpers NO son la frontera canónica de dinero en centavos: viven
+ * en `lib/moneyCents.ts`. Aquí solo se formatea un valor decimal ya
+ * conocido (agregados del servidor, diferencias de caja, KPIs) y se
+ * exponen utilidades de conversión centavos → flotante para superficies
+ * que aún no migran a centavos enteros.
  *
- * Half-up rounding is used for `parseCents` to keep totals consistent
- * with the server-side PHP rounding (HALF_AWAY_FROM_ZERO).
+ * Display policy (DECISIONS.md):
+ *  - UI:    "L. 1,234.50"  → formatLempirasUI
+ *  - Recibo (institucional): "L. 1,234.50" → formatLempirasReceipt
+ *
+ * Para dinero en centavos usa SIEMPRE `parseCents`/`formatCents` de
+ * `lib/moneyCents.ts`.
  */
 
 export function finiteNumber(value: number | string | null | undefined): number {
@@ -41,8 +41,9 @@ export function formatLempirasReceipt(value: number | string | null | undefined,
 }
 
 /**
- * Format money for the cashier UI. Uses "L 1,234.50" (no period).
+ * Format money for the cashier UI. Uses "L. 1,234.50" (period and space).
  * Default display function in screens, tables, KPIs, dashboards.
+ * Prefer `formatCents` from `lib/moneyCents.ts` when you hold cents.
  */
 export function formatLempirasUI(value: number | string | null | undefined, fractionDigits = 2): string {
   const num = finiteNumber(value);
@@ -52,64 +53,6 @@ export function formatLempirasUI(value: number | string | null | undefined, frac
   });
 
   if (num < 0) {
-    return `- L ${formatted}`;
-  }
-
-  return `L ${formatted}`;
-}
-
-/**
- * Stable monetary parser used by callers that still reference
- * `formatLempiras`; treat it as the receipt format to keep the
- * preview / institutional surfaces intact.
- *
- * @deprecated prefer formatLempirasUI for UI or formatLempirasReceipt
- *             for the official receipt.
- */
-export const formatLempiras = formatLempirasReceipt;
-
-const CENTS_REGEX = /^-?\d+(\.\d+)?$/;
-
-export function parseCents(value: string | number): number {
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) {
-      return 0;
-    }
-
-    return Math.round(value * 100);
-  }
-
-  const trimmed = value.trim();
-
-  if (trimmed === '' || !CENTS_REGEX.test(trimmed)) {
-    return 0;
-  }
-
-  return Math.round(Number(trimmed) * 100);
-}
-
-export function formatCents(cents: number, locale: string = 'es-HN'): string {
-  if (!Number.isFinite(cents)) {
-    return 'L. 0.00';
-  }
-
-  const safe = Math.trunc(cents);
-  const value = Math.abs(safe) / 100;
-
-  let formatted = '';
-  try {
-    formatted = value.toLocaleString(locale, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  } catch {
-    formatted = value.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  }
-
-  if (safe < 0) {
     return `- L. ${formatted}`;
   }
 

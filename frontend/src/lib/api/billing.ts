@@ -3,11 +3,47 @@ import type {
   Invoice,
   InvoiceFilters,
   InvoicePayload,
+  InvoicePreview,
   Payment,
   PaymentRegistrationResult,
   ReceiptData,
   PaginatedMeta,
 } from './types';
+
+export type InvoiceReceiptPreviewDocument = {
+  paper: {
+    kind: string;
+    label: string;
+    orientation: string;
+    width_pt: number;
+    height_pt: number;
+  };
+  copies: {
+    count: number;
+    labels: string[];
+    destinations: string[];
+  };
+  page_count: number;
+  sheet_count: number;
+  requested_composition: string;
+  used_composition: string;
+  distribution: unknown;
+  alternative_output: unknown;
+  alternative_reason: string | null;
+  draft: true;
+  headline: string;
+  print_instruction: string;
+  sheet_assumption: string;
+};
+
+export type InvoiceReceiptPreview = {
+  draft: true;
+  watermark: string;
+  reserved_number: false;
+  document: InvoiceReceiptPreviewDocument;
+  html: string;
+  valuation: InvoicePreview;
+};
 
 export const billing = {
   async createInvoice(payload: InvoicePayload, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
@@ -15,6 +51,28 @@ export const billing = {
       method: 'POST',
       idempotencyKey: options.idempotencyKey,
       headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
+      body: JSON.stringify(payload),
+    });
+    return response.data;
+  },
+
+  /**
+   * Prevalidación del servidor: mismo código de dominio que la emisión,
+   * sin escribir nada ni consumir claves de idempotencia. Devuelve los
+   * totales autoritativos en centavos enteros.
+   */
+  async previewInvoice(payload: Omit<InvoicePayload, 'patient_name'>): Promise<InvoicePreview> {
+    const response = await apiClient.request<{ data: InvoicePreview }>('/api/invoices/preview', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return response.data;
+  },
+
+  /** Documento borrador del mismo motor institucional, sin persistir ni consumir correlativo. */
+  async previewInvoiceReceipt(payload: InvoicePayload): Promise<InvoiceReceiptPreview> {
+    const response = await apiClient.request<{ data: InvoiceReceiptPreview }>('/api/invoices/receipt-preview', {
+      method: 'POST',
       body: JSON.stringify(payload),
     });
     return response.data;

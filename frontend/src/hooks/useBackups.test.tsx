@@ -232,7 +232,7 @@ describe('useBackupWorkerHealth polling', () => {
     });
 
     const { result } = renderHook(() => ({
-      operational: useOperationalHealth(),
+      operational: useOperationalHealth(true),
       worker: useBackupWorkerHealth(),
     }), {
       wrapper: createWrapper(),

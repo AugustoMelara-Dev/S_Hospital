@@ -1,41 +1,37 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
-import { RouteState } from './design-system/patterns/RouteState';
+import { AdminEmpty } from './design-system/admin/components';
 import { type AuthUser, type CashSession } from './lib/api';
-import { appRoutes, canAccessRoute } from './navigation/appNavigation';
+import {
+  canAccessAdminItem,
+  adminPrimarySections,
+  adminRoutePaths,
+  resolveAdminLanding,
+  type AdminNavigationItem,
+} from './navigation/adminNavigation';
 import type { OperationalStatusReporter } from './app/operationalStatus';
 
-const NEW_INVOICE_PERMISSION_LABELS: Record<string, string> = {
-  'invoices.create': 'crear facturas',
-  'catalog.view': 'consultar catálogo',
-  'cash.view': 'consultar caja',
-  'payments.create': 'registrar pagos',
-  'receipts.view': 'consultar recibos',
-};
-
-function newInvoiceAccessDeniedReason(permissions: string[]): string | undefined {
-  const missingPermissions = (appRoutes.newInvoice.requiredPermissions ?? [])
-    .filter((permission) => !permissions.includes(permission))
-    .map((permission) => NEW_INVOICE_PERMISSION_LABELS[permission] ?? permission);
-
-  return missingPermissions.length > 0
-    ? `Faltan permisos: ${missingPermissions.join(', ')}. Solicite el rol Cajero completo.`
-    : undefined;
-}
-
-const AboutView = lazy(() => import('./features/about/AboutView').then((module) => ({ default: module.AboutView })));
-const BackupsView = lazy(() => import('./features/backups/BackupsView').then((module) => ({ default: module.BackupsView })));
-const CatalogView = lazy(() => import('./features/catalog/CatalogView').then((module) => ({ default: module.CatalogView })));
-const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((module) => ({ default: module.DashboardView })));
-const FiscalSettingsView = lazy(() => import('./features/settings/FiscalSettingsView').then((module) => ({ default: module.FiscalSettingsView })));
-const HelpView = lazy(() => import('./features/help/HelpView').then((module) => ({ default: module.HelpView })));
-const InvoiceHistoryView = lazy(() => import('./features/invoices/InvoiceHistoryView').then((module) => ({ default: module.InvoiceHistoryView })));
-const NewInvoiceView = lazy(() => import('./features/invoices/NewInvoiceView').then((module) => ({ default: module.NewInvoiceView })));
-const ReportsView = lazy(() => import('./features/reports/ReportsView').then((module) => ({ default: module.ReportsView })));
-const SupportCenterView = lazy(() => import('./features/support/SupportCenterView').then((module) => ({ default: module.SupportCenterView })));
-const UsersView = lazy(() => import('./features/admin/UsersView').then((module) => ({ default: module.UsersView })));
-const CashBoxView = lazy(() => import('./features/cash/CashBoxView').then((module) => ({ default: module.CashBoxView })));
+const ResumenView = lazy(() =>
+  import('./features/resumen/ResumenView').then((module) => ({ default: module.ResumenView })),
+);
+const CobrarView = lazy(() =>
+  import('./features/cobrar/CobrarView').then((module) => ({ default: module.CobrarView })),
+);
+const RecibosView = lazy(() =>
+  import('./features/recibos/RecibosView').then((module) => ({ default: module.RecibosView })),
+);
+const CajaView = lazy(() =>
+  import('./features/caja/CajaView').then((module) => ({ default: module.CajaView })),
+);
+const ReportesView = lazy(() =>
+  import('./features/reportes/ReportesView').then((module) => ({ default: module.ReportesView })),
+);
+const AdministracionView = lazy(() =>
+  import('./features/administracion/AdministracionView').then((module) => ({
+    default: module.AdministracionView,
+  })),
+);
 
 type AppRoutesProps = {
   canCreateInvoices: boolean;
@@ -51,6 +47,9 @@ type AppRoutesProps = {
   canViewCatalog: boolean;
   canViewReceipts: boolean;
   canViewFiscalSettings: boolean;
+  canViewReceiptSettings: boolean;
+  canEditReceiptSettings: boolean;
+  canEditAdvancedReceiptSettings: boolean;
   canViewInvoices: boolean;
   canViewReports: boolean;
   canViewManagerialReports: boolean;
@@ -64,241 +63,166 @@ type AppRoutesProps = {
   canManageRoles: boolean;
   canMarkDialysisPrescription: boolean;
   cashSession: CashSession | null;
-  defaultAuthenticatedRoute: string;
-  onQuickCash: () => void;
   onStatus: OperationalStatusReporter;
   user: AuthUser;
 };
 
-export function AppRoutes({
-  canCreateInvoices,
-  canCreatePayments,
-  canEditFiscalSettings,
-  canEditOperationalSettings,
-  canManageCatalog,
-  canOpenCash,
-  canCloseAnyCash,
-  canCloseCash,
-  canViewBackups,
-  canViewCash,
-  canViewCatalog,
-  canViewReceipts,
-  canViewFiscalSettings,
-  canViewInvoices,
-  canViewReports,
-  canViewManagerialReports,
-  canViewCashSessionReports,
-  canViewAuditReports,
-  canExportReports,
-  canViewUsers: _canViewUsers,
-  canCreateUsers,
-  canUpdateUsers,
-  canDisableUsers,
-  canManageRoles,
-  canMarkDialysisPrescription,
-  cashSession,
-  defaultAuthenticatedRoute,
-  onQuickCash,
-  onStatus,
-  user,
-}: AppRoutesProps) {
-  const canAccessNewInvoice = canAccessRoute(appRoutes.newInvoice, user.permissions);
-  const invoiceAccessDeniedReason = canCreateInvoices && !canAccessNewInvoice
-    ? newInvoiceAccessDeniedReason(user.permissions)
-    : undefined;
+function AdminRouteLoading({ label }: { label: string }) {
+  return (
+    <p
+      role="status"
+      className="px-1 py-6 text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]"
+    >
+      {label}
+    </p>
+  );
+}
+
+function sectionById(id: string): AdminNavigationItem {
+  const section = adminPrimarySections.find((item) => item.id === id);
+
+  if (!section) {
+    throw new Error(`Sección admin desconocida: ${id}`);
+  }
+
+  return section;
+}
+
+export function AppRoutes(props: AppRoutesProps) {
+  const { user } = props;
+  const landing = resolveAdminLanding(user);
+  const cobrar = sectionById('cobrar');
+  const recibos = sectionById('recibos');
+  const caja = sectionById('caja');
+  const reportes = sectionById('reportes');
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={appRoutes.dashboard.path} replace />} />
-      <Route path="/login" element={<Navigate to={defaultAuthenticatedRoute} replace />} />
+      <Route path="/" element={<Navigate to={landing} replace />} />
+      <Route path="/login" element={<Navigate to={landing} replace />} />
+
       <Route
-        path={appRoutes.dashboard.path}
+        path={adminRoutePaths.resumen}
         element={
-          <Suspense fallback={<RouteState kind="loading" title="Cargando módulo..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-            <DashboardView
-              canCreateInvoices={canAccessNewInvoice}
-              canEditFiscalSettings={canEditFiscalSettings}
-              canManageCatalog={canManageCatalog}
-              canOpenCash={canOpenCash}
-              canViewBackups={canViewBackups}
-              canViewCatalog={canViewCatalog}
-              canViewFiscalSettings={canViewFiscalSettings}
-              canViewInvoices={canViewInvoices}
-              canViewManagerialReports={canViewManagerialReports}
-              canViewReports={canViewReports}
-              cashSession={cashSession}
-              invoiceAccessDeniedReason={invoiceAccessDeniedReason}
-              onStatus={onStatus}
-            />
+          <Suspense fallback={<AdminRouteLoading label="Cargando resumen…" />}>
+            <ResumenView />
           </Suspense>
         }
       />
+
       <Route
-        path={appRoutes.newInvoice.path}
+        path={adminRoutePaths.cobrar}
         element={
           <PermissionGate
-            allowed={canAccessNewInvoice}
-            reason={appRoutes.newInvoice.deniedReason}
+            allowed={canAccessAdminItem(cobrar, user.permissions)}
+            reason={cobrar.deniedReason}
           >
-            <Suspense fallback={<RouteState kind="loading" title="Cargando facturación..." description="Espere mientras se carga el módulo local." headingLevel={2} />}>
-              <NewInvoiceView
-                cashSession={cashSession}
-                canCreatePayments={canCreatePayments}
-                canOpenCash={canOpenCash}
-                canViewCatalog={canViewCatalog}
-                canViewReceipts={canViewReceipts}
-                canMarkDialysisPrescription={canMarkDialysisPrescription}
-                onOpenCash={canOpenCash ? onQuickCash : undefined}
-                onStatus={onStatus}
-              />
-            </Suspense>
-          </PermissionGate>
-        }
-      />
-      <Route
-        path={appRoutes.cashbox.path}
-        element={
-          <PermissionGate allowed={canAccessRoute(appRoutes.cashbox, user.permissions)} reason={appRoutes.cashbox.deniedReason}>
-            <Suspense fallback={<RouteState kind="loading" title="Cargando caja..." description="Espere mientras se carga el módulo local." headingLevel={2} />}>
-              <CashBoxView
-              cashSession={cashSession}
-              canCloseAnyCash={canCloseAnyCash}
-              canCloseCash={canCloseCash}
-              canCreateInvoices={canAccessRoute(appRoutes.newInvoice, user.permissions)}
-              canOpenCash={canOpenCash}
-              canViewInvoices={canViewInvoices}
-              canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
-              currentUserId={user.id}
-              onStatus={onStatus}
-              />
+            <Suspense fallback={<AdminRouteLoading label="Cargando cobro…" />}>
+              <CobrarView />
             </Suspense>
           </PermissionGate>
         }
       />
 
       <Route
-        path={appRoutes.catalog.path}
-        element={
-          <PermissionGate allowed={canAccessRoute(appRoutes.catalog, user.permissions)} reason={appRoutes.catalog.deniedReason}>
-            <Suspense fallback={<RouteState kind="loading" title="Cargando catálogo..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-              <CatalogView user={user} onStatus={onStatus} />
-            </Suspense>
-          </PermissionGate>
-        }
-      />
-      <Route
-        path={appRoutes.invoices.path}
-        element={
-          <PermissionGate allowed={canAccessRoute(appRoutes.invoices, user.permissions)} reason={appRoutes.invoices.deniedReason}>
-            <Suspense fallback={<RouteState kind="loading" title="Cargando historial..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-              <InvoiceHistoryView user={user} onStatus={onStatus} />
-            </Suspense>
-          </PermissionGate>
-        }
-      />
-      <Route
-        path={`${appRoutes.reports.path}/*`}
+        path={adminRoutePaths.recibos}
         element={
           <PermissionGate
-            allowed={canAccessRoute(appRoutes.reports, user.permissions)}
-            reason={appRoutes.reports.deniedReason}
+            allowed={canAccessAdminItem(recibos, user.permissions)}
+            reason={recibos.deniedReason}
           >
-            <Suspense fallback={<RouteState kind="loading" title="Cargando reportes..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-              <ReportsView
-                canBrowseCashSessions={canViewCash}
-                canExport={canExportReports}
-                canViewAuditReports={canViewAuditReports}
-                canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
-                canViewManagerial={canViewManagerialReports}
-                onStatus={onStatus}
-              />
+            <Suspense fallback={<AdminRouteLoading label="Cargando recibos…" />}>
+              <RecibosView />
             </Suspense>
           </PermissionGate>
         }
       />
+
       <Route
-        path={appRoutes.backups.path}
+        path={adminRoutePaths.caja}
         element={
-          <PermissionGate allowed={canAccessRoute(appRoutes.backups, user.permissions)} reason={appRoutes.backups.deniedReason}>
-            <Suspense fallback={<RouteState kind="loading" title="Cargando respaldos..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-              <BackupsView user={user} onStatus={onStatus} />
+          <PermissionGate
+            allowed={canAccessAdminItem(caja, user.permissions)}
+            reason={caja.deniedReason}
+          >
+            <Suspense fallback={<AdminRouteLoading label="Cargando caja…" />}>
+              <CajaView />
             </Suspense>
           </PermissionGate>
         }
       />
+
       <Route
-        path={appRoutes.fiscalSettings.path}
+        path={`${adminRoutePaths.reportes}/*`}
         element={
-          <PermissionGate allowed={canAccessRoute(appRoutes.fiscalSettings, user.permissions)} reason={appRoutes.fiscalSettings.deniedReason}>
-            <Suspense fallback={<RouteState kind="loading" title="Cargando configuracion fiscal..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-              <FiscalSettingsView
-                canEdit={canEditFiscalSettings}
-                canEditOperationalRules={canEditOperationalSettings}
-                canViewFiscalSettings={canViewFiscalSettings}
-                onStatus={onStatus}
-              />
+          <PermissionGate
+            allowed={canAccessAdminItem(reportes, user.permissions)}
+            reason={reportes.deniedReason}
+          >
+            <Suspense fallback={<AdminRouteLoading label="Cargando reportes…" />}>
+              <ReportesView />
             </Suspense>
           </PermissionGate>
         }
       />
+
       <Route
-        path={appRoutes.receiptSettings.path}
-        element={<Navigate to={appRoutes.fiscalSettings.path} replace />}
-      />
-      <Route
-        path={appRoutes.users.path}
+        path={`${adminRoutePaths.administracion}/*`}
         element={
-          <PermissionGate allowed={canAccessRoute(appRoutes.users, user.permissions)} reason={appRoutes.users.deniedReason}>
-            <Suspense fallback={<RouteState kind="loading" title="Cargando usuarios..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-              <UsersView
-                onStatus={onStatus}
-                canCreateUsers={canCreateUsers}
-                canUpdateUsers={canUpdateUsers}
-                canDisableUsers={canDisableUsers}
-                canManageRoles={canManageRoles}
-                canAssignAdminRole={user.permissions.includes('users.assign_admin_role')}
-                currentUserId={user.id}
-              />
-            </Suspense>
-          </PermissionGate>
-        }
-      />
-      <Route
-        path={appRoutes.support.path}
-        element={
-          <Suspense fallback={<RouteState kind="loading" title="Cargando soporte..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-            <SupportCenterView user={user} onStatus={onStatus} />
+          <Suspense fallback={<AdminRouteLoading label="Cargando administración…" />}>
+            <AdministracionView />
           </Suspense>
         }
       />
+
+      {/* Rutas de propuestas redirigen al destino operativo canónico */}
+      <Route path="/propuestas/*" element={<Navigate to={adminRoutePaths.cobrar} replace />} />
+      <Route path="/cobrar-a" element={<Navigate to={adminRoutePaths.cobrar} replace />} />
+      <Route path="/cobrar-b" element={<Navigate to={adminRoutePaths.cobrar} replace />} />
+
+      {/* Rutas antiguas → destino nuevo (redirección autorizada, sin segundo shell). */}
+      <Route path="/dashboard" element={<Navigate to={adminRoutePaths.resumen} replace />} />
+      <Route path="/billing/new" element={<Navigate to={adminRoutePaths.cobrar} replace />} />
+      <Route path="/invoices" element={<Navigate to={adminRoutePaths.recibos} replace />} />
+      <Route path="/cashbox" element={<Navigate to={adminRoutePaths.caja} replace />} />
+      <Route path="/reports/*" element={<Navigate to={adminRoutePaths.reportes} replace />} />
+      <Route path="/catalog" element={<Navigate to={adminRoutePaths.administracionCatalogo} replace />} />
+      <Route path="/admin/users" element={<Navigate to={adminRoutePaths.administracionUsuarios} replace />} />
+      <Route path="/settings/*" element={<Navigate to={adminRoutePaths.administracionAjustes} replace />} />
       <Route
-        path={appRoutes.help.path}
-        element={
-          <Suspense fallback={<RouteState kind="loading" title="Cargando ayuda..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-            <HelpView />
-          </Suspense>
-        }
+        path="/backups"
+        element={<Navigate to={`${adminRoutePaths.administracionMantenimiento}/respaldos`} replace />}
       />
-      <Route
-        path={appRoutes.about.path}
-        element={
-          <Suspense fallback={<RouteState kind="loading" title="Cargando acerca de..." description="Espere mientras se carga el modulo local." headingLevel={2} />}>
-            <AboutView user={user} onStatus={onStatus} />
-          </Suspense>
-        }
-      />
-      <Route path="*" element={<NotFoundView />} />
+      <Route path="/help" element={<Navigate to={adminRoutePaths.administracionAyuda} replace />} />
+      <Route path="/support" element={<Navigate to={adminRoutePaths.administracionAyuda} replace />} />
+      <Route path="/about" element={<Navigate to={adminRoutePaths.administracionAyuda} replace />} />
+
+      <Route path="*" element={<AdminNotFound landing={landing} />} />
     </Routes>
   );
 }
 
-export function NotFoundView() {
+export function AdminNotFound({ landing = adminRoutePaths.resumen }: { landing?: string }) {
   return (
-    <RouteState
-      kind="not-found"
-      title="Ruta no encontrada"
-      description="La pantalla solicitada no existe dentro de la navegación principal."
-      action={{ label: 'Ir al inicio', href: appRoutes.dashboard.path }}
-    />
+    <section className="mx-auto max-w-2xl py-8">
+      {/* H1 real de la página: el título del estado vacío ES el encabezado
+          (axe `page-has-heading-one`); no se duplica el texto en otro nodo. */}
+      <AdminEmpty
+        headingLevel={1}
+        title="Ruta no encontrada"
+        description="La pantalla solicitada no existe dentro de la navegación principal."
+        action={
+          <Link
+            to={landing}
+            className="inline-flex h-[var(--ui-control-h)] items-center rounded-[var(--ui-radius-control)] bg-[var(--ui-action)] px-3 text-[length:var(--ui-text-base)] font-semibold text-[color:var(--ui-action-foreground)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-focus)] hover:bg-[var(--ui-action-hover)]"
+          >
+            Ir al inicio
+          </Link>
+        }
+      />
+    </section>
   );
 }
+
+/** Alias de compatibilidad para consumidores previos del shell R2. */
+export const NotFoundView = AdminNotFound;

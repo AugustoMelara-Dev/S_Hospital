@@ -68,7 +68,11 @@ export function cspNoncePlugin(options: { nonce?: string; meta?: boolean } = {})
         return null;
       }
 
-      if (!/\.(js|ts|tsx|jsx|html)$/.test(id)) {
+      // C4-B2: el transform de serve sólo puede tocar componentes/HTML. Los
+      // módulos .ts/.js de dominio (p. ej. receiptDocumentSummary.ts) contienen
+      // literales de expresión regular como `/<style\b.../`; sustituir `<style`
+      // dentro de ellos los corrompe y Vite devuelve HTTP 500 (PARSE_ERROR).
+      if (!/\.(tsx|jsx|html)$/.test(id)) {
         return null;
       }
 
@@ -76,13 +80,11 @@ export function cspNoncePlugin(options: { nonce?: string; meta?: boolean } = {})
         return null;
       }
 
-      if (id.endsWith('.html')) {
-        return code.replace(/<script\b/g, `<script nonce="${buildNonce}"`);
-      }
-
+      // Exigir un tag real (espacio o `>` después del nombre) evita igualar
+      // textos como `<script\b` dentro de literales de código fuente.
       const transformed = code
-        .replace(/<script\b/g, `<script nonce="${buildNonce}"`)
-        .replace(/<style\b/g, `<style nonce="${buildNonce}"`);
+        .replace(/<script(\s|>)/g, `<script nonce="${buildNonce}"$1`)
+        .replace(/<style(\s|>)/g, `<style nonce="${buildNonce}"$1`);
 
       if (transformed === code) {
         return null;

@@ -2,32 +2,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { appRoutes, primaryNavigation } from '@/navigation/appNavigation';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const readSource = (relative: string) => readFileSync(resolve(here, relative), 'utf-8');
-
-describe('Pre-installation audit: navigation consolidation', () => {
-  it('does not expose a separate administrative entry for institutional receipts', () => {
-    const visibleAdministrative = primaryNavigation.filter((item) => item.navigationGroup === 'administration');
-    const receiptEntry = visibleAdministrative.find((item) => item.path === '/settings/institutional-receipts');
-
-    expect(receiptEntry, 'El modulo de Recibos no debe seguir apareciendo como entrada administrativa independiente.').toBeUndefined();
-  });
-
-  it('keeps the institutional-receipts route available only as legacy redirect alias', () => {
-    const receiptRoute = appRoutes.receiptSettings;
-    expect(receiptRoute, 'La ruta /settings/institutional-receipts debe seguir declarada como alias legacy.').toBeDefined();
-    expect(receiptRoute?.navigation).toBe(false);
-  });
-
-  it('keeps a single canonical configuration entry under /settings/fiscal', () => {
-    const visibleAdministrative = primaryNavigation.filter((item) => item.navigationGroup === 'administration');
-    const configEntries = visibleAdministrative.filter((item) => item.path.startsWith('/settings/'));
-
-    expect(configEntries.map((entry) => entry.path)).toEqual(['/settings/fiscal']);
-  });
-});
 
 describe('Pre-installation audit: institutional receipt series form', () => {
   it('does not require a receipt_number_color in the normal series schema', () => {
@@ -61,7 +38,7 @@ describe('Pre-installation audit: fiscal sequence form', () => {
     const source = readSource('../features/settings/FiscalNumerationView.tsx');
 
     expect(source).not.toMatch(/form\.register\(['"]current_number['"]/);
-    expect(source).toContain('El backend lo incrementa al emitir. No se reinicia desde esta pantalla.');
+    expect(source).toContain('El número aumenta al emitir una factura. No se reinicia desde esta pantalla.');
   });
 });
 
@@ -69,7 +46,7 @@ describe('Pre-installation audit: H1 canonical institution source', () => {
   it('HospitalSettingsView is the only React form that writes institution identity fields', () => {
     const hospitalSource = readSource('../features/settings/HospitalSettingsView.tsx');
     const receiptSource = readSource('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx');
-    const fiscalSource = readSource('../features/settings/FiscalSettingsView.tsx');
+    const fiscalSource = readSource('../features/administracion/AjustesView.tsx');
 
     expect(hospitalSource).toContain('hospital_name');
     expect(hospitalSource).toContain('government_line');
@@ -84,16 +61,15 @@ describe('Pre-installation audit: H1 canonical institution source', () => {
     expect(fiscalSource).toContain('<HospitalSettingsView');
   });
 
-  it('AppRoutes redirects /settings/institutional-receipts to /settings/fiscal', () => {
+  it('AppRoutes retira la ruta R2 de recibos y la redirige al destino administrativo nuevo', () => {
     const appRoutesSource = readSource('../AppRoutes.tsx');
 
-    expect(appRoutesSource).toContain(`path={appRoutes.receiptSettings.path}`);
-    const receiptRouteBlock = appRoutesSource.match(
-      new RegExp(`<Route\\s+path=\\{appRoutes\\.receiptSettings\\.path\\}[\\s\\S]*?\\/>`),
+    expect(appRoutesSource).toContain(
+      '<Route path="/settings/*" element={<Navigate to={adminRoutePaths.administracionAjustes} replace />} />',
     );
-    expect(receiptRouteBlock, 'Debe existir una ruta explicita para /settings/institutional-receipts.').not.toBeNull();
-    expect(receiptRouteBlock?.[0]).toMatch(/Navigate\s+to=\{appRoutes\.fiscalSettings\.path\}/);
-    expect(receiptRouteBlock?.[0]).toContain('replace');
+    expect(appRoutesSource, 'La URL de recibos ya no debe montar la vista R2.').not.toContain(
+      "import('./features/receipt-settings/InstitutionalReceiptSettingsView')",
+    );
   });
 });
 

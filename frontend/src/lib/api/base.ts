@@ -11,6 +11,12 @@ let csrfCache: { fetchedAt: number; promise: Promise<void> } | null = null;
 const DEFAULT_GET_TIMEOUT_MS = 10_000;
 const DEFAULT_MUTATION_TIMEOUT_MS = 30_000;
 const DEFAULT_DOWNLOAD_TIMEOUT_MS = 60_000;
+const UNKNOWN_RESULT_MESSAGE = 'No se pudo confirmar el resultado de la operación. Si estaba cobrando, revise Recibos antes de repetir el cobro.';
+const TIMEOUT_MESSAGE = 'La respuesta está tardando más de lo esperado. Si estaba cobrando, revise Recibos antes de repetir el cobro.';
+const NETWORK_MESSAGE = 'No se pudo conectar con el sistema. Vuelva a abrir la aplicación. Si estaba cobrando, revise Recibos antes de repetir el cobro.';
+const READ_ERROR_MESSAGE = 'No se pudo cargar la información. Vuelva a intentarlo.';
+const READ_TIMEOUT_MESSAGE = 'La consulta está tardando más de lo esperado. Vuelva a intentarlo.';
+const READ_NETWORK_MESSAGE = 'No se pudo conectar con el sistema. Revise la conexión local y vuelva a intentarlo.';
 const VALIDATION_FIELD_LABELS: Record<string, string> = {
   cash_session: 'Caja',
   cash_session_id: 'Caja',
@@ -75,13 +81,21 @@ export class ApiError extends Error {
   readonly status: number;
   readonly validationErrors?: Record<string, string[]>;
   readonly supportMessage?: string;
+  readonly readOnlyRequest: boolean;
 
-  constructor(message: string, status: number, validationErrors?: Record<string, string[]>, supportMessage?: string) {
-    super(message);
+  constructor(message: string, status: number, validationErrors?: Record<string, string[]>, supportMessage?: string, requestMethod?: string) {
+    const readOnlyRequest = requestMethod === 'GET' || requestMethod === 'HEAD';
+    const publicMessage = status >= 500
+      ? readOnlyRequest ? READ_ERROR_MESSAGE : UNKNOWN_RESULT_MESSAGE
+      : isRequestTimeoutMessage(message)
+        ? readOnlyRequest ? READ_TIMEOUT_MESSAGE : TIMEOUT_MESSAGE
+        : readOnlyRequest && message === NETWORK_MESSAGE ? READ_NETWORK_MESSAGE : message;
+    super(publicMessage);
     this.name = 'ApiError';
     this.status = status;
+    this.readOnlyRequest = readOnlyRequest;
     this.validationErrors = validationErrors;
-    this.supportMessage = supportMessage;
+    this.supportMessage = supportMessage ?? (publicMessage !== message ? safeClientMessage(message) : undefined);
   }
 }
 
@@ -137,11 +151,11 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error instanceof ApiError && error.status >= 500) {
-    return 'El servidor local no pudo completar la operación. Revise el servidor local e intente de nuevo.';
+    return error.readOnlyRequest ? fallback : UNKNOWN_RESULT_MESSAGE;
   }
 
   if (error instanceof Error && isRequestTimeoutMessage(error.message)) {
-    return 'La respuesta está tardando más de lo esperado. Intente nuevamente.';
+    return TIMEOUT_MESSAGE;
   }
 
   if (
@@ -261,13 +275,13 @@ export function resolveApiBaseUrl(
   return normalizedUrl;
 }
 
-function networkError(error?: unknown): ApiError {
-  const baseMessage = 'No se pudo conectar con el servidor local. Revise que el servidor local este encendido y vuelva a intentar.';
+function networkError(error?: unknown, requestMethod?: string): ApiError {
+  const baseMessage = NETWORK_MESSAGE;
   const rawDetail = error instanceof Error ? error.message : error === undefined ? '' : String(error);
   const safeDetail = safeClientMessage(rawDetail);
   const supportMessage = safeDetail ? `${baseMessage} Detalle seguro del navegador: ${safeDetail}` : baseMessage;
 
-  return new ApiError(baseMessage, 0, undefined, supportMessage);
+  return new ApiError(baseMessage, 0, undefined, supportMessage, requestMethod);
 }
 
 function recordApiIssue(error: ApiError, action: string): never {
@@ -332,8 +346,12 @@ export const apiClient = {
     return `${this.baseUrl}${normalizedPath}`;
   },
 
-  async systemHealth(): Promise<{ data: import('./types').OperationalHealth }> {
-    return this.request<{ data: import('./types').OperationalHealth }>('/api/system/health');
+  async systemHealth(): Promise<{ data: import('./types').SystemHealthLiveness }> {
+    return this.request<{ data: import('./types').SystemHealthLiveness }>('/api/system/health');
+  },
+
+  async systemHealthDetail(): Promise<{ data: import('./types').OperationalHealth }> {
+    return this.request<{ data: import('./types').OperationalHealth }>('/api/system/health/detail');
   },
 
   async csrf(): Promise<void> {
@@ -464,11 +482,14 @@ export const apiClient = {
             new ApiError(
               `La operación '${method} ${path}' excedió ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`,
               0,
+              undefined,
+              undefined,
+              method,
             ),
             `${method} ${path}_timeout`,
           );
         }
-        recordApiIssue(networkError(err), `${method} ${path}`);
+        recordApiIssue(networkError(err, method), `${method} ${path}`);
       } finally {
         window.clearTimeout(timeoutId);
         externalSignal?.removeEventListener('abort', relayAbort);
@@ -543,7 +564,7 @@ export const apiClient = {
         );
       }
 
-      recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status), `${method} ${path}`);
+      recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status, undefined, undefined, method), `${method} ${path}`);
     }
 
     return (await response.json()) as T;
@@ -649,11 +670,14 @@ export const apiClient = {
           new ApiError(
             `La descarga '${path}' excedio ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`,
             0,
+            undefined,
+            undefined,
+            'GET',
           ),
           `DOWNLOAD ${path}_timeout`,
         );
       }
-      recordApiIssue(networkError(err), `DOWNLOAD ${path}`);
+      recordApiIssue(networkError(err, 'GET'), `DOWNLOAD ${path}`);
     } finally {
       window.clearTimeout(timeoutId);
     }
@@ -681,7 +705,7 @@ export const apiClient = {
       }
 
       const error = (await response.json().catch(() => null)) as { message?: string } | null;
-      recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status), `DOWNLOAD ${path}`);
+      recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status, undefined, undefined, 'GET'), `DOWNLOAD ${path}`);
     }
 
     return response.blob();

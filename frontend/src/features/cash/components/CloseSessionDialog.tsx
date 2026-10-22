@@ -1,20 +1,20 @@
-import { DownloadIcon, PrinterIcon, TriangleAlertIcon } from 'lucide-react';
+import { DownloadIcon, PrinterIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { finiteNumber, formatLempirasUI } from '@/lib/money';
+import { AdminCallout, AdminDialog, AdminField, AdminPanel, MoneyText } from '@/design-system/admin/components';
+import { parseCents } from '@/lib/moneyCents';
 import { cn } from '@/lib/utils';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
+import { formatSignedCashCents } from '../cashMoney';
 import { downloadCloseSummaryCsv } from '../cashCloseSummary';
 import type { CashClosingBreakdown } from '@/lib/api/types';
+import { PRIMARY_BUTTON, SECONDARY_BUTTON, TEXTAREA_CLASS } from '../cashUi';
 
 interface CloseSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   session: {
     id?: number;
-    opening_amount: string;
+    opening_amount: string | null;
     expected_cash_amount?: string | null;
     expected_amount?: string | null;
     payments_by_method?: { cash: string; transfer: string; card: string; other: string };
@@ -26,7 +26,7 @@ interface CloseSessionDialogProps {
   };
   closingAmount: string;
   closingNotes: string;
-  difference: number;
+  differenceCents: number | null;
   isSubmitting: boolean;
   onClosingNotesChange: (value: string) => void;
   onConfirm: () => void;
@@ -38,40 +38,56 @@ type CashCloseSummarySession = CloseSessionDialogProps['session'];
 
 interface CashCloseSummaryPanelProps {
   session: CashCloseSummarySession;
-  closingAmount: string;
+  closingAmount: string | null;
   closingNotes: string;
-  difference: number;
+  differenceCents: number | null;
+}
+
+const METHOD_LABELS = [
+  { key: 'cash', label: 'Efectivo' },
+  { key: 'transfer', label: 'Transferencia' },
+  { key: 'card', label: 'Tarjeta' },
+  { key: 'other', label: 'Otros' },
+] as const;
+
+function sessionCents(session: CashCloseSummarySession) {
+  const methods = session.payments_by_method;
+
+  return {
+    opening: parseCents(session.opening_amount),
+    expected: parseCents(session.expected_cash_amount ?? session.expected_amount ?? session.opening_amount),
+    pending: parseCents(session.pending_amount),
+    methods: {
+      cash: methods ? parseCents(methods.cash) : null,
+      transfer: methods ? parseCents(methods.transfer) : null,
+      card: methods ? parseCents(methods.card) : null,
+      other: methods ? parseCents(methods.other) : null,
+    },
+  };
 }
 
 export function CashCloseSummaryPanel({
   session,
   closingAmount,
   closingNotes,
-  difference,
+  differenceCents,
 }: CashCloseSummaryPanelProps) {
-  const openingAmount = finiteNumber(session.opening_amount);
-  const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount ?? session.opening_amount);
-  const pendingAmount = finiteNumber(session.pending_amount);
+  const cents = sessionCents(session);
   const pendingInvoiceCount = session.pending_invoice_count ?? 0;
   const closedAtLabel = session.closed_at ? formatDateTimeEs(session.closed_at) : null;
-  const methods = session.payments_by_method ?? {
-    cash: '0.00',
-    transfer: '0.00',
-    card: '0.00',
-    other: '0.00',
-  };
+  const closingAmountCents = parseCents(closingAmount);
 
   function exportCloseSummary() {
     downloadCloseSummaryCsv({
       cashSessionId: session.id,
       closedAt: session.closed_at,
-      openingAmount,
-      expectedAmount,
-      methods,
-      pendingAmount,
+      openingAmountCents: cents.opening,
+      expectedAmountCents: cents.expected,
+      methodsCents: cents.methods,
+      pendingAmountCents: cents.pending,
       pendingInvoiceCount,
-      closingAmount,
-      difference,
+      closingAmountCents,
+      differenceCents,
       closingNotes,
       closingBreakdown: session.closing_breakdown,
     });
@@ -93,90 +109,92 @@ export function CashCloseSummaryPanel({
   }
 
   return (
-    <section
+    <div data-cash-close-print-root>
+    <AdminPanel
+      as="section"
       aria-labelledby="cash-close-confirmed-summary-title"
-      className="border border-success/35 bg-success/10 p-5 text-sm "
-      data-cash-close-print-root
+      className="border-l-4 border-l-[var(--ui-success)] p-5 text-[length:var(--ui-text-sm)]"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 id="cash-close-confirmed-summary-title" className="text-base font-semibold text-foreground">
+          <h2 id="cash-close-confirmed-summary-title" className="text-[length:var(--ui-text-md)] font-semibold text-[color:var(--ui-ink)]">
             Resumen de cierre confirmado
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Conserve este resumen para impresion o archivo del turno cerrado.
+          <p className="mt-1 text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
+            Conserve este resumen para impresión o archivo del turno cerrado.
           </p>
         </div>
         <div className="print-hidden flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={printCloseSummary}>
-            <PrinterIcon aria-hidden="true" />
+          <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={printCloseSummary}>
+            <PrinterIcon aria-hidden="true" data-icon className="size-4" />
             Imprimir resumen
-          </Button>
-          <Button type="button" variant="outline" onClick={exportCloseSummary}>
-            <DownloadIcon aria-hidden="true" />
+          </button>
+          <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={exportCloseSummary}>
+            <DownloadIcon aria-hidden="true" data-icon className="size-4" />
             Exportar resumen
-          </Button>
+          </button>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 border border-border bg-card/80 p-4 sm:grid-cols-2">
+      <dl className="mt-4 grid grid-cols-1 border-y border-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-[var(--ui-line)]">
         {session.id ? (
-          <div className="flex justify-between gap-3">
-            <span>Caja:</span>
-            <strong>Caja #{session.id}</strong>
+          <div className="flex justify-between gap-3 px-3 py-2.5">
+            <dt>Sesión de caja</dt>
+            <dd className="font-semibold tabular-nums">#{session.id}</dd>
           </div>
         ) : null}
         {closedAtLabel ? (
-          <div className="flex justify-between gap-3">
-            <span>Cerrada:</span>
-            <strong>{closedAtLabel}</strong>
+          <div className="flex justify-between gap-3 px-3 py-2.5">
+            <dt>Cerrada</dt>
+            <dd className="font-semibold">{closedAtLabel}</dd>
           </div>
         ) : null}
-        <div className="flex justify-between gap-3">
-          <span>Monto apertura:</span>
-          <strong>{formatLempirasUI(openingAmount)}</strong>
+        <div className="flex justify-between gap-3 border-t border-[var(--ui-line)] px-3 py-2.5">
+          <dt>Monto apertura</dt>
+          <dd className="font-semibold"><MoneyText cents={cents.opening} /></dd>
         </div>
-        <div className="flex justify-between gap-3">
-          <span>Efectivo esperado:</span>
-          <strong>{formatLempirasUI(expectedAmount)}</strong>
+        <div className="flex justify-between gap-3 border-t border-[var(--ui-line)] px-3 py-2.5">
+          <dt>Efectivo esperado</dt>
+          <dd className="font-semibold"><MoneyText cents={cents.expected} /></dd>
         </div>
-        <div className="flex justify-between gap-3">
-          <span>Monto contado:</span>
-          <strong>{formatLempirasUI(closingAmount || '0.00')}</strong>
+        <div className="flex justify-between gap-3 border-t border-[var(--ui-line)] px-3 py-2.5">
+          <dt>Monto contado</dt>
+          <dd className="font-semibold"><MoneyText cents={closingAmountCents} /></dd>
         </div>
-        <div className="flex justify-between gap-3">
-          <span>Diferencia:</span>
-          <strong className={cn(difference !== 0 ? 'text-destructive' : 'text-success-foreground')}>
-            {formatLempirasUI(difference)}
-          </strong>
+        <div className="flex justify-between gap-3 border-t border-[var(--ui-line)] px-3 py-2.5">
+          <dt>Diferencia</dt>
+          {/* Diferencia de caja = warn (identidad §2); diferencia cero es
+              conciliación neutra, nunca celebrada en verde. El valor lleva
+              signo explícito (no solo color). */}
+          <dd
+            className={cn(
+              'font-semibold tabular-nums',
+              differenceCents !== null && differenceCents !== 0
+                ? 'text-[color:var(--ui-warn)]'
+                : 'text-[color:var(--ui-ink)]',
+            )}
+          >
+            {formatSignedCashCents(differenceCents)}
+          </dd>
         </div>
-      </div>
+      </dl>
 
       <DenominationBreakdown breakdown={session.closing_breakdown} />
 
-      <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-4">
-        <div className="flex justify-between gap-2 border border-border bg-card/70 px-2 py-1">
-          <span>Efectivo</span>
-          <strong>{formatLempirasUI(methods.cash)}</strong>
-        </div>
-        <div className="flex justify-between gap-2 border border-border bg-card/70 px-2 py-1">
-          <span>Transferencia</span>
-          <strong>{formatLempirasUI(methods.transfer)}</strong>
-        </div>
-        <div className="flex justify-between gap-2 border border-border bg-card/70 px-2 py-1">
-          <span>Tarjeta</span>
-          <strong>{formatLempirasUI(methods.card)}</strong>
-        </div>
-        <div className="flex justify-between gap-2 border border-border bg-card/70 px-2 py-1">
-          <span>Otros</span>
-          <strong>{formatLempirasUI(methods.other)}</strong>
-        </div>
-      </div>
+      <dl className="mt-3 grid grid-cols-1 divide-y divide-[var(--ui-line)] border-y border-[var(--ui-line)] text-[length:var(--ui-text-xs)] sm:grid-cols-4 sm:divide-x sm:divide-y-0">
+        {METHOD_LABELS.map(({ key, label }) => (
+          <div key={key} className="flex justify-between gap-2 px-3 py-2">
+            <dt>{label}</dt>
+            <dd className="font-semibold"><MoneyText cents={cents.methods[key]} /></dd>
+          </div>
+        ))}
+      </dl>
 
-      <div className="mt-3 text-sm text-muted-foreground">
-        Nota: <span className="text-foreground">{closingNotes.trim() || 'Sin nota'}</span>
+      <div className="mt-3 text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
+        Nota: <span className="text-[color:var(--ui-ink)]">{closingNotes.trim() || 'Sin nota'}</span>
       </div>
-    </section>
+    </AdminPanel>
+    </div>
   );
 }
 
@@ -186,27 +204,20 @@ export function CloseSessionDialog({
   session,
   closingAmount,
   closingNotes,
-  difference,
+  differenceCents,
   isSubmitting,
   onClosingNotesChange,
   onConfirm,
 }: CloseSessionDialogProps) {
   const closingNotesRef = useRef<HTMLTextAreaElement | null>(null);
-  const openingAmount = finiteNumber(session.opening_amount);
-  const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount ?? session.opening_amount);
-  const pendingAmount = finiteNumber(session.pending_amount);
+  const cents = sessionCents(session);
+  const closingAmountCents = parseCents(closingAmount);
   const pendingInvoiceCount = session.pending_invoice_count ?? 0;
   const missingInstitutionalReceiptCount = session.missing_institutional_receipt_count ?? 0;
-  const hasPendingBalance = pendingInvoiceCount > 0 || pendingAmount > 0;
-  const isDifference = difference !== 0;
+  const hasPendingBalance = pendingInvoiceCount > 0 || (cents.pending !== null && cents.pending > 0);
+  const isDifference = differenceCents !== null && differenceCents !== 0;
   const trimmedClosingNotes = closingNotes.trim();
   const hasValidDifferenceNote = !isDifference || trimmedClosingNotes.length >= MIN_DIFFERENCE_NOTE_LENGTH;
-  const methods = session.payments_by_method ?? {
-    cash: '0.00',
-    transfer: '0.00',
-    card: '0.00',
-    other: '0.00',
-  };
 
   useEffect(() => {
     if (open && isDifference) {
@@ -218,13 +229,13 @@ export function CloseSessionDialog({
     downloadCloseSummaryCsv({
       cashSessionId: session.id,
       closedAt: session.closed_at,
-      openingAmount,
-      expectedAmount,
-      methods,
-      pendingAmount,
+      openingAmountCents: cents.opening,
+      expectedAmountCents: cents.expected,
+      methodsCents: cents.methods,
+      pendingAmountCents: cents.pending,
       pendingInvoiceCount,
-      closingAmount,
-      difference,
+      closingAmountCents,
+      differenceCents,
       closingNotes,
       closingBreakdown: session.closing_breakdown,
     });
@@ -246,134 +257,140 @@ export function CloseSessionDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-screen overflow-y-auto sm:max-w-3xl">
-      <DialogHeader><DialogTitle>Cierre de caja</DialogTitle><DialogDescription>Revise el resumen, el conteo físico y la diferencia antes de confirmar.</DialogDescription></DialogHeader>
+    <AdminDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Cierre de caja"
+      description="Revise el resumen, el conteo físico y la diferencia antes de confirmar."
+      className="sm:max-w-3xl"
+      closeDisabled={isSubmitting}
+      footer={(
+        <>
+          <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={printCloseSummary} disabled={isSubmitting}>
+            <PrinterIcon aria-hidden="true" data-icon className="size-4" />
+            Imprimir resumen
+          </button>
+          <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={exportCloseSummary} disabled={isSubmitting}>
+            <DownloadIcon aria-hidden="true" data-icon className="size-4" />
+            Exportar resumen
+          </button>
+          <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={() => onOpenChange(false)}>Cancelar</button>
+          <button
+            type="button"
+            data-ui-press
+            className={PRIMARY_BUTTON}
+            onClick={onConfirm}
+            disabled={isSubmitting || hasPendingBalance || missingInstitutionalReceiptCount > 0 || !hasValidDifferenceNote}
+          >
+            {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
+          </button>
+        </>
+      )}
+    >
       <div data-cash-close-print-root="">
         <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold">¿Cerrar caja?</h2>
-          <div className="text-sm text-muted-foreground">
+          {/* Un solo título por diálogo: `AdminDialog` ya anuncia «Cierre de
+              caja» como título accesible; el segundo título encadenaba una
+              jerarquía equivalente (C4-VISUAL MEDIUM). */}
+          <div className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
             <div className="mt-3 grid gap-3">
-              <h3 className="text-xs font-semibold text-foreground">
+              <h3 className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-ink)]">
                 1. Resumen del turno
               </h3>
-              <div className="border border-border bg-muted/40 p-4 text-sm">
-                <div className="flex justify-between gap-4">
-                  <span>Monto apertura:</span>
-                  <strong>{formatLempirasUI(openingAmount)}</strong>
+              <dl className="divide-y divide-[var(--ui-line)] border-y border-[var(--ui-line)] text-[length:var(--ui-text-sm)]">
+                <div className="flex justify-between gap-4 py-2.5">
+                  <dt>Monto apertura</dt>
+                  <dd className="font-semibold"><MoneyText cents={cents.opening} /></dd>
                 </div>
-                <div className="mt-2 flex justify-between gap-4">
-                  <span>Efectivo esperado:</span>
-                  <strong>{formatLempirasUI(expectedAmount)}</strong>
+                <div className="flex justify-between gap-4 py-2.5">
+                  <dt>Efectivo esperado</dt>
+                  <dd className="font-semibold"><MoneyText cents={cents.expected} /></dd>
                 </div>
-              </div>
-              <div className="grid grid-cols-1 gap-3 border border-border p-4 text-xs sm:grid-cols-2">
-                <div className="flex justify-between gap-2">
-                  <span>Efectivo</span>
-                  <strong>{formatLempirasUI(methods.cash)}</strong>
+                {/* Saldo pendiente es cifra del turno (lo que aún se debe
+                    cobrar), no un método de cobro: vive en la misma tarjeta
+                    que apertura y esperado, con el mismo molde de fila que
+                    Resumen agrupa en su lista del turno. */}
+                <div className="flex justify-between gap-4 py-2.5">
+                  <dt>Saldo pendiente</dt>
+                  <dd className="font-semibold"><MoneyText cents={cents.pending} /></dd>
                 </div>
-                <div className="flex justify-between gap-2">
-                  <span>Transferencia</span>
-                  <strong>{formatLempirasUI(methods.transfer)}</strong>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span>Tarjeta</span>
-                  <strong>{formatLempirasUI(methods.card)}</strong>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span>Otros</span>
-                  <strong>{formatLempirasUI(methods.other)}</strong>
-                </div>
-              </div>
-              <div className="flex justify-between gap-4 text-sm">
-                <span>Saldo pendiente:</span>
-                <strong>{formatLempirasUI(pendingAmount)}</strong>
-              </div>
+              </dl>
+              <dl className="grid grid-cols-1 divide-y divide-[var(--ui-line)] border-b border-[var(--ui-line)] text-[length:var(--ui-text-xs)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                {METHOD_LABELS.map(({ key, label }) => (
+                  <div key={key} className="flex justify-between gap-2 px-3 py-2">
+                    <dt>{label}</dt>
+                    <dd className="font-semibold"><MoneyText cents={cents.methods[key]} /></dd>
+                  </div>
+                ))}
+              </dl>
               {pendingInvoiceCount > 0 ? (
-                <div className="border border-warning/35 bg-warning/10 p-3 text-xs font-medium text-warning-foreground">
-                  Hay {pendingInvoiceCount} factura(s) pendientes o parciales. El servidor no permitira cerrar hasta revisarlas.
-                </div>
-              ) : pendingAmount > 0 ? (
-                <div className="border border-warning/35 bg-warning/10 p-3 text-xs font-medium text-warning-foreground">
-                  Hay saldo pendiente en esta caja. Revise Historial antes de cerrar.
-                </div>
+                <AdminCallout tone="warn"><span className="text-[length:var(--ui-text-xs)] font-medium">Hay {pendingInvoiceCount} factura(s) pendientes o parciales. No se puede cerrar hasta revisarlas.</span></AdminCallout>
+              ) : cents.pending !== null && cents.pending > 0 ? (
+                <AdminCallout tone="warn"><span className="text-[length:var(--ui-text-xs)] font-medium">Hay saldo pendiente en esta caja. Revise Historial antes de cerrar.</span></AdminCallout>
               ) : null}
               {missingInstitutionalReceiptCount > 0 ? (
-                <div className="border border-warning/35 bg-warning/10 p-3 text-xs font-medium text-warning-foreground">
-                  Hay {missingInstitutionalReceiptCount} recibo(s) institucional(es) pendiente(s). El servidor no permitira cerrar hasta emitirlos.
-                </div>
+                <AdminCallout tone="warn"><span className="text-[length:var(--ui-text-xs)] font-medium">Hay {missingInstitutionalReceiptCount} recibo(s) institucional(es) pendiente(s). No se puede cerrar hasta emitirlos.</span></AdminCallout>
               ) : null}
-              <h3 className="text-xs font-semibold text-foreground">
+              <h3 className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-ink)]">
                 2. Conteo de efectivo
               </h3>
-              <div className="grid grid-cols-1 gap-3 border border-border p-4 text-sm sm:grid-cols-2">
-                <div className="flex justify-between gap-4">
-                  <span>Contado:</span>
-                  <strong>{formatLempirasUI(closingAmount || '0.00')}</strong>
+              <dl className="grid grid-cols-1 divide-y divide-[var(--ui-line)] border-y border-[var(--ui-line)] text-[length:var(--ui-text-sm)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                <div className="flex justify-between gap-4 px-3 py-2.5">
+                  <dt>Contado</dt>
+                  <dd className="font-semibold"><MoneyText cents={closingAmountCents} /></dd>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span>Diferencia:</span>
-                  <strong className={cn(isDifference ? 'text-destructive' : 'text-success-foreground')}>
-                    {formatLempirasUI(difference)}
-                  </strong>
+                <div className="flex justify-between gap-4 px-3 py-2.5">
+                  <dt>Diferencia</dt>
+                  {/* Diferencia de caja = warn; cero = neutro. El valor lleva
+                      signo explícito: el color nunca es el único canal. */}
+                  <dd
+                    className={cn(
+                      'font-semibold tabular-nums',
+                      isDifference ? 'text-[color:var(--ui-warn)]' : 'text-[color:var(--ui-ink)]',
+                    )}
+                  >
+                    {formatSignedCashCents(differenceCents)}
+                  </dd>
                 </div>
-              </div>
+              </dl>
               <DenominationBreakdown breakdown={session.closing_breakdown} />
             </div>
           </div>
         </div>
 
-        {isDifference && (
-          <div className="mt-4 space-y-2">
-            <label className="text-sm font-semibold" htmlFor="closing_difference_notes">
-              Nota sobre la diferencia *
-            </label>
-            <Textarea
-              ref={(control) => { closingNotesRef.current = control; }}
-              id="closing_difference_notes"
-              value={closingNotes}
-              onChange={(e) => onClosingNotesChange(e.target.value)}
-              placeholder="Explique la diferencia..."
-              rows={2}
-              aria-invalid={isDifference && !hasValidDifferenceNote}
-              aria-describedby={isDifference && !hasValidDifferenceNote ? 'closing-notes-error' : undefined}
-            />
+        {isDifference ? (
+          <div className="mt-4">
+            <AdminField
+              htmlFor="closing_difference_notes"
+              label="Nota sobre la diferencia"
+              required
+              error={!hasValidDifferenceNote ? 'La nota es obligatoria y debe tener al menos 5 caracteres cuando hay diferencia.' : undefined}
+            >
+              <textarea
+                ref={(control) => { closingNotesRef.current = control; }}
+                id="closing_difference_notes"
+                value={closingNotes}
+                onChange={(e) => onClosingNotesChange(e.target.value)}
+                placeholder="Explique la diferencia..."
+                rows={2}
+                aria-invalid={isDifference && !hasValidDifferenceNote}
+                aria-describedby={isDifference && !hasValidDifferenceNote ? 'closing_difference_notes-error' : undefined}
+                className={TEXTAREA_CLASS}
+              />
+            </AdminField>
           </div>
-        )}
+        ) : null}
 
         <section className="mt-5 grid gap-2" aria-labelledby="close-session-confirm-step">
-          <h3 id="close-session-confirm-step" className="text-xs font-semibold text-foreground">
+          <h3 id="close-session-confirm-step" className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-ink)]">
             3. Confirmar cierre
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Confirme solo despues de revisar el resumen, el conteo fisico y la diferencia calculada.
+          <p className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
+            Confirme después de revisar el resumen, el conteo físico y la diferencia calculada.
           </p>
         </section>
-
-        <div className="print-hidden mt-6 flex flex-wrap justify-end gap-2">
-          <Button type="button" variant="outline" onClick={printCloseSummary} disabled={isSubmitting}>
-            <PrinterIcon aria-hidden="true" />
-            Imprimir resumen
-          </Button>
-          <Button type="button" variant="outline" onClick={exportCloseSummary} disabled={isSubmitting}>
-            <DownloadIcon aria-hidden="true" />
-            Exportar resumen
-          </Button>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button type="button" onClick={onConfirm} disabled={isSubmitting || hasPendingBalance || missingInstitutionalReceiptCount > 0 || !hasValidDifferenceNote}>
-            {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
-          </Button>
-        </div>
-
-        {isDifference && !hasValidDifferenceNote && (
-          <div id="closing-notes-error" role="alert" className="mt-2 flex items-center gap-2 text-sm text-destructive">
-            <TriangleAlertIcon aria-hidden="true" />
-            <span>La nota es obligatoria y debe tener al menos 5 caracteres cuando hay diferencia.</span>
-          </div>
-        )}
       </div>
-      </DialogContent>
-    </Dialog>
+    </AdminDialog>
   );
 }
 
@@ -383,8 +400,8 @@ function DenominationBreakdown({ breakdown }: { breakdown?: CashClosingBreakdown
   const billEntries = Object.entries(breakdown.bills).filter(([, count]) => count > 0);
 
   return (
-    <section aria-label="Desglose del conteo físico" className="mt-3 border border-border bg-card/70 p-3 text-xs">
-      <h3 className="font-semibold text-foreground">Desglose del conteo físico</h3>
+    <section aria-label="Desglose del conteo físico" className="mt-3 border-y border-[var(--ui-line)] py-3 text-[length:var(--ui-text-xs)]">
+      <h3 className="font-semibold text-[color:var(--ui-ink)]">Desglose del conteo físico</h3>
       <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4">
         {billEntries.map(([denomination, count]) => (
           <div key={denomination} className="flex justify-between gap-2">
@@ -394,7 +411,7 @@ function DenominationBreakdown({ breakdown }: { breakdown?: CashClosingBreakdown
         ))}
         <div className="flex justify-between gap-2">
           <dt>Monedas y otros</dt>
-          <dd className="font-semibold tabular-nums">{formatLempirasUI(breakdown.other_amount)}</dd>
+          <dd className="font-semibold tabular-nums"><MoneyText cents={parseCents(breakdown.other_amount)} /></dd>
         </div>
       </dl>
     </section>

@@ -72,13 +72,6 @@ export function statusLabel(status: 'pending' | 'partial' | 'validated' | 'manua
   return 'Pendiente';
 }
 
-export function statusClass(status: 'pending' | 'partial' | 'validated' | 'manual_required'): string {
-  if (status === 'validated') return 'status-success';
-  if (status === 'partial') return 'status-info';
-  if (status === 'manual_required') return 'status-warning';
-  return 'border-destructive/30 bg-destructive/10 text-destructive';
-}
-
 export function friendlyProductionCheck(code: string, fallback: string): string {
   const labels: Record<string, string> = {
     APP_ENV_PRODUCTION: 'Modo de operacion final',
@@ -173,7 +166,7 @@ export function isLocalAccessValidationNoise(code: string, isSingleMachineMode: 
   );
 }
 
-export function operationalSummary(status: SystemStatus): { level: OperationalStatus; label: string; description: string; className: string } {
+export function operationalSummary(status: SystemStatus): { level: OperationalStatus; label: string; description: string } {
   const latestBackupNotConfirmed = status.backups.last_success_at !== null
     && (
       status.backups.last_success_file_exists === false ||
@@ -201,7 +194,6 @@ export function operationalSummary(status: SystemStatus): { level: OperationalSt
       level: 'error',
       label: 'Error',
       description: 'Hay un problema que puede afectar respaldos o continuidad. Pida soporte si no puede resolverlo.',
-      className: 'border-destructive/30 bg-destructive/10 text-destructive',
     };
   }
 
@@ -226,7 +218,6 @@ export function operationalSummary(status: SystemStatus): { level: OperationalSt
       level: 'review',
       label: 'Requiere revision',
       description: 'Falta completar respaldo reciente, validacion del recibo o configuracion final antes de operar sin supervision.',
-      className: 'status-warning',
     };
   }
 
@@ -234,7 +225,6 @@ export function operationalSummary(status: SystemStatus): { level: OperationalSt
     level: 'ok',
     label: 'Todo bien',
     description: 'Respaldos y chequeos basicos estan al dia. Mantenga el cierre diario y los respaldos protegidos.',
-    className: 'status-success',
   };
 }
 

@@ -1,252 +1,375 @@
-import { EditIcon, MoreHorizontalIcon, PowerIcon } from 'lucide-react';
-import { useState } from 'react';
-import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { HistoryIcon, MoreHorizontalIcon, PencilIcon, PowerIcon } from 'lucide-react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
-import { Skeleton } from '@/components/ui/skeleton';
-import { WrapText } from '@/design-system/components/InstitutionalComponents';
-import { DataTable, type InstitutionalColumn } from '@/design-system/patterns/DataTable';
+  AdminCallout,
+  AdminEmpty,
+  AdminTable,
+  MoneyText,
+  StatusStamp,
+  type AdminColumn,
+  type AdminStatus,
+} from '@/design-system/admin/components';
+import { AdminMenuContent, AdminMenuItem, AdminMenuRoot, AdminMenuSeparator, AdminMenuTrigger } from '@/design-system/admin/AdminMenu';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import type { Service } from '../../../lib/api';
-import { formatLempirasUIFromCents, parseCents } from '../../../lib/moneyCents';
-import { getServiceBillingSummary } from '../../../lib/serviceBilling';
+import type { Service } from '@/lib/api';
+import { parseCents } from '@/lib/moneyCents';
+import { getServiceBillingSummary, type ServiceBillingBadge } from '@/lib/serviceBilling';
+import { ICON_BUTTON, PINNED_ACTIONS_CELL, SECONDARY_BUTTON } from './catalogUi';
+import { serviceOperationalNotes } from './serviceOperationalNotes';
 import type { ServiceCatalogTableProps } from './catalogTypes';
 
+const TABLE_CAPTION = 'Listado de productos y servicios del catálogo';
+const MOBILE_LIST_LABEL = 'Productos y servicios del catálogo en móvil';
+
+const NAME_CLASS = 'block font-semibold text-[color:var(--ui-ink)] [overflow-wrap:anywhere]';
+const SOFT_CLASS = 'text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)] [overflow-wrap:anywhere]';
+const CELL_CLASS = 'text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink)] [overflow-wrap:anywhere]';
+
+/**
+ * Solo se colorean las excepciones del resumen de facturación (aviso, bloqueo y
+ * regla especial). Los valores por defecto no generan ruido: quedan fuera.
+ */
+const BADGE_TONE_CLASS: Record<ServiceBillingBadge['tone'], string> = {
+  warning: 'border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] text-[color:var(--ui-warn)]',
+  destructive: 'border-[var(--ui-danger-border)] bg-[var(--ui-danger-subtle)] text-[color:var(--ui-danger)]',
+  outline: 'border-[var(--ui-line-strong)] bg-[var(--ui-surface-alt)] text-[color:var(--ui-ink)]',
+  secondary: 'border-[var(--ui-line-strong)] bg-[var(--ui-surface-alt)] text-[color:var(--ui-ink-soft)]',
+  default: 'border-[var(--ui-line-strong)] bg-[var(--ui-surface)] text-[color:var(--ui-ink)]',
+};
+
+const EMPTY_STATE = {
+  withFilters: {
+    title: 'Sin coincidencias',
+    description: 'No se encontraron productos o servicios con los filtros seleccionados.',
+  },
+  initial: {
+    title: 'No hay productos ni servicios',
+    description: 'Comience agregando el primer concepto al catálogo.',
+  },
+} as const;
+
+/**
+ * Lista administrativa del catálogo. El precio vive a la derecha en semibold y
+ * el estado se lee como `StatusStamp`; las reglas especiales acompañan al
+ * estado para que "Receta diálisis" siga visible a 1366 px. La columna de
+ * acciones queda fijada al borde derecho: si la tabla desplaza en horizontal,
+ * el menú por fila sigue a la vista y alcanzable con teclado.
+ */
 export function ServiceCatalogTable({
   canManage,
+  hasActiveFilters,
+  isEmpty,
   isLoading,
   loadError,
   onClearFilters,
   onRetry,
   onRowActions,
   services,
-  hasActiveFilters,
-  isEmpty,
 }: ServiceCatalogTableProps) {
   const isMobile = useMediaQuery('(max-width: 767px)');
-  const [openActionsServiceId, setOpenActionsServiceId] = useState<number | null>(null);
-  const columns: Array<InstitutionalColumn<Service>> = [
-    { id: 'name', accessorKey: 'name', header: 'Servicio', cell: ({ row }) => <ServiceName service={row.original} /> },
-    { id: 'category', accessorFn: (service) => service.category?.name ?? 'Sin categoría', header: 'Categoría' },
-    { id: 'area', accessorFn: (service) => service.area?.name ?? 'Sin área', header: 'Área' },
+  const showActions = true;
+
+  const columns: Array<AdminColumn<Service>> = [
     {
-      id: 'price',
-      accessorKey: 'price',
-      header: 'Precio',
-      meta: { numeric: true },
-      cell: ({ row }) => <span className="tabular-nums">{formatLempirasUIFromCents(parseCents(row.original.price))}</span>,
+      key: 'service',
+      header: 'Producto o servicio',
+      mobilePrimary: true,
+      cell: (service) => <ServiceIdentity service={service} />,
     },
-    { id: 'status', header: 'Estado', enableSorting: false, cell: ({ row }) => <ServiceState service={row.original} /> },
+    {
+      key: 'category',
+      header: 'Categoría',
+      cell: (service) => <span className={CELL_CLASS}>{service.category?.name ?? 'Sin categoría'}</span>,
+    },
+    {
+      key: 'area',
+      header: 'Área',
+      cell: (service) => <span className={CELL_CLASS}>{service.area?.name ?? 'Sin área'}</span>,
+    },
+    {
+      key: 'price',
+      header: 'Precio',
+      align: 'right',
+      cell: (service) => <MoneyText cents={parseCents(service.price)} emphasis="strong" />,
+    },
+    {
+      key: 'status',
+      header: 'Estado',
+      cell: (service) => <ServiceState service={service} />,
+    },
   ];
 
-  if (canManage) {
+  if (showActions) {
     columns.push({
-      id: 'actions',
+      key: 'actions',
       header: 'Acciones',
-      enableSorting: false,
-      cell: ({ row }) => (
-        <ServiceActions
-          service={row.original}
-          open={openActionsServiceId === row.original.id}
-          onOpenChange={(open) => setOpenActionsServiceId(open ? row.original.id : null)}
-          onEdit={onRowActions.onEdit}
-          onToggle={onRowActions.onToggleActive}
-        />
+      align: 'right',
+      className: PINNED_ACTIONS_CELL,
+      cell: (service) => (
+        <ServiceActions canManage={canManage && onRowActions.canManage} service={service} onEdit={onRowActions.onEdit} onHistory={onRowActions.onHistory} onToggle={onRowActions.onToggleActive} />
       ),
     });
   }
 
-  const emptyMessage = hasActiveFilters
-    ? 'No se encontraron servicios con los filtros seleccionados.'
-    : 'No hay servicios. Comience agregando su primer servicio al catálogo.';
+  const emptyCopy = hasActiveFilters ? EMPTY_STATE.withFilters : EMPTY_STATE.initial;
 
   return (
-    <section aria-labelledby="service-catalog-results-title" className="flex flex-col gap-4">
-      <header>
-        <h2 id="service-catalog-results-title" className="text-lg font-semibold">Servicios disponibles</h2>
-        <p className="text-sm text-muted-foreground">Precio vigente, disponibilidad en caja y reglas especiales.</p>
+    <section aria-labelledby="service-catalog-results-title" className="flex flex-col gap-3 px-4 py-3">
+      <header className="flex flex-col gap-0.5">
+        <h2
+          id="service-catalog-results-title"
+          className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-ink-soft)]"
+        >
+          Productos y servicios disponibles
+        </h2>
+        <p className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
+          Precio vigente, disponibilidad en caja y reglas especiales.
+        </p>
       </header>
-      {isLoading ? (
-        <div role="status" aria-label="Cargando servicios del catálogo" className="grid gap-2">
-          <span className="sr-only">Cargando servicios del catálogo...</span>
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+
+      {isLoading ? <LoadingState /> : null}
+
+      {!isLoading && loadError ? (
+        <AdminCallout tone="error" title="No se pudo cargar el catálogo">
+          <p>{loadError}</p>
+          <button
+            type="button"
+            data-ui-press
+            className={`${SECONDARY_BUTTON} mt-2`}
+            onClick={onRetry}
+          >
+            Reintentar
+          </button>
+        </AdminCallout>
+      ) : null}
+
+      {!isLoading && !loadError && isEmpty ? (
+        <AdminEmpty
+          title={emptyCopy.title}
+          description={emptyCopy.description}
+          action={
+            hasActiveFilters ? (
+              <button
+                type="button"
+                data-ui-press
+                className={SECONDARY_BUTTON}
+                onClick={onClearFilters}
+              >
+                Limpiar filtros
+              </button>
+            ) : undefined
+          }
+        />
+      ) : null}
+
+      {!isLoading && !loadError && !isEmpty ? (
+        <div role="region" aria-label={TABLE_CAPTION}>
+          {isMobile ? (
+            <ServiceMobileList services={services} showActions={showActions} onRowActions={onRowActions} />
+          ) : (
+            <AdminTable<Service>
+              caption={TABLE_CAPTION}
+              columns={columns}
+              rows={services}
+              getRowKey={(service) => String(service.id)}
+              minTableWidth="42rem"
+              rowClassName={() => 'hover:bg-[var(--ui-surface-alt)]'}
+              empty={<AdminEmpty title={emptyCopy.title} description={emptyCopy.description} />}
+            />
+          )}
         </div>
       ) : null}
-      {!isLoading && loadError ? (
-        <Alert variant="destructive">
-          <AlertTitle>No se pudo cargar el catálogo</AlertTitle>
-          <AlertDescription>{loadError}</AlertDescription>
-          <AlertAction><Button type="button" variant="outline" onClick={onRetry}>Reintentar</Button></AlertAction>
-        </Alert>
-      ) : null}
-      {!isLoading && !loadError && isEmpty ? (
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyTitle>Sin servicios</EmptyTitle>
-            <EmptyDescription>{emptyMessage}</EmptyDescription>
-          </EmptyHeader>
-          {hasActiveFilters ? (
-            <EmptyContent><Button type="button" variant="outline" onClick={onClearFilters}>Limpiar filtros</Button></EmptyContent>
-          ) : null}
-        </Empty>
-      ) : null}
-      {!isLoading && !loadError && !isEmpty
-        ? isMobile
-          ? (
-            <ServiceMobileList
-              canManage={canManage}
-              services={services}
-              openActionsServiceId={openActionsServiceId}
-              setOpenActionsServiceId={setOpenActionsServiceId}
-              onEdit={onRowActions.onEdit}
-              onToggle={onRowActions.onToggleActive}
-            />
-          )
-          : (
-            <DataTable
-              ariaLabel="Listado de servicios del catálogo"
-              data={services}
-              columns={columns}
-              getRowId={(service) => String(service.id)}
-              emptyTitle="Sin servicios"
-              emptyDescription={emptyMessage}
-            />
-          )
-        : null}
     </section>
   );
 }
 
-function ServiceMobileList({
-  canManage,
-  onEdit,
-  onToggle,
-  openActionsServiceId,
-  services,
-  setOpenActionsServiceId,
-}: {
-  canManage: boolean;
-  onEdit: (service: Service) => void;
-  onToggle: (service: Service) => void;
-  openActionsServiceId: number | null;
-  services: Service[];
-  setOpenActionsServiceId: (id: number | null) => void;
-}) {
+function LoadingState() {
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border" aria-label="Servicios del catálogo en móvil">
-      {services.map((service) => {
-        const summary = getServiceBillingSummary(service);
-        return (
-          <li key={service.id} className="grid gap-2 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <strong className="min-w-0 text-base">{service.name}</strong>
-              <span className="shrink-0 font-semibold tabular-nums">
-                {formatLempirasUIFromCents(parseCents(service.price))}
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {service.category?.name ?? 'Sin categoría'} · {service.area?.name ?? 'Sin área'}
-            </p>
-            {summary.reasons[0] ? <p className="text-xs text-muted-foreground">{summary.reasons[0]}</p> : null}
-            <div className="flex items-center justify-between gap-3">
-              <Badge variant={service.active ? 'default' : 'secondary'}>{service.active ? 'Activo' : 'Inactivo'}</Badge>
-              {canManage ? (
-                <ServiceActions
-                  ariaLabel={`Acciones móviles de servicio ${service.name}`}
-                  service={service}
-                  open={openActionsServiceId === service.id}
-                  onOpenChange={(open) => setOpenActionsServiceId(open ? service.id : null)}
-                  onEdit={onEdit}
-                  onToggle={onToggle}
-                />
-              ) : null}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-function ServiceName({ service }: { service: Service }) {
-  const secondary = getServiceBillingSummary(service).reasons[0];
-  return (
-    <div className="min-w-0">
-      <WrapText as="span" className="block font-semibold">{service.name}</WrapText>
-      {secondary ? <WrapText as="p" className="mt-0.5 text-xs text-muted-foreground">{secondary}</WrapText> : null}
-    </div>
-  );
-}
-
-function ServiceState({ service }: { service: Service }) {
-  return (
-    <div className="flex flex-wrap gap-1">
-      {getServiceBillingSummary(service).badges.map((badge) => (
-        <Badge
-          key={badge.label}
-          variant={badge.tone === 'destructive' ? 'destructive' : badge.tone === 'secondary' ? 'secondary' : 'outline'}
-        >
-          {badge.label}
-        </Badge>
+    <div role="status" aria-label="Cargando productos y servicios del catálogo" className="flex flex-col gap-2">
+      <span className="sr-only">Cargando productos y servicios del catálogo…</span>
+      {[0, 1, 2].map((row) => (
+        <div
+          key={row}
+          aria-hidden="true"
+          /* Receta única de esqueleto (§5): dos tonos del sistema + pulso de
+             opacidad; sin barrido luminoso (shimmer). Static con reduced-motion. */
+          className="h-12 rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[image:linear-gradient(90deg,var(--ui-skel-from),var(--ui-skel-to))] motion-safe:ui-skel"
+        />
       ))}
     </div>
   );
 }
 
+function ServiceIdentity({ service }: { service: Service }) {
+  const note = serviceOperationalNotes(service)[0];
+
+  if (!note) {
+    return (
+      <div className="min-w-0">
+        <span className={NAME_CLASS}>{service.name}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-w-0">
+      <span className={NAME_CLASS}>{service.name}</span>
+      <span className={`mt-0.5 block ${SOFT_CLASS}`}>
+        {note.text}
+        {note.moneyCents !== undefined ? (
+          <>
+            {' '}
+            <MoneyText cents={note.moneyCents} className="text-[length:var(--ui-text-xs)] font-semibold" />
+          </>
+        ) : null}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Nota operativa de la tarjeta móvil: la misma frase del catálogo que la tabla,
+ * con el importe vigente dibujado por `MoneyText` (nunca un literal).
+ */
+function MobileServiceNote({ service }: { service: Service }) {
+  const note = serviceOperationalNotes(service)[0];
+
+  if (!note) {
+    return null;
+  }
+
+  return (
+    <p className={SOFT_CLASS}>
+      {note.text}
+      {note.moneyCents !== undefined ? (
+        <>
+          {' '}
+          <MoneyText cents={note.moneyCents} className="text-[length:var(--ui-text-xs)] font-semibold" />
+        </>
+      ) : null}
+    </p>
+  );
+}
+
+function ServiceState({ service }: { service: Service }) {
+  // El estado activo/inactivo ya lo lleva el `StatusStamp`; se omite el badge
+  // "Inactivo" duplicado y se conservan las excepciones y la regla especial.
+  const badges = getServiceBillingSummary(service).badges.filter((badge) => badge.label !== 'Inactivo');
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <StatusStamp status={statusStampFor(service)} label={service.active ? 'Activo' : 'Inactivo'} />
+      {badges.map((badge) => (
+        <span
+          key={badge.label}
+          className={`inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[length:var(--ui-text-xs)] font-medium ${BADGE_TONE_CLASS[badge.tone]}`}
+        >
+          {badge.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function statusStampFor(service: Service): AdminStatus {
+  return service.active ? 'cobrado' : 'borrador';
+}
+
 function ServiceActions({
-  ariaLabel,
+  canManage,
   service,
-  open,
-  onOpenChange,
   onEdit,
+  onHistory,
   onToggle,
 }: {
-  ariaLabel?: string;
+  canManage: boolean;
   service: Service;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onEdit: (service: Service) => void;
+  onHistory: (service: Service) => void;
   onToggle: (service: Service) => void;
 }) {
   return (
-    <DropdownMenu open={open} onOpenChange={onOpenChange}>
-      <DropdownMenuTrigger asChild>
-        <Button
+    <AdminMenuRoot>
+      <AdminMenuTrigger asChild>
+        <button
           type="button"
-          variant="ghost"
-          size="icon"
-          aria-label={ariaLabel ?? `Acciones de servicio ${service.name}`}
-          onClick={(event) => event.stopPropagation()}
+          data-ui-press
+          className={ICON_BUTTON}
+          aria-label={`Acciones de servicio ${service.name}`}
         >
-          <MoreHorizontalIcon aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuItem onSelect={() => onEdit(service)}>
-            <EditIcon data-icon="inline-start" />
-            Editar
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem variant={service.active ? 'destructive' : 'default'} onSelect={() => onToggle(service)}>
-            <PowerIcon data-icon="inline-start" />
-            {service.active ? 'Desactivar' : 'Activar'}
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <MoreHorizontalIcon aria-hidden="true" className="size-4" strokeWidth={1.5} />
+        </button>
+      </AdminMenuTrigger>
+      <AdminMenuContent>
+          {canManage ? (
+            <AdminMenuItem onSelect={() => onEdit(service)}>
+              <PencilIcon aria-hidden="true" />
+              Editar
+            </AdminMenuItem>
+          ) : null}
+          <AdminMenuItem onSelect={() => onHistory(service)}>
+            <HistoryIcon aria-hidden="true" />
+            Ver historial
+          </AdminMenuItem>
+        {canManage ? (
+          <>
+            <AdminMenuSeparator />
+              <AdminMenuItem
+                destructive={service.active}
+                onSelect={() => onToggle(service)}
+              >
+                <PowerIcon aria-hidden="true" />
+                {service.active ? 'Desactivar' : 'Activar'}
+              </AdminMenuItem>
+          </>
+        ) : null}
+      </AdminMenuContent>
+    </AdminMenuRoot>
+  );
+}
+
+/**
+ * Tarjeta móvil (`< md`): conserva la distinción entre servicios homónimos por
+ * categoría y área sin exponer códigos internos. Las acciones de fila siguen
+ * siendo alcanzables con el mismo botón que en la tabla.
+ */
+function ServiceMobileList({
+  services,
+  showActions,
+  onRowActions,
+}: {
+  services: Service[];
+  showActions: boolean;
+  onRowActions: ServiceCatalogTableProps['onRowActions'];
+}) {
+  return (
+    <ul
+      aria-label={MOBILE_LIST_LABEL}
+      className="divide-y divide-[var(--ui-line)] overflow-hidden rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[var(--ui-surface)]"
+    >
+      {services.map((service) => (
+        <li key={service.id} className="flex flex-col gap-2 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <span className={`min-w-0 ${NAME_CLASS}`}>{service.name}</span>
+            <MoneyText cents={parseCents(service.price)} emphasis="strong" className="shrink-0" />
+          </div>
+          <p className={SOFT_CLASS}>
+            {service.category?.name ?? 'Sin categoría'} · {service.area?.name ?? 'Sin área'}
+          </p>
+          <MobileServiceNote service={service} />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <ServiceState service={service} />
+            {showActions ? (
+              <ServiceActions
+                canManage={onRowActions.canManage}
+                service={service}
+                onEdit={onRowActions.onEdit}
+                onHistory={onRowActions.onHistory}
+                onToggle={onRowActions.onToggleActive}
+              />
+            ) : null}
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -33,10 +33,12 @@ describe('LoginView', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
     expect(screen.queryByText(/identidad provisional/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/acceso seguro|red local|estación de trabajo|caja y facturación, listas/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/acceso seguro|estación de trabajo|caja y facturación, listas/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/infraestructura|módulos autorizados|administración|LAN|offline/i)).not.toBeInTheDocument();
-    expect(screen.getByText('Ingrese con su usuario y contraseña.')).toBeVisible();
-    expect(screen.getByTestId('login-card')).toHaveClass('max-w-md');
+    expect(screen.getByText('Use la cuenta asignada para este equipo.')).toBeVisible();
+    const heading = screen.getByRole('heading', { name: 'Iniciar sesión' });
+    expect(heading).toBeVisible();
+    expect(heading.closest('section')).not.toBeNull();
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveAttribute('autocomplete', 'username');
     expect(screen.getByLabelText(/^contrase/i)).toHaveAttribute('autocomplete', 'current-password');
     expect(screen.queryByText(/operación financiera clara/i)).not.toBeInTheDocument();
@@ -58,7 +60,7 @@ describe('LoginView', () => {
     const onPasswordChange = vi.fn();
     render(<LoginView {...defaultProps} onPasswordChange={onPasswordChange} />, { wrapper: Wrapper });
 
-    const passwordInput = screen.getByText('Contraseña').closest('input') || screen.getByPlaceholderText('********');
+    const passwordInput = screen.getByText('Contraseña').closest('input') || screen.getByPlaceholderText('Ingrese su contraseña');
     if (passwordInput) {
       fireEvent.change(passwordInput, { target: { value: 'secret123' } });
       expect(onPasswordChange).toHaveBeenCalledWith('secret123');
@@ -78,7 +80,7 @@ describe('LoginView', () => {
     render(<LoginView {...defaultProps} status="Credenciales inválidas" />, { wrapper: Wrapper });
 
     expect(screen.getByText(/credenciales inválidas/i)).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveAttribute('data-variant', 'destructive');
+    expect(screen.getByRole('alert').className).toContain('--ui-danger');
   });
 
   it('announces benign connection progress as status instead of an alert', () => {
@@ -100,9 +102,9 @@ describe('LoginView', () => {
       { wrapper: Wrapper },
     );
 
-    const button = screen.getByRole('button', { name: /validando credenciales/i });
+    const button = screen.getByRole('button', { name: /comprobando acceso/i });
     expect(button).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent('Validando credenciales');
+    expect(screen.getByRole('status')).toHaveTextContent('Comprobando acceso');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
     fireEvent.submit(button.closest('form')!);
@@ -112,9 +114,10 @@ describe('LoginView', () => {
   it('announces an expired session as a warning with a stable recovery action', () => {
     render(<LoginView {...defaultProps} status="Sesión cerrada por el servidor. Inicie sesión nuevamente." />, { wrapper: Wrapper });
 
-    expect(screen.getByRole('alert')).toHaveAttribute('data-variant', 'default');
-    expect(screen.getByRole('alert')).toHaveTextContent(/inicie sesión nuevamente/i);
-    expect(screen.getByRole('alert')).not.toHaveTextContent(/redirigiendo/i);
+    const alert = screen.getByRole('alert');
+    expect(alert.className).not.toContain('--ui-danger');
+    expect(alert).toHaveTextContent(/inicie sesión nuevamente/i);
+    expect(alert).not.toHaveTextContent(/redirigiendo/i);
   });
 
   it('disables submit button when countdown is active', () => {
@@ -159,11 +162,27 @@ describe('LoginView', () => {
     expect(screen.getByRole('button', { name: /ocultar contraseña/i })).toBeInTheDocument();
   });
 
+  it('explica la recuperación local sin ofrecer un restablecimiento público', () => {
+    render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
+
+    const helpButton = screen.getByRole('button', { name: /olvidó su contraseña/i });
+    expect(helpButton).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText(/recuperar acceso a s_hospital/i)).not.toBeInTheDocument();
+
+    fireEvent.click(helpButton);
+
+    expect(helpButton).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText(/administración → usuarios/i)).toBeVisible();
+    expect(screen.getByText(/recuperar acceso a s_hospital/i)).toBeVisible();
+    expect(screen.getByText(/autorización del administrador del equipo/i)).toBeVisible();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
   it('pre-fills login and password when provided', () => {
     render(<LoginView {...defaultProps} login="admin@hospital.local" password="test123" />, { wrapper: Wrapper });
 
     const loginInput = screen.getByPlaceholderText('ej. cajero_01');
-    const passwordInput = screen.getByPlaceholderText('********');
+    const passwordInput = screen.getByPlaceholderText('Ingrese su contraseña');
 
     expect(loginInput).toHaveValue('admin@hospital.local');
     expect(passwordInput).toHaveValue('test123');
@@ -172,7 +191,7 @@ describe('LoginView', () => {
   it('avisa cuando Bloq Mayús está activo en contraseña', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
-    fireEvent.keyDown(screen.getByPlaceholderText('********'), {
+    fireEvent.keyDown(screen.getByPlaceholderText('Ingrese su contraseña'), {
       key: 'A',
       getModifierState: (key: string) => key === 'CapsLock',
     });

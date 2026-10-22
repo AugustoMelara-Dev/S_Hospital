@@ -44,13 +44,34 @@ describe('CategoryDrawer', () => {
     await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ name: 'Laboratorio Clínico' }), 4));
   });
 
+  it('explains impact and requires a reason before deactivating a category', async () => {
+    const save = vi.spyOn(apiClient, 'saveCategory').mockResolvedValue({ id: 4, name: 'Laboratorio', slug: 'laboratorio', active: false, sort_order: 2 });
+    renderDrawer({ category: { id: 4, name: 'Laboratorio', sort_order: 2, active: true, services_count: 8, active_services_count: 6 } });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /categoría activa/i }));
+
+    expect(screen.getByText(/6 producto\(s\) o servicio\(s\) activo\(s\).*dejarán de estar disponibles/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /desactivar categoría/i }));
+    expect(await screen.findByText(/motivo de al menos 5 caracteres/i)).toBeInTheDocument();
+    expect(save).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/motivo del cambio de disponibilidad/i), { target: { value: 'Revisión temporal del catálogo' } });
+    fireEvent.click(screen.getByRole('button', { name: /desactivar categoría/i }));
+
+    await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({
+      active: false,
+      availability_change_reason: 'Revisión temporal del catálogo',
+    }), 4));
+  });
+
   it('reports safe server errors without closing', async () => {
     vi.spyOn(apiClient, 'saveCategory').mockRejectedValue(new ApiError('SQLSTATE storage/logs', 500));
     const onOpenChange = vi.fn();
     renderDrawer({ onOpenChange });
     fireEvent.change(screen.getByLabelText(/^nombre/i), { target: { value: 'Cardiologia' } });
     fireEvent.click(screen.getByRole('button', { name: /crear categoría/i }));
-    expect(await screen.findByText(/servidor local no pudo completar/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no se pudo confirmar si la categoría se guardó.*revise el catálogo/i)).toBeInTheDocument();
+    expect(screen.queryByText(/si estaba cobrando|revise recibos/i)).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/SQLSTATE|storage\/logs/);
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });

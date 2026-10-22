@@ -15,7 +15,6 @@ const dependenciesRoot = realpathSync(path.resolve(dirname, 'node_modules'));
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 const apiProxyTarget = process.env.VITE_DEV_API_PROXY_TARGET ?? 'http://localhost:8000';
 export default defineConfig({
-  plugins: [react(), tailwindcss(), cspNoncePlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
@@ -87,9 +86,16 @@ export default defineConfig({
         globals: true,
         setupFiles: './src/test/setup.ts',
         exclude: [
-          'node_modules/**',
+          // Defaults de Vitest 4.1.x (ademas de lo especifico del proyecto).
+          '**/node_modules/**',
+          '**/.git/**',
           'dist/**',
           'e2e/**',
+          // R2: specs de Playwright fuera del runner de vitest. `qa-e2e/**` usa
+          // `@playwright/test` y se ejecuta con su propio config/runner; sin esta
+          // exclusion `pnpm test` (vitest run) la recolectaba y fallaba como
+          // suite entera (hallazgo del coordinador, 2026-09-18).
+          'qa-e2e/**',
           'scripts/mock-e2e-plan.test.mjs',
           'scripts/segmented-tests-lib.test.mjs',
         ],

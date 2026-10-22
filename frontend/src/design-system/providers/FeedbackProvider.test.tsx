@@ -14,7 +14,14 @@ vi.mock('sonner', () => ({
 }));
 
 vi.mock('@/components/ui/sonner', () => ({
-  Toaster: () => <div data-testid="toaster" />,
+  Toaster: (props: { closeButton?: boolean; position?: string; theme?: string }) => (
+    <div
+      data-testid="toaster"
+      data-close-button={String(props.closeButton)}
+      data-position={props.position}
+      data-theme={props.theme}
+    />
+  ),
 }));
 
 function FeedbackHarness() {
@@ -45,8 +52,12 @@ describe('FeedbackProvider', () => {
     expect(toast.success).toHaveBeenCalledWith('Guardado', { duration: 6_000 });
     expect(toast.info).toHaveBeenCalledWith('Informacion', { duration: 8_000 });
     expect(toast.warning).toHaveBeenCalledWith('Advertencia', { duration: 12_000 });
-    expect(toast.error).toHaveBeenCalledWith('Error', { duration: Number.POSITIVE_INFINITY });
+    expect(toast.error).toHaveBeenCalledWith('Error', { duration: 16_000 });
     expect(toast.success).toHaveBeenCalledWith('Caja abierta', { duration: 6_000, id: 'cash:open' });
     expect(screen.getByTestId('toaster')).toBeInTheDocument();
+    expect(screen.getByTestId('toaster')).toHaveAttribute('data-close-button', 'false');
+    expect(screen.getByTestId('toaster')).toHaveAttribute('data-position', 'top-right');
+    // Dark único: el feedback nunca renders un modal claro (IDENTIDAD_DARK_20261016).
+    expect(screen.getByTestId('toaster')).toHaveAttribute('data-theme', 'dark');
   });
 });

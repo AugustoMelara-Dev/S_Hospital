@@ -1,5 +1,5 @@
 import { apiClient } from './base';
-import type { AuditLogPage, OperationalHealth, SystemStatus, SystemStatusSummary } from './types';
+import type { AuditLogPage, OperationalHealth, SystemHealthLiveness, SystemStatus, SystemStatusSummary } from './types';
 
 export type AuditLogFilters = {
   action?: string;
@@ -21,8 +21,17 @@ export const system = {
     return response.data;
   },
 
+  async getHealthLiveness(): Promise<SystemHealthLiveness> {
+    const response = await apiClient.request<{ data: SystemHealthLiveness }>('/api/system/health');
+    return response.data ?? fallbackLiveness();
+  },
+
+  /**
+   * Authenticated operational snapshot. Requires the `system.status.view`
+   * permission; callers must gate the request (see useServerStatus).
+   */
   async getHealth(): Promise<OperationalHealth> {
-    const response = await apiClient.request<{ data: OperationalHealth }>('/api/system/health');
+    const response = await apiClient.request<{ data: OperationalHealth }>('/api/system/health/detail');
     return response.data ?? fallbackOperationalHealth();
   },
 
@@ -41,6 +50,14 @@ export const system = {
     return response;
   },
 };
+
+function fallbackLiveness(): SystemHealthLiveness {
+  return {
+    status: 'ok',
+    service: 'Sistema de Caja Hospitalaria',
+    version: 'local',
+  };
+}
 
 function fallbackOperationalHealth(): OperationalHealth {
   return {

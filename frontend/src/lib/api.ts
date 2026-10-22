@@ -1,10 +1,10 @@
-import { apiClient as baseClient, ApiError, isSessionExpiredError, userSafeErrorMessage } from './api/base';
+import { apiClient as baseClient, ApiError, isPermissionDeniedError, isSessionExpiredError, userSafeErrorMessage } from './api/base';
 import { auth } from './api/auth';
 import { billing } from './api/billing';
 import { catalog } from './api/catalog';
 import { cash } from './api/cash';
 import { reports } from './api/reports';
-import { backups } from './api/backups';
+import { backups, type BackupPaginatedMeta } from './api/backups';
 import { fiscal } from './api/fiscal';
 import { institutionalReceipts } from './api/institutionalReceipts';
 import { system } from './api/system';
@@ -19,10 +19,15 @@ import type {
   Area,
   ServiceArea,
   Service,
+  ServiceHistoryChange,
+  ServiceHistoryEntry,
+  ServiceHistoryPage,
   CategoryPayload,
   ServicePayload,
   InvoiceItemPayload,
   InvoicePayload,
+  InvoicePreview,
+  InvoicePreviewItem,
   InvoiceItem,
   Invoice,
   CashClosingBreakdown,
@@ -33,11 +38,15 @@ import type {
   ReceiptData,
   MoneyByMethod,
   CashSessionReport,
+  CashSessionConsolidationFilters,
+  CashSessionConsolidationReport,
+  CashSessionConsolidationTotals,
   BackupLog,
   SystemStatus,
   SystemStatusCheck,
   SystemStatusSummary,
   OperationalHealth,
+  SystemHealthLiveness,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
@@ -65,6 +74,7 @@ import type {
 
 export {
   ApiError,
+  isPermissionDeniedError,
   isSessionExpiredError,
   userSafeErrorMessage,
   auth,
@@ -88,10 +98,15 @@ export type {
   Area,
   ServiceArea,
   Service,
+  ServiceHistoryChange,
+  ServiceHistoryEntry,
+  ServiceHistoryPage,
   CategoryPayload,
   ServicePayload,
   InvoiceItemPayload,
   InvoicePayload,
+  InvoicePreview,
+  InvoicePreviewItem,
   InvoiceItem,
   Invoice,
   CashClosingBreakdown,
@@ -102,11 +117,15 @@ export type {
   ReceiptData,
   MoneyByMethod,
   CashSessionReport,
+  CashSessionConsolidationFilters,
+  CashSessionConsolidationReport,
+  CashSessionConsolidationTotals,
   BackupLog,
   SystemStatus,
   SystemStatusCheck,
   SystemStatusSummary,
   OperationalHealth,
+  SystemHealthLiveness,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
@@ -199,6 +218,14 @@ export const apiClient = {
     return catalog.getServices(filters, options);
   },
 
+  async getService(id: number): Promise<Service> {
+    return catalog.getService(id);
+  },
+
+  async getServiceHistory(id: number, page = 1): Promise<ServiceHistoryPage> {
+    return catalog.getServiceHistory(id, page);
+  },
+
   async saveService(payload: ServicePayload, id?: number): Promise<Service> {
     return catalog.saveService(payload, id);
   },
@@ -209,6 +236,10 @@ export const apiClient = {
 
   async createInvoice(payload: InvoicePayload, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
     return billing.createInvoice(payload, options);
+  },
+
+  async previewInvoice(payload: Omit<InvoicePayload, 'patient_name'>): Promise<InvoicePreview> {
+    return billing.previewInvoice(payload);
   },
 
   async getInvoices(filters: InvoiceFilters = {}): Promise<{ data: Invoice[]; meta: PaginatedMeta }> {
@@ -269,7 +300,7 @@ export const apiClient = {
   },
 
   async openCashSession(
-    payload: { opening_amount: string; notes?: string | null },
+    payload: { opening_amount: string; cash_register_id?: number; notes?: string | null },
     options: { idempotencyKey?: string } = {},
   ): Promise<CashSession> {
     return cash.openCashSession(payload, options);
@@ -301,6 +332,12 @@ export const apiClient = {
 
   async getCashSessionReport(id: string): Promise<CashSessionReport> {
     return reports.getCashSessionReport(id);
+  },
+
+  async getCashSessionConsolidation(
+    filters: CashSessionConsolidationFilters,
+  ): Promise<CashSessionConsolidationReport> {
+    return reports.getCashSessionConsolidation(filters);
   },
 
   reportExportUrl(filters: ReportFilters): string {
@@ -338,7 +375,7 @@ export const apiClient = {
     return reports.downloadExecutiveExcel(filters);
   },
 
-  async getBackups(filters: { page?: number; perPage?: number; status?: BackupLog['status'] | 'all' } = {}): Promise<{ data: BackupLog[]; meta: PaginatedMeta }> {
+  async getBackups(filters: { page?: number; perPage?: number; status?: BackupLog['status'] | 'all' } = {}): Promise<{ data: BackupLog[]; meta: BackupPaginatedMeta }> {
     return backups.getBackups(filters);
   },
 
@@ -364,6 +401,10 @@ export const apiClient = {
 
   async getSystemHealth(): Promise<OperationalHealth> {
     return system.getHealth();
+  },
+
+  async getSystemHealthLiveness(): Promise<SystemHealthLiveness> {
+    return system.getHealthLiveness();
   },
 
   async getFiscalSettings(): Promise<FiscalSettings | null> {

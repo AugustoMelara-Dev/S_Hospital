@@ -1,11 +1,9 @@
-import { Info, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AdminCallout, AdminEmpty, AdminPanel, AdminPanelHeader } from '@/design-system/admin/components';
 import type { PermissionCatalogGroup, RoleDefinition } from '@/lib/api';
 import { roleLabel } from '@/lib/role-labels';
+import { ADMIN_TAG, SECONDARY_BUTTON } from '../adminUi';
 import { PermissionMatrix } from './PermissionMatrix';
 
 type UserRolesPanelProps = {
@@ -20,56 +18,57 @@ type UserRolesPanelProps = {
 export function UserRolesPanel({ canAssignAdminRole, canManageRoles, onCreateRole, onEditRole, permissionCatalog, roles }: UserRolesPanelProps) {
   if (!canManageRoles) {
     return (
-      <Alert>
-        <Info />
-        <AlertTitle>Roles en modo consulta</AlertTitle>
-        <AlertDescription>
-          Su usuario puede revisar cuentas autorizadas, pero asignar permisos requiere administración de roles.
-        </AlertDescription>
-      </Alert>
+      <AdminCallout tone="info" title="Roles en modo consulta">
+        Su usuario puede revisar cuentas autorizadas, pero asignar permisos requiere administración de roles.
+      </AdminCallout>
     );
   }
 
   return (
     <div className="grid gap-4">
-      <Card>
-        <CardHeader className="sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle>Roles y módulos</CardTitle>
-            <CardDescription>
-              Defina qué módulos puede usar cada tipo de usuario. Los roles base conservan el acceso administrativo.
-            </CardDescription>
+      <AdminPanel as="section" aria-labelledby="user-roles-title">
+        <AdminPanelHeader
+          id="user-roles-title"
+          title="Roles y módulos"
+          description="Defina qué módulos puede usar cada tipo de usuario. Los roles base conservan el acceso administrativo."
+          actions={(
+            <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={onCreateRole}>
+              <Plus aria-hidden="true" className="size-4" strokeWidth={1.5} />Nuevo rol
+            </button>
+          )}
+        />
+        {roles.length === 0 ? (
+          <div className="p-4">
+            <AdminEmpty title="Sin roles" description="Cree el primer rol operativo para asignar módulos a las cuentas." />
           </div>
-          <Button onClick={onCreateRole}>
-            <Plus data-icon="inline-start" />
-            Nuevo rol
-          </Button>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {roles.map((role) => (
-            <article key={role.id} className="rounded-xl border bg-background p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-foreground">{roleLabel(role.name)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+        ) : (
+          <ul className="divide-y divide-[var(--ui-line)]">
+            {roles.map((role) => (
+              <li key={role.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-[color:var(--ui-ink)]">{roleLabel(role.name)}</p>
+                  <p className="mt-0.5 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
                     {role.permissions.length} permiso{role.permissions.length === 1 ? '' : 's'}
                   </p>
                 </div>
-                <Badge variant={role.protected ? 'secondary' : 'outline'}>{role.protected ? 'Base' : 'Editable'}</Badge>
-              </div>
-              <Button
-                variant="outline"
-                className="mt-4 w-full"
-                onClick={() => onEditRole(role)}
-                disabled={role.protected}
-                aria-label={`Editar permisos de ${roleLabel(role.name)}`}
-              >
-                Editar permisos
-              </Button>
-            </article>
-          ))}
-        </CardContent>
-      </Card>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className={ADMIN_TAG}>{role.protected ? 'Base' : 'Editable'}</span>
+                  <button
+                    type="button"
+                    data-ui-press
+                    className={SECONDARY_BUTTON}
+                    onClick={() => onEditRole(role)}
+                    disabled={role.protected}
+                    aria-label={`Editar permisos de ${roleLabel(role.name)}`}
+                  >
+                    Editar permisos
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </AdminPanel>
 
       {canAssignAdminRole ? <PermissionMatrix roles={roles} permissionCatalog={permissionCatalog} /> : null}
     </div>

@@ -1,16 +1,16 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
-
+  // Identidad dark única: no se hereda `next-themes`. Un toaster claro
+  // contradiría la identidad dark de superficie (los --ui-* son dark). `theme`
+  // sigue siendo sobrescribible por props explícitas para consumidores aislados.
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
-      className="toaster group [&_[data-icon]]:size-4"
+      theme="dark"
+      className="toaster group pointer-events-none [&_[data-icon]]:size-4"
       icons={{
         success: (
           <CircleCheckIcon />
@@ -30,10 +30,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          // Superficie/tinta/borde admin directos (no pasan por el puente
+          // shadcn): el toast conserva la identidad dark aunque el puente
+          // cambie.
+          "--normal-bg": "var(--ui-surface)",
+          "--normal-text": "var(--ui-ink)",
+          "--normal-border": "var(--ui-line)",
+          "--border-radius": "var(--ui-radius)",
+          colorScheme: "dark",
         } as React.CSSProperties
       }
       toastOptions={{

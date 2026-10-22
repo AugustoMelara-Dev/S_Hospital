@@ -6,11 +6,8 @@ import {
   apiClient,
   userSafeErrorMessage,
 } from '@/lib/api';
-import { TriangleAlert } from 'lucide-react';
-import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { PageHeader } from '@/design-system/components/PageHeader';
+import { AdminCallout, AdminPageHeader, AdminPanel, AdminPanelHeader } from '@/design-system/admin/components';
+import { SECONDARY_BUTTON } from './adminUi';
 import { UserFormDialog, type UserFormData } from './components/UserFormDialog';
 import { UserManagementOverview } from './components/UserManagementOverview';
 import { RoleFormDialog } from './components/RoleFormDialog';
@@ -29,6 +26,7 @@ import {
   visiblePermissionNames,
 } from './users-view.helpers';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
+import { normalizeSearchText } from '@/lib/normalizeText';
 type UsersViewProps = {
   onStatus: OperationalStatusReporter;
   canCreateUsers: boolean;
@@ -109,11 +107,11 @@ export function UsersView({
     void fetchUsers();
   }, [fetchUsers]);
   const filteredUsers = useMemo(() => users.filter((user) => {
-    const term = searchTerm.toLowerCase();
+    const term = normalizeSearchText(searchTerm);
     return (
-      user.name.toLowerCase().includes(term)
-      || user.username.toLowerCase().includes(term)
-      || user.email.toLowerCase().includes(term)
+      normalizeSearchText(user.name).includes(term)
+      || normalizeSearchText(user.username).includes(term)
+      || normalizeSearchText(user.email).includes(term)
     );
   }), [users, searchTerm]);
   const activeUsersCount = users.filter((user) => user.active).length;
@@ -318,25 +316,23 @@ export function UsersView({
   };
 
   if (loading) {
-    return <><PageHeader title="Cargando usuarios" description="Preparando cuentas, roles y permisos operativos." /><div role="status" className="grid gap-3"><Skeleton className="h-28 w-full" /><Skeleton className="h-64 w-full" /><span className="sr-only">Cargando usuarios...</span></div></>;
+    return <section className="flex flex-col gap-4" aria-labelledby="users-title"><AdminPageHeader headingId="users-title" title="Usuarios y roles" description="Administre cuentas, accesos y permisos del personal." /><AdminPanel as="section" aria-labelledby="users-loading-title"><AdminPanelHeader headingLevel={2} id="users-loading-title" title="Cargando usuarios" /><div role="status" className="grid gap-3 p-4"><span className="sr-only">Cargando usuarios...</span><div className="h-10 rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[image:linear-gradient(90deg,var(--ui-skel-from),var(--ui-skel-to))] motion-safe:ui-skel" /><div className="h-24 rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[image:linear-gradient(90deg,var(--ui-skel-from),var(--ui-skel-to))] motion-safe:ui-skel" /></div></AdminPanel></section>;
   }
 
   if (loadError) {
     return (
-      <>
-        <PageHeader title="Usuarios y funciones" description="Administre cuentas individuales, roles operativos y permisos por módulo." />
-        <Alert variant="destructive">
-          <TriangleAlert />
-          <AlertTitle><h2>No se pudieron cargar los usuarios</h2></AlertTitle>
-          <AlertDescription>{loadError}</AlertDescription>
-          <AlertAction><Button variant="outline" onClick={() => void fetchUsers()}>Reintentar</Button></AlertAction>
-        </Alert>
-      </>
+      <section className="flex flex-col gap-4" aria-labelledby="users-title">
+        <AdminPageHeader headingId="users-title" title="Usuarios y roles" description="Administre cuentas, accesos y permisos del personal." />
+      <AdminPanel as="section" aria-labelledby="users-error-title">
+        <AdminPanelHeader headingLevel={2} id="users-error-title" title="No se pudieron cargar los usuarios" description="No se pudo leer la lista de cuentas. Reintente cuando el servidor local responda." />
+        <div className="p-4"><AdminCallout tone="error" title="Error de carga">{loadError}<div className="mt-3"><button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={() => void fetchUsers()}>Reintentar</button></div></AdminCallout></div>
+      </AdminPanel>
+      </section>
     );
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       <UserManagementOverview
         activeUsersCount={activeUsersCount}
         editableRolesCount={editableRolesCount}
@@ -422,6 +418,6 @@ export function UsersView({
         }}
         onConfirm={handleConfirmToggle}
       />
-    </>
+    </div>
   );
 }

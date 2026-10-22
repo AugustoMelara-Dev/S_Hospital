@@ -1,4 +1,4 @@
-import { parseCents } from '../../../lib/money';
+import { parseCents } from '../../../lib/moneyCents';
 
 export type ReconciliationInput = {
   payments_total?: string;
@@ -27,8 +27,9 @@ export function buildReconciliationStatus(input: ReconciliationInput): Reconcili
   const pendingAmount = input.pending_amount ?? '0.00';
   const missingReceiptCount = safeCount(input.missing_institutional_receipt_count);
   const blockers: ReconciliationBlocker[] = [];
+  const pendingCents = parseCents(pendingAmount);
 
-  if (pendingCount > 0 || parseCents(pendingAmount) > 0) {
+  if (pendingCount > 0 || (pendingCents !== null && pendingCents > 0)) {
     blockers.push({ kind: 'pending_invoices', count: pendingCount, amount: pendingAmount });
   }
 

@@ -74,7 +74,28 @@ const mockData = vi.hoisted(() => {
     resolved_profile: profiles[1],
   };
 
-  return { profiles, settings };
+  /**
+   * Canonical measured generator result (C3-P2). The settings view must show this
+   * text, not a page count derived from the copies.
+   */
+  const receiptDocument = {
+    paper: { kind: 'half_letter_landscape', label: 'Media carta', orientation: 'landscape', width_pt: 612, height_pt: 396 },
+    copies: { count: 1, labels: ['ORIGINAL'], destinations: ['ORIGINAL'] },
+    page_count: 1,
+    sheet_count: 1,
+    requested_composition: 'single' as const,
+    used_composition: 'single' as const,
+    distribution: [{ sheet: 1, destinations: ['ORIGINAL'], pages: 1 }],
+    alternative_output: false,
+    alternative_reason: null,
+    draft: false,
+    headline: 'Media carta · 1 ejemplar · 1 página PDF.',
+    print_instruction:
+      'El documento ya incluye los ejemplares: imprima una copia del conjunto y no aumente el número de copias en el diálogo de impresión.',
+    sheet_assumption: null,
+  };
+
+  return { profiles, settings, receiptDocument };
 });
 
 vi.mock('@/lib/api', async () => {
@@ -88,6 +109,16 @@ vi.mock('@/lib/api', async () => {
       updateReceiptPrintProfile: vi.fn().mockResolvedValue(mockData.profiles[1]),
       upsertReceiptProfileAssignment: vi.fn(),
       testPrintInstitutionalReceipt: vi.fn().mockResolvedValue(new Blob(['%PDF-test'], { type: 'application/pdf' })),
+      // The settings preview consumes the real engine HTML from /test-preview.
+      // `document` is the canonical measured result (C3-P2).
+      request: vi.fn().mockResolvedValue({
+        data: {
+          html: '<!doctype html><html><body><p>preview-motor</p></body></html>',
+          copy_labels: ['ORIGINAL'],
+          copy_count: 1,
+          document: mockData.receiptDocument,
+        },
+      }),
     },
   };
 });
@@ -124,35 +155,62 @@ function renderView({
 }
 
 async function activateTab(name: string | RegExp) {
-  const tab = await screen.findByRole('tab', { name });
+  const tab = screen.queryByRole('tab', { name });
+  if (!tab) {
+    const label = typeof name === 'string' ? name : name.source;
+    if (/serie/i.test(label)) await screen.findByRole('heading', { name: 'Serie institucional' });
+    else await screen.findByRole('heading', { name: 'Papel del recibo' });
+    return;
+  }
   fireEvent.mouseDown(tab, { button: 0, ctrlKey: false });
   fireEvent.mouseUp(tab, { button: 0, ctrlKey: false });
   fireEvent.click(tab);
 }
 
+function copiesSelect() {
+  return screen.getByRole('combobox', { name: /copias/i }) as HTMLSelectElement;
+}
+
 async function chooseCopies(label: string) {
-  const copies = screen.getByRole('combobox', { name: /copias/i });
-  fireEvent.click(copies);
-  fireEvent.click(await screen.findByRole('option', { name: label }));
-  await waitFor(() => {
-    expect(copies).toHaveTextContent(label);
-  });
+  const copies = copiesSelect();
+  const option = Array.from(copies.options).find((candidate) => candidate.textContent === label);
+  if (!option) throw new Error(`No existe la opción de copias "${label}"`);
+  fireEvent.change(copies, { target: { value: option.value } });
+  await waitFor(() => expect(copies).toHaveValue(option.value));
 }
 
 function expectSelectedCopies(label: string) {
-  const copies = screen.getByRole('combobox', { name: /copias/i });
-  expect(copies).toHaveTextContent(label);
+  const copies = copiesSelect();
+  expect(copies.options[copies.selectedIndex]?.textContent).toBe(label);
 }
 
 describe('InstitutionalReceiptSettingsView', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const { apiClient } = await import('@/lib/api');
+    vi.mocked(apiClient.request).mockResolvedValue({
+      data: {
+        html: '<!doctype html><html><body><p>preview-motor</p></body></html>',
+        copy_labels: ['ORIGINAL'],
+        copy_count: 1,
+        document: mockData.receiptDocument,
+      },
+    });
+  });
+
+  it('presenta serie, papel y vista previa en una sola tarea sin navegación anidada', async () => {
+    renderView();
+
+    expect(await screen.findByRole('heading', { name: 'Serie institucional' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Papel del recibo' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /vista previa de recibo/i })).toBeInTheDocument();
+    expect(screen.queryByRole('tablist', { name: /secciones de recibos/i })).not.toBeInTheDocument();
   });
 
   it('permite elegir papel sin controles técnicos', async () => {
     renderView();
 
-    expect(await screen.findByRole('radio', { name: /Carta/ })).toBeEnabled();
+    expect(await screen.findByRole('radio', { name: /Carta horizontal/ })).toBeEnabled();
     expect(screen.getByRole('radio', { name: /Media carta/ })).toBeEnabled();
     expect(screen.getByRole('radio', { name: /A5/ })).toBeEnabled();
     expect(screen.queryByLabelText(/margen|escala|fuente|tamaño/i)).not.toBeInTheDocument();
@@ -164,7 +222,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     const institutional = await screen.findByRole('group', { name: 'Formatos institucionales' });
     const compatibility = screen.getByRole('group', { name: 'Formatos térmicos secundarios' });
 
-    expect(within(institutional).getAllByRole('radio')).toHaveLength(4);
+    expect(within(institutional).getAllByRole('radio')).toHaveLength(6);
     expect(within(compatibility).queryAllByRole('radio')).toHaveLength(0);
     expect(within(compatibility).getAllByRole('listitem')).toHaveLength(2);
   });
@@ -173,8 +231,8 @@ describe('InstitutionalReceiptSettingsView', () => {
     renderView();
 
     expect(await screen.findByRole('region', { name: 'Vista previa de recibo Media carta' })).toBeVisible();
-    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
-    expect(screen.getByRole('region', { name: 'Vista previa de recibo Carta' })).toBeVisible();
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta horizontal\b/i }));
+    expect(await screen.findByRole('region', { name: 'Vista previa de recibo Carta horizontal' })).toBeVisible();
   });
 
   it('keeps unsaved print drafts isolated by paper profile', async () => {
@@ -184,14 +242,14 @@ describe('InstitutionalReceiptSettingsView', () => {
     await activateTab('Papel y copias');
 
     await chooseCopies('Original + dos copias');
-    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta horizontal\b/i }));
     await waitFor(() => expectSelectedCopies('Solo original'));
     await chooseCopies('Original + primera copia');
 
     fireEvent.click(screen.getByRole('radio', { name: /^Media carta\b/i }));
     await waitFor(() => expectSelectedCopies('Original + dos copias'));
 
-    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta horizontal\b/i }));
     await waitFor(() => expectSelectedCopies('Original + primera copia'));
   });
 
@@ -217,13 +275,145 @@ describe('InstitutionalReceiptSettingsView', () => {
     await waitFor(() => expectSelectedCopies('Original + primera copia'));
   });
 
-  it('shows the page header and stat cards for the resolved profile', async () => {
+  it('shows one printing header and the resolved profile in the working surface', async () => {
     renderView();
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     expect(screen.getAllByText('Media carta').length).toBeGreaterThan(0);
     expect(screen.getAllByText('REC-A').length).toBeGreaterThan(0);
-    expect(screen.getByText('Editable')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'Recibos institucionales' })).toHaveLength(1);
+  });
+
+  it('does not report a false dirty state when the form opens with the persisted profile', async () => {
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    await waitFor(() => expectSelectedCopies('Solo original'));
+    expect(screen.queryByText('Borrador sin guardar')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-receipt-preview-draft]')).toBeNull();
+    expect(screen.getByText('Sin cambios')).toBeInTheDocument();
+  });
+
+  it('shows the measured document result before printing (C3-P2)', async () => {
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+
+    // Mismo resultado que la vista previa: el titular del plan, no un conteo
+    // derivado de las copias.
+    await waitFor(() => expect(screen.getAllByText(/Media carta · 1 ejemplar · 1 página PDF\./).length).toBeGreaterThan(0));
+    expect(screen.getAllByText(/imprima una copia del conjunto/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/una por copia/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the engine error in the single receipt preview', async () => {
+    const { apiClient } = await import('@/lib/api');
+    vi.mocked(apiClient.request).mockRejectedValue(new Error('engine unavailable'));
+
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    expect(await screen.findByText('No se pudo preparar la vista previa')).toBeInTheDocument();
+    expect(screen.queryByTestId('receipt-copies-metric')).not.toBeInTheDocument();
+  });
+
+  it('surfaces a recoverable error for an unknown persisted copies_mode and never leaves the control empty', async () => {
+    const { apiClient } = await import('@/lib/api');
+    const legacy = {
+      ...mockData.profiles[1],
+      copies_mode: 'legacy_three' as unknown as ReceiptPrintProfile['copies_mode'],
+    };
+    vi.mocked(apiClient.getInstitutionalReceiptSettings).mockResolvedValueOnce({
+      ...mockData.settings,
+      print_profiles: [mockData.profiles[0], legacy, ...mockData.profiles.slice(2)],
+      resolved_profile: legacy,
+    });
+
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    const errorAlert = await screen.findByTestId('receipt-copies-mode-error');
+    expect(errorAlert).toBeInTheDocument();
+    const copies = screen.getByRole('combobox', { name: /copias/i });
+    expect(copies).toHaveTextContent(/No reconocido: legacy_three/);
+    // El control nunca queda vacío: muestra el valor persistido no reconocido.
+    expect(copies).toHaveValue('legacy_three');
+
+    fireEvent.click(within(errorAlert).getByRole('button', { name: /Solo original/ }));
+    await waitFor(() => expect(screen.queryByTestId('receipt-copies-mode-error')).not.toBeInTheDocument());
+    await waitFor(() => expectSelectedCopies('Solo original'));
+  });
+
+  it('explains which profile is used, why, and that issued documents do not change', async () => {
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    const provenance = screen.getByTestId('receipt-profile-provenance');
+    expect(within(provenance).getByText('Predeterminado global')).toBeInTheDocument();
+    expect(within(provenance).getByText('Sin cambios')).toBeInTheDocument();
+    expect(screen.getByText(/Los documentos ya emitidos no cambian/)).toBeInTheDocument();
+  });
+
+  it('explains a user assignment as the source of the new-receipt profile', async () => {
+    const { apiClient } = await import('@/lib/api');
+    const assigned = mockData.profiles[2];
+    vi.mocked(apiClient.getInstitutionalReceiptSettings).mockResolvedValueOnce({
+      ...mockData.settings,
+      resolved_profile: assigned,
+      assignments: [
+        {
+          id: 51,
+          receipt_print_profile_id: assigned.id,
+          scope_type: 'user',
+          scope_id: 9,
+          active: true,
+          print_profile: assigned,
+        },
+      ],
+    });
+
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    const provenance = screen.getByTestId('receipt-profile-provenance');
+    expect(within(provenance).getByText('Asignación por usuario')).toBeInTheDocument();
+    expect(within(provenance).getAllByText('A5 horizontal').length).toBeGreaterThan(0);
+  });
+
+  it('explains a cash-session assignment as the source of the new-receipt profile', async () => {
+    const { apiClient } = await import('@/lib/api');
+    const assigned = mockData.profiles[3];
+    vi.mocked(apiClient.getInstitutionalReceiptSettings).mockResolvedValueOnce({
+      ...mockData.settings,
+      resolved_profile: assigned,
+      assignments: [
+        {
+          id: 52,
+          receipt_print_profile_id: assigned.id,
+          scope_type: 'cash_session',
+          scope_id: 7,
+          active: true,
+          print_profile: assigned,
+        },
+      ],
+    });
+
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+
+    const provenance = screen.getByTestId('receipt-profile-provenance');
+    expect(within(provenance).getByText('Asignación por sesión de caja')).toBeInTheDocument();
+    expect(within(provenance).getAllByText('Carta horizontal').length).toBeGreaterThan(0);
   });
 
   it('never exposes the manual paper fields in the normal flow', async () => {
@@ -313,7 +503,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
 
-    expect(screen.getByRole('radio', { name: /^Carta\b/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^Carta horizontal\b/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /^Media carta\b/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /^A5\b/i })).toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: /ticket 80/i })).not.toBeInTheDocument();
@@ -327,10 +517,10 @@ describe('InstitutionalReceiptSettingsView', () => {
     await activateTab('Papel y copias');
 
     expect(screen.queryByText('Perfiles disponibles')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('radio', { name: /^Carta\b/i })).toHaveLength(1);
+    expect(screen.getAllByRole('radio', { name: /^Carta horizontal\b/i })).toHaveLength(1);
     expect(screen.getAllByRole('radio', { name: /^Media carta\b/i })).toHaveLength(1);
     expect(screen.getAllByRole('radio', { name: /^A5\b/i })).toHaveLength(1);
-    expect(screen.queryByRole('button', { name: /^Carta\b/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Carta horizontal\b/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Media carta\b/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^A5\b/i })).not.toBeInTheDocument();
   });
@@ -426,7 +616,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
 
-    expect(screen.getAllByRole('radio')).toHaveLength(4);
+    expect(screen.getAllByRole('radio')).toHaveLength(6);
     expect(screen.queryByText(/activar modo soporte/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/ajustes avanzados/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/ancho mm/i)).not.toBeInTheDocument();
@@ -442,7 +632,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
 
-    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta horizontal\b/i }));
     fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
 
     await waitFor(() => {
@@ -483,7 +673,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
     await chooseCopies('Original + dos copias');
-    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta horizontal\b/i }));
     await waitFor(() => expectSelectedCopies('Solo original'));
     await chooseCopies('Original + primera copia');
     fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
@@ -520,7 +710,7 @@ describe('InstitutionalReceiptSettingsView', () => {
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
 
-    fireEvent.click(screen.getByRole('radio', { name: /^Carta\b/i }));
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta horizontal\b/i }));
     fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
 
     await waitFor(() => {
@@ -535,6 +725,55 @@ describe('InstitutionalReceiptSettingsView', () => {
     });
 
     expect(screen.queryByRole('checkbox', { name: /predeterminado global/i })).not.toBeInTheDocument();
+  });
+
+  it('persists the selected compact template instead of degrading it to classic', async () => {
+    const { apiClient } = await import('@/lib/api');
+    const compactProfile: ReceiptPrintProfile = {
+      ...mockData.profiles[1],
+      template_code: 'institutional_compact',
+    };
+    vi.mocked(apiClient.getInstitutionalReceiptSettings).mockResolvedValueOnce({
+      ...mockData.settings,
+      print_profiles: [mockData.profiles[0], compactProfile, ...mockData.profiles.slice(2)],
+      resolved_profile: compactProfile,
+    });
+    vi.mocked(apiClient.updateReceiptPrintProfile).mockResolvedValueOnce(compactProfile);
+
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+
+    await waitFor(() => {
+      expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalledWith(
+        compactProfile.id,
+        expect.objectContaining({ template_code: 'institutional_compact' }),
+      );
+    });
+  });
+
+  it('persists the copies_mode actually selected in the control, not the form default', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView();
+
+    expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
+    await activateTab('Papel y copias');
+    await chooseCopies('Original + dos copias');
+    expectSelectedCopies('Original + dos copias');
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+
+    await waitFor(() => {
+      expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalledWith(
+        mockData.profiles[1].id,
+        expect.objectContaining({
+          copies_mode: 'original_first_second',
+          template_code: 'institutional_classic',
+        }),
+      );
+    });
   });
 
   it('keeps support-only warnings hidden while a standard paper profile is selected', async () => {
@@ -685,7 +924,7 @@ describe('InstitutionalReceiptSettingsView', () => {
       expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalled();
     });
 
-    expect(screen.getByRole('radio', { name: /^Carta\b/i })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: /^Carta horizontal\b/i })).toBeDisabled();
     expect(screen.getByRole('combobox', { name: /copias/i })).toBeDisabled();
     expect(screen.getByRole('checkbox', { name: /espacio para sello\/firma/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /imprimir prueba/i })).toBeDisabled();

@@ -110,4 +110,40 @@ describe('billing api client', () => {
       body: JSON.stringify({ cash_session_id: 7, method: 'cash', amount: '17.25', reference: null }),
     });
   });
+
+  it('requests the institutional draft without emitting an invoice', async () => {
+    const payload = {
+      patient_name: 'Ana López',
+      items: [{ service_id: 42, quantity: '1' }],
+    };
+    const draft = {
+      draft: true as const,
+      watermark: 'BORRADOR - SIN VALIDEZ',
+      reserved_number: false as const,
+      html: '<!doctype html><html><body>Vista previa</body></html>',
+      document: {
+        paper: { kind: 'letter', label: 'Carta', orientation: 'portrait', width_pt: 612, height_pt: 792 },
+        copies: { count: 1, labels: ['Original'], destinations: ['Paciente'] },
+        page_count: 1,
+        sheet_count: 1,
+        requested_composition: 'single',
+        used_composition: 'single',
+        distribution: null,
+        alternative_output: null,
+        alternative_reason: null,
+        draft: true as const,
+        headline: 'Comprobante borrador',
+        print_instruction: 'Vista previa',
+        sheet_assumption: 'Una hoja',
+      },
+      valuation: {} as never,
+    };
+    mockedRequest.mockResolvedValueOnce({ data: draft });
+
+    await expect(billing.previewInvoiceReceipt(payload)).resolves.toBe(draft);
+    expect(mockedRequest).toHaveBeenCalledWith('/api/invoices/receipt-preview', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  });
 });

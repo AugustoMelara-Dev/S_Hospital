@@ -1,4 +1,5 @@
-import { priceCents } from './serviceDrawerTypes';
+import { AdminCallout, MoneyText } from '@/design-system/admin/components';
+import { parseCents, type Cents } from '@/lib/moneyCents';
 
 export type AuditedServiceSource = {
   active: boolean;
@@ -16,69 +17,108 @@ export type AuditedServiceDraft = {
   visible_in_billing: boolean;
 };
 
+/**
+ * Un cambio auditado. El dinero nunca viaja como texto: el importe queda en
+ * centavos y la vista lo dibuja con `MoneyText` (`L` y monto juntos,
+ * `tabular-nums`).
+ */
+export type AuditedServiceChange = {
+  id: string;
+  label: string;
+  beforeText: string | null;
+  afterText: string | null;
+  beforeCents: Cents | null;
+  afterCents: Cents | null;
+};
+
 export function auditedServiceChanges(
   service: AuditedServiceSource,
   draft: AuditedServiceDraft,
-): string[] {
-  const changes: string[] = [];
+): AuditedServiceChange[] {
+  const changes: AuditedServiceChange[] = [];
 
   if (priceValuesDiffer(service.price, draft.price)) {
-    changes.push(`Precio: ${formatAuditPrice(service.price)} -> ${formatAuditPrice(draft.price)}`);
+    changes.push({
+      id: 'price',
+      label: 'Tarifa',
+      beforeText: null,
+      afterText: null,
+      beforeCents: parseCents(service.price),
+      afterCents: parseCents(draft.price),
+    });
   }
 
   if (service.taxable !== draft.taxable) {
-    changes.push(`ISV: ${taxLabel(service.taxable)} -> ${taxLabel(draft.taxable)}`);
+    changes.push(textChange('tax', 'ISV', taxLabel(service.taxable), taxLabel(draft.taxable)));
   }
 
   if (service.active !== draft.active) {
-    changes.push(`Servicio activo: ${yesNo(service.active)} -> ${yesNo(draft.active)}`);
+    changes.push(textChange('active', 'Servicio activo', yesNo(service.active), yesNo(draft.active)));
   }
 
   if ((service.visible_in_billing ?? true) !== draft.visible_in_billing) {
-    changes.push(`Visible en caja: ${yesNo(service.visible_in_billing ?? true)} -> ${yesNo(draft.visible_in_billing)}`);
+    changes.push(
+      textChange(
+        'visible_in_billing',
+        'Visible en caja',
+        yesNo(service.visible_in_billing ?? true),
+        yesNo(draft.visible_in_billing),
+      ),
+    );
   }
 
   if ((service.is_billable ?? true) !== draft.is_billable) {
-    changes.push(`Facturable: ${yesNo(service.is_billable ?? true)} -> ${yesNo(draft.is_billable)}`);
+    changes.push(
+      textChange(
+        'is_billable',
+        'Facturable',
+        yesNo(service.is_billable ?? true),
+        yesNo(draft.is_billable),
+      ),
+    );
   }
 
   return changes;
 }
 
-export function ServiceAuditedChangesSummary({ changes }: { changes: string[] }) {
+export function ServiceAuditedChangesSummary({ changes }: { changes: AuditedServiceChange[] }) {
   return (
-    <section
-      aria-label="Cambios auditados"
-      className="border border-warning bg-warning/10 p-4 text-sm text-warning"
-    >
-      <h3 className="font-semibold">Cambios auditados</h3>
-      <p className="mt-1 text-xs leading-5 text-current/80">
-        El backend exigira motivo y guardara auditoria para estos cambios.
+    <AdminCallout tone="warn" title="Cambios auditados">
+      <p className="text-[length:var(--ui-text-xs)] leading-5 text-[color:var(--ui-ink-soft)]">
+        Estos cambios requieren un motivo y quedan registrados en la auditoría.
       </p>
-      <ul className="mt-3 flex flex-col gap-1 text-xs">
+      <ul className="mt-3 flex flex-col gap-1 text-[length:var(--ui-text-xs)]">
         {changes.map((change) => (
-          <li key={change}>{change}</li>
+          <li key={change.id} className="flex flex-wrap items-baseline gap-1.5">
+            <span className="font-medium">{change.label}:</span>
+            <ChangeValue cents={change.beforeCents} text={change.beforeText} />
+            <span aria-hidden="true">→</span>
+            <span className="sr-only">cambia a</span>
+            <ChangeValue cents={change.afterCents} text={change.afterText} />
+          </li>
         ))}
       </ul>
-    </section>
+    </AdminCallout>
   );
 }
 
-export function priceValuesDiffer(current: string, next: string): boolean {
-  const currentCents = priceCents(current);
-  const nextCents = priceCents(next);
-
-  return currentCents !== null && nextCents !== null && currentCents !== nextCents;
-}
-
-function formatAuditPrice(value: string): string {
-  const cents = priceCents(value);
-
-  if (cents === null) {
-    return `L. ${value}`;
+function ChangeValue({ cents, text }: { cents: Cents | null; text: string | null }) {
+  if (cents !== null) {
+    return <MoneyText cents={cents} emphasis="strong" />;
   }
 
-  return `L. ${(cents / 100).toFixed(2)}`;
+  return <span>{text ?? 'Sin tarifa válida'}</span>;
+}
+
+function textChange(id: string, label: string, beforeText: string, afterText: string): AuditedServiceChange {
+  return { id, label, beforeText, afterText, beforeCents: null, afterCents: null };
+}
+
+export function priceValuesDiffer(current: string, next: string): boolean {
+  const currentCents = parseCents(current);
+  const nextCents = parseCents(next);
+
+  return currentCents !== null && nextCents !== null && currentCents !== nextCents;
 }
 
 function taxLabel(value: boolean): string {
@@ -86,5 +126,5 @@ function taxLabel(value: boolean): string {
 }
 
 function yesNo(value: boolean): string {
-  return value ? 'Si' : 'No';
+  return value ? 'Sí' : 'No';
 }

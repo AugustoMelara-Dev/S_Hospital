@@ -21,7 +21,14 @@ export function institutionalReceiptPaperSize(
 export function receiptPrintPaperSize(
   value: ReceiptData['width'] | string | null | undefined,
 ): ReceiptData['width'] {
-  return value === 'letter' || value === 'half_letter' || value === 'a5' || value === 'custom' || value === '80mm' || value === '58mm'
+  return value === 'letter'
+    || value === 'letter_portrait'
+    || value === 'half_letter'
+    || value === 'a5'
+    || value === 'a4'
+    || value === 'custom'
+    || value === '80mm'
+    || value === '58mm'
     ? value
     : 'half_letter';
 }

@@ -83,6 +83,8 @@ export type Category = {
   slug: string;
   active: boolean;
   sort_order: number;
+  services_count?: number;
+  active_services_count?: number;
 };
 
 export type Area = {
@@ -120,6 +122,29 @@ export type CategoryPayload = {
   name: string;
   active: boolean;
   sort_order: number;
+  availability_change_reason?: string | null;
+};
+
+export type ServiceHistoryChange = {
+  field: string;
+  label: string;
+  before: unknown;
+  after: unknown;
+};
+
+export type ServiceHistoryEntry = {
+  id: number;
+  action: string;
+  label: string;
+  reason: string | null;
+  created_at: string | null;
+  user: { id: number; name: string; username: string } | null;
+  changes: ServiceHistoryChange[];
+};
+
+export type ServiceHistoryPage = {
+  data: ServiceHistoryEntry[];
+  meta: PaginatedMeta;
 };
 
 export type ServicePayload = {
@@ -156,6 +181,28 @@ export type InvoicePayload = {
   items: InvoiceItemPayload[];
 };
 
+/**
+ * Prevalidación financiera del servidor (`POST /api/invoices/preview`).
+ * No emite nada: no crea factura, no consume correlativo, no registra pago.
+ * Contrato: `hospital-ai/evidencia/R2-MONEY-BE/CONTRATO_PREVALIDACION.md`.
+ */
+export type InvoicePreviewStatus = 'ok' | 'zero_tax' | 'zero_total' | 'tax_unavailable';
+export type InvoicePreviewTaxOrigin = 'fiscal_settings' | 'code_default' | 'unavailable';
+export type InvoicePreviewTax = {
+  label: string;
+  available: boolean;
+  rate: string | null;
+  rate_basis_points: number | null;
+  origin: InvoicePreviewTaxOrigin;
+};
+export type InvoicePreviewTotals = {
+  subtotal_cents: number;
+  taxable_base_cents: number;
+  exempt_cents: number;
+  tax_cents: number | null;
+  discount_cents: number;
+  total_cents: number | null;
+};
 export type InvoiceItem = {
   id: number;
   service_id: number;
@@ -173,6 +220,57 @@ export type InvoiceItem = {
   special_rule_code: string | null;
   special_rule_applied: boolean;
   notes: string | null;
+  /**
+   * Procedencia del ajuste por regla (contrato C2-B8, `GET /api/invoices/{id}`).
+   *
+   * `unit_price_registered_cents`: precio unitario de catálogo **antes** de la
+   * regla. `rule_adjustment_cents`: **magnitud positiva, total de la línea**
+   * (subtotal registrado − subtotal efectivo). `rule_adjustment_persisted`:
+   * `false` = **ajuste desconocido** en un documento histórico; nunca renderizar
+   * ese caso como `L 0.00`. Opcionales para tolerar respuestas de versiones
+   * anteriores y reimpresiones ya emitidas.
+   */
+  unit_price_registered_cents?: number | null;
+  unit_price_registered?: string | null;
+  rule_adjustment_cents?: number | null;
+  rule_adjustment?: string | null;
+  rule_adjustment_persisted?: boolean | null;
+  rule_cause?: string | null;
+};
+
+export type InvoicePreviewItem = {
+  service_id: number;
+  service_name: string;
+  quantity: string;
+  quantity_cents: number;
+  unit_price_cents: number;
+  taxable: boolean;
+  tax_rate: string | null;
+  line_subtotal_cents: number;
+  tax_cents: number | null;
+  line_total_cents: number | null;
+  special_rule_code: string | null;
+  special_rule_applied: boolean;
+  unit_price_registered_cents?: number | null;
+  unit_price_registered?: string | null;
+  rule_adjustment_cents?: number | null;
+  rule_adjustment?: string | null;
+  rule_cause?: string | null;
+};
+export type InvoicePreview = {
+  status: InvoicePreviewStatus;
+  currency: string;
+  tax: InvoicePreviewTax;
+  totals: InvoicePreviewTotals;
+  zero_reason: string | null;
+  items: InvoicePreviewItem[];
+  emission: {
+    persisted: boolean;
+    invoice_created: boolean;
+    fiscal_number_consumed: boolean;
+    payment_created: boolean;
+    institutional_receipt_created: boolean;
+  };
 };
 
 export type Invoice = {
@@ -201,7 +299,7 @@ export type Invoice = {
 
 export type InvoiceInstitutionalReceipt = Pick<
   InstitutionalReceipt,
-  'id' | 'receipt_number_full' | 'status' | 'issued_at' | 'reprint_count'
+  'id' | 'receipt_number_full' | 'status' | 'issued_at' | 'reprint_count' | 'copy_mode'
 > & {
   print_events_count?: number;
   has_print_events?: boolean;
@@ -212,8 +310,17 @@ export type CashClosingBreakdown = {
   other_amount: string;
 };
 
+export type CashRegister = {
+  id: number;
+  code: string;
+  name: string;
+  active: boolean;
+};
+
 export type CashSession = {
   id: number;
+  cash_register_id?: number | null;
+  cash_register?: Pick<CashRegister, 'id' | 'code' | 'name'> | null;
   user_id: number;
   user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
   closed_by_user_id?: number | null;
@@ -254,11 +361,18 @@ export type Payment = {
   paid_at: string;
 };
 
-export type InstitutionalReceiptPaperSize = 'letter' | 'half_letter' | 'a5' | 'custom' | '80mm' | '58mm';
+export type InstitutionalReceiptPaperSize = 'letter' | 'letter_portrait' | 'half_letter' | 'a5' | 'a4' | 'custom' | '80mm' | '58mm';
 export type ReceiptPaperSize = InstitutionalReceiptPaperSize;
 
 export type ReceiptData = {
   width: ReceiptPaperSize;
+  /**
+   * T3-004: contador durable del path legacy. El backend lo entrega tanto en el
+   * GET de recibo como en el POST de reimpresión. 0 = aun no hay reimpresión
+   * auditada (primera impresión); n > 0 = reimpresiones ya auditadas y la
+   * reimpresión #n+1 requiere motivo humano. El frontend nunca lo fabrica.
+   */
+  legacy_reprint_count: number;
   hospital: {
     name: string;
     rtn: string | null;
@@ -326,6 +440,14 @@ export type ReceiptData = {
   }>;
 };
 
+/**
+ * Allowlist de plantillas del recibo institucional. El backend ya emite
+ * `institutional_compact` (nuevo perfil de entrega) ademas del historico
+ * `institutional_classic`. Tenerla como union evita que el frontend degrade el
+ * valor persistido al guardar un perfil.
+ */
+export type InstitutionalReceiptTemplateCode = 'institutional_classic' | 'institutional_compact';
+
 export type InstitutionalReceipt = {
   id: number;
   invoice_id: number | null;
@@ -342,7 +464,7 @@ export type InstitutionalReceipt = {
   payer_name: string;
   concept: string;
   amount_words: string;
-  template_code: 'institutional_classic';
+  template_code: InstitutionalReceiptTemplateCode;
   print_profile_code: ReceiptPrintProfile['code'];
   copy_mode: ReceiptPrintProfile['copies_mode'];
   reprint_count: number;
@@ -408,10 +530,55 @@ export type CashSessionReport = {
   }>;
 };
 
+/**
+ * M-W2-FE-04 (mandato §7, §9): contrato `GET /api/cash-sessions/consolidated`
+ * (M-W2-FIN-02/FIN-03). Resume la conciliacion de las sesiones de caja del
+ * rango por dia operativo (`opened_at` o `closed_at`) agrupada por caja fisica.
+ *
+ * El grupo sin caja (`cash_register_id = null`) llega como una entrada propia
+ * con `unassigned = true` y `code`/`name` nulos. Sus totales NO se mezclan con
+ * ninguna caja, pero SI se incluyen en `consolidated` (representan dinero real).
+ * El frontend solo formatea; no recalcula totales.
+ */
+export type CashSessionConsolidationTotals = {
+  sessions_count: number;
+  payments_count: number;
+  payments_total: string;
+  payments_by_method: MoneyByMethod;
+  expected_cash_amount: string;
+  pending_invoice_count: number;
+  pending_amount: string;
+  reversed_payments_count: number;
+  reversed_payments_total: string;
+  cash_register_id: number | null;
+  unassigned: boolean;
+  code: string | null;
+  name: string | null;
+};
+
+export type CashSessionConsolidationReport = {
+  registers: CashSessionConsolidationTotals[];
+  consolidated: CashSessionConsolidationTotals;
+  date_from: string;
+  date_to: string;
+  range_basis: string;
+  timezone: string;
+};
+
+export type CashSessionConsolidationFilters = {
+  date_from: string;
+  date_to: string;
+  cash_register_id?: number | null;
+};
+
 export type BackupLog = {
   id: number;
   size_bytes: number | null;
   checksum_sha256?: string | null;
+  /** Alcance comprobado por el servidor; no implica una restauración SQL. */
+  verification_scope?: 'encrypted_file_integrity' | null;
+  /** Sólo true cuando existe evidencia persistida de restauración para esta copia. */
+  restore_tested?: boolean;
   status: 'pending' | 'success' | 'failed';
   type: 'manual' | 'scheduled';
   created_by: number | null;
@@ -625,6 +792,8 @@ export type TodayReport = {
   cash_session_opened_at: string | null;
   cash_session_opening_amount: string | null;
   issued_count: number;
+  /** Operaciones vigentes emitidas sin cobro por regla o precio cero. */
+  without_charge_count?: number;
   collected_count: number;
   billed: string;
   collected: string;
@@ -941,6 +1110,12 @@ export type AuditLogPage = {
 };
 
 
+export type SystemHealthLiveness = {
+  status: string;
+  service: string;
+  version: string;
+};
+
 export type OperationalHealth = {
   generated_at: string;
   database: {
@@ -995,9 +1170,9 @@ export type InstitutionalReceiptSeries = {
 
 export type ReceiptPrintProfile = {
   id: number;
-  code: 'recibo_pequeno_personalizado' | 'media_carta_horizontal' | 'a5_horizontal' | 'carta_horizontal' | 'thermal_80mm' | 'thermal_58mm';
+  code: 'recibo_pequeno_personalizado' | 'media_carta_horizontal' | 'a5_horizontal' | 'carta_horizontal' | 'carta_vertical' | 'a4_vertical' | 'thermal_80mm' | 'thermal_58mm';
   name: string;
-  paper_kind?: 'custom_mm' | 'half_letter_landscape' | 'a5_landscape' | 'letter_landscape' | 'thermal_80mm' | 'thermal_58mm';
+  paper_kind?: 'custom_mm' | 'half_letter_landscape' | 'a5_landscape' | 'letter_landscape' | 'letter_portrait' | 'a4_portrait' | 'thermal_80mm' | 'thermal_58mm';
   width_mm?: string;
   height_mm?: string;
   margin_top_mm?: string;
@@ -1005,7 +1180,7 @@ export type ReceiptPrintProfile = {
   margin_bottom_mm?: string;
   margin_left_mm?: string;
   orientation?: 'landscape' | 'portrait';
-  template_code?: 'institutional_classic';
+  template_code?: InstitutionalReceiptTemplateCode;
   font_family?: string | null;
   font_scale?: string;
   copies_mode: 'original_only' | 'original_first' | 'original_first_second';

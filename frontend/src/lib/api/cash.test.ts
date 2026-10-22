@@ -24,6 +24,17 @@ describe('cash api client', () => {
     expect(mockedRequest).toHaveBeenCalledWith('/api/cash-sessions/current');
   });
 
+  it('lists active cash registers from the server inventory', async () => {
+    mockedRequest.mockResolvedValueOnce({
+      data: [{ id: 2, code: 'AZB-QA', name: 'Caja Azul QA', active: true }],
+    });
+
+    await expect(cash.getCashRegisters()).resolves.toEqual([
+      { id: 2, code: 'AZB-QA', name: 'Caja Azul QA', active: true },
+    ]);
+    expect(mockedRequest).toHaveBeenCalledWith('/api/cash-registers');
+  });
+
   it('can request the current closable cash session for supervisor rescue flow', async () => {
     mockedRequest.mockResolvedValueOnce({ data: { id: 8, status: 'open' } });
 
@@ -36,7 +47,7 @@ describe('cash api client', () => {
     mockedRequest.mockResolvedValueOnce({ data: { id: 7, status: 'open' } });
 
     await expect(cash.openCashSession(
-      { opening_amount: '0.00', notes: null },
+      { opening_amount: '0.00', cash_register_id: 2, notes: null },
       { idempotencyKey: 'cash-open-attempt-1' },
     )).resolves.toEqual({ id: 7, status: 'open' });
 
@@ -44,7 +55,7 @@ describe('cash api client', () => {
       method: 'POST',
       idempotencyKey: 'cash-open-attempt-1',
       headers: { 'Idempotency-Key': 'cash-open-attempt-1' },
-      body: JSON.stringify({ opening_amount: '0.00', notes: null }),
+      body: JSON.stringify({ opening_amount: '0.00', cash_register_id: 2, notes: null }),
     });
   });
 

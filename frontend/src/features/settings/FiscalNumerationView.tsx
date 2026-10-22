@@ -1,20 +1,12 @@
-﻿import { useEffect, useRef, useState } from 'react';
-import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
-import type { ComponentProps, ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Save, TriangleAlert } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
+import { AdminCallout, AdminDialog, AdminField, AdminPanel, AdminPanelHeader } from '@/design-system/admin/components';
 import { type FiscalSequence, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { INPUT_CLASS, ADMIN_TAG, PRIMARY_BUTTON, SECONDARY_BUTTON, STICKY_ACTIONS, TEXTAREA_CLASS } from './settingsUi';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type FiscalNumerationViewProps = {
@@ -41,35 +33,44 @@ const sequenceSchema = z.object({
 
 type SequenceFormData = z.infer<typeof sequenceSchema>;
 
-function FiscalField({ children, error, id, label, required, hint }: {
-  children: (props: { id: string; invalid: boolean; describedBy: string | undefined }) => ReactNode;
+function FiscalField({ children, error, hint, id, label, required }: {
+  children: ReactNode;
   error?: string;
+  hint?: ReactNode;
   id: string;
   label: string;
   required?: boolean;
-  hint?: ReactNode;
 }) {
-  return (
-    <Field data-invalid={Boolean(error)} data-required={required}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      {children({ id, invalid: Boolean(error), describedBy: error || hint ? `${id}-help` : undefined })}
-      {error ? <FieldError id={`${id}-help`}>{error}</FieldError> : hint ? <FieldDescription id={`${id}-help`}>{hint}</FieldDescription> : null}
-    </Field>
-  );
-}
-
-function RegisteredInput({ registration, ...props }: ComponentProps<typeof Input> & { registration: UseFormRegisterReturn }) {
-  const { ref, ...field } = registration;
-  return <Input {...field} {...props} ref={ref} />;
-}
-
-function RegisteredTextArea({ registration, ...props }: ComponentProps<typeof Textarea> & { registration: UseFormRegisterReturn }) {
-  const { ref, ...field } = registration;
-  return <Textarea {...field} {...props} ref={ref} />;
+  return <AdminField htmlFor={id} label={label} required={required} hint={hint} error={error}>{children}</AdminField>;
 }
 
 function isPlaceholderCai(value: string | null | undefined): boolean {
   return new RegExp(`^${'de' + 'mo'}-cai$`, 'i').test(value?.trim() ?? '');
+}
+
+function fiscalDateValue(value: string | null | undefined): string {
+  return value?.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? '';
+}
+
+function fiscalDateLabel(value: string | null | undefined): string {
+  const normalized = fiscalDateValue(value);
+  if (!normalized) return 'Sin configurar';
+  const [year, month, day] = normalized.split('-').map(Number);
+  return new Intl.DateTimeFormat('es-HN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function todayDateValue(): string {
+  const today = new Date();
+  return [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-');
 }
 
 export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationViewProps) {
@@ -97,18 +98,23 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useUnsavedChangesGuard(form.formState.isDirty);
+
   async function load() {
     setLoading(true);
     try {
       const sequences = await apiClient.getFiscalSequences();
       const first = sequences[0] ?? null;
-      setSequence(first);
+      const normalizedFirst = first
+        ? { ...first, valid_until: fiscalDateValue(first.valid_until) }
+        : null;
+      setSequence(normalizedFirst);
       form.reset({
         prefix: first?.prefix ?? '',
         cai: isPlaceholderCai(first?.cai) ? '' : first?.cai ?? '',
         min_number: first?.min_number ?? 1,
         max_number: first?.max_number ?? 99999999,
-        valid_until: first?.valid_until ?? '',
+        valid_until: fiscalDateValue(first?.valid_until),
         reason: '',
       });
     } catch (err) {
@@ -153,14 +159,15 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
         active: true,
         ...(sequence?.id ? { reason } : {}),
       });
-      setSequence(saved);
+      const normalizedSaved = { ...saved, valid_until: fiscalDateValue(saved.valid_until) };
+      setSequence(normalizedSaved);
       setPendingChange(null);
       form.reset({
         prefix: saved.prefix,
         cai: saved.cai,
         min_number: saved.min_number,
         max_number: saved.max_number,
-        valid_until: saved.valid_until,
+        valid_until: normalizedSaved.valid_until,
         reason: '',
       });
       onStatus({ key: 'settings:fiscal-sequence:save', level: 'success', message: 'Numeración fiscal guardada.' });
@@ -177,11 +184,14 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
   const availableNumbers = sequence
     ? Math.max(0, Number(sequence.max_number) - Number(sequence.current_number))
     : 0;
-  const isExpired = sequence ? new Date(`${sequence.valid_until}T23:59:59`) < new Date() : false;
+  const isExpired = sequence?.valid_until
+    ? sequence.valid_until < todayDateValue()
+    : false;
+  const hasExpirationDate = Boolean(sequence?.valid_until);
 
   if (loading) {
     return (
-      <div role="status" aria-live="polite" className="text-sm text-muted-foreground">
+      <div role="status" aria-live="polite" className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
         Cargando numeración fiscal...
       </div>
     );
@@ -189,215 +199,181 @@ export function FiscalNumerationView({ canEdit, onStatus }: FiscalNumerationView
 
   return (
     <section className="grid gap-4">
-      <header><h2 className="text-lg font-semibold">Numeración fiscal</h2><p className="text-sm text-muted-foreground">Configure el rango autorizado. Los cambios requieren motivo y quedan auditados.</p></header>
-      {error ? (
-        <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>
-      ) : null}
+      <AdminPanel as="section" aria-labelledby="fiscal-numeration-title">
+        <AdminPanelHeader
+          id="fiscal-numeration-title"
+          title="Numeración fiscal"
+          description="Configure el rango autorizado. Los cambios requieren motivo y quedan auditados."
+        />
+        <div className="grid gap-4 p-4">
+          {error ? (
+            <AdminCallout tone="error" title="No se pudo guardar">{error}</AdminCallout>
+          ) : null}
 
-      {!sequence && (
-        <Alert><TriangleAlert /><AlertTitle>Sin numeración</AlertTitle><AlertDescription>Configure el CAI, prefijo y rango autorizado antes de emitir facturas.</AlertDescription></Alert>
-      )}
+          {!sequence ? (
+            <AdminCallout tone="warn" title="Sin numeración">
+              Configure el CAI, prefijo y rango autorizado antes de emitir facturas.
+            </AdminCallout>
+          ) : null}
 
-      {sequence ? (
-        <div className="grid gap-3 sm:grid-cols-2" aria-label="Estado del rango fiscal">
-          <div className="border border-operational-border bg-muted/40 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-semibold">Disponibilidad del rango</p>
-              <Badge variant="secondary">
-                {availableNumbers <= 100 ? 'Rango por agotarse' : 'Rango disponible'}
-              </Badge>
+          {sequence ? (
+            <div className="grid gap-3 sm:grid-cols-2" aria-label="Estado del rango fiscal">
+              <div className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[var(--ui-surface-alt)] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Disponibilidad del rango</p>
+                  {/* Chip de tono con la forma del ADMIN_TAG pero clases completas:
+                      añadir border/text al ADMIN_TAG competiría con su borde y
+                      tinta neutrales en el orden de utilidades (§2, no-solo-color:
+                      la etiqueta textual acompaña). */}
+                  <span className={availableNumbers <= 100
+                    ? 'inline-flex w-fit items-center gap-1.5 rounded-[var(--ui-radius)] border border-[var(--ui-warn-border)] bg-[var(--ui-warn-subtle)] px-1.5 py-0.5 text-[length:var(--ui-text-xs)] font-semibold text-[color:var(--ui-warn)]'
+                    : ADMIN_TAG}
+                  >
+                    {availableNumbers <= 100 ? 'Rango por agotarse' : 'Rango disponible'}
+                  </span>
+                </div>
+                <p className="mt-2 text-[length:var(--ui-text-sm)] tabular-nums text-[color:var(--ui-ink-soft)]">
+                  {availableNumbers.toLocaleString('es-HN')} números disponibles de {Number(sequence.max_number - sequence.min_number + 1).toLocaleString('es-HN')} autorizados.
+                </p>
+              </div>
+              <div className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[var(--ui-surface-alt)] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Vigencia</p>
+                  <span className={isExpired
+                    ? 'inline-flex w-fit items-center gap-1.5 rounded-[var(--ui-radius)] border border-[var(--ui-danger-border)] bg-[var(--ui-danger-subtle)] px-1.5 py-0.5 text-[length:var(--ui-text-xs)] font-semibold text-[color:var(--ui-danger)]'
+                    : ADMIN_TAG}
+                  >
+                    {!hasExpirationDate ? 'Sin fecha' : isExpired ? 'Vencida' : 'Vigente'}
+                  </span>
+                </div>
+                <p className="mt-2 text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
+                  {!hasExpirationDate
+                    ? 'Fecha de vencimiento sin configurar.'
+                    : `${isExpired ? 'Venció el' : 'Vigente hasta'} ${fiscalDateLabel(sequence.valid_until)}.`}
+                </p>
+              </div>
             </div>
-            <p className="mt-2 text-sm tabular-nums text-muted-foreground">
-              {availableNumbers.toLocaleString('es-HN')} números disponibles de {Number(sequence.max_number - sequence.min_number + 1).toLocaleString('es-HN')} autorizados.
-            </p>
-          </div>
-          <div className="border border-operational-border bg-muted/40 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-semibold">Vigencia</p>
-              <Badge variant={isExpired ? 'destructive' : 'secondary'}>
-                {isExpired ? 'Vencida' : 'Vigente'}
-              </Badge>
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {isExpired ? 'Venció el' : 'Vigente hasta'} {sequence.valid_until}.
-            </p>
-          </div>
+          ) : null}
+
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4" aria-busy={form.formState.isSubmitting || saving}>
+            <fieldset className="grid gap-4">
+              <legend className="text-[length:var(--ui-text-sm)] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-ink-soft)]">Datos fiscales</legend>
+              <p className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">CAI, prefijo y rango autorizado por el SAR.</p>
+              <div className="grid gap-4 md:grid-cols-3">
+                <FiscalField id="prefix" label="Prefijo" required error={form.formState.errors.prefix?.message}>
+                  <input id="prefix" placeholder="A" {...form.register('prefix')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.prefix)} className={`${INPUT_CLASS} font-mono uppercase`} />
+                </FiscalField>
+                <FiscalField id="cai" label="CAI" required error={form.formState.errors.cai?.message}>
+                  <input id="cai" placeholder="CAI-XXXXX-XXXXX-XXXXX" {...form.register('cai')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.cai)} className={`${INPUT_CLASS} font-mono`} />
+                </FiscalField>
+                <FiscalField id="valid_until" label="Válido hasta" required error={form.formState.errors.valid_until?.message}>
+                  <input id="valid_until" type="date" {...form.register('valid_until')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.valid_until)} className={INPUT_CLASS} />
+                </FiscalField>
+                <FiscalField id="min_number" label="Desde el número" required error={form.formState.errors.min_number?.message}>
+                  <input id="min_number" type="number" {...form.register('min_number', { valueAsNumber: true })} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.min_number)} className={INPUT_CLASS} />
+                </FiscalField>
+                <FiscalField id="max_number" label="Hasta el número" required error={form.formState.errors.max_number?.message}>
+                  <input id="max_number" type="number" {...form.register('max_number', { valueAsNumber: true })} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.max_number)} className={INPUT_CLASS} />
+                </FiscalField>
+                <div className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[var(--ui-surface-alt)] p-4 text-[length:var(--ui-text-sm)]">
+                  <p className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-wide text-[color:var(--ui-ink-soft)]">
+                    Correlativo actual
+                  </p>
+                  <p className="mt-1 font-mono text-[length:var(--ui-text-lg)] font-semibold tabular-nums text-[color:var(--ui-ink)]">
+                    {sequence?.prefix && sequence?.current_number != null
+                      ? `${sequence.prefix}-${String(sequence.current_number).padStart(8, '0')}`
+                      : 'Sin correlativo'}
+                  </p>
+                  <p className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
+                    El número aumenta al emitir una factura. No se reinicia desde esta pantalla.
+                  </p>
+                </div>
+              </div>
+            </fieldset>
+
+            {sequence?.id ? (
+              <FiscalField
+                id="fiscal_reason"
+                label="Motivo del cambio fiscal"
+                required
+                hint="Obligatorio al guardar cambios de prefijo, CAI, rango, correlativo o vigencia."
+                error={form.formState.errors.reason?.message}
+              >
+                <textarea id="fiscal_reason" rows={3} {...form.register('reason')} disabled={!canEdit} aria-invalid={Boolean(form.formState.errors.reason)} placeholder="Ej. Nuevo rango autorizado por SAR" className={TEXTAREA_CLASS} />
+              </FiscalField>
+            ) : null}
+
+            {canEdit && form.formState.isDirty ? (
+              <div data-sticky-actions="true" className={STICKY_ACTIONS}>
+                <span className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Hay cambios fiscales sin guardar.</span>
+                <button type="submit" data-ui-press className={PRIMARY_BUTTON} disabled={form.formState.isSubmitting || saving}>
+                  {saving ? 'Guardando…' : 'Guardar numeración'}
+                </button>
+              </div>
+            ) : null}
+          </form>
         </div>
-      ) : null}
+      </AdminPanel>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4" aria-busy={form.formState.isSubmitting || saving}>
-        <Card>
-          <CardHeader><CardTitle>Datos fiscales</CardTitle><CardDescription>CAI, prefijo y rango autorizado por el SAR.</CardDescription></CardHeader>
-          <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <FiscalField id="prefix" label="Prefijo" required error={form.formState.errors.prefix?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  registration={form.register('prefix')}
-                  placeholder="A"
-                  className="font-mono uppercase"
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </FiscalField>
-            <FiscalField id="cai" label="CAI" required error={form.formState.errors.cai?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  registration={form.register('cai')}
-                  placeholder="CAI-XXXXX-XXXXX-XXXXX"
-                  className="font-mono"
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </FiscalField>
-            <FiscalField id="valid_until" label="Válido hasta" required error={form.formState.errors.valid_until?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  type="date"
-                  registration={form.register('valid_until')}
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </FiscalField>
-            <FiscalField id="min_number" label="Desde el número" required error={form.formState.errors.min_number?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  type="number"
-                  registration={form.register('min_number', { valueAsNumber: true })}
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </FiscalField>
-            <FiscalField id="max_number" label="Hasta el número" required error={form.formState.errors.max_number?.message}>
-              {({ id, invalid, describedBy }) => (
-                <RegisteredInput
-                  id={id}
-                  type="number"
-                  registration={form.register('max_number', { valueAsNumber: true })}
-                  aria-invalid={invalid}
-                  aria-describedby={describedBy}
-                  disabled={!canEdit}
-                />
-              )}
-            </FiscalField>
-            <div className="border border-operational-border bg-muted/40 p-4 text-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Correlativo actual
-              </p>
-              <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
-                {sequence?.prefix && sequence?.current_number != null
-                  ? `${sequence.prefix}-${String(sequence.current_number).padStart(8, '0')}`
-                  : 'Sin correlativo'}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                El backend lo incrementa al emitir. No se reinicia desde esta pantalla.
-              </p>
-            </div>
-          </div>
-          </CardContent>
-        </Card>
-
-        {sequence?.id ? (
-          <FiscalField
-            id="reason"
-            label="Motivo del cambio fiscal"
-            required
-            hint="Obligatorio al guardar cambios de prefijo, CAI, rango, correlativo o vigencia."
-            error={form.formState.errors.reason?.message}
-          >
-            {({ id, invalid, describedBy }) => (
-              <RegisteredTextArea
-                id={id}
-                registration={form.register('reason')}
-                rows={3}
-                aria-invalid={invalid}
-                aria-describedby={describedBy}
-                disabled={!canEdit}
-                placeholder="Ej. Nuevo rango autorizado por SAR"
-              />
-            )}
-          </FiscalField>
-        ) : null}
-
-        {canEdit && form.formState.isDirty ? (
-          <div
-            data-sticky-actions="true"
-            className="sticky bottom-20 z-20 flex items-center justify-between gap-3 border-t border-operational-border bg-operational-surface p-3 lg:bottom-0"
-          >
-            <span className="text-xs text-muted-foreground">Hay cambios fiscales sin guardar.</span>
-            <Button type="submit" disabled={form.formState.isSubmitting || saving}>
-              {saving ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}Guardar numeración
-            </Button>
-          </div>
-        ) : null}
-      </form>
-
-      <AlertDialog open={pendingChange !== null} onOpenChange={(next) => { if (!next && !saving) setPendingChange(null); }}>
-        <AlertDialogContent className="max-h-svh overflow-y-auto sm:max-w-2xl">
-          <AlertDialogHeader><AlertDialogTitle>Revisar cambio fiscal</AlertDialogTitle><AlertDialogDescription>Confirme la numeración autorizada antes de guardar.</AlertDialogDescription></AlertDialogHeader>
+      <AdminDialog
+        open={pendingChange !== null}
+        onOpenChange={(next) => { if (!next && !saving) setPendingChange(null); }}
+        className="sm:max-w-2xl"
+        title="Revisar cambio fiscal"
+        description="Confirme la numeración autorizada antes de guardar."
+        footer={(
+          <>
+            <button type="button" data-ui-press className={SECONDARY_BUTTON} disabled={saving} onClick={() => setPendingChange(null)}>Cancelar</button>
+            <button type="button" data-ui-press className={PRIMARY_BUTTON} disabled={saving} onClick={() => { if (pendingChange) void saveSequence(pendingChange); }}>
+              {saving ? 'Guardando…' : 'Confirmar y guardar'}
+            </button>
+          </>
+        )}
+      >
         {pendingChange ? (
           <div className="space-y-3">
-            {error ? <Alert variant="destructive"><TriangleAlert /><AlertTitle>No se pudo guardar</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
+            {error ? <AdminCallout tone="error" title="No se pudo guardar">{error}</AdminCallout> : null}
             <p>Este cambio afecta la numeración de las próximas facturas y quedará auditado.</p>
-            <dl className="grid gap-3 border border-operational-border bg-muted/40 p-4 sm:grid-cols-2">
+            <dl className="grid gap-3 rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[var(--ui-surface-alt)] p-4 sm:grid-cols-2">
               <div>
-                <dt className="text-xs font-medium">Prefijo</dt>
+                <dt className="text-[length:var(--ui-text-xs)] font-medium text-[color:var(--ui-ink-soft)]">Prefijo</dt>
                 <dd className="font-mono tabular-nums">{sequence?.prefix ?? 'Sin configurar'} → {pendingChange.prefix}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium">CAI actual</dt>
+                <dt className="text-[length:var(--ui-text-xs)] font-medium text-[color:var(--ui-ink-soft)]">CAI actual</dt>
                 <dd className="break-all font-mono">{sequence?.cai || 'Sin configurar'}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium">CAI nuevo</dt>
+                <dt className="text-[length:var(--ui-text-xs)] font-medium text-[color:var(--ui-ink-soft)]">CAI nuevo</dt>
                 <dd className="break-all font-mono">{pendingChange.cai}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium">Rango actual</dt>
+                <dt className="text-[length:var(--ui-text-xs)] font-medium text-[color:var(--ui-ink-soft)]">Rango actual</dt>
                 <dd className="font-mono tabular-nums">
                   {sequence ? `${sequence.min_number.toLocaleString('es-HN')} a ${sequence.max_number.toLocaleString('es-HN')}` : 'Sin configurar'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-medium">Rango nuevo</dt>
+                <dt className="text-[length:var(--ui-text-xs)] font-medium text-[color:var(--ui-ink-soft)]">Rango nuevo</dt>
                 <dd className="font-mono tabular-nums">{pendingChange.min_number.toLocaleString('es-HN')} a {pendingChange.max_number.toLocaleString('es-HN')}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium">Vigencia actual</dt>
-                <dd>{sequence?.valid_until || 'Sin configurar'}</dd>
+                <dt className="text-[length:var(--ui-text-xs)] font-medium text-[color:var(--ui-ink-soft)]">Vigencia actual</dt>
+                <dd>{fiscalDateLabel(sequence?.valid_until)}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium">Vigencia nueva</dt>
-                <dd>{pendingChange.valid_until}</dd>
+                <dt className="text-[length:var(--ui-text-xs)] font-medium text-[color:var(--ui-ink-soft)]">Vigencia nueva</dt>
+                <dd>{fiscalDateLabel(pendingChange.valid_until)}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium">Correlativo actual</dt>
+                <dt className="text-[length:var(--ui-text-xs)] font-medium text-[color:var(--ui-ink-soft)]">Correlativo actual</dt>
                 <dd className="font-mono tabular-nums">{sequence?.current_number ?? 0}</dd>
               </div>
             </dl>
-            <p className="font-medium text-foreground">El correlativo actual no cambia desde esta pantalla.</p>
+            <p className="font-medium text-[color:var(--ui-ink)]">El correlativo actual no cambia desde esta pantalla.</p>
           </div>
         ) : null}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction disabled={saving} onClick={() => { if (pendingChange) void saveSequence(pendingChange); }}>
-              {saving ? <Spinner data-icon="inline-start" /> : null}{saving ? 'Guardando…' : 'Confirmar y guardar'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      </AdminDialog>
     </section>
   );
 }

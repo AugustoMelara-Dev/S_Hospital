@@ -16,9 +16,11 @@ vi.mock('@/lib/api', () => ({
   },
   apiClient: {
     getSystemHealth: vi.fn(),
+    getSystemHealthLiveness: vi.fn(),
   },
 }));
 
+const mockedGetSystemHealthLiveness = vi.mocked(apiClient.getSystemHealthLiveness);
 const mockedGetSystemHealth = vi.mocked(apiClient.getSystemHealth);
 
 function createWrapper() {
@@ -34,35 +36,52 @@ function createWrapper() {
 }
 
 describe('useServerStatus', () => {
-  it('reads the public operational health query once the hook mounts', async () => {
+  it('reads the public liveness query once the hook mounts', async () => {
+    mockedGetSystemHealthLiveness.mockResolvedValue(liveness());
     mockedGetSystemHealth.mockResolvedValue(healthySnapshot());
 
     render(<ServerStatusProbe />, { wrapper: createWrapper() });
 
-    await waitFor(() => expect(mockedGetSystemHealth).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockedGetSystemHealthLiveness).toHaveBeenCalledTimes(1));
+    expect(mockedGetSystemHealth).not.toHaveBeenCalled();
   });
 
-  it('summarizes a healthy LAN server in cashier-safe language', async () => {
+  it('does not request the operational detail without system.status.view', async () => {
+    mockedGetSystemHealthLiveness.mockResolvedValue(liveness());
     mockedGetSystemHealth.mockResolvedValue(healthySnapshot());
 
     render(<ServerStatusProbe />, { wrapper: createWrapper() });
 
     expect(await screen.findByText('Todo bien')).toBeInTheDocument();
+    expect(screen.getByText(/servidor local responde correctamente/i)).toBeInTheDocument();
+    expect(mockedGetSystemHealth).not.toHaveBeenCalled();
+  });
+
+  it('summarizes a healthy LAN server in cashier-safe language when the detail is authorized', async () => {
+    mockedGetSystemHealthLiveness.mockResolvedValue(liveness());
+    mockedGetSystemHealth.mockResolvedValue(healthySnapshot());
+
+    render(<ServerStatusProbe permissions={['system.status.view']} />, { wrapper: createWrapper() });
+
+    expect(await screen.findByText('Todo bien')).toBeInTheDocument();
     expect(screen.getByText(/servidor local, base de datos y respaldos responden/i)).toBeInTheDocument();
+    await waitFor(() => expect(mockedGetSystemHealth).toHaveBeenCalledTimes(1));
   });
 
   it('turns database failures into an actionable operator summary', async () => {
+    mockedGetSystemHealthLiveness.mockResolvedValue(liveness());
     mockedGetSystemHealth.mockResolvedValue(
       healthySnapshot({ database: { connected: false, driver: 'sqlite' } }),
     );
 
-    render(<ServerStatusProbe />, { wrapper: createWrapper() });
+    render(<ServerStatusProbe permissions={['system.status.view']} />, { wrapper: createWrapper() });
 
     expect(await screen.findByText('Error')).toBeInTheDocument();
     expect(screen.getByText(/base de datos local no responde/i)).toBeInTheDocument();
   });
 
   it('asks for review when the latest successful backup fails integrity checks', async () => {
+    mockedGetSystemHealthLiveness.mockResolvedValue(liveness());
     mockedGetSystemHealth.mockResolvedValue(
       healthySnapshot({
         backups: {
@@ -76,14 +95,14 @@ describe('useServerStatus', () => {
       }),
     );
 
-    render(<ServerStatusProbe />, { wrapper: createWrapper() });
+    render(<ServerStatusProbe permissions={['system.status.view']} />, { wrapper: createWrapper() });
 
     expect(await screen.findByText('Requiere revision')).toBeInTheDocument();
     expect(await screen.findByText(/ultimo respaldo exitoso no pudo validarse/i)).toBeInTheDocument();
   });
 
-  it('does not describe 401 health responses as offline network failures', async () => {
-    mockedGetSystemHealth.mockRejectedValue(new ApiError('Unauthenticated.', 401));
+  it('does not describe 401 liveness responses as offline network failures', async () => {
+    mockedGetSystemHealthLiveness.mockRejectedValue(new ApiError('Unauthenticated.', 401));
 
     render(<ServerStatusProbe />, { wrapper: createWrapper() });
 
@@ -93,8 +112,8 @@ describe('useServerStatus', () => {
   });
 });
 
-function ServerStatusProbe() {
-  const { summary } = useServerStatus();
+function ServerStatusProbe({ permissions = [] }: { permissions?: string[] }) {
+  const { summary } = useServerStatus(permissions);
 
   return (
     <div>
@@ -102,6 +121,14 @@ function ServerStatusProbe() {
       <p>{summary.description}</p>
     </div>
   );
+}
+
+function liveness() {
+  return {
+    status: 'ok',
+    service: 'Sistema de Caja Hospitalaria',
+    version: '0.1.0',
+  };
 }
 
 function healthySnapshot(overrides: Partial<OperationalHealthFixture> = {}): OperationalHealthFixture {

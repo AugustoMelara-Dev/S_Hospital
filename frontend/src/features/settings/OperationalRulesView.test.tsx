@@ -106,4 +106,31 @@ describe('OperationalRulesView', () => {
     expect(await screen.findByLabelText(/abonos parciales/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /guardar reglas operativas/i })).toBeDisabled();
   });
+
+  it('shows a real load failure instead of an empty switch and a dead save button', async () => {
+    vi.mocked(apiClient.getOperationalSettings).mockRejectedValueOnce(new Error('Fallo controlado de red'));
+
+    render(<OperationalRulesView canEdit onStatus={vi.fn()} />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/no se pudieron cargar las reglas operativas/i);
+    expect(screen.queryByLabelText(/abonos parciales/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /guardar reglas operativas/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /reintentar carga/i })).toBeInTheDocument();
+  });
+
+  it('reloads the operational rules from the retry action', async () => {
+    vi.mocked(apiClient.getOperationalSettings)
+      .mockRejectedValueOnce(new Error('Fallo controlado de red'))
+      .mockResolvedValueOnce({ ...operationalSettings, partial_payments_enabled: true });
+
+    render(<OperationalRulesView canEdit onStatus={vi.fn()} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /reintentar carga/i }));
+
+    expect(await screen.findByLabelText(/abonos parciales/i)).toBeChecked();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
 });

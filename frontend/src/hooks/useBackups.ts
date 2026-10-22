@@ -80,9 +80,13 @@ export interface BackupWorkerHealth {
   failedLast24h: number;
 }
 
+/**
+ * Backup worker health comes from the authenticated operational detail
+ * endpoint, so callers must gate `enabled` on `system.status.view`.
+ */
 export function useBackupWorkerHealth(enabled = true) {
   return useQuery({
-    queryKey: queryKeys.system.health(),
+    queryKey: queryKeys.system.healthDetail(),
     queryFn: () => apiClient.getSystemHealth(),
     select: (health): BackupWorkerHealth => {
       const backups = health.backups ?? {};

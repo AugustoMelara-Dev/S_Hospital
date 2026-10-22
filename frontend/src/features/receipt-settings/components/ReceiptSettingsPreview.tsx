@@ -1,261 +1,315 @@
-import { useLayoutEffect, useRef, type ReactNode } from 'react';
-import { PrintPreviewFrame } from '@/design-system/components/InstitutionalComponents';
-import { formatDate } from '@/lib/format/formatDate';
-import type { InstitutionalReceiptSeries, ReceiptPrintProfile } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { useMemo, useState } from 'react';
+import { Loader2Icon } from 'lucide-react';
 import {
-  paperChoiceFor,
-  paperPresentation,
-  type InstitutionalPaper,
-} from '@/modules/receipts/paperPolicy';
+  AdminCallout,
+  AdminPanel,
+  AdminPanelHeader,
+} from '@/design-system/admin/components';
+import { ApiError, userSafeErrorMessage, type ReceiptPrintProfile } from '@/lib/api';
+import { cn } from '@/lib/utils';
+import { paperChoiceFor, paperPresentation, type InstitutionalPaper } from '@/modules/receipts/paperPolicy';
+import { copyLabelsForMode } from '../copiesMode';
+import {
+  receiptDraftSignature,
+  useReceiptEnginePreview,
+  type ReceiptEngineDraft,
+} from '../useReceiptEnginePreview';
+import { ICON_BUTTON, SECONDARY_BUTTON } from '../receiptAdminUi';
 
 type ReceiptSettingsPreviewProps = {
-  hospitalName: string;
-  governmentLine: string;
-  secretariatLine: string;
-  location: string;
-  footerText: string;
-  series: InstitutionalReceiptSeries | null;
   profile: ReceiptPrintProfile | null;
   paper: InstitutionalPaper;
   draft?: boolean;
+  /**
+   * Validated unsaved form values. When present, the engine renders the DRAFT
+   * profile in memory: nothing is persisted and no correlativo is consumed. When
+   * absent, the stored profile is rendered.
+   */
+  draftProfile?: ReceiptEngineDraft | null;
 };
 
-type ReceiptPreviewDimensions = {
-  paperWidth: number;
-  paperHeight: number;
-  contentWidth: number;
-  contentHeight: number;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2;
+const ZOOM_STEP = 0.25;
+
+/**
+ * Clases estáticas de escala para el zoom discreto (0.5–2). Se usan clases
+ * literales para que Tailwind las incluya en el build; el valor dinámico no se
+ * interpola en el nombre de clase.
+ */
+const ZOOM_SCALE_CLASS: Record<string, string> = {
+  '0.5': 'scale-50',
+  '0.75': 'scale-75',
+  '1': 'scale-100',
+  '1.25': 'scale-125',
+  '1.5': 'scale-150',
+  '1.75': 'scale-[1.75]',
+  '2': 'scale-200',
 };
 
-export function calculateReceiptPreviewScale({
-  paperWidth,
-  paperHeight,
-  contentWidth,
-  contentHeight,
-}: ReceiptPreviewDimensions): number {
-  const dimensions = [paperWidth, paperHeight, contentWidth, contentHeight];
-  if (dimensions.some((dimension) => !Number.isFinite(dimension) || dimension <= 0)) return 1;
-  return Math.max(0.05, Math.min(1, paperWidth / contentWidth, paperHeight / contentHeight));
-}
+type ReceiptPageDocument = {
+  /** Full documents, one per logical page (copy) of the copy set. */
+  documents: string[];
+};
 
-function copyLabels(mode: ReceiptPrintProfile['copies_mode'] | undefined): string[] {
-  if (mode === 'original_first') return ['ORIGINAL', 'PRIMERA COPIA'];
-  if (mode === 'original_first_second') return ['ORIGINAL', 'PRIMERA COPIA', 'SEGUNDA COPIA'];
-  return ['ORIGINAL'];
-}
+/**
+ * Splits the real engine HTML into one self-contained document per
+ * `.receipt-page` section. Each section is a logical page (one per copy); the
+ * engine emits the same markup the PDF paginates. When the markup has no section
+ * (e.g. a simplified fixture), the original document is returned untouched.
+ */
+export function splitReceiptEnginePages(html: string): ReceiptPageDocument {
+  const sections = html.match(/<section\b[^>]*class="[^"]*\breceipt-page\b[^"]*"[^>]*>[\s\S]*?<\/section>/gi);
 
-function nextReceiptNumber(series: InstitutionalReceiptSeries | null): string {
-  if (!series) return 'PRUEBA-SIN-SERIE';
-  const next = String(series.current_number + 1).padStart(8, '0');
-  return series.number_format
-    .replace('{series}', series.series)
-    .replace('{prefix}', series.prefix)
-    .replace(/\{number(?::0?\d+)?\}/, next);
+  if (!sections || sections.length <= 1) {
+    return { documents: [html] };
+  }
+
+  const headMatch = /<head[^>]*>([\s\S]*?)<\/head>/i.exec(html);
+  const head = headMatch ? headMatch[1] : '';
+
+  return {
+    documents: sections.map(
+      (section) => `<!DOCTYPE html><html lang="es"><head>${head}</head><body>${section}</body></html>`,
+    ),
+  };
 }
 
 export function ReceiptSettingsPreview({
-  hospitalName,
-  governmentLine,
-  secretariatLine,
-  location,
-  footerText,
-  series,
   profile,
   paper,
-  draft = true,
+  draftProfile = null,
 }: ReceiptSettingsPreviewProps) {
-  const labels = copyLabels(profile?.copies_mode);
-  const previewDate = formatDate(new Date());
-  const showSealSpace = profile?.show_physical_seal_space !== false;
+  const [zoom, setZoom] = useState(1);
+  const [pageIndex, setPageIndex] = useState(0);
+
   const paperChoice = paperChoiceFor(paper);
   const presentation = paperPresentation(paper);
-  const customWidth = positiveDimension(profile?.width_mm);
-  const customHeight = positiveDimension(profile?.height_mm);
-  const previewAspectRatio = paper === 'custom' && customWidth && customHeight
-    ? `${customWidth} / ${customHeight}`
-    : paperChoice.aspectRatio;
+  const profileCode = profile?.code ?? null;
+  const profileName = profile?.name ?? 'Sin perfil seleccionado';
+  const draftActive = draftProfile !== null && receiptDraftSignature(draftProfile) !== 'persisted';
 
-  return (
-    <PrintPreviewFrame
-      data-testid="receipt-settings-preview"
-      title="Ejemplo del recibo"
-      description={`${paperChoice.label}. Así se verá la información al imprimir.`}
-      className="overflow-hidden border border-border bg-background"
-    >
-      <div className="w-full min-w-0 space-y-4" data-receipt-preview-pages>
-        {labels.map((label) => (
-          <ReceiptDocumentPreview
-            key={label}
-            className={cn(
-              'receipt-paper-preview mx-auto w-full max-w-3xl border border-receipt-border-soft bg-receipt-paper p-0 text-receipt-ink',
-              presentation.previewClass,
-            )}
-            aspectRatio={previewAspectRatio}
-            label={`Vista previa de recibo ${paperChoice.label}`}
-            paper={paper}
-          >
-            <div className="mb-3 flex items-center justify-between gap-2 border-b border-receipt-border-soft pb-2 text-xs font-semibold uppercase tracking-wide text-receipt-muted">
-              <span>Ejemplo de impresión</span>
-              <span>{paperChoice.label}</span>
-            </div>
-            {draft ? (
-              <div className="mb-3 border-y border-receipt-ink py-1.5 text-center text-xs font-bold uppercase tracking-widest">
-                PRUEBA - SIN VALIDEZ
-              </div>
-            ) : null}
+  const enginePreview = useReceiptEnginePreview({
+    profileCode,
+    draft: draftActive ? draftProfile : null,
+  });
 
-              <header className="text-center text-xs uppercase leading-tight">
-                {governmentLine ? <div>{governmentLine}</div> : null}
-                {secretariatLine ? <div>{secretariatLine}</div> : null}
-                <div className="text-base font-bold">{hospitalName || 'SIN CONFIGURAR'}</div>
-                {location ? <div>{location}</div> : null}
-              </header>
-
-              <div className="mt-4 grid grid-cols-1 gap-3 border-y border-receipt-ink py-2 text-sm sm:grid-cols-2">
-                <div>
-                  <span className="block text-xs font-semibold uppercase tracking-wide text-receipt-muted">Número de muestra</span>
-                  {series ? (
-                    <span className="mt-1 block font-mono text-lg font-bold tracking-tight">
-                      {nextReceiptNumber(series)}
-                    </span>
-                  ) : (
-                    <span className="mt-1 block font-mono text-lg font-bold text-receipt-muted">{nextReceiptNumber(series)}</span>
-                  )}
-                </div>
-                <div className="space-y-1 sm:text-right">
-                  <div><span className="font-semibold">Serie:</span> {series?.series ?? 'PRUEBA'}</div>
-                  <div><span className="font-semibold">Monto:</span> L. 25.00</div>
-                  <div><span className="font-semibold">Fecha:</span> {previewDate}</div>
-                </div>
-              </div>
-
-              <dl className="mt-4 grid grid-cols-3 gap-x-3 gap-y-1 text-sm">
-                <dt className="font-bold uppercase text-receipt-muted">Paciente</dt>
-                <dd className="col-span-2 border-b border-receipt-muted px-1">María López</dd>
-                <dt className="font-bold uppercase text-receipt-muted">Monto en letras</dt>
-                <dd className="col-span-2 border-b border-receipt-muted px-1">
-                  {[series?.legal_text, 'VEINTICINCO LEMPIRAS CON 00/100 CENTAVOS'].filter(Boolean).join(' ')}
-                </dd>
-              </dl>
-
-              <table className="mt-4 w-full border-collapse text-sm" data-receipt-preview-table="true">
-                <caption className="sr-only">Detalle sintético del recibo institucional</caption>
-                <thead>
-                  <tr className="border-b border-receipt-ink text-left text-xs uppercase text-receipt-muted">
-                    <th className="py-1 pr-2" scope="col">Descripción</th>
-                    <th className="px-2 py-1 text-right" scope="col">Cant.</th>
-                    <th className="px-2 py-1 text-right" scope="col">Precio</th>
-                    <th className="py-1 pl-2 text-right" scope="col">Importe</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-receipt-border-soft">
-                    <td className="py-1 pr-2">Consulta de medicina general</td>
-                    <td className="px-2 py-1 text-right tabular-nums">1.00</td>
-                    <td className="px-2 py-1 text-right tabular-nums">L. 25.00</td>
-                    <td className="py-1 pl-2 text-right font-semibold tabular-nums">L. 25.00</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <div
-                className={cn('mt-auto grid gap-8 pt-8 text-center text-xs', showSealSpace ? 'grid-cols-2' : 'grid-cols-1')}
-                data-receipt-preview-signatures="true"
-              >
-                <div className="border-t border-receipt-ink pt-1">Firma del enterante</div>
-                {showSealSpace ? (
-                  <div>
-                    <div className="h-12" aria-hidden="true" />
-                    <div className="border-t border-receipt-ink pt-1">Sello y firma autorizada</div>
-                  </div>
-                ) : null}
-              </div>
-
-              {profile?.show_copy_legend !== false ? (
-                <footer
-                  className="mt-4 border-t border-receipt-ink pt-1 text-center text-xs uppercase"
-                  data-receipt-preview-footer="true"
-                >
-                  {label} - {footerText || 'Copia digital guardada en sistema'}
-                </footer>
-              ) : null}
-          </ReceiptDocumentPreview>
-        ))}
-      </div>
-    </PrintPreviewFrame>
+  const engineHtml = enginePreview.data?.html ?? null;
+  const { documents } = useMemo(
+    () => (engineHtml ? splitReceiptEnginePages(engineHtml) : { documents: [] }),
+    [engineHtml],
   );
-}
+  const pageTotal = documents.length;
+  const safePageIndex = pageTotal > 0 ? Math.min(pageIndex, pageTotal - 1) : 0;
+  const currentDocument = pageTotal > 0 ? documents[safePageIndex] : null;
 
-function positiveDimension(value: string | undefined): number | null {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
+  const engineCount = enginePreview.data?.copy_count;
+  const plan = enginePreview.data?.document ?? null;
+  const engineLabels = plan?.copies.labels?.length
+    ? plan.copies.labels
+    : enginePreview.data?.copy_labels?.length
+      ? enginePreview.data.copy_labels
+      : copyLabelsForMode(profile?.copies_mode);
+  const permissionDenied = enginePreview.error instanceof ApiError && enginePreview.error.status === 403;
 
-function ReceiptDocumentPreview({
-  aspectRatio,
-  children,
-  className,
-  label,
-  paper,
-}: {
-  aspectRatio: string;
-  children: ReactNode;
-  className: string;
-  label: string;
-  paper: InstitutionalPaper;
-}) {
-  const paperRef = useRef<HTMLElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const paperElement = paperRef.current;
-    const contentElement = contentRef.current;
-    if (!paperElement || !contentElement) return undefined;
-
-    paperElement.style.aspectRatio = aspectRatio;
-
-    const fitContent = () => {
-      const scale = calculateReceiptPreviewScale({
-        paperWidth: paperElement.clientWidth,
-        paperHeight: paperElement.clientHeight,
-        contentWidth: contentElement.scrollWidth,
-        contentHeight: contentElement.scrollHeight,
-      });
-      contentElement.style.setProperty('--receipt-preview-scale', String(scale));
-      contentElement.dataset.receiptPreviewScale = String(scale);
-    };
-
-    fitContent();
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fitContent);
-    observer?.observe(paperElement);
-    observer?.observe(contentElement);
-    window.addEventListener('resize', fitContent);
-    void document.fonts?.ready.then(fitContent);
-
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', fitContent);
-      paperElement.style.removeProperty('aspect-ratio');
-    };
-  }, [aspectRatio]);
+  // The plan is the only source of the copy/page figures. While it is not
+  // available the component states that it is preparing the preview and shows
+  // no number at all: pages are never derived from the copy count.
+  const copyTotal = plan?.copies.count ?? (typeof engineCount === 'number' ? engineCount : null);
 
   return (
-    <section
-      ref={paperRef}
-      className={className}
-      aria-label={label}
-      data-receipt-preview-paper={paper}
-      data-receipt-style="minimal-monochrome"
-    >
-      <div
-        ref={contentRef}
-        className="receipt-paper-preview__content flex flex-col p-5"
-        data-receipt-preview-content
-        data-receipt-preview-fit="contain"
-      >
-        {children}
+    <AdminPanel data-testid="receipt-settings-preview" as="section" className="overflow-hidden">
+      <AdminPanelHeader
+        headingLevel={2}
+        title="Vista previa del motor"
+        description={`${paperChoice.label} · ${profileName}. ${draftActive ? 'Borrador sin guardar (no reserva correlativo).' : 'Perfil guardado. Borrador de prueba (no reserva correlativo).'}`}
+        actions={
+          profileCode ? (
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Controles de la vista previa">
+              <button
+                type="button"
+                data-ui-press
+                aria-label="Alejar vista previa"
+                className={ICON_BUTTON}
+                disabled={zoom <= MIN_ZOOM}
+                onClick={() => setZoom((value) => Math.max(MIN_ZOOM, Number((value - ZOOM_STEP).toFixed(2))))}
+              >
+                −
+              </button>
+              <span className="min-w-12 text-center text-[length:var(--ui-text-xs)] font-semibold tabular-nums" data-receipt-preview-zoom>
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                type="button"
+                data-ui-press
+                aria-label="Acercar vista previa"
+                className={ICON_BUTTON}
+                disabled={zoom >= MAX_ZOOM}
+                onClick={() => setZoom((value) => Math.min(MAX_ZOOM, Number((value + ZOOM_STEP).toFixed(2))))}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                data-ui-press
+                className={SECONDARY_BUTTON}
+                onClick={() => setZoom(1)}
+                disabled={zoom === 1}
+              >
+                Tamaño real
+              </button>
+              {pageTotal > 1 ? (
+                <span className="flex items-center gap-2" data-receipt-preview-pager>
+                  <button
+                    type="button"
+                    data-ui-press
+                    className={SECONDARY_BUTTON}
+                    aria-label="Hoja anterior"
+                    disabled={safePageIndex === 0}
+                    onClick={() => setPageIndex((value) => Math.max(0, value - 1))}
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-[length:var(--ui-text-xs)] font-semibold tabular-nums" aria-live="polite">
+                    Hoja {safePageIndex + 1} de {pageTotal}
+                  </span>
+                  <button
+                    type="button"
+                    data-ui-press
+                    className={SECONDARY_BUTTON}
+                    aria-label="Hoja siguiente"
+                    disabled={safePageIndex >= pageTotal - 1}
+                    onClick={() => setPageIndex((value) => Math.min(pageTotal - 1, value + 1))}
+                  >
+                    Siguiente
+                  </button>
+                </span>
+              ) : null}
+            </div>
+          ) : null
+        }
+      />
+      <div className="flex flex-col gap-3 p-3" data-receipt-preview-mode={draftActive ? 'draft' : 'persisted'}>
+        <div
+          className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[var(--ui-surface-alt)] px-3 py-2 text-[length:var(--ui-text-xs)] leading-relaxed text-[color:var(--ui-ink)]"
+          data-receipt-copy-plan
+        >
+          <strong className="block font-semibold">
+            {draftActive ? 'Vista previa del borrador (sin guardar).' : 'Vista previa del perfil guardado.'} Este PDF es una copia del conjunto.
+          </strong>
+          {plan ? (
+            <>
+              <span className="mt-1 block" data-receipt-plan-headline>{plan.headline}</span>
+              <span className="mt-1 block text-[color:var(--ui-ink-soft)]" data-receipt-plan-instruction>
+                {plan.print_instruction}
+              </span>
+              {plan.sheet_assumption ? (
+                <span className="mt-1 block text-[color:var(--ui-ink-soft)]" data-receipt-plan-sheet-note>
+                  {plan.sheet_assumption}
+                </span>
+              ) : null}
+              {engineLabels.length > 0 && copyTotal !== null ? (
+                <span className="mt-1 block text-[color:var(--ui-ink-soft)]">
+                  {copyTotal} {copyTotal === 1 ? 'ejemplar' : 'ejemplares'}: {engineLabels.join(' / ')}
+                </span>
+              ) : null}
+            </>
+          ) : profileCode ? (
+            <span className="mt-1 block text-[color:var(--ui-ink-soft)]" data-receipt-plan-pending>
+              Preparando la vista previa del conjunto…
+            </span>
+          ) : null}
+        </div>
+
+        {draftActive ? (
+          <div data-receipt-preview-draft>
+            <AdminCallout tone="info" title="Borrador sin guardar">
+              La vista previa usa los cambios actuales del formulario. Aún no se guardaron y no se consumió
+              correlativo; guarde el perfil para aplicarlos a los próximos recibos.
+            </AdminCallout>
+          </div>
+        ) : null}
+
+        {!profileCode ? (
+          <div data-receipt-preview-empty>
+            <AdminCallout tone="info" title="Sin perfil de impresión">
+              Seleccione un formato de papel para ver la vista previa del motor.
+            </AdminCallout>
+          </div>
+        ) : null}
+
+        {profileCode && enginePreview.isLoading ? (
+          <div
+            className="flex min-h-40 items-center justify-center gap-2 text-[length:var(--ui-text-base)] text-[color:var(--ui-ink-soft)]"
+            role="status"
+            aria-label="Preparando la vista previa del recibo"
+          >
+            <Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
+            <span>Preparando la vista previa del motor…</span>
+          </div>
+        ) : null}
+
+        {profileCode && enginePreview.isError ? (
+          <div data-receipt-preview-error>
+            <AdminCallout
+              tone="error"
+              title={permissionDenied ? 'Sin permiso para la vista previa' : 'No se pudo preparar la vista previa'}
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  {permissionDenied
+                    ? 'Su usuario no tiene permiso para previsualizar el recibo institucional. Solicite acceso al administrador.'
+                    : userSafeErrorMessage(enginePreview.error, 'Revise el servidor local y vuelva a intentar.')}
+                </span>
+                <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={() => void enginePreview.refetch()}>
+                  Reintentar
+                </button>
+              </div>
+            </AdminCallout>
+          </div>
+        ) : null}
+
+        {currentDocument ? (
+          <div className="overflow-auto rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[var(--ui-surface-alt)] p-3">
+            <section
+              aria-label={`Vista previa de recibo ${paperChoice.label}`}
+              data-receipt-style="minimal-monochrome"
+              data-receipt-preview-paper={paper}
+              className="receipt-paper-preview mx-auto w-full max-w-[48rem] overflow-visible border border-[var(--ui-line-strong)] bg-[var(--ui-surface)] text-[color:var(--ui-ink)]"
+            >
+              <div className="flex items-center justify-between gap-2 border-b border-[var(--ui-line)] px-4 py-2 text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-wide text-[color:var(--ui-ink-soft)]">
+                <span>Ejemplo de impresión · PRUEBA</span>
+                <span>
+                  {paperChoice.label}
+                  {pageTotal > 1 ? ` · Hoja ${safePageIndex + 1} de ${pageTotal}` : ''}
+                </span>
+              </div>
+              {/*
+                sandbox="" is the most restrictive value: the server-rendered receipt
+                document is static HTML/CSS with no scripts, forms or same-origin
+                needs. srcDoc comes from the authenticated /test-preview endpoint for
+                the selected profile/draft, never from operator input, so we do not
+                grant script execution or navigation.
+              */}
+              <div
+                className={cn('origin-top', presentation.previewClass, ZOOM_SCALE_CLASS[String(zoom)] ?? 'scale-100')}
+                data-receipt-preview-scale={zoom}
+              >
+                <iframe
+                  title={`Vista previa del recibo institucional (${paperChoice.label})`}
+                  srcDoc={currentDocument}
+                  sandbox=""
+                  /* El canvas del motor ES el papel (regla paper §4): superficie
+                     blanca canónica incluso cuando el entorno global es dark.
+                     --ui-surface invertiría el fondo del documento sobre el
+                     sustrato, por eso se usa el token de papel del recibo. */
+                  className="receipt-preview-frame block w-full border-0 bg-receipt-paper"
+                />
+              </div>
+            </section>
+          </div>
+        ) : null}
       </div>
-    </section>
+    </AdminPanel>
   );
 }

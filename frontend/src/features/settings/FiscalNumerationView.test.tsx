@@ -29,11 +29,39 @@ describe('FiscalNumerationView', () => {
   it('seeds the fiscal sequence form from the first sequence returned by the API', async () => {
     render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
 
-    expect(await screen.findByLabelText(/^prefijo$/i)).toHaveValue('A');
-    expect(screen.getByLabelText(/^cai$/i)).toHaveValue('CAI-TEST');
+    expect(await screen.findByLabelText(/^prefijo/i)).toHaveValue('A');
+    expect(screen.getByLabelText(/^cai/i)).toHaveValue('CAI-TEST');
     expect(screen.getByLabelText(/desde el n[uú]mero/i)).toHaveValue(1);
     expect(screen.getByLabelText(/hasta el n[uú]mero/i)).toHaveValue(1000);
     expect(screen.getByLabelText(/v[aá]lido hasta/i)).toHaveValue('2026-12-31');
+  });
+
+  it('normalizes an API datetime for the date control and presents it without shifting the fiscal day', async () => {
+    vi.mocked(apiClient.getFiscalSequences).mockResolvedValue([{
+      ...baseSequence,
+      valid_until: '2027-09-21T06:00:00.000000Z',
+    }]);
+
+    render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
+
+    expect(await screen.findByLabelText(/v[aá]lido hasta/i)).toHaveValue('2027-09-21');
+    expect(screen.getByText(/vigente hasta 21 de septiembre de 2027/i)).toBeInTheDocument();
+    expect(screen.queryByText(/2027-09-21T06:00/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps an absent fiscal date empty instead of inventing one', async () => {
+    vi.mocked(apiClient.getFiscalSequences).mockResolvedValue([{
+      ...baseSequence,
+      valid_until: null as unknown as string,
+    }]);
+
+    render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
+
+    expect(await screen.findByLabelText(/v[aá]lido hasta/i)).toHaveValue('');
+    expect(screen.getByText(/^sin fecha$/i)).toBeInTheDocument();
+    expect(screen.getByText(/fecha de vencimiento sin configurar/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^vigente$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^vencida$/i)).not.toBeInTheDocument();
   });
 
   it('submits the fiscal sequence with the preserved current_number and id', async () => {
@@ -41,7 +69,7 @@ describe('FiscalNumerationView', () => {
 
     render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
 
-    const prefixInput = await screen.findByLabelText(/^prefijo$/i);
+    const prefixInput = await screen.findByLabelText(/^prefijo/i);
     fireEvent.change(prefixInput, { target: { value: 'B' } });
     fireEvent.change(screen.getByLabelText(/motivo del cambio fiscal/i), {
       target: { value: 'Nuevo rango autorizado por SAR' },
@@ -71,14 +99,14 @@ describe('FiscalNumerationView', () => {
 
     render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
 
-    fireEvent.change(await screen.findByLabelText(/^prefijo$/i), { target: { value: 'B' } });
+    fireEvent.change(await screen.findByLabelText(/^prefijo/i), { target: { value: 'B' } });
     fireEvent.change(screen.getByLabelText(/hasta el n[uú]mero/i), { target: { value: '1200' } });
     fireEvent.change(screen.getByLabelText(/motivo del cambio fiscal/i), {
       target: { value: 'Nuevo rango autorizado por SAR' },
     });
     fireEvent.click(screen.getByRole('button', { name: /guardar numeraci/i }));
 
-    const dialog = await screen.findByRole('alertdialog', { name: /revisar cambio fiscal/i });
+    const dialog = await screen.findByRole('dialog', { name: /revisar cambio fiscal/i });
     expect(dialog).toHaveTextContent(/prefijo/i);
     expect(dialog).toHaveTextContent(/A/);
     expect(dialog).toHaveTextContent(/B/);
@@ -119,8 +147,8 @@ describe('FiscalNumerationView', () => {
 
     render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
 
-    fireEvent.change(await screen.findByLabelText(/^prefijo$/i), { target: { value: '001-002-03' } });
-    fireEvent.change(screen.getByLabelText(/^cai$/i), { target: { value: 'CAI-NUEVO-RANGO' } });
+    fireEvent.change(await screen.findByLabelText(/^prefijo/i), { target: { value: '001-002-03' } });
+    fireEvent.change(screen.getByLabelText(/^cai/i), { target: { value: 'CAI-NUEVO-RANGO' } });
     fireEvent.change(screen.getByLabelText(/desde el n[uú]mero/i), { target: { value: '10000001' } });
     fireEvent.change(screen.getByLabelText(/hasta el n[uú]mero/i), { target: { value: '10000100' } });
     fireEvent.change(screen.getByLabelText(/v[aá]lido hasta/i), { target: { value: '2027-12-31' } });
@@ -142,23 +170,23 @@ describe('FiscalNumerationView', () => {
   it('compares every critical fiscal field before saving', async () => {
     render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
 
-    fireEvent.change(await screen.findByLabelText(/^prefijo$/i), { target: { value: 'B' } });
-    fireEvent.change(screen.getByLabelText(/^cai$/i), { target: { value: 'CAI-RENOVADO' } });
+    fireEvent.change(await screen.findByLabelText(/^prefijo/i), { target: { value: 'B' } });
+    fireEvent.change(screen.getByLabelText(/^cai/i), { target: { value: 'CAI-RENOVADO' } });
     fireEvent.change(screen.getByLabelText(/desde el n[uú]mero/i), { target: { value: '11' } });
     fireEvent.change(screen.getByLabelText(/hasta el n[uú]mero/i), { target: { value: '1100' } });
     fireEvent.change(screen.getByLabelText(/v[aá]lido hasta/i), { target: { value: '2027-06-30' } });
     fireEvent.change(screen.getByLabelText(/motivo del cambio fiscal/i), { target: { value: 'Renovacion fiscal autorizada' } });
     fireEvent.click(screen.getByRole('button', { name: /guardar numeraci/i }));
 
-    const dialog = await screen.findByRole('alertdialog', { name: /revisar cambio fiscal/i });
+    const dialog = await screen.findByRole('dialog', { name: /revisar cambio fiscal/i });
     expect(dialog).toHaveTextContent(/CAI actual/i);
     expect(dialog).toHaveTextContent('CAI-TEST');
     expect(dialog).toHaveTextContent(/CAI nuevo/i);
     expect(dialog).toHaveTextContent('CAI-RENOVADO');
     expect(dialog).toHaveTextContent(/1.*1[,.]000/);
     expect(dialog).toHaveTextContent(/11.*1[,.]100/);
-    expect(dialog).toHaveTextContent('2026-12-31');
-    expect(dialog).toHaveTextContent('2027-06-30');
+    expect(dialog).toHaveTextContent('31 de diciembre de 2026');
+    expect(dialog).toHaveTextContent('30 de junio de 2027');
   });
 
   it('requires a fiscal reason before saving changed fiscal sequence data', async () => {
@@ -166,7 +194,7 @@ describe('FiscalNumerationView', () => {
 
     render(<FiscalNumerationView canEdit onStatus={vi.fn()} />);
 
-    const prefixInput = await screen.findByLabelText(/^prefijo$/i);
+    const prefixInput = await screen.findByLabelText(/^prefijo/i);
     fireEvent.change(prefixInput, { target: { value: 'B' } });
 
     fireEvent.click(screen.getByRole('button', { name: /guardar numeraci/i }));

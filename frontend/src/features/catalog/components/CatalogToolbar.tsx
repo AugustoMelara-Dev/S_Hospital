@@ -1,18 +1,71 @@
-import { SearchIcon, XIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { XIcon } from 'lucide-react';
+import { AdminChip, AdminSearch, AdminToolbar } from '@/design-system/admin/components';
+import { SECONDARY_BUTTON, SELECT_CLASS } from './catalogUi';
 import { CATEGORY_FILTER_ALL, STATUS_FILTER_ACTIVE, STATUS_FILTER_ALL, STATUS_FILTER_INACTIVE, type CatalogToolbarProps } from './catalogTypes';
 
+const FIELD_LABEL_CLASS =
+  'text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]';
+
+/**
+ * Barra de trabajo del catálogo: búsqueda, categoría, estado y limpieza en una
+ * sola banda. El contador de filtros activos vive junto a la acción de limpiar
+ * y no en un panel aparte.
+ */
 export function CatalogToolbar({ categories, categoryFilter, hasActiveFilters, isLoading, onActiveFilterChange, onCategoryFilterChange, onClearFilters, onSearchChange, searchInputId = 'catalog-search', searchValue, statusFilter }: CatalogToolbarProps) {
-  return <section className="rounded-xl border border-border bg-card p-4 shadow-xs" aria-labelledby="catalog-filters-title">
-    <h2 id="catalog-filters-title" className="mb-3 text-sm font-semibold">Filtros del catálogo</h2>
-    <FieldGroup className="catalog-toolbar-grid grid gap-3 lg:items-end">
-      <Field><FieldLabel htmlFor={searchInputId}>Buscar servicio</FieldLabel><div className="relative"><SearchIcon aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input id={searchInputId} name="catalog_search" type="search" placeholder="Buscar por nombre, categoria o area..." value={searchValue} onChange={(event) => onSearchChange(event.target.value)} className="pl-8" /></div></Field>
-      <Field><FieldLabel htmlFor="catalog-category">Categoría</FieldLabel><Select value={categoryFilter} onValueChange={onCategoryFilterChange}><SelectTrigger id="catalog-category" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value={CATEGORY_FILTER_ALL}>Todas las categorías</SelectItem>{categories.map((category) => <SelectItem key={category.id} value={String(category.id)}>{category.name}</SelectItem>)}</SelectGroup></SelectContent></Select></Field>
-      <Field><FieldLabel htmlFor="catalog-active">Estado</FieldLabel><Select value={statusFilter} onValueChange={onActiveFilterChange}><SelectTrigger id="catalog-active" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value={STATUS_FILTER_ALL}>Todos</SelectItem><SelectItem value={STATUS_FILTER_ACTIVE}>Activos</SelectItem><SelectItem value={STATUS_FILTER_INACTIVE}>Inactivos</SelectItem></SelectGroup></SelectContent></Select></Field>
-      <Button type="button" variant="outline" onClick={onClearFilters} disabled={isLoading || !hasActiveFilters} aria-label="Limpiar filtros de catálogo"><XIcon data-icon="inline-start" />Limpiar</Button>
-    </FieldGroup>
-  </section>;
+  return (
+    <section aria-labelledby="catalog-filters-title" className="border-b border-[var(--ui-line)]">
+      <h2 id="catalog-filters-title" className="sr-only">Filtros del catálogo</h2>
+      <AdminToolbar className="items-end gap-2 p-3">
+        <AdminSearch
+          id={searchInputId}
+          label="Buscar producto o servicio"
+          value={searchValue}
+          onValueChange={onSearchChange}
+          placeholder="Buscar por nombre, categoría o área…"
+          className="min-w-[15rem] flex-1"
+        />
+        <div className="flex min-w-44 flex-col gap-1.5">
+          <label htmlFor="catalog-category" className={FIELD_LABEL_CLASS}>Categoría</label>
+          <select
+            id="catalog-category"
+            name="catalog_category"
+            className={SELECT_CLASS}
+            value={categoryFilter}
+            onChange={(event) => onCategoryFilterChange(event.target.value)}
+            disabled={isLoading}
+          >
+            <option value={CATEGORY_FILTER_ALL}>Todas las categorías</option>
+            {categories.map((category) => <option key={category.id} value={String(category.id)}>{category.name}{category.active ? '' : ' · Inactiva'}</option>)}
+          </select>
+        </div>
+        <div className="flex min-w-36 flex-col gap-1.5">
+          <label htmlFor="catalog-active" className={FIELD_LABEL_CLASS}>Estado</label>
+          <select
+            id="catalog-active"
+            name="catalog_status"
+            className={SELECT_CLASS}
+            value={statusFilter}
+            onChange={(event) => onActiveFilterChange(event.target.value)}
+            disabled={isLoading}
+          >
+            <option value={STATUS_FILTER_ALL}>Todos</option>
+            <option value={STATUS_FILTER_ACTIVE}>Activos</option>
+            <option value={STATUS_FILTER_INACTIVE}>Inactivos</option>
+          </select>
+        </div>
+        {hasActiveFilters ? <AdminChip tone="accent">Filtros activos</AdminChip> : null}
+        <button
+          type="button"
+          data-ui-press
+          className={`${SECONDARY_BUTTON} shrink-0`}
+          onClick={onClearFilters}
+          disabled={isLoading || !hasActiveFilters}
+          aria-label="Limpiar filtros de catálogo"
+        >
+          <XIcon aria-hidden="true" className="size-4" strokeWidth={1.5} />
+          Limpiar
+        </button>
+      </AdminToolbar>
+    </section>
+  );
 }

@@ -78,6 +78,22 @@ describe('HospitalSettingsView', () => {
     expect(payload.partial_payments_enabled).toBeUndefined();
   });
 
+  it('conserva los datos capturados cuando el guardado falla de forma recuperable', async () => {
+    vi.mocked(apiClient.updateFiscalSettings).mockRejectedValueOnce(new Error('Fallo controlado de red'));
+
+    render(<HospitalSettingsView canEdit onStatus={vi.fn()} />);
+
+    const name = await screen.findByLabelText(/nombre del hospital/i);
+    fireEvent.change(name, { target: { value: 'Hospital Regional del Norte' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar datos del hospital/i }));
+
+    await waitFor(() => expect(apiClient.updateFiscalSettings).toHaveBeenCalledTimes(1));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo guardar/i);
+    expect(name).toHaveValue('Hospital Regional del Norte');
+    expect(screen.getByRole('button', { name: /guardar datos del hospital/i })).toBeEnabled();
+  });
+
   it('trims institutional identity fields before saving', async () => {
     const updateFiscalSettings = vi.mocked(apiClient.updateFiscalSettings);
 
@@ -140,7 +156,7 @@ describe('HospitalSettingsView', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /guardar datos del hospital/i }));
 
-    const dialog = await screen.findByRole('alertdialog', { name: /revisar cambio de rtn/i });
+    const dialog = await screen.findByRole('dialog', { name: /revisar cambio de rtn/i });
     expect(dialog).toHaveTextContent('08011999000001');
     expect(dialog).toHaveTextContent('08011999111111');
     expect(dialog).toHaveTextContent(/recibos y documentos institucionales/i);

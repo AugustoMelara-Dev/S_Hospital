@@ -2,6 +2,14 @@ import { expect, type Page } from '@playwright/test';
 
 type GuardState = { issues: string[]; navigating: boolean };
 
+/** Textos de cancelación de petición por navegador (ver `requestfailed`). */
+const CANCELLED_REQUEST_MARKERS = [
+  'ERR_ABORTED',
+  'NS_BINDING_ABORTED',
+  'Load request cancelled',
+  'NS_ERROR_ABORT',
+];
+
 const guardStates = new WeakMap<Page, GuardState>();
 
 export async function installStrictMockGuard(page: Page): Promise<void> {
@@ -28,8 +36,14 @@ export async function installStrictMockGuard(page: Page): Promise<void> {
     // responsive views change. Missing API mocks are still recorded by the
     // catch-all route below, so an intentional client cancellation is not a
     // network failure for this guard.
-    if (failure.includes('ERR_ABORTED') && request.method() === 'GET') return;
-    if (failure.includes('ERR_ABORTED') && (!pathname.startsWith('/api/') || state.navigating)) return;
+    //
+    // T-QA-06: los navegadores reportan la cancelación con textos distintos —
+    // Chromium `net::ERR_ABORTED`, Firefox `NS_BINDING_ABORTED`, WebKit
+    // `Load request cancelled` —; la intención documentada arriba aplica a los
+    // tres, no sólo a Chromium. No se relaja ninguna otra comprobación.
+    const cancelled = CANCELLED_REQUEST_MARKERS.some((marker) => failure.includes(marker));
+    if (cancelled && request.method() === 'GET') return;
+    if (cancelled && (!pathname.startsWith('/api/') || state.navigating)) return;
     state.issues.push(`requestfailed: ${request.method()} ${request.url()} ${failure}`.trim());
   });
   page.on('response', (response) => {

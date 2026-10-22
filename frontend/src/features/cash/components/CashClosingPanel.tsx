@@ -1,12 +1,10 @@
 import { type FormEvent, type ReactNode, type RefObject } from 'react';
-import { ShieldCheckIcon, TriangleAlertIcon } from 'lucide-react';
+import { TriangleAlertIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { formatLempirasUI } from '@/lib/money';
+import { AdminCallout, AdminField, AdminPanel, AdminPanelHeader, MoneyText } from '@/design-system/admin/components';
+import { parseCents } from '@/lib/moneyCents';
+import { formatCashCents } from '../cashMoney';
+import { LINK_INLINE, PRIMARY_BUTTON, TEXTAREA_CLASS } from '../cashUi';
 
 type CashClosingPanelProps = {
   canCloseCash: boolean;
@@ -17,7 +15,7 @@ type CashClosingPanelProps = {
   closingAmountError: string | null;
   closingAmountRef: RefObject<HTMLInputElement | null>;
   closingNotes: string;
-  difference: number | null;
+  differenceCents: number | null;
   hasCashDifference: boolean;
   hasPendingBalance: boolean;
   missingInstitutionalReceiptCount: number;
@@ -25,10 +23,17 @@ type CashClosingPanelProps = {
   onClosingAmountChange: (value: string) => void;
   onClosingNotesChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  pendingAmount: string;
+  pendingAmount: string | null;
   pendingInvoiceCount: number;
+  /** El arqueo declaró explícitamente "sin efectivo": 0 confirmado ≠ no contado. */
+  zeroCountConfirmed?: boolean;
 };
 
+/**
+ * Cierre del turno: un solo conteo a confirmar, la diferencia calculada contra
+ * el efectivo esperado y, cuando existe diferencia, el motivo obligatorio.
+ * Los bloqueos de cobros/recibos se resuelven antes de habilitar el cierre.
+ */
 export function CashClosingPanel({
   canCloseCash,
   canViewInvoices = false,
@@ -38,7 +43,7 @@ export function CashClosingPanel({
   closingAmountError,
   closingAmountRef,
   closingNotes,
-  difference,
+  differenceCents,
   hasCashDifference,
   hasPendingBalance,
   missingInstitutionalReceiptCount,
@@ -48,102 +53,106 @@ export function CashClosingPanel({
   onSubmit,
   pendingAmount,
   pendingInvoiceCount,
+  zeroCountConfirmed = false,
 }: CashClosingPanelProps) {
   const liveDifferenceLabel =
-    difference === null
+    differenceCents === null
       ? 'Ingrese monto contado'
-      : difference === 0
+      : differenceCents === 0
         ? 'Sin diferencia'
-        : formatLempirasUI(difference);
-  const differenceDescription = difference === null
-    ? 'Conteo pendiente'
-    : difference === 0
-      ? 'Sin diferencia'
-      : difference > 0
-        ? 'Sobrante frente al efectivo esperado'
-        : 'Faltante frente al efectivo esperado';
+        : formatCashCents(differenceCents);
+  const differenceDescription = zeroCountConfirmed
+    ? 'Conteo en cero confirmado: la gaveta se declara sin efectivo.'
+    : differenceCents === null
+      ? 'Conteo pendiente'
+      : differenceCents === 0
+        ? 'Sin diferencia'
+        : differenceCents > 0
+          ? 'Sobrante frente al efectivo esperado'
+          : 'Faltante frente al efectivo esperado';
 
   return (
-    <section
-      aria-labelledby="cash-close-guided-title"
-      className="overflow-hidden border border-operational-border bg-operational-surface "
-    >
-      <div className="border-b border-border bg-muted/40 px-4 py-4 sm:px-5">
-        <div className="flex items-start gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center bg-primary text-primary-foreground ">
-            <ShieldCheckIcon aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <h2 id="cash-close-guided-title" className="text-lg font-semibold leading-tight">
-              Cierre guiado
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Cuente el efectivo, revise la diferencia y confirme el cierre auditado.
-            </p>
-          </div>
-        </div>
-      </div>
+    <AdminPanel as="section" aria-labelledby="cash-close-title" className="overflow-hidden">
+      <AdminPanelHeader
+        id="cash-close-title"
+        title="Cerrar el turno"
+        description="Confirme el conteo y la diferencia. Una diferencia exige el motivo auditado antes de cerrar."
+      />
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-4 px-4 py-4 sm:px-5" aria-busy={isSubmitting}>
+      <form onSubmit={onSubmit} className="grid gap-4 px-4 py-4 sm:px-5" aria-busy={isSubmitting}>
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="grid gap-2">
-              <Label htmlFor="closing_amount">Monto contado (L.) *</Label>
-              <Input
-                ref={(control) => { closingAmountRef.current = control; }}
-                id="closing_amount"
-                name="closing_amount"
-                type="text"
-                inputMode="decimal"
-                value={closingAmount}
-                onChange={(event) => onClosingAmountChange(event.target.value)}
-                placeholder="0.00"
-                autoComplete="off"
-                disabled={isSubmitting}
-                readOnly={closingAmountReadOnly}
-                className="min-h-11 font-mono text-lg tabular-nums"
-                aria-invalid={Boolean(closingAmountError)}
-                aria-describedby="closing-amount-help"
-              />
-              <p id="closing-amount-help" className={closingAmountError ? 'text-sm text-destructive' : 'text-sm text-muted-foreground'}>{closingAmountError ?? (closingAmountReadOnly ? 'Monto calculado desde el arqueo por denominaciones. Regrese a Arqueo para corregir el conteo.' : 'Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.')}</p>
-          </div>
+          <AdminField
+            htmlFor="closing_amount"
+            label="Monto contado (L.)"
+            required
+            error={closingAmountError ?? undefined}
+            hint={
+              closingAmountReadOnly
+                ? zeroCountConfirmed
+                  ? 'Conteo en cero confirmado en el arqueo. Regrese a Arqueo para corregirlo.'
+                  : 'Monto calculado desde el arqueo por denominaciones. Regrese a Arqueo para corregir el conteo.'
+                : 'Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.'
+            }
+          >
+            <input
+              ref={(control) => { closingAmountRef.current = control; }}
+              id="closing_amount"
+              name="closing_amount"
+              type="text"
+              inputMode="decimal"
+              value={closingAmount}
+              onChange={(event) => onClosingAmountChange(event.target.value)}
+              placeholder="0.00"
+              autoComplete="off"
+              disabled={isSubmitting}
+              readOnly={closingAmountReadOnly}
+              aria-invalid={Boolean(closingAmountError)}
+              className={`h-[var(--ui-control-h-operational)] w-full rounded-[var(--ui-radius-control)] border border-[var(--ui-line-strong)] bg-[var(--ui-surface)] px-2.5 text-[length:var(--ui-text-lg)] font-semibold tabular-nums text-[color:var(--ui-ink)] placeholder:text-[color:var(--ui-ink-soft)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-focus)] disabled:cursor-not-allowed disabled:opacity-55 read-only:bg-[var(--ui-surface-alt)]`}
+            />
+          </AdminField>
 
-          <div className="border border-secondary/25 bg-accent/35 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="rounded-[var(--ui-radius-control)] border border-[var(--ui-line)] bg-[var(--ui-surface-alt)] px-4 py-3">
+            <p className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-[0.08em] text-[color:var(--ui-ink-soft)]">
               Diferencia
             </p>
             <output
               aria-live="polite"
               aria-label="Diferencia en vivo"
               aria-describedby="cash-closing-difference-description"
-              className="mt-2 block text-lg font-semibold tabular-nums text-foreground"
+              className="mt-1.5 block text-[length:var(--ui-text-xl)] font-semibold tabular-nums text-[color:var(--ui-ink)]"
             >
               {liveDifferenceLabel}
             </output>
-            <p id="cash-closing-difference-description" className="mt-1 text-xs text-muted-foreground">
+            <p id="cash-closing-difference-description" className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
               {differenceDescription}
             </p>
           </div>
         </div>
 
         {hasCashDifference ? (
-          <Alert><TriangleAlertIcon aria-hidden="true" /><AlertDescription>Hay una diferencia de <strong>{formatLempirasUI(difference)}</strong>. La nota de cierre es obligatoria para dejar el motivo auditado.</AlertDescription></Alert>
+          <AdminCallout tone="warn" title="Diferencia detectada">
+            <span className="flex items-start gap-2">
+              <TriangleAlertIcon aria-hidden="true" data-icon className="mt-0.5 size-4 shrink-0" />
+              <span>Hay una diferencia de <strong>{formatCashCents(differenceCents)}</strong> frente al efectivo esperado. Explique el motivo para dejar el cierre auditado.</span>
+            </span>
+          </AdminCallout>
         ) : null}
 
         {hasPendingBalance || missingInstitutionalReceiptCount > 0 ? (
-          <ul aria-label="Bloqueos del cierre" className="divide-y divide-warning/25 border border-warning/35 bg-warning/5">
+          <ul aria-label="Bloqueos del cierre" className="divide-y divide-[var(--ui-line)] rounded-[var(--ui-radius-control)] border border-[var(--ui-line-strong)] bg-[var(--ui-surface-alt)]">
             {hasPendingBalance ? (
               <ClosingBlocker
                 canViewInvoices={canViewInvoices}
-                resolutionHref={`/invoices?balance_state=pending&reconciliation_cash_session_id=${cashSessionId}`}
+                resolutionHref={`/recibos?balance_state=pending&reconciliation_cash_session_id=${cashSessionId}`}
               >
                 <strong>{pendingInvoiceCount}</strong> {pendingInvoiceCount === 1 ? 'factura pendiente o parcial' : 'facturas pendientes o parciales'} por{' '}
-                <strong>{formatLempirasUI(pendingAmount)}</strong>. Revise los cobros antes de cerrar.
+                <strong><MoneyText cents={parseCents(pendingAmount)} /></strong>. Revise los cobros antes de cerrar.
               </ClosingBlocker>
             ) : null}
             {missingInstitutionalReceiptCount > 0 ? (
               <ClosingBlocker
                 canViewInvoices={canViewInvoices}
-                resolutionHref={`/invoices?receipt_state=missing&reconciliation_cash_session_id=${cashSessionId}`}
+                resolutionHref={`/recibos?receipt_state=missing&reconciliation_cash_session_id=${cashSessionId}`}
               >
                 <strong>{missingInstitutionalReceiptCount}</strong>{' '}
                 {missingInstitutionalReceiptCount === 1 ? 'recibo institucional pendiente' : 'recibos institucionales pendientes'}.
@@ -152,36 +161,41 @@ export function CashClosingPanel({
           </ul>
         ) : null}
 
-        <div className="grid gap-2">
-            <Label htmlFor="closing_notes">{hasCashDifference ? 'Nota de cierre *' : 'Nota de cierre'}</Label>
-            <Textarea
-              id="closing_notes"
-              name="closing_notes"
-              value={closingNotes}
-              onChange={(event) => onClosingNotesChange(event.target.value)}
-              placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
-              rows={2}
-              disabled={isSubmitting}
-            />
-            <p className="text-sm text-muted-foreground">{hasCashDifference ? 'Nota obligatoria: explique el faltante o sobrante antes de confirmar.' : 'Opcional cuando el conteo coincide.'}</p>
-        </div>
+        <AdminField
+          htmlFor="closing_notes"
+          label="Nota de cierre"
+          required={hasCashDifference}
+          hint={hasCashDifference ? 'Nota obligatoria: explique el faltante o sobrante antes de confirmar.' : 'Opcional cuando el conteo coincide.'}
+        >
+          <textarea
+            id="closing_notes"
+            name="closing_notes"
+            value={closingNotes}
+            onChange={(event) => onClosingNotesChange(event.target.value)}
+            placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
+            rows={2}
+            disabled={isSubmitting}
+            className={TEXTAREA_CLASS}
+          />
+        </AdminField>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <Button
+          <button
             type="submit"
-            className="min-h-11"
+            data-ui-press
+            className={`${PRIMARY_BUTTON} min-h-11`}
             disabled={isSubmitting || !canCloseCash || hasPendingBalance || missingInstitutionalReceiptCount > 0}
           >
             {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
-          </Button>
+          </button>
           {!canCloseCash ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
               Solo usuarios con permiso de cierre pueden cerrar caja.
             </p>
           ) : null}
         </div>
       </form>
-    </section>
+    </AdminPanel>
   );
 }
 
@@ -195,17 +209,17 @@ function ClosingBlocker({
   resolutionHref: string;
 }) {
   return (
-    <li className="flex flex-col gap-2 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+    <li className="flex flex-col gap-2 px-3 py-3 text-[length:var(--ui-text-sm)] sm:flex-row sm:items-center sm:justify-between">
       <span className="flex min-w-0 items-start gap-2">
-        <TriangleAlertIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-warning-foreground" />
+        <TriangleAlertIcon aria-hidden="true" data-icon className="mt-0.5 size-4 shrink-0 text-[color:var(--ui-warn)]" />
         <span>{children}</span>
       </span>
       {canViewInvoices ? (
-        <Link className="shrink-0 font-semibold text-primary underline underline-offset-4" to={resolutionHref}>
-          Resolver en Historial
+        <Link className={`shrink-0 ${LINK_INLINE}`} to={resolutionHref}>
+          Resolver en Recibos
         </Link>
       ) : (
-        <span className="shrink-0 text-xs text-muted-foreground">Solicite acceso al Historial</span>
+        <span className="shrink-0 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Solicite acceso al Historial</span>
       )}
     </li>
   );
