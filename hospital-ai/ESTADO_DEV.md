@@ -1,5 +1,24 @@
 # ESTADO_DEV.md
 
+## Campaña de entrega 2026-10-21 — instalador `.exe` de doble clic
+
+Encargo: `PLAN_DEEPSEEK_ENTREGA_20261021.md`. Rama de entrega
+`release/entrega-20261021` (sin push). Dos hospitales distintos: nada del
+hospital queda fijo en código, instalador ni seeders de producción.
+
+- **F0 cerrada** (`evidencia/ENTREGA-20261021/F0-CONSOLIDACION.md`): respaldo
+  completo (7.09 GB), 6 commits coherentes, `main` integrado (`HEAD..main` = 0),
+  `git status` limpio, guard de secretos corregido y probado (16 casos).
+  Sin binarios en git y sin secretos en el diff de rama.
+- **Respuestas del propietario aplicadas**: rama/commits autorizados; «Importe»
+  de línea sin impuesto (solo totales desglosan ISV); H-02 por impuestos
+  configurables (semilla exenta con aviso); sin Electron (Edge `--app`);
+  sin firma Authenticode (SmartScreen documentado); Windows limpio con
+  VirtualBox si está instalado.
+- **Baseline F1**: frontend tsc 0 · eslint 0 · vitest 151/1240 PASS. Backend
+  PHP 8.3 (payload): 1458 tests, 7 fallos (Dockerfile 1, recibo 3, Excel 3);
+  Argon2id OK. Pendiente: corregir los 7 y ejecutar pint/phpstan/build.
+
 ## Campaña vigente — identidad dark institucional (2026-10-16/17)
 
 Revoca la dirección azul-blanco del 2026-09-28 (decisión explícita del dueño) y
