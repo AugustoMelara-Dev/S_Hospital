@@ -22,7 +22,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * A-05 evidence generator (skipped by default).
+ * A-05/A-10 regression and optional evidence generator.
  *
  * Run with:
  *   $env:S_HOSPITAL_RECEIPT_EVIDENCE_DIR='...\hospital-ai\evidencia\ENTREGA-20261021\recibos'
@@ -31,8 +31,8 @@ use Tests\TestCase;
  * Issues one real receipt per delivery format (letter, half letter, thermal
  * 80 mm, thermal 58 mm) for a 30-line account that mixes 15 %, 18 %, exempt and
  * a free erythropoietin line, with a long patient name and a 6-digit amount.
- * The PDFs are vector (real text). PNG rasterisation needs an external tool
- * (Ghostscript/ImageMagick/poppler) which is not installed on this machine.
+ * The PDFs are vector (real text). Rasterise the output with PyMuPDF at
+ * 300 dpi for paper and 203 dpi for thermal before visual approval.
  */
 class ReceiptFormatsEvidenceTest extends TestCase
 {
@@ -42,11 +42,10 @@ class ReceiptFormatsEvidenceTest extends TestCase
     {
         $dir = getenv('S_HOSPITAL_RECEIPT_EVIDENCE_DIR');
 
-        if (! is_string($dir) || trim($dir) === '') {
-            $this->markTestSkipped('Set S_HOSPITAL_RECEIPT_EVIDENCE_DIR to generate the receipt evidence PDFs.');
-        }
+        // The regression always runs; writing local artifacts is opt-in.
+        $writeEvidence = is_string($dir) && trim($dir) !== '';
 
-        if (! is_dir($dir) && ! mkdir($dir, 0777, true) && ! is_dir($dir)) {
+        if ($writeEvidence && ! is_dir($dir) && ! mkdir($dir, 0777, true) && ! is_dir($dir)) {
             $this->fail("Cannot create evidence directory: {$dir}");
         }
 
@@ -140,14 +139,26 @@ class ReceiptFormatsEvidenceTest extends TestCase
             $this->assertStringStartsWith('%PDF', $pdf);
             $this->assertGreaterThan(2000, strlen($pdf), "{$label}: the PDF must contain real content.");
 
-            $target = rtrim($dir, '\\/').DIRECTORY_SEPARATOR.$label.'.pdf';
-            file_put_contents($target, $pdf);
-            $this->assertFileExists($target);
-
-            // Text twin for visual review (Edge headless screenshots at the
-            // thermal width); the PDF is the printed artifact.
             $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt);
-            file_put_contents(rtrim($dir, '\\/').DIRECTORY_SEPARATOR.$label.'.html', $html);
+
+            if ($profileCode === ReceiptPrintProfile::CODE_THERMAL_58) {
+                $this->assertStringContainsString('class="totals narrow"', $html);
+                $this->assertMatchesRegularExpression(
+                    '/<span class="total-label">Gravado[^<]*15[^<]*%<\/span><span class="amount">L\.[^<]*124,356\.78<\/span>/u',
+                    $html,
+                );
+                $this->assertMatchesRegularExpression(
+                    '/\.totals\.narrow \.amount\s*\{[^}]*display:\s*block;/s',
+                    $html,
+                );
+            }
+
+            if ($writeEvidence) {
+                $target = rtrim($dir, '\\/').DIRECTORY_SEPARATOR.$label.'.pdf';
+                file_put_contents($target, $pdf);
+                $this->assertFileExists($target);
+                file_put_contents(rtrim($dir, '\\/').DIRECTORY_SEPARATOR.$label.'.html', $html);
+            }
         }
     }
 

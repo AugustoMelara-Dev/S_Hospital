@@ -349,6 +349,13 @@
             width: 50%;
         }
 
+        /* A-10: labels and six-digit amounts need separate lines on 48 mm. */
+        .totals.narrow .amount {
+            display: block;
+            padding-top: 0.25mm;
+            width: 100%;
+        }
+
         .totals .grand td {
             border-bottom: 0.75pt solid #000;
             border-top: 0.75pt solid #000;
@@ -715,43 +722,75 @@
             <div class="label" style="margin-top: 1.5mm;">Situación del pago</div>
             <div>{{ $situation }}@if ($balanceDueCents !== null && $balanceDueCents > 0) · Saldo {{ $moneyLabel($invoice['balance_due']) }}@endif</div>
 
-            <table class="totals" data-receipt-thermal-totals>
+            <table class="totals{{ $isNarrow ? ' narrow' : '' }}" data-receipt-thermal-totals>
                 <tr>
-                    <td>Subtotal</td>
-                    <td class="amount">{{ $moneyLabel($invoice['subtotal']) }}</td>
+                    @if ($isNarrow)
+                        <td colspan="2"><span class="total-label">Subtotal</span><span class="amount">{{ $moneyLabel($invoice['subtotal']) }}</span></td>
+                    @else
+                        <td>Subtotal</td>
+                        <td class="amount">{{ $moneyLabel($invoice['subtotal']) }}</td>
+                    @endif
                 </tr>
                 <tr>
-                    <td>Exento</td>
-                    <td class="amount">{{ $moneyLabel($exemptAmount) }}</td>
+                    @if ($isNarrow)
+                        <td colspan="2"><span class="total-label">Exento</span><span class="amount">{{ $moneyLabel($exemptAmount) }}</span></td>
+                    @else
+                        <td>Exento</td>
+                        <td class="amount">{{ $moneyLabel($exemptAmount) }}</td>
+                    @endif
                 </tr>
                 @foreach ($taxBreakdown as $group)
                     @continue(is_array($group) && ($group['rate'] ?? null) === '0.00')
                     <tr>
-                        <td>{{ str_replace(' ', "\u{00A0}", (string) $group['base_label']) }}</td>
-                        <td class="amount">{{ $moneyLabel($group['base']) }}</td>
+                        @if ($isNarrow)
+                            <td colspan="2"><span class="total-label">{{ str_replace(' ', "\u{00A0}", (string) $group['base_label']) }}</span><span class="amount">{{ $moneyLabel($group['base']) }}</span></td>
+                        @else
+                            <td>{{ str_replace(' ', "\u{00A0}", (string) $group['base_label']) }}</td>
+                            <td class="amount">{{ $moneyLabel($group['base']) }}</td>
+                        @endif
                     </tr>
                     <tr>
-                        <td>{{ str_replace(' ', "\u{00A0}", (string) $group['tax_label']) }}</td>
-                        <td class="amount">{{ $moneyLabel($group['tax']) }}</td>
+                        @if ($isNarrow)
+                            <td colspan="2"><span class="total-label">{{ str_replace(' ', "\u{00A0}", (string) $group['tax_label']) }}</span><span class="amount">{{ $moneyLabel($group['tax']) }}</span></td>
+                        @else
+                            <td>{{ str_replace(' ', "\u{00A0}", (string) $group['tax_label']) }}</td>
+                            <td class="amount">{{ $moneyLabel($group['tax']) }}</td>
+                        @endif
                     </tr>
                 @endforeach
                 @if ($discount != 0.0)
                     <tr>
-                        <td>Ajustes autorizados</td>
-                        <td class="amount">{{ $negativeMoneyLabel($invoice['discount_amount']) }}</td>
+                        @if ($isNarrow)
+                            <td colspan="2"><span class="total-label">Ajustes autorizados</span><span class="amount">{{ $negativeMoneyLabel($invoice['discount_amount']) }}</span></td>
+                        @else
+                            <td>Ajustes autorizados</td>
+                            <td class="amount">{{ $negativeMoneyLabel($invoice['discount_amount']) }}</td>
+                        @endif
                     </tr>
                 @endif
                 <tr class="grand">
-                    <td>Total</td>
-                    <td class="amount">{{ $moneyLabel($invoice['total']) }}</td>
+                    @if ($isNarrow)
+                        <td colspan="2"><span class="total-label">Total</span><span class="amount">{{ $moneyLabel($invoice['total']) }}</span></td>
+                    @else
+                        <td>Total</td>
+                        <td class="amount">{{ $moneyLabel($invoice['total']) }}</td>
+                    @endif
                 </tr>
                 <tr>
-                    <td>Pagado</td>
-                    <td class="amount">{{ $moneyLabel($invoice['paid_amount']) }}</td>
+                    @if ($isNarrow)
+                        <td colspan="2"><span class="total-label">Pagado</span><span class="amount">{{ $moneyLabel($invoice['paid_amount']) }}</span></td>
+                    @else
+                        <td>Pagado</td>
+                        <td class="amount">{{ $moneyLabel($invoice['paid_amount']) }}</td>
+                    @endif
                 </tr>
                 <tr>
-                    <td>Saldo</td>
-                    <td class="amount">{{ $moneyLabel($invoice['balance_due']) }}</td>
+                    @if ($isNarrow)
+                        <td colspan="2"><span class="total-label">Saldo</span><span class="amount">{{ $moneyLabel($invoice['balance_due']) }}</span></td>
+                    @else
+                        <td>Saldo</td>
+                        <td class="amount">{{ $moneyLabel($invoice['balance_due']) }}</td>
+                    @endif
                 </tr>
             </table>
 
