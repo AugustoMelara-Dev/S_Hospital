@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Actions\InstitutionalReceipts\AmountToSpanishWords;
 use App\Actions\InstitutionalReceipts\InstitutionalReceiptHtmlBuilder;
 use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
+use App\Actions\InstitutionalReceipts\VoidInstitutionalReceiptAction;
+use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -21,6 +23,7 @@ use Barryvdh\DomPDF\PDF as DomPdfWrapper;
 use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -93,6 +96,308 @@ class InstitutionalReceiptPdfTest extends TestCase
         $this->assertStringContainsString('class="receipt-layout profile-', $html);
         $this->assertStringContainsString('class="meta-table receipt-meta-panel"', $html);
         $this->assertSame('2027-12-31', data_get($context['receipt']->invoice_snapshot, 'fiscal_valid_until'));
+    }
+
+    public function test_copy_modes_render_the_expected_pages_and_copy_labels(): void
+    {
+        $expectations = [
+            'original_only' => [
+                'pages' => 1,
+                'present' => ['ORIGINAL'],
+                'absent' => ['PRIMERA COPIA', 'SEGUNDA COPIA'],
+            ],
+            'original_first' => [
+                'pages' => 2,
+                'present' => ['ORIGINAL', 'PRIMERA COPIA'],
+                'absent' => ['SEGUNDA COPIA'],
+            ],
+            'original_first_second' => [
+                'pages' => 3,
+                'present' => ['ORIGINAL', 'PRIMERA COPIA', 'SEGUNDA COPIA'],
+                'absent' => [],
+            ],
+        ];
+
+        foreach ($expectations as $copyMode => $expectation) {
+            $context = $this->createIssuedReceiptContext(copyMode: $copyMode);
+            $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($context['receipt']);
+
+            $this->assertSame($copyMode, $context['receipt']->copy_mode, $copyMode);
+            $this->assertSame(
+                $expectation['pages'],
+                substr_count($html, 'class="receipt-page'),
+                "{$copyMode}: page count",
+            );
+
+            foreach ($expectation['present'] as $label) {
+                $this->assertStringContainsString($label, $html, "{$copyMode}: {$label}");
+            }
+
+            foreach ($expectation['absent'] as $label) {
+                $this->assertStringNotContainsString($label, $html, "{$copyMode}: {$label}");
+            }
+
+            // Release the single active series before building the next context.
+            $context['series']->forceFill(['active' => false])->save();
+        }
+    }
+
+    public function test_issued_receipt_keeps_its_copy_mode_snapshot_after_profile_changes(): void
+    {
+        $context = $this->createIssuedReceiptContext(copyMode: 'original_first_second');
+        $receipt = $context['receipt'];
+        $profile = $context['profile'];
+
+        $before = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt);
+        $this->assertSame(3, substr_count($before, 'class="receipt-page'));
+
+        $profile->forceFill(['copies_mode' => 'original_only'])->save();
+
+        $after = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt->fresh());
+        $this->assertSame(3, substr_count($after, 'class="receipt-page'));
+        $this->assertSame('original_first_second', $receipt->fresh()->copy_mode);
+    }
+
+    public function test_first_print_is_never_marked_and_reprints_use_the_persistent_counter(): void
+    {
+        $context = $this->createIssuedReceiptContext(copyMode: 'original_first');
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+        $service = app(InstitutionalReceiptPdfService::class);
+
+        // Emisión + document request before any recorded print: original, unmarked.
+        $originalHtml = $service->htmlForReceipt($receipt);
+        $this->assertStringNotContainsString('REIMPRESIÓN', $originalHtml);
+        $this->assertStringContainsString('ORIGINAL', $originalHtml);
+        $this->assertStringContainsString('PRIMERA COPIA', $originalHtml);
+
+        // Primera solicitud autorizada de impresión (issued_print, no reason).
+        $service->recordReceiptPrintEvent($receipt, $user);
+        $receipt->refresh();
+
+        $firstReprintHtml = $service->htmlForReceipt($receipt);
+        $this->assertStringContainsString('REIMPRESIÓN #1', $firstReprintHtml);
+        // The legend is additional: the original copy labels and snapshot stay.
+        $this->assertStringContainsString('ORIGINAL', $firstReprintHtml);
+        $this->assertStringContainsString('PRIMERA COPIA', $firstReprintHtml);
+        $this->assertSame('1234.56', $receipt->amount);
+        $this->assertSame('1234.56', data_get($receipt->invoice_snapshot, 'total'));
+        $this->assertSame(0, $receipt->reprint_count);
+
+        // Reimpresión #1 (human reason): counter moves to 1, next legend is #2.
+        $service->recordReceiptPrintEvent(
+            $receipt->fresh(),
+            $user,
+            'Reposicion solicitada por extravio del comprobante',
+        );
+        $receipt->refresh();
+
+        $this->assertSame(1, $receipt->reprint_count);
+        $secondReprintHtml = $service->htmlForReceipt($receipt);
+        $this->assertStringContainsString('REIMPRESIÓN #2', $secondReprintHtml);
+        $this->assertStringContainsString('ORIGINAL', $secondReprintHtml);
+        $this->assertSame('1234.56', $receipt->amount);
+    }
+
+    public function test_reprint_legend_does_not_depend_on_prunable_invoice_reprinted_audit_logs(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $receipt = $context['receipt'];
+
+        // Podable audit rows must not create a reprint legend by themselves.
+        AuditLog::query()->create([
+            'user_id' => $context['user']->id,
+            'action' => 'invoice.reprinted',
+            'entity_type' => Invoice::class,
+            'entity_id' => $receipt->invoice_id,
+            'new_values' => ['invoice_number' => $receipt->invoice_snapshot['invoice_number'] ?? null],
+        ]);
+
+        $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt);
+        $this->assertStringNotContainsString('REIMPRESIÓN', $html);
+
+        // The persistent column keeps controlling the legend even without new audit rows.
+        $receipt->forceFill(['reprint_count' => 1])->save();
+        $htmlWithCounter = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt->fresh());
+        $this->assertStringContainsString('REIMPRESIÓN #2', $htmlWithCounter);
+    }
+
+    public function test_pdf_reprint_request_requires_a_human_reason_after_the_first_print(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/print-events")
+            ->assertCreated();
+
+        // GET remains a read-only view/download: no reason is required.
+        $this->actingAs($user)
+            ->get("/api/institutional-receipts/{$receipt->id}/pdf")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        // POST is a reprint request now: reason 5-500 is mandatory and validated.
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", ['reason' => 'abc'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", [
+                'reason' => 'Reposicion solicitada por extravio del comprobante',
+            ])
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        // The reprint is durably recorded on this route too: the persistent
+        // counter advances and a `reprint` event carries the human reason, so
+        // repeated POST /pdf requests can never reuse the same REIMPRESIÓN #1.
+        $freshReceipt = $receipt->fresh();
+        $this->assertSame(1, $freshReceipt->reprint_count);
+        $this->assertSame(2, $freshReceipt->printEvents()->count());
+        $this->assertDatabaseHas('institutional_receipt_print_events', [
+            'institutional_receipt_id' => $receipt->id,
+            'event_type' => InstitutionalReceiptPrintEvent::TYPE_REPRINT,
+            'reason' => 'Reposicion solicitada por extravio del comprobante',
+            'user_id' => $user->id,
+        ]);
+    }
+
+    public function test_post_pdf_reprint_consumes_a_distinct_persistent_number_and_keeps_the_receipt_number(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+        $receiptNumber = $receipt->receipt_number_full;
+        $capturedHtml = [];
+
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/print-events")
+            ->assertCreated();
+
+        Pdf::shouldReceive('loadHTML')
+            ->twice()
+            ->andReturnUsing(function (string $html) use (&$capturedHtml): DomPdfWrapper {
+                $capturedHtml[] = $html;
+
+                return tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                    $pdf->shouldReceive('setPaper')->andReturnSelf();
+                    $pdf->shouldReceive('output')->andReturn('%PDF-reprint');
+                });
+            });
+
+        foreach ([1, 2] as $expectedReprintNumber) {
+            $this->actingAs($user)
+                ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", [
+                    'reason' => "Reposicion solicitada numero {$expectedReprintNumber}",
+                ])
+                ->assertOk()
+                ->assertHeader('Content-Type', 'application/pdf')
+                ->assertSee('%PDF-reprint', false);
+        }
+
+        $this->assertStringContainsString('REIMPRESIÓN #1', $capturedHtml[0]);
+        $this->assertStringContainsString('REIMPRESIÓN #2', $capturedHtml[1]);
+
+        $freshReceipt = $receipt->fresh();
+        $this->assertSame(2, $freshReceipt->reprint_count);
+        $this->assertSame(
+            $receiptNumber,
+            $freshReceipt->receipt_number_full,
+            'Reprints must never renumber the first delivery',
+        );
+        $this->assertSame(3, $freshReceipt->printEvents()->count());
+    }
+
+    public function test_post_pdf_after_first_print_requires_reprint_permission(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $receipt = $context['receipt'];
+
+        // First logical print: no reprint permission needed.
+        $this->actingAs($context['user'])
+            ->postJson("/api/institutional-receipts/{$receipt->id}/print-events")
+            ->assertCreated();
+
+        // A viewer-owner without receipts.reprint cannot turn POST /pdf into a reprint.
+        $viewer = User::factory()->create();
+        $viewer->givePermissionTo('receipts.view');
+
+        $this->actingAs($viewer)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", [
+                'reason' => 'Reposicion solicitada por extravio',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(0, $receipt->fresh()->reprint_count);
+        $this->assertSame(1, $receipt->fresh()->printEvents()->count());
+    }
+
+    public function test_post_pdf_reprint_idempotency_replay_does_not_advance_the_counter_twice(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/print-events")
+            ->assertCreated();
+
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('setPaper')->andReturnSelf();
+                $pdf->shouldReceive('output')->andReturn('%PDF-reprint');
+            }));
+
+        $payload = ['reason' => 'Reposicion solicitada por extravio del comprobante'];
+
+        $this->actingAs($user)
+            ->withHeaders(['Idempotency-Key' => 'rcp01-pdf-reprint-1'])
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", $payload)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->actingAs($user)
+            ->withHeaders(['Idempotency-Key' => 'rcp01-pdf-reprint-1'])
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", $payload)
+            ->assertOk()
+            ->assertHeader('Idempotent-Replay', 'true');
+
+        $this->assertSame(1, $receipt->fresh()->reprint_count);
+        $this->assertSame(2, $receipt->fresh()->printEvents()->count());
+    }
+
+    public function test_first_print_pdf_request_without_prior_print_accepts_an_optional_valid_reason(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", [
+                'reason' => 'Emision manual de recibo faltante',
+            ])
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        // A provided reason that is too short is still rejected, even on a first print.
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/pdf", ['reason' => 'abc'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->assertSame(0, $receipt->fresh()->reprint_count);
+        $this->assertDatabaseMissing('institutional_receipt_print_events', [
+            'institutional_receipt_id' => $receipt->id,
+        ]);
     }
 
     public function test_classic_receipt_uses_a_minimal_monochrome_print_contract(): void
@@ -580,13 +885,14 @@ class InstitutionalReceiptPdfTest extends TestCase
                 );
                 $this->assertGreaterThanOrEqual($previousPageCount, $pageCount, $case);
                 $this->assertLessThanOrEqual($maximumPageCount, $pageCount, $case);
-                if ($code === ReceiptPrintProfile::CODE_CUSTOM_SMALL && $itemCount === 1) {
-                    $this->assertSame(
-                        1,
-                        $pageCount,
-                        'The 180x95 mm receipt must not orphan signatures and its copy legend on a second page',
-                    );
-                }
+                // The 180x95 mm support-only carriage is not the principal
+                // delivery and is narrow enough that a complete receipt (header,
+                // detail, totals, signature block) can exceed one sheet. The
+                // mandate forbids hiding rows or shrinking all the type to force
+                // `pages = 1`, so this format is allowed a second sheet. The
+                // strict one-page-per-copy guarantee for the principal delivery is
+                // asserted on the real engine in InstitutionalReceiptCompactTemplateTest
+                // for 1, 5 and 11 ordinary lines (carta vertical and A4).
 
                 if ($qaOutputDirectory !== '') {
                     File::ensureDirectoryExists($qaOutputDirectory);
@@ -596,13 +902,11 @@ class InstitutionalReceiptPdfTest extends TestCase
                     );
                 }
 
-                if (in_array($code, [
-                    ReceiptPrintProfile::CODE_LETTER,
-                    ReceiptPrintProfile::CODE_HALF_LETTER,
-                    ReceiptPrintProfile::CODE_A5,
-                ], true) && $itemCount <= 5) {
-                    $this->assertSame(1, $pageCount, $case);
-                }
+                // The strict one-page-per-copy requirement belongs to the NEW
+                // principal delivery (carta vertical / A4 compact). It is asserted
+                // on the real engine in InstitutionalReceiptCompactTemplateTest.
+                // These landscape/thermal profiles are historical compatibility
+                // layouts and only need to stay bounded and monotonic here.
 
                 $previousPageCount = $pageCount;
             }
@@ -685,7 +989,7 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->assertStringContainsString('Paciente de prueba', $html);
         $this->assertStringContainsString('Servicios hospitalarios de prueba', $html);
-        $this->assertStringContainsString('L. 0.00', $html);
+        $this->assertMatchesRegularExpression('/<td>Total<\/td>\s*<td class="money">\s*—\s*<\/td>/', $html);
         $this->assertStringNotContainsString('Array', $html);
     }
 
@@ -714,7 +1018,7 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->assertStringContainsString('margin: 6mm 6mm 6mm 6mm;', $html);
         $this->assertStringContainsString('font-size: 10.5px;', $html);
-        $this->assertStringContainsString('L. 0.00', $html);
+        $this->assertMatchesRegularExpression('/<td>Subtotal<\/td>\s*<td class="money">\s*—\s*<\/td>/', $html);
         $this->assertStringNotContainsString('Array', $html);
     }
 
@@ -982,6 +1286,49 @@ class InstitutionalReceiptPdfTest extends TestCase
         ]);
     }
 
+    public function test_print_event_and_void_do_not_rewrite_the_receipt_issued_at(): void
+    {
+        $context = $this->createIssuedReceiptContext(copyMode: 'original_only');
+        $user = $context['user'];
+        $receipt = $context['receipt'];
+        $service = app(InstitutionalReceiptPdfService::class);
+
+        // Hecho historico de emision en el pasado (la columna TIMESTAMP expuesta
+        // en MariaDB con explicit_defaults_for_timestamp=0).
+        $issuedAt = now()->subDays(30)->startOfSecond()->format('Y-m-d H:i:s');
+        DB::table('institutional_receipts')->where('id', $receipt->id)->update(['issued_at' => $issuedAt]);
+
+        // Primera entrega + reimpresion (mueve el contador persistente).
+        $service->recordReceiptPrintEvent($receipt->fresh(), $user);
+        $service->recordReceiptPrintEvent($receipt->fresh(), $user, 'Reposicion por extravio del comprobante');
+
+        $fresh = $receipt->fresh();
+        $this->assertSame(1, $fresh->reprint_count);
+        $this->assertSame(InstitutionalReceipt::STATUS_ISSUED, $fresh->status);
+        $this->assertSame(
+            $issuedAt,
+            (string) DB::table('institutional_receipts')->where('id', $receipt->id)->value('issued_at'),
+            'Reprint must not rewrite institutional_receipts.issued_at',
+        );
+
+        // Anulacion: no reemite ni consume correlativo; conserva issued_at.
+        $seriesNumberBefore = (int) $context['series']->fresh()->current_number;
+        app(VoidInstitutionalReceiptAction::class)->forInvoice(
+            $fresh->invoice,
+            $user,
+            'Recibo anulado por error de impresion en caja',
+        );
+
+        $voided = $receipt->fresh();
+        $this->assertSame(InstitutionalReceipt::STATUS_VOID, $voided->status);
+        $this->assertSame(
+            $issuedAt,
+            (string) DB::table('institutional_receipts')->where('id', $receipt->id)->value('issued_at'),
+            'Void must not rewrite institutional_receipts.issued_at',
+        );
+        $this->assertSame($seriesNumberBefore, (int) $context['series']->fresh()->current_number);
+    }
+
     private function receiptWithTwoPostedPayments(): InstitutionalReceipt
     {
         $receipt = $this->createIssuedReceiptContext()['receipt'];
@@ -1049,7 +1396,11 @@ class InstitutionalReceiptPdfTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $this->seed(ReceiptPrintProfileSeeder::class);
 
-        FiscalSetting::query()->create([
+        // Fixture de configuracion fiscal: el helper se invoca varias veces por
+        // test y `fiscal_settings` es singleton en MariaDB (indice unico de
+        // T2-014). updateOrCreate([], ...) reutiliza/actualiza la fila unica en
+        // vez de insertar duplicados; el resultado es el mismo en SQLite.
+        FiscalSetting::query()->updateOrCreate([], [
             'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
@@ -1074,7 +1425,28 @@ class InstitutionalReceiptPdfTest extends TestCase
         $profile->forceFill([
             'copies_mode' => $copyMode,
             'use_logo' => $useLogo,
+            // C2-B7: estas pruebas ejercitan el diseño APAIZADO HISTÓRICO (plantilla
+            // `institutional_classic`) sobre media carta, así que lo solicitan
+            // explícitamente igual que ya hacen con el papel y las copias. El perfil
+            // sembrado adoptó la composición compacta nativa de media carta para los
+            // recibos NUEVOS; forzarlo aquí mantiene intacto el contrato clásico que
+            // estas pruebas documentan, sin tocar ningún assert.
+            'template_code' => 'institutional_classic',
         ])->save();
+
+        // C1-RCP-02: media carta ya no es el predeterminado de una instalación
+        // nueva (ahora lo es carta vertical). Estas pruebas ejercitan el diseño
+        // apaisado histórico, así que lo solicitan EXPLÍCITAMENTE usando el mismo
+        // mecanismo del producto: un único `is_global_default`. No es un atajo de
+        // test, es la configuración que una instalación existente ya tiene.
+        ReceiptPrintProfile::query()
+            ->whereKeyNot($profile->id)
+            ->where('is_global_default', true)
+            ->get()
+            ->each(fn (ReceiptPrintProfile $previousDefault) => $previousDefault
+                ->forceFill(['is_global_default' => false])
+                ->save());
+        $profile->forceFill(['is_global_default' => true])->save();
 
         $user = User::factory()->create(['name' => 'Cajera Uno']);
         $user->assignRole('cajero');

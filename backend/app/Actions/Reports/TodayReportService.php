@@ -53,6 +53,8 @@ class TodayReportService
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            // Los pagos historicos de importe 0 no son cobros reales.
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$today, $end])
             ->when($userId !== null, function ($query) use ($userId): void {
                 $query->where('payments.user_id', $userId);
@@ -138,6 +140,7 @@ class TodayReportService
                 : null,
             'issued_count' => $invoicesIssued,
             'collected_count' => $invoicesCollected,
+            'without_charge_count' => (int) $facts['without_charge_count'],
             'billed' => $facts['total_billed'],
             'collected' => $facts['total_collected'],
             'pending' => $facts['total_pending'],
@@ -181,6 +184,12 @@ class TodayReportService
                 'COALESCE(SUM(CASE WHEN status IN (?, ?) THEN balance_due_cents ELSE 0 END), 0) as pending_cents',
                 [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL],
             )
+            // Mismo contrato que FinancialFactsService: las emisiones sin
+            // cobro se cuentan aparte y nunca como cobro del cajero.
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN settlement IN (?, ?) AND status != ? THEN 1 ELSE 0 END), 0) as without_charge_count',
+                [Invoice::SETTLEMENT_FREE_BY_RULE, Invoice::SETTLEMENT_ZERO_PRICE, Invoice::STATUS_VOID],
+            )
             ->first();
 
         $paymentFacts = (array) DB::table('payments')
@@ -188,6 +197,9 @@ class TodayReportService
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('payments.user_id', $userId)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            // Mismo criterio que FinancialFactsService: un pago de 0.00 no es
+            // un cobro y no debe inflar `collected_count` del cajero.
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$start, $end])
             ->selectRaw('COUNT(*) as payment_count')
             ->selectRaw('COALESCE(SUM(payments.amount_cents), 0) as collected_cents')
@@ -202,6 +214,7 @@ class TodayReportService
             'payment_count' => (int) ($paymentFacts['payment_count'] ?? 0),
             'total_collected' => $this->centsToMoney((int) ($paymentFacts['collected_cents'] ?? 0)),
             'payments_by_method' => $this->zeroMethodTotals(),
+            'without_charge_count' => (int) ($invoiceFacts['without_charge_count'] ?? 0),
         ];
     }
 }

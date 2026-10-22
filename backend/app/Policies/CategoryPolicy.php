@@ -14,7 +14,7 @@ class CategoryPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('catalog.view');
+        return $user->canAny(['catalog.view', 'catalog.manage']);
     }
 
     public function view(User $user, Category $category): bool

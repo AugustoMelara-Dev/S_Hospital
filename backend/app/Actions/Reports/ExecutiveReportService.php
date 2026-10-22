@@ -4,9 +4,11 @@ namespace App\Actions\Reports;
 
 use App\Actions\Reports\Concerns\FormatsReportMoney;
 use App\Models\CashRegisterSession;
+use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\Service;
 use App\Models\User;
 use App\Support\Money;
 use Illuminate\Database\Query\Builder;
@@ -54,14 +56,28 @@ class ExecutiveReportService
 
     public const MAX_RANGE_DAYS = 92;
 
+    /** Tope defensivo por tabla para no reventar memoria en rangos de 92 dias. */
+    public const MAX_TABLE_ROWS = 5000;
+
+    /**
+     * T-BE-02: `invoice_items` ya persiste `unit_price_registered_cents` y
+     * `rule_adjustment_cents`. El reporte marca esta bandera en `true` cuando
+     * al menos una linea gratuita leyó su ajuste de la fila persistida (no
+     * inferido). Los historicos backfilleados quedan con ajuste 0.00 para no
+     * inventar un valor que nunca se guardo.
+     */
+    private bool $gratuityAdjustmentPersisted = false;
+
     public function __construct(private readonly FinancialFactsService $financialFacts) {}
 
     /**
      * @param  array{date_from: string, date_to: string, cash_session_id?: int|string, user_id?: int|string, category_id?: int|string, area_id?: int|string, method?: string, status?: string}  $filters
      * @return array<string, mixed>
      */
-    public function report(array $filters, ?User $requester = null): array
+    public function report(array $filters, ?User $requester = null, bool $completeExport = false): array
     {
+        $this->gratuityAdjustmentPersisted = false;
+
         $start = ReportDate::day($filters['date_from'])->startOfDay();
         $end = ReportDate::day($filters['date_to'])->endOfDay();
 
@@ -78,6 +94,21 @@ class ExecutiveReportService
         $voidsAndReversals = $canViewAudit ? $this->voidsAndReversals($start, $end, $filters) : [];
         $auditSummary = $canViewAudit ? $this->auditSummary($start, $end, $filters) : $this->emptyAuditSummary();
         $comparison = $this->comparison($start, $end, $filters);
+
+        // MANDATO_DEV §14: una tabla por proposito, sobre la MISMA cohorte de
+        // filtros que el resumen. Emision (Operaciones/Detalle/Gratuidades),
+        // cobro real (Cobros) y saldo al corte (Operaciones) se separan.
+        $operations = $this->operations($start, $end, $filters, $completeExport);
+        $detail = $this->detail($start, $end, $filters, $completeExport);
+        $collections = $this->collections($start, $end, $filters, $completeExport);
+        $gratuities = $this->gratuities($start, $end, $filters, $completeExport);
+
+        $summary['without_charge_count'] = $facts['without_charge_count'];
+        $summary['gratuity_item_count'] = count($gratuities);
+        $summary['gratuity_adjustment_total'] = $this->centsToMoney(
+            $this->monetaryValue($this->sumGratuityAdjustmentCents($gratuities)),
+        );
+        $summary['gratuity_adjustment_persisted'] = $this->gratuityAdjustmentPersisted;
 
         return [
             'period' => [
@@ -109,6 +140,10 @@ class ExecutiveReportService
             'cashiers' => $cashiers,
             'cash_sessions' => $cashSessions,
             'pending_aging' => $pendingAging,
+            'operations' => $operations,
+            'detail' => $detail,
+            'collections' => $collections,
+            'gratuities' => $gratuities,
             'voids_and_reversals' => $voidsAndReversals,
             'audit_summary' => $auditSummary,
             'can_view_audit' => $canViewAudit,
@@ -129,9 +164,12 @@ class ExecutiveReportService
         $voidedCents = $voidedStats['total_cents'];
 
         $invoiceCount = $facts['invoice_count'];
+        // MANDATO_DEV §8: una emision sin cobro no produce recibo/cobro real.
+        // Los pagos historicos de importe 0 no cuentan como recibos.
         $receiptCount = (int) DB::table('payments')
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$start, $end])
             ->tap(fn ($query) => $this->applyPaymentFilters($query, $filters))
             ->count();
@@ -143,7 +181,19 @@ class ExecutiveReportService
             ->groupBy('invoices.status')
             ->select('invoices.status', DB::raw('COUNT(*) as cnt'))
             ->pluck('cnt', 'status');
-        $paidCount = $this->countValue($statusCounts[Invoice::STATUS_PAID] ?? null);
+        // MANDATO_DEV §8/§14: `paid_count` cuenta SOLO cobros reales. Una
+        // emision sin cobro (`free_by_rule`/`zero_price`) conserva
+        // `status=paid` para no romper recibo/anulacion, pero se reporta en
+        // `without_charge_count`; no debe sumar como operacion cobrada.
+        $paidCount = $this->countValue(
+            (clone $statusCountsQuery)
+                ->where('invoices.status', Invoice::STATUS_PAID)
+                ->whereNotIn('invoices.settlement', [
+                    Invoice::SETTLEMENT_FREE_BY_RULE,
+                    Invoice::SETTLEMENT_ZERO_PRICE,
+                ])
+                ->count(),
+        );
         $partialCount = $this->countValue($statusCounts[Invoice::STATUS_PARTIAL] ?? null);
         $pendingCount = $this->countValue($statusCounts[Invoice::STATUS_ISSUED] ?? null) + $partialCount;
         $voidedCount = $voidedStats['count'];
@@ -177,10 +227,14 @@ class ExecutiveReportService
     private function paymentMethods(Carbon $start, Carbon $end, array $filters, array $facts, int $totalCollectedCents): array
     {
         $methodTotals = $facts['payments_by_method'];
+        // Los importes por metodo ya vienen de FinancialFactsService (que
+        // excluye `amount_cents = 0`); el conteo debe usar el mismo criterio
+        // para no contar un cobro ficticio historico en `other`.
         $methodCount = (array) DB::table('payments')
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$start, $end])
             ->tap(fn ($query) => $this->applyPaymentFilters($query, $filters))
             ->groupBy('payments.method')
@@ -267,9 +321,14 @@ class ExecutiveReportService
      */
     private function services(Carbon $start, Carbon $end, array $filters): array
     {
+        // Alcance unico del bloque: pagos reales del periodo. La fecha de
+        // emision no se vuelve a intersectar porque ocultaria cobros de
+        // operaciones emitidas antes. Las lineas sin importe cobrable quedan en
+        // Detalle/Gratuidades y no se presentan como unidades cobradas.
         $paymentTotals = DB::table('payments')
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$start, $end])
             ->tap(fn ($query) => $this->applyPaymentFilters($query, $filters))
             ->groupBy('payments.invoice_id')
@@ -281,8 +340,7 @@ class ExecutiveReportService
                 $join->on('payment_totals.invoice_id', '=', 'invoices.id');
             })
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
-            ->whereBetween('invoices.issued_at', [$start, $end])
-            ->tap(fn ($query) => $this->applyInvoiceFilters($query, $filters, $start, $end))
+            ->where('invoice_items.line_total_cents', '>', 0)
             ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
                 $query->where('invoice_items.category_id', $filters['category_id']);
             })
@@ -333,9 +391,11 @@ class ExecutiveReportService
 
         $areaRows = DB::table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->joinSub($paymentTotals, 'payment_totals', function ($join): void {
+                $join->on('payment_totals.invoice_id', '=', 'invoices.id');
+            })
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
-            ->whereBetween('invoices.issued_at', [$start, $end])
-            ->tap(fn ($query) => $this->applyInvoiceFilters($query, $filters, $start, $end))
+            ->where('invoice_items.line_total_cents', '>', 0)
             ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
                 $query->where('invoice_items.category_id', $filters['category_id']);
             })
@@ -381,6 +441,8 @@ class ExecutiveReportService
             ->join('users', 'payments.user_id', '=', 'users.id')
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            // Un pago historico de 0.00 no es un cobro del cajero.
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$start, $end])
             ->tap(fn ($query) => $this->applyPaymentFilters($query, $filters))
             ->groupBy('payments.user_id', 'users.name', 'users.username')
@@ -447,7 +509,7 @@ class ExecutiveReportService
     private function cashSessions(Carbon $start, Carbon $end, array $filters): array
     {
         $sessions = CashRegisterSession::query()
-            ->with('user')
+            ->with(['user:id,name,username', 'cashRegister:id,code,name'])
             ->where(function ($query) use ($start, $end): void {
                 $query->whereBetween('opened_at', [$start, $end])
                     ->orWhereBetween('closed_at', [$start, $end]);
@@ -492,6 +554,9 @@ class ExecutiveReportService
 
                 return [
                     'id' => (int) $session->id,
+                    'cash_register_id' => $session->cash_register_id !== null ? (int) $session->cash_register_id : null,
+                    'cash_register_code' => $session->cashRegister?->code,
+                    'cash_register_name' => $session->cashRegister?->name,
                     'cashier' => $session->user?->name ?: 'Sin cajero',
                     'opened_at' => $session->opened_at?->toIso8601String(),
                     'closed_at' => $session->closed_at?->toIso8601String(),
@@ -500,6 +565,11 @@ class ExecutiveReportService
                     'counted_cash' => $session->closing_amount !== null ? $this->centsToMoney($countedCents) : null,
                     'difference' => $session->difference_amount !== null ? $this->centsToMoney($diffCents) : null,
                     'status' => $session->status,
+                    'status_label' => match ($session->status) {
+                        CashRegisterSession::STATUS_OPEN => 'Abierta',
+                        CashRegisterSession::STATUS_CLOSED => 'Cerrada',
+                        default => 'Desconocido',
+                    },
                     'closure_note' => $session->closing_notes,
                 ];
             })
@@ -563,6 +633,340 @@ class ExecutiveReportService
             ],
             'items' => $items,
         ];
+    }
+
+    /**
+     * Tabla de operaciones emitidas en el rango (cohorte de emision).
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<int, array<string, mixed>>
+     */
+    private function operations(Carbon $start, Carbon $end, array $filters, bool $completeExport): array
+    {
+        $rows = DB::table('invoices')
+            ->leftJoin('cash_register_sessions as sessions', 'invoices.cash_session_id', '=', 'sessions.id')
+            ->leftJoin('cash_registers as registers', 'sessions.cash_register_id', '=', 'registers.id')
+            ->leftJoin('users as issuers', 'invoices.issued_by', '=', 'issuers.id')
+            ->whereBetween('invoices.issued_at', [$start, $end])
+            ->tap(fn ($query) => $this->applyInvoiceFilters($query, $filters, $start, $end))
+            ->select([
+                'invoices.invoice_number',
+                'invoices.patient_name',
+                'invoices.issued_at',
+                'invoices.total_cents',
+                'invoices.paid_amount_cents',
+                'invoices.balance_due_cents',
+                'invoices.status',
+                'invoices.settlement',
+                'invoices.cash_session_id',
+                'registers.name as cash_register_name',
+                'registers.code as cash_register_code',
+                'issuers.name as cashier_name',
+            ])
+            ->selectRaw(
+                '(SELECT ir.receipt_number_full FROM institutional_receipts ir WHERE ir.invoice_id = invoices.id AND ir.status = ? ORDER BY ir.id DESC LIMIT 1) as receipt_number',
+                [InstitutionalReceipt::STATUS_ISSUED],
+            )
+            ->orderByDesc('invoices.issued_at')
+            ->orderByDesc('invoices.id')
+            ->when(! $completeExport, fn (Builder $query) => $query->limit(self::MAX_TABLE_ROWS))
+            ->get();
+
+        return $rows->map(fn (object $row): array => [
+            'date' => $row->issued_at,
+            'invoice_number' => (string) $row->invoice_number,
+            'patient' => (string) $row->patient_name,
+            'cash_session_id' => $row->cash_session_id !== null ? (int) $row->cash_session_id : null,
+            'cash_session_label' => $this->cashSessionLabel($row->cash_register_name, $row->cash_register_code, $row->cash_session_id),
+            'cashier' => $this->nullableString($row->cashier_name),
+            'total' => $this->centsToMoney((int) $row->total_cents),
+            'paid' => $this->centsToMoney((int) $row->paid_amount_cents),
+            'balance' => $this->centsToMoney((int) $row->balance_due_cents),
+            'status' => (string) $row->status,
+            'status_label' => $this->invoiceStatusLabel($row->status, $row->settlement),
+            'settlement' => (string) $row->settlement,
+            'settlement_label' => $this->settlementLabel($row->settlement),
+            'receipt_document' => $this->nullableString($row->receipt_number),
+        ])->all();
+    }
+
+    /**
+     * Detalle por linea (cohorte de emision). Incluye paciente y gratuidad.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<int, array<string, mixed>>
+     */
+    private function detail(Carbon $start, Carbon $end, array $filters, bool $completeExport): array
+    {
+        $rows = DB::table('invoice_items')
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->whereBetween('invoices.issued_at', [$start, $end])
+            ->tap(fn ($query) => $this->applyInvoiceFilters($query, $filters, $start, $end))
+            ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
+                $query->where('invoice_items.category_id', $filters['category_id']);
+            })
+            ->when(! empty($filters['area_id']), function ($query) use ($filters): void {
+                $query->where('invoice_items.area_id', $filters['area_id']);
+            })
+            ->select([
+                'invoices.invoice_number',
+                'invoices.patient_name',
+                'invoices.issued_at',
+                'invoices.settlement',
+                'invoice_items.service_name',
+                'invoice_items.category_name',
+                'invoice_items.area_name',
+                'invoice_items.quantity_cents',
+                'invoice_items.unit_price_cents',
+                'invoice_items.unit_price_registered_cents',
+                'invoice_items.rule_adjustment_cents',
+                'invoice_items.tax_amount_cents',
+                'invoice_items.line_subtotal_cents',
+                'invoice_items.line_total_cents',
+                'invoice_items.special_rule_code',
+                'invoice_items.special_rule_applied',
+            ])
+            ->orderByDesc('invoices.issued_at')
+            ->orderBy('invoices.id')
+            ->orderBy('invoice_items.id')
+            ->when(! $completeExport, fn (Builder $query) => $query->limit(self::MAX_TABLE_ROWS))
+            ->get();
+
+        return $rows->map(function (object $row): array {
+            $isFree = (bool) $row->special_rule_applied;
+            $registeredCents = $this->nullableInt($row->unit_price_registered_cents ?? null);
+            $effectiveCents = $this->nullableInt($row->unit_price_cents ?? null);
+            $adjustmentCents = $this->nullableInt($row->rule_adjustment_cents ?? null);
+            // MANDATO_DEV §8/§14: el 0 backfilleado en un historico no es un
+            // ajuste medido. La procedencia se deriva de la evidencia inmutable
+            // de la linea (precio registrado > precio efectivo), nunca del
+            // catalogo vigente. Ver LineRuleProvenance.
+            $adjustmentRecorded = LineRuleProvenance::adjustmentRecorded($isFree, $registeredCents, $effectiveCents);
+            if ($isFree && $adjustmentRecorded) {
+                $this->gratuityAdjustmentPersisted = true;
+            }
+
+            return [
+                'date' => $row->issued_at,
+                'invoice_number' => (string) $row->invoice_number,
+                'patient' => (string) $row->patient_name,
+                'service' => (string) $row->service_name,
+                'category' => $this->nullableString($row->category_name),
+                'area' => $this->nullableString($row->area_name),
+                'quantity' => $this->centsToMoney((int) $row->quantity_cents),
+                'unit_price' => $this->centsToMoney($registeredCents ?? (int) $row->unit_price_cents),
+                'tax' => $this->centsToMoney((int) $row->tax_amount_cents),
+                'line_total' => $this->centsToMoney((int) $row->line_total_cents),
+                'rule_adjustment' => $this->centsToMoney($adjustmentCents ?? 0),
+                'rule_adjustment_persisted' => $adjustmentRecorded,
+                'is_free' => $isFree,
+                'rule_code' => $this->nullableString($row->special_rule_code),
+                'rule_label' => $isFree ? $this->ruleLabel($row->special_rule_code) : null,
+                'settlement' => (string) $row->settlement,
+            ];
+        })->all();
+    }
+
+    /**
+     * Cobros reales por fecha de pago (independiente de la cohorte de emision).
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<int, array<string, mixed>>
+     */
+    private function collections(Carbon $start, Carbon $end, array $filters, bool $completeExport): array
+    {
+        // Cobros reales por fecha de pago: los pagos historicos de 0.00 quedan
+        // trazables por `settlement=free_by_rule`/`zero_price` y la seccion
+        // Gratuidades, nunca como cobro.
+        $rows = DB::table('payments')
+            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
+            ->leftJoin('cash_register_sessions as sessions', 'payments.cash_session_id', '=', 'sessions.id')
+            ->leftJoin('cash_registers as registers', 'sessions.cash_register_id', '=', 'registers.id')
+            ->leftJoin('users as collectors', 'payments.user_id', '=', 'collectors.id')
+            ->where('payments.amount_cents', '!=', 0)
+            ->whereBetween('payments.paid_at', [$start, $end])
+            ->tap(fn ($query) => $this->applyPaymentFilters($query, $filters))
+            ->select([
+                'payments.paid_at',
+                'payments.method',
+                'payments.reference',
+                'payments.amount_cents',
+                'payments.status as payment_status',
+                'invoices.invoice_number',
+                'invoices.patient_name',
+                'payments.cash_session_id',
+                'registers.name as cash_register_name',
+                'registers.code as cash_register_code',
+                'collectors.name as cashier_name',
+            ])
+            ->orderByDesc('payments.paid_at')
+            ->orderByDesc('payments.id')
+            ->when(! $completeExport, fn (Builder $query) => $query->limit(self::MAX_TABLE_ROWS))
+            ->get();
+
+        return $rows->map(fn (object $row): array => [
+            'paid_at' => $row->paid_at,
+            'invoice_number' => (string) $row->invoice_number,
+            'patient' => (string) $row->patient_name,
+            'cash_session_id' => $row->cash_session_id !== null ? (int) $row->cash_session_id : null,
+            'cash_session_label' => $this->cashSessionLabel($row->cash_register_name, $row->cash_register_code, $row->cash_session_id),
+            'cashier' => $this->nullableString($row->cashier_name),
+            'method' => (string) $row->method,
+            'method_label' => $this->paymentMethodLabel($row->method),
+            'reference' => $this->nullableString($row->reference),
+            'amount' => $this->centsToMoney((int) $row->amount_cents),
+            'status' => (string) $row->payment_status,
+            'status_label' => $row->payment_status === Payment::STATUS_VOID ? 'Reversado' : 'Cobrado',
+        ])->all();
+    }
+
+    /**
+     * Gratuidades por linea (cantidad entregada sin cobro, nunca unidades cobradas).
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<int, array<string, mixed>>
+     */
+    private function gratuities(Carbon $start, Carbon $end, array $filters, bool $completeExport): array
+    {
+        $rows = DB::table('invoice_items')
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->where('invoice_items.special_rule_applied', true)
+            ->whereBetween('invoices.issued_at', [$start, $end])
+            ->tap(fn ($query) => $this->applyInvoiceFilters($query, $filters, $start, $end))
+            ->select([
+                'invoices.invoice_number',
+                'invoices.patient_name',
+                'invoices.issued_at',
+                'invoices.settlement',
+                'invoice_items.service_name',
+                'invoice_items.category_name',
+                'invoice_items.quantity_cents',
+                'invoice_items.unit_price_cents',
+                'invoice_items.unit_price_registered_cents',
+                'invoice_items.rule_adjustment_cents',
+                'invoice_items.line_total_cents',
+                'invoice_items.special_rule_code',
+            ])
+            ->orderByDesc('invoices.issued_at')
+            ->orderBy('invoices.id')
+            ->when(! $completeExport, fn (Builder $query) => $query->limit(self::MAX_TABLE_ROWS))
+            ->get();
+
+        return $rows->map(function (object $row): array {
+            $registeredCents = $this->nullableInt($row->unit_price_registered_cents ?? null);
+            $effectiveCents = $this->nullableInt($row->unit_price_cents ?? null);
+            $adjustmentCents = $this->nullableInt($row->rule_adjustment_cents ?? null);
+            // La consulta ya filtro `special_rule_applied = true`: cada fila es
+            // una gratuidad. La procedencia del ajuste sale de la evidencia de
+            // la linea; un historico backfilleado queda como no registrado.
+            $adjustmentRecorded = LineRuleProvenance::adjustmentRecorded(true, $registeredCents, $effectiveCents);
+            if ($adjustmentRecorded) {
+                $this->gratuityAdjustmentPersisted = true;
+            }
+
+            return [
+                'date' => $row->issued_at,
+                'invoice_number' => (string) $row->invoice_number,
+                'patient' => (string) $row->patient_name,
+                'service' => (string) $row->service_name,
+                'category' => $this->nullableString($row->category_name),
+                'quantity' => $this->centsToMoney((int) $row->quantity_cents),
+                'unit_price' => $this->centsToMoney($registeredCents ?? (int) $row->unit_price_cents),
+                'line_total' => $this->centsToMoney((int) $row->line_total_cents),
+                'adjustment_value' => $this->centsToMoney($adjustmentCents ?? 0),
+                'adjustment_persisted' => $adjustmentRecorded,
+                'rule_code' => $this->nullableString($row->special_rule_code),
+                'reason' => $this->ruleLabel($row->special_rule_code),
+                'settlement' => (string) $row->settlement,
+            ];
+        })->all();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $gratuities
+     */
+    private function sumGratuityAdjustmentCents(array $gratuities): int
+    {
+        $total = 0;
+        foreach ($gratuities as $row) {
+            if (($row['adjustment_persisted'] ?? false) === true) {
+                $total += $this->moneyToCents($row['adjustment_value'] ?? '0.00');
+            }
+        }
+
+        return $total;
+    }
+
+    private function cashSessionLabel(mixed $registerName, mixed $registerCode, mixed $sessionId): ?string
+    {
+        $name = $this->nullableString($registerName);
+        $code = $this->nullableString($registerCode);
+        $label = $name !== null && $name !== ''
+            ? $name.($code !== null && $code !== '' ? ' ('.$code.')' : '')
+            : ($code !== null && $code !== '' ? $code : null);
+
+        if ($label !== null) {
+            return $label;
+        }
+
+        return $sessionId !== null ? 'Sesion #'.(int) $sessionId : null;
+    }
+
+    private function invoiceStatusLabel(mixed $status, mixed $settlement): string
+    {
+        if ($status === Invoice::STATUS_VOID) {
+            return 'Anulada';
+        }
+
+        return match ($settlement) {
+            Invoice::SETTLEMENT_FREE_BY_RULE => 'Emitida sin cobro (regla)',
+            Invoice::SETTLEMENT_ZERO_PRICE => 'Emitida sin cobro (precio cero)',
+            default => match ($status) {
+                Invoice::STATUS_PAID => 'Pagada',
+                Invoice::STATUS_PARTIAL => 'Parcial',
+                Invoice::STATUS_ISSUED => 'Pendiente de cobro',
+                default => $this->nullableString($status) ?? 'Desconocido',
+            },
+        };
+    }
+
+    private function settlementLabel(mixed $settlement): string
+    {
+        return match ($settlement) {
+            Invoice::SETTLEMENT_PAID => 'Cobrada',
+            Invoice::SETTLEMENT_FREE_BY_RULE => 'Gratuita por regla',
+            Invoice::SETTLEMENT_ZERO_PRICE => 'Precio cero',
+            default => 'Pendiente de cobro',
+        };
+    }
+
+    private function paymentMethodLabel(mixed $method): string
+    {
+        return match ($method) {
+            Payment::METHOD_CASH => 'Efectivo',
+            Payment::METHOD_TRANSFER => 'Transferencia',
+            Payment::METHOD_CARD => 'Tarjeta',
+            Payment::METHOD_OTHER => 'Otro',
+            default => $this->nullableString($method) ?? 'Otro',
+        };
+    }
+
+    private function ruleLabel(mixed $ruleCode): string
+    {
+        return match ($ruleCode) {
+            Service::ERYTHROPOIETIN_RULE => 'Receta de dialisis (EPO por linea)',
+            null, '' => 'Gratuidad por regla',
+            default => (string) $ruleCode,
+        };
+    }
+
+    private function nullableInt(mixed $value): ?int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        return is_string($value) && preg_match('/^-?\d+$/', $value) === 1 ? (int) $value : null;
     }
 
     /**

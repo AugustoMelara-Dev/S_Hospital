@@ -8,7 +8,6 @@ use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
-use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\Money;
@@ -22,6 +21,9 @@ class CreateInvoiceAction
     public function __construct(
         private readonly GenerateFiscalNumberAction $generateFiscalNumber,
         private readonly CalculateInvoiceTotalsAction $calculateInvoiceTotals,
+        private readonly PrepareInvoiceItemsAction $prepareInvoiceItems,
+        private readonly ResolveInvoiceDialysisPrescriptionAction $resolveDialysisPrescription,
+        private readonly ResolveInvoiceTaxRateAction $resolveInvoiceTaxRate,
     ) {}
 
     /**
@@ -43,14 +45,37 @@ class CreateInvoiceAction
                     ]);
                 }
 
-                $dialysisPrescription = $this->resolveDialysisPrescription($payload, $issuer);
-                $preparedItems = $this->prepareItems($payload['items']);
+                $dialysisPrescription = $this->resolveDialysisPrescription->execute(
+                    (bool) ($payload['dialysis_prescription'] ?? false),
+                    $issuer,
+                );
+                $preparedItems = $this->prepareInvoiceItems->execute($payload['items']);
                 $settings = FiscalSetting::query()->firstOrNew();
-                $taxRate = $settings->default_tax_rate ?? '15.00';
-                $totals = $this->calculateInvoiceTotals->execute($preparedItems, (string) $taxRate, $dialysisPrescription);
+                $taxRateResolution = $this->resolveInvoiceTaxRate->execute($settings);
+                $taxRate = $taxRateResolution['rate'];
+
+                if ($taxRate === null) {
+                    throw ValidationException::withMessages([
+                        'tax_rate' => 'La tasa de impuesto configurada no tiene un formato valido.',
+                    ]);
+                }
+
+                $totals = $this->calculateInvoiceTotals->execute($preparedItems, $taxRate, $dialysisPrescription);
                 $fiscal = $this->generateFiscalNumber->execute();
                 $sequence = $fiscal['sequence'];
                 $isZeroTotal = $this->isZeroAmount($totals['total']);
+                $hasRuleFreeLine = collect($totals['items'])
+                    ->contains(fn (array $item): bool => ($item['special_rule_applied'] ?? false) === true);
+                $zeroReason = $isZeroTotal
+                    ? ($hasRuleFreeLine
+                        ? PreviewInvoiceTotalsAction::ZERO_REASON_ALL_LINES_FREE_BY_RULE
+                        : PreviewInvoiceTotalsAction::ZERO_REASON_CONFIGURED_ZERO_PRICE)
+                    : null;
+                $settlement = $isZeroTotal
+                    ? ($hasRuleFreeLine
+                        ? Invoice::SETTLEMENT_FREE_BY_RULE
+                        : Invoice::SETTLEMENT_ZERO_PRICE)
+                    : Invoice::SETTLEMENT_PENDING;
 
                 $sumItems = array_reduce($totals['items'], function (int $carry, array $item): int {
                     $lineTotalCents = $item['line_total_cents'] ?? null;
@@ -110,40 +135,49 @@ class CreateInvoiceAction
                     'balance_due' => $isZeroTotal ? '0.00' : $totals['total'],
                     'balance_due_cents' => $isZeroTotal ? 0 : $totals['total_cents'],
                     'status' => $isZeroTotal ? Invoice::STATUS_PAID : Invoice::STATUS_ISSUED,
+                    'settlement' => $settlement,
                     'cash_session_id' => $cashSession->id,
                     'issued_by' => $issuer->id,
                     'issued_at' => now(),
                 ]);
 
                 foreach ($totals['items'] as $item) {
+                    // MANDATO_DEV §8/§14: la linea calculada trae el precio de
+                    // catalogo (`unit_price_registered_cents`) y el ajuste por
+                    // regla (`rule_adjustment_cents`) ademas del precio efectivo.
+                    // Se persisten los tres en centavos; el ajuste es informativo
+                    // y ya esta incluido en `unit_price_cents` (0 si es gratuita).
+                    $item['unit_price_registered_cents'] = $item['unit_price_registered_cents']
+                        ?? $item['unit_price_cents'];
+                    $item['rule_adjustment_cents'] = $item['rule_adjustment_cents'] ?? 0;
+
                     $invoice->items()->create($item);
                 }
 
                 $this->auditDialysisPrescriptionAppliedIfNeeded($totals['items'], $invoice, $issuer, $request);
 
                 if ($isZeroTotal) {
-                    Payment::query()->create([
-                        'invoice_id' => $invoice->id,
-                        'cash_session_id' => $cashSession->id,
-                        'user_id' => $issuer->id,
-                        'method' => Payment::METHOD_OTHER,
-                        'amount' => '0.00',
-                        'amount_cents' => 0,
-                        'reference' => 'Receta dialisis: factura sin cobro',
-                        'status' => Payment::STATUS_POSTED,
-                        'paid_at' => $invoice->issued_at,
-                    ]);
-
+                    // MANDATO_DEV §8: una operacion totalmente gratuita NO crea
+                    // un cobro ficticio (Payment en `other`) ni un movimiento de
+                    // caja. La emision sin cobro queda representada por
+                    // `settlement` y su auditoria trazable.
                     AuditLog::query()->create([
                         'user_id' => $issuer->id,
-                        'action' => 'invoice.zero_amount_registered',
+                        'action' => 'invoice.issued_without_charge',
+                        'result' => 'success',
                         'entity_type' => Invoice::class,
                         'entity_id' => $invoice->id,
                         'new_values' => [
                             'invoice_number' => $invoice->invoice_number,
-                            'reference' => 'Factura sin cobro por regla autorizada',
-                            'balance_due' => $invoice->balance_due,
+                            'patient_name' => $invoice->patient_name,
+                            'cash_session_id' => $cashSession->id,
+                            'settlement' => $invoice->settlement,
+                            'zero_reason' => $zeroReason,
+                            'total' => $invoice->total,
                         ],
+                        'reason' => $zeroReason === PreviewInvoiceTotalsAction::ZERO_REASON_ALL_LINES_FREE_BY_RULE
+                            ? 'Factura sin cobro por regla EPO por linea autorizada.'
+                            : 'Factura sin cobro por precio cero configurado.',
                     ]);
                 }
 
@@ -184,32 +218,6 @@ class CreateInvoiceAction
 
             throw $exception;
         }
-    }
-
-    /**
-     * Resolves the invoice-level `dialysis_prescription` flag. The flag
-     * may ONLY be set by users with the `patients.mark_dialysis_prescription`
-     * permission; cashiers cannot toggle it from the POS UI. If a cashier
-     * submits `dialysis_prescription: true` in the payload, the value is
-     * rejected.
-     *
-     * @param  array{patient_name: string, items: list<array{service_id: int, quantity: string, notes?: ?string}>, dialysis_prescription?: bool}  $payload
-     */
-    private function resolveDialysisPrescription(array $payload, User $issuer): bool
-    {
-        $requested = (bool) ($payload['dialysis_prescription'] ?? false);
-
-        if (! $requested) {
-            return false;
-        }
-
-        if (! $issuer->can('patients.mark_dialysis_prescription')) {
-            throw ValidationException::withMessages([
-                'dialysis_prescription' => 'No tiene permiso para marcar pacientes con receta de dialisis.',
-            ]);
-        }
-
-        return true;
     }
 
     /**
@@ -291,77 +299,6 @@ class CreateInvoiceAction
             'url' => $request?->fullUrl(),
             'http_method' => $request?->method(),
         ]);
-    }
-
-    /**
-     * @param  list<array{service_id: int, quantity: string, notes?: ?string}>  $items
-     * @return list<array{service: Service, quantity: string, notes: ?string}>
-     */
-    private function prepareItems(array $items): array
-    {
-        $serviceIds = collect($items)->pluck('service_id')->unique()->values();
-        $services = Service::query()
-            ->with(['category:id,name,active', 'area:id,name,slug'])
-            ->whereIn('id', $serviceIds)
-            ->get()
-            ->keyBy('id');
-
-        $prepared = [];
-
-        foreach ($items as $index => $item) {
-            /** @var Service|null $service */
-            $service = $services->get($item['service_id']);
-            $field = "items.{$index}.service_id";
-
-            if ($service === null) {
-                throw ValidationException::withMessages([
-                    $field => 'El servicio seleccionado no existe.',
-                ]);
-            }
-
-            if (! $service->active) {
-                throw ValidationException::withMessages([
-                    $field => 'El servicio seleccionado esta inactivo.',
-                ]);
-            }
-
-            if (! $service->category?->active) {
-                throw ValidationException::withMessages([
-                    $field => 'La categoria del servicio seleccionado esta inactiva.',
-                ]);
-            }
-
-            if (! $service->visible_in_billing) {
-                throw ValidationException::withMessages([
-                    $field => 'El servicio seleccionado no esta visible para facturacion.',
-                ]);
-            }
-
-            if (! $service->is_billable) {
-                throw ValidationException::withMessages([
-                    $field => 'El servicio seleccionado no es facturable.',
-                ]);
-            }
-
-            $prepared[] = [
-                'service' => $service,
-                'quantity' => $item['quantity'],
-                'notes' => $this->normalizeItemNotes($item['notes'] ?? null),
-            ];
-        }
-
-        return $prepared;
-    }
-
-    private function normalizeItemNotes(mixed $notes): ?string
-    {
-        if (! is_string($notes)) {
-            return null;
-        }
-
-        $normalized = trim($notes);
-
-        return $normalized === '' ? null : $normalized;
     }
 
     private function isZeroAmount(string $amount): bool

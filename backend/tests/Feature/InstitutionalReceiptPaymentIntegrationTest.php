@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
 use App\Models\AuditLog;
 use App\Models\CashMovement;
+use App\Models\CashRegister;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -15,11 +16,13 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use Closure;
 use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class InstitutionalReceiptPaymentIntegrationTest extends TestCase
@@ -44,7 +47,9 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             ->assertJsonPath('data.receipt_outcome', 'issued')
             ->assertJsonPath('data.institutional_receipt.receipt_number', 1)
             ->assertJsonPath('data.institutional_receipt.receipt_number_full', 'REC-A-00000001')
-            ->assertJsonPath('data.institutional_receipt.print_profile_code', 'media_carta_horizontal')
+            // C1-RCP-02 (mandato §12): la instalación nueva resuelve carta
+            // vertical como diseño principal, no media carta apaisada.
+            ->assertJsonPath('data.institutional_receipt.print_profile_code', 'carta_vertical')
             ->assertJsonPath('data.institutional_receipt_error', null)
             ->json('data.institutional_receipt.id');
 
@@ -175,16 +180,18 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
             ->json('data.payment.id');
 
-        Payment::query()
-            ->whereKey($paymentId)
-            ->update(['amount' => '99.99']);
-        Invoice::query()
-            ->whereKey($invoiceId)
-            ->update([
-                'total' => '99.99',
-                'paid_amount' => '99.99',
-                'balance_due' => '99.99',
-            ]);
+        $this->withLegacyDecimalDriftAllowed(function () use ($paymentId, $invoiceId): void {
+            Payment::query()
+                ->whereKey($paymentId)
+                ->update(['amount' => '99.99']);
+            Invoice::query()
+                ->whereKey($invoiceId)
+                ->update([
+                    'total' => '99.99',
+                    'paid_amount' => '99.99',
+                    'balance_due' => '99.99',
+                ]);
+        });
 
         $this->createReceiptSeries();
 
@@ -202,6 +209,47 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
         $this->assertNull($receipt->payment_snapshot['selected_payment']);
         $this->assertSame('17.25', $receipt->payment_snapshot['posted_payments'][0]['amount']);
         $this->assertSame(1725, $receipt->payment_snapshot['posted_payments'][0]['amount_cents']);
+    }
+
+    public function test_snapshot_uses_the_configured_cash_register_name_not_the_technical_id(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+
+        $register = CashRegister::query()->create([
+            'code' => 'trc02_principal',
+            'name' => 'Caja principal',
+            'active' => true,
+        ]);
+
+        $sessionId = CashRegisterSession::query()->create([
+            'cash_register_id' => $register->id,
+            'open_marker' => CashRegisterSession::OPEN_MARKER,
+            'user_id' => $cashier->id,
+            'open_user_id' => $cashier->id,
+            'opening_amount' => '500.00',
+            'status' => CashRegisterSession::STATUS_OPEN,
+            'opened_at' => now(),
+        ])->id;
+
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $receiptId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.receipt_outcome', 'issued')
+            ->json('data.institutional_receipt.id');
+
+        $receipt = InstitutionalReceipt::query()->findOrFail($receiptId);
+
+        // The operator-facing label is the configured register name; the
+        // technical session id is only a fallback when no register is linked.
+        $this->assertSame('Caja principal', $receipt->payment_snapshot['cash_context']['cash_register_label']);
+        $this->assertStringNotContainsString('Caja #'.$sessionId, $receipt->payment_snapshot['cash_context']['cash_register_label']);
     }
 
     public function test_voiding_paid_payment_voids_issued_institutional_receipt_with_audit(): void
@@ -265,6 +313,7 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.institutional_receipt.id', $receiptId)
             ->assertJsonPath('data.institutional_receipt.receipt_number_full', 'REC-A-00000001')
+            ->assertJsonPath('data.institutional_receipt.copy_mode', 'original_only')
             ->json('data.institutional_receipt');
 
         $historyReceipt = $this->actingAs($cashier)
@@ -272,6 +321,7 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.institutional_receipt.id', $receiptId)
             ->assertJsonPath('data.0.institutional_receipt.receipt_number_full', 'REC-A-00000001')
+            ->assertJsonPath('data.0.institutional_receipt.copy_mode', 'original_only')
             ->json('data.0.institutional_receipt');
 
         foreach ([$detailReceipt, $historyReceipt] as $receiptSummary) {
@@ -280,6 +330,7 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
                 'receipt_number_full',
                 'status',
                 'reprint_count',
+                'copy_mode',
                 'print_events_count',
                 'has_print_events',
                 'issued_at',
@@ -437,17 +488,33 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             'closed_at' => now(),
         ]);
 
+        $payload = [
+            'invoice_id' => $invoiceId,
+            'payment_id' => $paymentId,
+            'cash_session_id' => $sessionId,
+        ];
+        $idempotencyKey = 'receipt-recovery-retry-'.$invoiceId;
+
         $receiptId = $this->actingAs($cashier)
-            ->postJson('/api/institutional-receipts', [
-                'invoice_id' => $invoiceId,
-                'payment_id' => $paymentId,
-                'cash_session_id' => $sessionId,
-            ])
+            ->withHeaders(['Idempotency-Key' => $idempotencyKey])
+            ->postJson('/api/institutional-receipts', $payload)
             ->assertCreated()
             ->assertJsonPath('data.cash_session_id', $sessionId)
             ->assertJsonPath('data.payment_id', $paymentId)
             ->json('data.id');
 
+        // Recovery retry is idempotent: replaying the same request reuses the receipt
+        // and the original payment, without registering a second charge.
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => $idempotencyKey])
+            ->postJson('/api/institutional-receipts', $payload)
+            ->assertCreated()
+            ->assertHeader('Idempotent-Replay', 'true')
+            ->assertJsonPath('data.id', $receiptId)
+            ->assertJsonPath('data.payment_id', $paymentId);
+
+        $this->assertSame(1, InstitutionalReceipt::query()->where('invoice_id', $invoiceId)->count());
+        $this->assertSame(1, Payment::query()->where('invoice_id', $invoiceId)->count());
         $this->assertSame(1, CashMovement::query()->where('cash_session_id', $sessionId)->count());
 
         $audit = AuditLog::query()
@@ -547,5 +614,27 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             ])
             ->assertCreated()
             ->json('data.id');
+    }
+
+    /**
+     * Drift decimal/cents deliberado para probar que el snapshot institucional
+     * usa las columnas enteras. En MariaDB el CHECK de coherencia (T2-014)
+     * bloquearia el UPDATE del drift; se suspende su evaluacion SOLO en esta
+     * sesion y se restaura en finally (patron driver-aware de T3-022). Sin DDL:
+     * el DDL provoca commit implicito y romperia RefreshDatabase.
+     */
+    private function withLegacyDecimalDriftAllowed(Closure $callback): mixed
+    {
+        if (! in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            return $callback();
+        }
+
+        DB::statement('SET SESSION check_constraint_checks = OFF');
+
+        try {
+            return $callback();
+        } finally {
+            DB::statement('SET SESSION check_constraint_checks = ON');
+        }
     }
 }

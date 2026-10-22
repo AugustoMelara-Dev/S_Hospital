@@ -2,6 +2,7 @@
 
 namespace App\Actions\InstitutionalReceipts;
 
+use App\Actions\Reports\LineRuleProvenance;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceiptSeries;
@@ -38,7 +39,11 @@ class BuildInstitutionalReceiptSnapshotAction
     ): array {
         $invoice->loadMissing('items', 'payments.user:id,name,username');
         $settings = FiscalSetting::query()->firstOrNew();
-        $cashSession->loadMissing('user:id,name,username');
+        // The cash register label is the operator-facing name of the configured
+        // register ("Caja principal"), falling back to the technical session id
+        // only when the installation has no named register. The label never
+        // invents data: it is what the admin configured.
+        $cashSession->loadMissing(['user:id,name,username', 'cashRegister:id,code,name']);
         $cashier = $cashSession->user;
 
         if (! $cashier instanceof User) {
@@ -57,6 +62,22 @@ class BuildInstitutionalReceiptSnapshotAction
                 'quantity' => (string) $item->quantity,
                 'unit_price' => $this->moneyFromCents($item->unit_price_cents, $item->unit_price),
                 'unit_price_cents' => (int) $item->unit_price_cents,
+                // Precio de catálogo registrado y ajuste por regla persistidos en
+                // la línea al emitir. Se copian del propio ítem (snapshot
+                // histórico), nunca del catálogo vigente.
+                'unit_price_registered_cents' => (int) ($item->unit_price_registered_cents ?? $item->unit_price_cents),
+                'rule_adjustment_cents' => (int) ($item->rule_adjustment_cents ?? 0),
+                // Procedencia del ajuste, sin migración nueva: la misma derivación
+                // que ya usan el detalle del API y el reporte ejecutivo
+                // (`LineRuleProvenance`). `false` significa que el entero 0 de
+                // `rule_adjustment_cents` es DESCONOCIDO (línea histórica
+                // backfilleada) y el comprobante debe declararlo en vez de imprimir
+                // `L. 0.00` como si fuera un cero medido.
+                'rule_adjustment_persisted' => LineRuleProvenance::adjustmentRecorded(
+                    (bool) $item->special_rule_applied,
+                    $item->unit_price_registered_cents === null ? null : (int) $item->unit_price_registered_cents,
+                    $item->unit_price_cents === null ? null : (int) $item->unit_price_cents,
+                ),
                 'tax_rate' => (string) $item->tax_rate,
                 'tax_amount' => $this->moneyFromCents($item->tax_amount_cents, $item->tax_amount),
                 'tax_amount_cents' => (int) $item->tax_amount_cents,
@@ -73,15 +94,18 @@ class BuildInstitutionalReceiptSnapshotAction
             'payer_name' => $invoice->patient_name,
             'concept' => $this->conceptFromItems($items),
             'institution_snapshot' => [
-                'hospital_name' => HospitalName::display($settings->hospital_name ?: $invoice->hospital_name),
-                'rtn' => $settings->rtn ?: $invoice->hospital_rtn,
-                'address' => $settings->address ?: $invoice->hospital_address,
-                'phone' => $settings->phone ?: $invoice->hospital_phone,
-                'slogan' => $settings->slogan ?: $invoice->hospital_slogan,
-                'government_line' => $settings->government_line ?: $invoice->receipt_government_line,
-                'secretariat_line' => $settings->secretariat_line ?: $invoice->receipt_secretariat_line,
-                'receipt_location' => $settings->receipt_location ?: $invoice->receipt_location,
-                'receipt_footer_text' => $settings->receipt_footer_text ?: $invoice->receipt_footer_text,
+                // La factura ya congeló la identidad institucional vigente al
+                // emitirse. Un cambio posterior en Administración no puede
+                // reescribir el comprobante histórico al cobrar o reimprimir.
+                'hospital_name' => HospitalName::display($invoice->hospital_name ?: $settings->hospital_name),
+                'rtn' => $invoice->hospital_rtn ?: $settings->rtn,
+                'address' => $invoice->hospital_address ?: $settings->address,
+                'phone' => $invoice->hospital_phone ?: $settings->phone,
+                'slogan' => $invoice->hospital_slogan ?: $settings->slogan,
+                'government_line' => $invoice->receipt_government_line ?: $settings->government_line,
+                'secretariat_line' => $invoice->receipt_secretariat_line ?: $settings->secretariat_line,
+                'receipt_location' => $invoice->receipt_location ?: $settings->receipt_location,
+                'receipt_footer_text' => $invoice->receipt_footer_text ?: $settings->receipt_footer_text,
                 ...$this->logoSnapshot($profile),
             ],
             'series_snapshot' => [
@@ -143,7 +167,7 @@ class BuildInstitutionalReceiptSnapshotAction
                     ->map(fn (Payment $payment): array => $this->paymentSnapshot($payment))
                     ->all(),
                 'cash_context' => [
-                    'cash_register_label' => 'Caja #'.$cashSession->id,
+                    'cash_register_label' => $this->cashRegisterLabel($cashSession),
                     'cashier_name' => $cashier->name,
                     'opened_at' => $cashSession->opened_at?->toIso8601String(),
                 ],
@@ -219,6 +243,22 @@ class BuildInstitutionalReceiptSnapshotAction
             'paid_at' => $payment->paid_at?->toIso8601String(),
             'cashier_name' => $payment->user->name,
         ];
+    }
+
+    /**
+     * Operator-facing register label. Uses the configured register name when the
+     * session is linked to one; otherwise it falls back to the technical session
+     * id, exactly as before. Deterministic and never invents a name.
+     */
+    private function cashRegisterLabel(CashRegisterSession $cashSession): string
+    {
+        $name = $cashSession->cashRegister?->name;
+
+        if (is_string($name) && trim($name) !== '') {
+            return trim($name);
+        }
+
+        return 'Caja #'.$cashSession->id;
     }
 
     private function moneyFromCents(?int $cents, string|int|float|null $fallback): string

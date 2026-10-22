@@ -13,6 +13,7 @@ use App\Models\ReceiptPrintProfile;
 use App\Models\ReceiptProfileAssignment;
 use App\Models\User;
 use Database\Seeders\ReceiptPrintProfileSeeder;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use LogicException;
@@ -21,6 +22,8 @@ use Tests\TestCase;
 class InstitutionalReceiptSettingsMigrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected static bool $resetSchemaAfterDdl = true;
 
     public function test_database_seeding_creates_required_print_profiles_without_thermal_global_default(): void
     {
@@ -57,15 +60,43 @@ class InstitutionalReceiptSettingsMigrationTest extends TestCase
             'margin_bottom_mm' => '6.00',
             'margin_left_mm' => '6.00',
             'active' => true,
-            'is_global_default' => true,
+            // C1-RCP-02 (mandato §12): media carta deja de ser el predeterminado
+            // de una instalación nueva; sigue disponible con la propuesta de tres
+            // copias (ORIGINAL + PRIMERA + SEGUNDA).
+            'is_global_default' => false,
+            'copies_mode' => 'original_first_second',
         ]);
+
+        // El nuevo diseño principal propuesto para instalación nueva es carta
+        // vertical (612 x 792 pt), con la plantilla compacta nueva y un solo
+        // ejemplar para el paciente por defecto (T-RC-01).
+        $this->assertDatabaseHas('receipt_print_profiles', [
+            'code' => 'carta_vertical',
+            'paper_kind' => 'letter_portrait',
+            'width_mm' => '215.90',
+            'height_mm' => '279.40',
+            'orientation' => 'portrait',
+            'active' => true,
+            'is_global_default' => true,
+            'template_code' => 'institutional_compact',
+            'copies_mode' => 'original_only',
+        ]);
+
+        // The historical landscape alternative keeps its single-copy default until
+        // an operator changes it.
+        foreach (['a5_horizontal', 'carta_horizontal'] as $alternativeCode) {
+            $this->assertDatabaseHas('receipt_print_profiles', [
+                'code' => $alternativeCode,
+                'copies_mode' => 'original_only',
+            ]);
+        }
 
         $globalDefaults = ReceiptPrintProfile::query()
             ->where('is_global_default', true)
             ->get();
 
         $this->assertCount(1, $globalDefaults);
-        $this->assertSame('media_carta_horizontal', $globalDefaults->sole()->code);
+        $this->assertSame('carta_vertical', $globalDefaults->sole()->code);
         $this->assertNotContains($globalDefaults->sole()->paper_kind, ['thermal_80mm', 'thermal_58mm']);
 
         $this->assertDatabaseHas('receipt_print_profiles', [
@@ -104,6 +135,7 @@ class InstitutionalReceiptSettingsMigrationTest extends TestCase
                 'width_mm' => '220.00',
                 'active' => false,
                 'margin_left_mm' => '9.00',
+                'copies_mode' => 'original_only',
             ]);
 
         $this->seed(ReceiptPrintProfileSeeder::class);
@@ -115,6 +147,44 @@ class InstitutionalReceiptSettingsMigrationTest extends TestCase
         $this->assertSame('220.00', $profile->width_mm);
         $this->assertFalse($profile->active);
         $this->assertSame('9.00', $profile->margin_left_mm);
+        // An installation that was already seeded with the previous single-copy
+        // default keeps it: the delivery proposal is insert-only.
+        $this->assertSame('original_only', $profile->copies_mode);
+    }
+
+    public function test_new_install_delivery_proposal_is_editable_and_not_overwritten_by_seeder_reruns(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $profile = ReceiptPrintProfile::query()
+            ->where('code', ReceiptPrintProfile::CODE_HALF_LETTER)
+            ->firstOrFail();
+
+        $this->assertSame('original_first_second', $profile->copies_mode);
+        $this->assertTrue((bool) $profile->active);
+        // C1-RCP-02 (mandato §12): el predeterminado de instalación nueva es carta
+        // vertical. Media carta conserva la propuesta de tres copias pero ya no es
+        // el perfil global.
+        $this->assertFalse((bool) $profile->is_global_default);
+        $this->assertSame(
+            ReceiptPrintProfile::CODE_LETTER_PORTRAIT,
+            ReceiptPrintProfile::query()->where('is_global_default', true)->sole()->code,
+        );
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->patchJson("/api/settings/institutional-receipts/print-profiles/{$profile->id}", [
+                'copies_mode' => 'original_first',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.copies_mode', 'original_first');
+
+        $this->seed(ReceiptPrintProfileSeeder::class);
+
+        $this->assertSame('original_first', $profile->refresh()->copies_mode);
     }
 
     public function test_schema_and_models_support_receipts_events_and_assignments_with_existing_references(): void

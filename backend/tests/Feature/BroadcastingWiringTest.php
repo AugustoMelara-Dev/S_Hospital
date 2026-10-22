@@ -75,14 +75,17 @@ class BroadcastingWiringTest extends TestCase
             ->assertJsonPath('data.useTLS', false);
     }
 
-    public function test_echo_config_endpoint_has_operational_smoke_safe_throttle(): void
+    public function test_echo_config_endpoint_requires_an_authenticated_session(): void
     {
         $route = collect(Route::getRoutes())->first(
             fn ($route): bool => $route->uri() === 'api/system/echo-config' && in_array('GET', $route->methods(), true),
         );
 
         $this->assertNotNull($route);
-        $this->assertContains('throttle:public-read', $route->middleware());
+        $this->assertContains('auth:web', $route->gatherMiddleware());
+        $this->assertNotContains('throttle:public-read', $route->middleware());
+
+        $this->getJson('/api/system/echo-config')->assertUnauthorized();
     }
 
     public function test_private_invoice_channel_requires_invoice_view_permission(): void

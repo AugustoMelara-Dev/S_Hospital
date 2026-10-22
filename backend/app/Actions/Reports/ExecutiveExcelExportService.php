@@ -7,31 +7,53 @@ use App\Support\HospitalName;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
- * Builds a multi-sheet XLSX workbook from an executive report payload.
+ * Builds the institutional XLSX workbook from the executive report payload.
  *
- * Sheets:
- *  1. Resumen
- *  2. Cobros por metodo
- *  3. Facturado diario
- *  4. Servicios
- *  5. Cajeros
- *  6. Caja
- *  7. Pendientes
- *  8. Anulaciones y reversas
- *  9. Auditoria
- * 10. Glosario
+ * Hojas obligatorias (MANDATO_DEV §14): Resumen, Operaciones, Detalle, Cobros,
+ * Caja. La gratuidad se identifica en Resumen y Detalle. No se agregan hojas de
+ * relleno.
+ *
+ * Reglas de tipo:
+ *  - importes/cantidades -> numerico con formato;
+ *  - conteos -> entero;
+ *  - variaciones porcentuales -> fraccion 0..1 con formato de porcentaje;
+ *  - fechas -> serial Excel con formato local;
+ *  - numeros de factura y texto que empieza con `= + - @` -> texto explicito.
  *
  * @phpstan-type ExecutiveReport array<string, mixed>
  */
 class ExecutiveExcelExportService
 {
+    private const COUNT_FORMAT = '#,##0';
+
+    private const MONEY_FORMAT = '#,##0.00';
+
+    private const SUMMARY_MONEY_FORMAT = '"L." #,##0.00';
+
+    private const PERCENT_FORMAT = '0.00%';
+
+    private const SIGNED_PERCENT_FORMAT = '+0.00%;-0.00%;0.00%';
+
+    private const TEXT_FORMAT = '@';
+
+    private const DATE_FORMAT = 'dd/mm/yyyy';
+
+    private const DATETIME_FORMAT = 'dd/mm/yyyy hh:mm';
+
+    private const HEADER_ROW = 3;
+
+    private const HOSPITAL_TIMEZONE = 'America/Tegucigalpa';
+
     /**
      * @param  ExecutiveReport  $report
      * @param  array<string, mixed>  $fiscal
@@ -45,17 +67,10 @@ class ExecutiveExcelExportService
         $rtn = $this->plainText($fiscal['rtn'] ?? null) ?? 'N/A';
 
         $this->buildSummarySheet($spreadsheet, $report, $hospitalName, $rtn, $from, $to, $generatedBy);
-        $this->buildPaymentMethodsSheet($spreadsheet, $report, $hospitalName, $rtn);
-        $this->buildDailyTrendSheet($spreadsheet, $report, $hospitalName, $rtn);
-        $this->buildServicesSheet($spreadsheet, $report, $hospitalName, $rtn);
-        $this->buildCashiersSheet($spreadsheet, $report, $hospitalName, $rtn);
-        $this->buildCashSessionsSheet($spreadsheet, $report, $hospitalName, $rtn);
-        $this->buildPendingSheet($spreadsheet, $report, $hospitalName, $rtn);
-        if (($report['can_view_audit'] ?? true) === true) {
-            $this->buildVoidsSheet($spreadsheet, $report, $hospitalName, $rtn);
-            $this->buildAuditSheet($spreadsheet, $report, $hospitalName, $rtn);
-        }
-        $this->buildGlossarySheet($spreadsheet, $hospitalName, $rtn);
+        $this->buildOperationsSheet($spreadsheet, $report, $hospitalName, $rtn);
+        $this->buildDetailSheet($spreadsheet, $report, $hospitalName, $rtn);
+        $this->buildCollectionsSheet($spreadsheet, $report, $hospitalName, $rtn);
+        $this->buildCashSheet($spreadsheet, $report, $hospitalName, $rtn);
 
         return $spreadsheet;
     }
@@ -73,561 +88,418 @@ class ExecutiveExcelExportService
         $sheet = $spreadsheet->createSheet();
         $sheet->setTitle('Resumen');
 
-        $row = 1;
-        $sheet->setCellValue("A{$row}", ExcelSafe::value('Reporte Ejecutivo'));
-        $sheet->mergeCells("A{$row}:C{$row}");
-        $this->applyTitleStyle($sheet, "A{$row}:C{$row}");
-        $row++;
-
-        $sheet->setCellValue("A{$row}", ExcelSafe::value($hospitalName));
-        $sheet->mergeCells("A{$row}:C{$row}");
-        $this->applySubtitleStyle($sheet, "A{$row}:C{$row}");
-        $row++;
-
-        $sheet->setCellValue("A{$row}", ExcelSafe::value('RTN: '.$rtn));
-        $sheet->mergeCells("A{$row}:C{$row}");
-        $row++;
-
-        $sheet->setCellValue("A{$row}", ExcelSafe::value('Periodo: '.$from->toDateString().' a '.$to->toDateString()));
-        $sheet->mergeCells("A{$row}:C{$row}");
-        $row++;
-
-        $sheet->setCellValue("A{$row}", ExcelSafe::value('Generado: '.($generatedBy ?? 'Sistema').' - '.
-            Carbon::now('America/Tegucigalpa')->format('Y-m-d H:i')));
-        $sheet->mergeCells("A{$row}:C{$row}");
-        $row += 2;
-
         $summary = $this->section($report['summary'] ?? null);
         $comparison = $this->section($report['comparison'] ?? null);
         $billedComparison = $this->section($comparison['billed'] ?? null);
         $collectedComparison = $this->section($comparison['collected'] ?? null);
+        $period = $this->section($report['period'] ?? null);
+        $filters = $this->section($report['filters'] ?? null);
 
-        $rows = [
-            ['Indicador', 'Valor', 'Variacion vs periodo anterior'],
-            ['Total Facturado', $this->moneyFloat($summary['billed_total'] ?? '0.00'), $this->pctLabel($billedComparison['delta_percentage'] ?? null)],
-            ['Total Cobrado', $this->moneyFloat($summary['collected_total'] ?? '0.00'), $this->pctLabel($collectedComparison['delta_percentage'] ?? null)],
-            ['Saldo Pendiente', $this->moneyFloat($summary['pending_total'] ?? '0.00'), null],
-            ['Anulado', $this->moneyFloat($summary['voided_total'] ?? '0.00'), null],
-            ['Reversado', $this->moneyFloat($summary['reversed_total'] ?? '0.00'), null],
-            ['Facturas', $this->safeCount($summary['invoice_count'] ?? 0), null],
-            ['Recibos', $this->safeCount($summary['receipt_count'] ?? 0), null],
-            ['Pagadas', $this->safeCount($summary['paid_count'] ?? 0), null],
-            ['Parciales', $this->safeCount($summary['partial_count'] ?? 0), null],
-            ['Pendientes', $this->safeCount($summary['pending_count'] ?? 0), null],
-            ['Anuladas', $this->safeCount($summary['voided_count'] ?? 0), null],
-            ['Ticket Promedio', $this->moneyFloat($summary['average_ticket'] ?? '0.00'), null],
+        $row = 1;
+        $sheet->setCellValue("A{$row}", ExcelSafe::value('Reporte institucional'));
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $this->applyTitleStyle($sheet, "A{$row}:C{$row}");
+        $row++;
+        $sheet->setCellValue("A{$row}", ExcelSafe::value($hospitalName));
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $this->applySubtitleStyle($sheet, "A{$row}:C{$row}");
+        $row++;
+        $sheet->setCellValue("A{$row}", ExcelSafe::value('RTN: '.$rtn));
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $row++;
+        $sheet->setCellValue("A{$row}", ExcelSafe::value('Periodo: '.$from->toDateString().' a '.$to->toDateString()));
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $row++;
+        $sheet->setCellValue("A{$row}", ExcelSafe::value('Filtros: '.$this->filterSummary($filters)));
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $row++;
+        $sheet->setCellValue("A{$row}", ExcelSafe::value('Generado: '.($generatedBy ?? 'Sistema').' - '.
+            Carbon::now(self::HOSPITAL_TIMEZONE)->format('Y-m-d H:i')));
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $row++;
+        $sheet->setCellValue("A{$row}", ExcelSafe::value('Zona horaria: '.$this->plainText($period['timezone'] ?? null) ?? self::HOSPITAL_TIMEZONE));
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $row += 2;
+
+        $this->applyTableHeaderStyle($sheet, "A{$row}:C{$row}");
+        $sheet->setCellValue("A{$row}", $this->safeText('Indicador'));
+        $sheet->setCellValue("B{$row}", $this->safeText('Valor'));
+        $sheet->setCellValue("C{$row}", $this->safeText('Variacion vs periodo anterior'));
+        $row++;
+
+        $metrics = [
+            ['Total facturado (emision)', $this->moneyFloat($summary['billed_total'] ?? '0.00'), 'money', $this->percentageFraction($billedComparison['delta_percentage'] ?? null)],
+            ['Total cobrado (fecha de pago)', $this->moneyFloat($summary['collected_total'] ?? '0.00'), 'money', $this->percentageFraction($collectedComparison['delta_percentage'] ?? null)],
+            ['Saldo al corte', $this->moneyFloat($summary['pending_total'] ?? '0.00'), 'money', null],
+            ['Anulado', $this->moneyFloat($summary['voided_total'] ?? '0.00'), 'money', null],
+            ['Reversado', $this->moneyFloat($summary['reversed_total'] ?? '0.00'), 'money', null],
+            ['Facturas emitidas', $this->safeCount($summary['invoice_count'] ?? 0), 'count', null],
+            ['Pagos contabilizados', $this->safeCount($summary['receipt_count'] ?? 0), 'count', null],
+            ['Pagadas', $this->safeCount($summary['paid_count'] ?? 0), 'count', null],
+            ['Parciales', $this->safeCount($summary['partial_count'] ?? 0), 'count', null],
+            ['Pendientes', $this->safeCount($summary['pending_count'] ?? 0), 'count', null],
+            ['Anuladas', $this->safeCount($summary['voided_count'] ?? 0), 'count', null],
+            ['Operaciones sin cobro', $this->safeCount($summary['without_charge_count'] ?? 0), 'count', null],
+            ['Ticket promedio', $this->moneyFloat($summary['average_ticket'] ?? '0.00'), 'money', null],
         ];
 
-        foreach ($rows as $r) {
-            $sheet->setCellValue("A{$row}", $this->safeText($r[0]));
-            $sheet->setCellValue("B{$row}", $r[1]);
-            $sheet->setCellValue("C{$row}", $this->safeText($r[2] ?? ''));
+        $firstDataRow = $row;
+        foreach ($metrics as $metric) {
+            $kind = $metric[2];
+            $delta = $metric[3];
+            $sheet->setCellValue("A{$row}", $this->safeText($metric[0]));
+            $sheet->setCellValue("B{$row}", $metric[1]);
+            $sheet->setCellValue("C{$row}", $delta ?? '');
+            $this->applyDataRowStyle($sheet, "A{$row}", self::TEXT_FORMAT);
+            $this->applyDataRowStyle($sheet, "B{$row}", $kind === 'count' ? self::COUNT_FORMAT : self::SUMMARY_MONEY_FORMAT);
+            $this->applyDataRowStyle($sheet, "C{$row}", $delta === null ? self::TEXT_FORMAT : self::SIGNED_PERCENT_FORMAT);
             $row++;
         }
 
-        $this->applyTableHeaderStyle($sheet, 'A'.($row - count($rows)).':C'.($row - 1));
-        $this->applyDataRowStyle($sheet, 'B2:B'.($row - 1), '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'A2:A'.($row - 1), '@');
-        $sheet->getColumnDimension('A')->setWidth(40);
-        $sheet->getColumnDimension('B')->setWidth(24);
-        $sheet->getColumnDimension('C')->setWidth(28);
+        $row++;
+        $sheet->setCellValue("A{$row}", $this->safeText('Gratuidad y emision sin cobro'));
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $this->applySubtitleStyle($sheet, "A{$row}:C{$row}");
+        $row++;
+        $this->applyTableHeaderStyle($sheet, "A{$row}:C{$row}");
+        $sheet->setCellValue("A{$row}", $this->safeText('Indicador'));
+        $sheet->setCellValue("B{$row}", $this->safeText('Valor'));
+        $sheet->setCellValue("C{$row}", $this->safeText('Nota'));
+        $row++;
 
-        $sheet->freezePane('A6');
+        $gratuityAdjustmentPersisted = ($summary['gratuity_adjustment_persisted'] ?? false) === true;
+        $gratuityRows = [
+            ['Lineas gratuitas (unidades entregadas)', $this->safeCount($summary['gratuity_item_count'] ?? 0), 'count', 'Solo el medicamento elegible por regla; no son unidades cobradas.', true],
+            ['Valor del ajuste registrado', $gratuityAdjustmentPersisted ? $this->moneyFloat($summary['gratuity_adjustment_total'] ?? '0.00') : 'No registrado', 'money', $gratuityAdjustmentPersisted ? 'Calculado desde el ajuste por linea.' : 'Historico sin ajuste por linea: no se inventa 0.00.', $gratuityAdjustmentPersisted],
+        ];
+
+        foreach ($gratuityRows as $metric) {
+            $kind = $metric[2];
+            $numeric = $metric[4];
+            $sheet->setCellValue("A{$row}", $this->safeText($metric[0]));
+            if ($numeric) {
+                $sheet->setCellValue("B{$row}", $metric[1]);
+                $this->applyDataRowStyle($sheet, "B{$row}", $kind === 'count' ? self::COUNT_FORMAT : self::SUMMARY_MONEY_FORMAT);
+            } else {
+                $this->setTextCell($sheet, "B{$row}", $metric[1]);
+            }
+            $sheet->setCellValue("C{$row}", $this->safeText($metric[3]));
+            $this->applyDataRowStyle($sheet, "A{$row}", self::TEXT_FORMAT);
+            $this->applyDataRowStyle($sheet, "C{$row}", self::TEXT_FORMAT);
+            $row++;
+        }
+
+        foreach (['A' => 44, 'B' => 22, 'C' => 52] as $letter => $width) {
+            $sheet->getColumnDimension($letter)->setWidth($width);
+        }
+
+        $sheet->getRowDimension(1)->setRowHeight(24);
+        $sheet->getRowDimension(self::HEADER_ROW)->setRowHeight(18);
+        $sheet->freezePane('A'.$firstDataRow);
+        $this->configurePrintSetup($sheet, 'C', $row - 1, PageSetup::ORIENTATION_PORTRAIT);
     }
 
     /** @param ExecutiveReport $report */
-    private function buildPaymentMethodsSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
+    private function buildOperationsSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
-        $sheet->setTitle('Cobros por metodo');
+        $sheet->setTitle('Operaciones');
 
-        $methods = $this->rows($report['payment_methods'] ?? null);
-        $row = $this->writeSheetHeader($sheet, 'Cobros por Metodo de Pago', [
-            'Metodo', 'Monto (L.)', 'Pagos', '% del total',
-        ]);
+        $headers = ['Fecha', 'N Factura', 'Paciente', 'Caja/Sesion', 'Cajero', 'Total (L.)', 'Pagado (L.)', 'Saldo (L.)', 'Estado', 'Liquidacion', 'Documento'];
+        $row = $this->writeSheetHeader($sheet, 'Operaciones emitidas', $headers, 'K');
 
-        $totalCents = 0;
-        foreach ($methods as $method) {
-            $totalCents += $this->moneyToCents($method['amount'] ?? '0.00');
-        }
+        $total = 0.0;
+        $paid = 0.0;
+        $balance = 0.0;
+        $firstDataRow = $row;
+        foreach ($this->rows($report['operations'] ?? null) as $operation) {
+            $sheet->setCellValue("A{$row}", $this->localDateTime($operation['date'] ?? null, dateOnly: true));
+            $this->setTextCell($sheet, "B{$row}", $operation['invoice_number'] ?? '');
+            $this->setTextCell($sheet, "C{$row}", $operation['patient'] ?? '');
+            $this->setTextCell($sheet, "D{$row}", $operation['cash_session_label'] ?? '');
+            $this->setTextCell($sheet, "E{$row}", $operation['cashier'] ?? '');
+            $sheet->setCellValue("F{$row}", $this->moneyFloat($operation['total'] ?? '0.00'));
+            $sheet->setCellValue("G{$row}", $this->moneyFloat($operation['paid'] ?? '0.00'));
+            $sheet->setCellValue("H{$row}", $this->moneyFloat($operation['balance'] ?? '0.00'));
+            $this->setTextCell($sheet, "I{$row}", $operation['status_label'] ?? '');
+            $this->setTextCell($sheet, "J{$row}", $operation['settlement_label'] ?? '');
+            $this->setTextCell($sheet, "K{$row}", $operation['receipt_document'] ?? '');
 
-        foreach ($methods as $method) {
-            $sheet->setCellValue("A{$row}", $this->safeText($method['label'] ?? $method['method'] ?? ''));
-            $sheet->setCellValue("B{$row}", $this->moneyFloat($method['amount'] ?? '0.00'));
-            $sheet->setCellValue("C{$row}", $this->safeCount($method['count'] ?? 0));
-            $sheet->setCellValue("D{$row}", $this->percentageValue($method['percentage'] ?? '0'));
+            $total += $this->moneyFloat($operation['total'] ?? '0.00');
+            $paid += $this->moneyFloat($operation['paid'] ?? '0.00');
+            $balance += $this->moneyFloat($operation['balance'] ?? '0.00');
             $row++;
         }
 
-        $sheet->setCellValue("A{$row}", 'Total');
-        $sheet->setCellValue("B{$row}", $totalCents / 100);
-        $sheet->setCellValue("C{$row}", array_sum(array_map(fn ($m) => $this->safeCount($m['count'] ?? 0), $methods)));
-        $sheet->setCellValue("D{$row}", 1);
-        $this->applyBoldRow($sheet, "A{$row}:D{$row}");
+        if ($this->rows($report['operations'] ?? null) !== []) {
+            $sheet->setCellValue("E{$row}", $this->safeText('Total'));
+            $sheet->setCellValue("F{$row}", $total);
+            $sheet->setCellValue("G{$row}", $paid);
+            $sheet->setCellValue("H{$row}", $balance);
+            $this->applyBoldRow($sheet, "A{$row}:K{$row}");
+            $row++;
+        }
 
-        $this->applyTableHeaderStyle($sheet, 'A4:D4');
-        $this->applyDataRowStyle($sheet, 'B5:B'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'C5:C'.$row, '#,##0');
-        $this->applyDataRowStyle($sheet, 'D5:D'.$row, '0.00%');
-        $this->autoSizeColumns($sheet, ['A' => 24, 'B' => 18, 'C' => 12, 'D' => 14]);
-        $sheet->freezePane('A5');
+        $this->applyDataRangeStyle($sheet, 'A', 'A', $firstDataRow, $row - 1, self::DATE_FORMAT);
+        $this->applyDataRangeStyle($sheet, 'F', 'H', $firstDataRow, $row - 1, self::MONEY_FORMAT);
+        $this->autoFilter($sheet, 'K', $row - 1);
+        $this->autoSizeColumns($sheet, ['A' => 12, 'B' => 22, 'C' => 28, 'D' => 22, 'E' => 22, 'F' => 14, 'G' => 14, 'H' => 14, 'I' => 24, 'J' => 20, 'K' => 24]);
+        $this->applyWrappedTextRows($sheet, ['B', 'C', 'D', 'E', 'I', 'J', 'K'], $firstDataRow, $row - 2);
+        $this->configurePrintSetup($sheet, 'K', $row - 1);
     }
 
     /** @param ExecutiveReport $report */
-    private function buildDailyTrendSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
+    private function buildDetailSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
-        $sheet->setTitle('Facturado diario');
+        $sheet->setTitle('Detalle');
 
-        $daily = $this->rows($report['daily_trend'] ?? null);
-        $row = $this->writeSheetHeader($sheet, 'Tendencia Diaria', [
-            'Fecha', 'Facturado (L.)', 'Cobrado (L.)', 'Pendiente (L.)', 'Anuladas', 'Facturas',
-        ]);
+        $headers = ['Fecha', 'N Factura', 'Paciente', 'Servicio', 'Categoria', 'Area', 'Cantidad', 'Precio registrado (L.)', 'Ajuste por regla (L.)', 'Impuesto (L.)', 'Importe final (L.)', 'Gratuidad'];
+        $row = $this->writeSheetHeader($sheet, 'Detalle por linea', $headers, 'L');
 
-        foreach ($daily as $day) {
-            $sheet->setCellValue("A{$row}", $this->safeText($day['date'] ?? ''));
-            $sheet->setCellValue("B{$row}", $this->moneyFloat($day['billed'] ?? '0.00'));
-            $sheet->setCellValue("C{$row}", $this->moneyFloat($day['collected'] ?? '0.00'));
-            $sheet->setCellValue("D{$row}", $this->moneyFloat($day['pending'] ?? '0.00'));
-            $sheet->setCellValue("E{$row}", $this->safeCount($day['voided_count'] ?? 0));
-            $sheet->setCellValue("F{$row}", $this->safeCount($day['invoice_count'] ?? 0));
+        $firstDataRow = $row;
+        foreach ($this->rows($report['detail'] ?? null) as $line) {
+            $sheet->setCellValue("A{$row}", $this->localDateTime($line['date'] ?? null, dateOnly: true));
+            $this->setTextCell($sheet, "B{$row}", $line['invoice_number'] ?? '');
+            $this->setTextCell($sheet, "C{$row}", $line['patient'] ?? '');
+            $this->setTextCell($sheet, "D{$row}", $line['service'] ?? '');
+            $this->setTextCell($sheet, "E{$row}", $line['category'] ?? '');
+            $this->setTextCell($sheet, "F{$row}", $line['area'] ?? '');
+            $sheet->setCellValue("G{$row}", $this->quantityValue($line['quantity'] ?? '0'));
+            $sheet->setCellValue("H{$row}", $this->moneyFloat($line['unit_price'] ?? '0.00'));
+            // Un historico sin ajuste persistido no se escribe como 0.00 numerico:
+            // cero afirmaria un ajuste medido que nunca se registro.
+            if (($line['rule_adjustment_persisted'] ?? true) === false) {
+                $this->setTextCell($sheet, "I{$row}", 'No registrado');
+            } else {
+                $sheet->setCellValue("I{$row}", $this->moneyFloat($line['rule_adjustment'] ?? '0.00'));
+                $this->applyDataRowStyle($sheet, "I{$row}", self::MONEY_FORMAT);
+            }
+            $sheet->setCellValue("J{$row}", $this->moneyFloat($line['tax'] ?? '0.00'));
+            $sheet->setCellValue("K{$row}", $this->moneyFloat($line['line_total'] ?? '0.00'));
+            $this->setTextCell($sheet, "L{$row}", ($line['is_free'] ?? false) === true ? ($line['rule_label'] ?? 'Gratuidad') : 'No');
             $row++;
         }
 
-        $this->applyTableHeaderStyle($sheet, 'A4:F4');
-        $this->applyDataRowStyle($sheet, 'B5:B'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'C5:C'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'D5:D'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'E5:E'.$row, '#,##0');
-        $this->applyDataRowStyle($sheet, 'F5:F'.$row, '#,##0');
-        $this->autoSizeColumns($sheet, ['A' => 14, 'B' => 16, 'C' => 16, 'D' => 16, 'E' => 12, 'F' => 12]);
-        $sheet->freezePane('A5');
+        $this->applyDataRangeStyle($sheet, 'A', 'A', $firstDataRow, $row - 1, self::DATE_FORMAT);
+        $this->applyDataRangeStyle($sheet, 'G', 'H', $firstDataRow, $row - 1, self::MONEY_FORMAT);
+        $this->applyDataRangeStyle($sheet, 'J', 'K', $firstDataRow, $row - 1, self::MONEY_FORMAT);
+        $this->autoFilter($sheet, 'L', $row - 1);
+        $this->autoSizeColumns($sheet, ['A' => 12, 'B' => 22, 'C' => 28, 'D' => 34, 'E' => 20, 'F' => 18, 'G' => 12, 'H' => 18, 'I' => 18, 'J' => 14, 'K' => 16, 'L' => 28]);
+        $this->applyWrappedTextRows($sheet, ['B', 'C', 'D', 'E', 'F', 'I', 'L'], $firstDataRow, $row - 1);
+        $this->configurePrintSetup($sheet, 'L', $row - 1);
     }
 
     /** @param ExecutiveReport $report */
-    private function buildServicesSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
+    private function buildCollectionsSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
-        $sheet->setTitle('Servicios');
+        $sheet->setTitle('Cobros');
 
-        $row = $this->writeSheetHeader($sheet, 'Servicios facturados', [
-            'Top por monto', '', '', '',
-        ]);
-        $row++;
+        $headers = ['Fecha de pago', 'N Factura', 'Paciente', 'Caja/Sesion', 'Cajero', 'Metodo', 'Referencia', 'Importe (L.)', 'Estado'];
+        $row = $this->writeSheetHeader($sheet, 'Cobros reales por fecha de pago', $headers, 'I');
 
-        $sheet->fromArray(
-            ['Servicio', 'Categoria', 'Cantidad', 'Facturado (L.)', 'Cobrado (L.)'],
-            null,
-            "A{$row}"
-        );
-        $this->applyTableHeaderStyle($sheet, "A{$row}:E{$row}");
-        $row++;
-
-        $services = $this->section($report['services'] ?? null);
-
-        foreach ($this->rows($services['top_by_amount'] ?? null) as $service) {
-            $sheet->setCellValue("A{$row}", $this->safeText($service['service'] ?? ''));
-            $sheet->setCellValue("B{$row}", $this->safeText($service['category'] ?? ''));
-            $sheet->setCellValue("C{$row}", $this->quantityValue($service['quantity'] ?? '0'));
-            $sheet->setCellValue("D{$row}", $this->moneyFloat($service['total'] ?? '0.00'));
-            $sheet->setCellValue("E{$row}", $this->moneyFloat($service['collected'] ?? '0.00'));
+        $total = 0.0;
+        $firstDataRow = $row;
+        foreach ($this->rows($report['collections'] ?? null) as $collection) {
+            $sheet->setCellValue("A{$row}", $this->localDateTime($collection['paid_at'] ?? null));
+            $this->setTextCell($sheet, "B{$row}", $collection['invoice_number'] ?? '');
+            $this->setTextCell($sheet, "C{$row}", $collection['patient'] ?? '');
+            $this->setTextCell($sheet, "D{$row}", $collection['cash_session_label'] ?? '');
+            $this->setTextCell($sheet, "E{$row}", $collection['cashier'] ?? '');
+            $this->setTextCell($sheet, "F{$row}", $collection['method_label'] ?? '');
+            $this->setTextCell($sheet, "G{$row}", $collection['reference'] ?? '');
+            $sheet->setCellValue("H{$row}", $this->moneyFloat($collection['amount'] ?? '0.00'));
+            $this->setTextCell($sheet, "I{$row}", $collection['status_label'] ?? '');
+            $total += $this->moneyFloat($collection['amount'] ?? '0.00');
             $row++;
         }
 
-        $row++;
-        $sheet->setCellValue("A{$row}", 'Top por cantidad');
-        $sheet->mergeCells("A{$row}:E{$row}");
-        $this->applySubtitleStyle($sheet, "A{$row}:E{$row}");
-        $row++;
-
-        $sheet->fromArray(
-            ['Servicio', 'Categoria', 'Cantidad', 'Facturado (L.)'],
-            null,
-            "A{$row}"
-        );
-        $this->applyTableHeaderStyle($sheet, "A{$row}:D{$row}");
-        $row++;
-
-        foreach ($this->rows($services['top_by_quantity'] ?? null) as $service) {
-            $sheet->setCellValue("A{$row}", $this->safeText($service['service'] ?? ''));
-            $sheet->setCellValue("B{$row}", $this->safeText($service['category'] ?? ''));
-            $sheet->setCellValue("C{$row}", $this->quantityValue($service['quantity'] ?? '0'));
-            $sheet->setCellValue("D{$row}", $this->moneyFloat($service['total'] ?? '0.00'));
+        if ($this->rows($report['collections'] ?? null) !== []) {
+            $sheet->setCellValue("G{$row}", $this->safeText('Total'));
+            $sheet->setCellValue("H{$row}", $total);
+            $this->applyBoldRow($sheet, "A{$row}:I{$row}");
             $row++;
         }
 
-        $row++;
-        $sheet->setCellValue("A{$row}", 'Por categoria');
-        $sheet->mergeCells("A{$row}:E{$row}");
-        $this->applySubtitleStyle($sheet, "A{$row}:E{$row}");
-        $row++;
-
-        $sheet->fromArray(
-            ['Categoria', 'Cantidad', 'Facturado (L.)', 'Cobrado (L.)', 'Items'],
-            null,
-            "A{$row}"
-        );
-        $this->applyTableHeaderStyle($sheet, "A{$row}:E{$row}");
-        $row++;
-
-        foreach ($this->rows($services['by_category'] ?? null) as $cat) {
-            $sheet->setCellValue("A{$row}", $this->safeText($cat['category'] ?? ''));
-            $sheet->setCellValue("B{$row}", $this->quantityValue($cat['quantity'] ?? '0'));
-            $sheet->setCellValue("C{$row}", $this->moneyFloat($cat['total'] ?? '0.00'));
-            $sheet->setCellValue("D{$row}", $this->moneyFloat($cat['collected'] ?? '0.00'));
-            $sheet->setCellValue("E{$row}", $this->safeCount($cat['item_count'] ?? 0));
-            $row++;
-        }
-
-        $row++;
-        $sheet->setCellValue("A{$row}", 'Por area');
-        $sheet->mergeCells("A{$row}:E{$row}");
-        $this->applySubtitleStyle($sheet, "A{$row}:E{$row}");
-        $row++;
-
-        $sheet->fromArray(
-            ['Area', 'Cantidad', 'Facturado (L.)', 'Items'],
-            null,
-            "A{$row}"
-        );
-        $this->applyTableHeaderStyle($sheet, "A{$row}:D{$row}");
-        $row++;
-
-        foreach ($this->rows($services['by_area'] ?? null) as $area) {
-            $sheet->setCellValue("A{$row}", $this->safeText($area['area'] ?? ''));
-            $sheet->setCellValue("B{$row}", $this->quantityValue($area['quantity'] ?? '0'));
-            $sheet->setCellValue("C{$row}", $this->moneyFloat($area['total'] ?? '0.00'));
-            $sheet->setCellValue("D{$row}", $this->safeCount($area['item_count'] ?? 0));
-            $row++;
-        }
-
-        $this->autoSizeColumns($sheet, ['A' => 40, 'B' => 24, 'C' => 14, 'D' => 16, 'E' => 16]);
+        $this->applyDataRangeStyle($sheet, 'A', 'A', $firstDataRow, $row - 1, self::DATETIME_FORMAT);
+        $this->applyDataRangeStyle($sheet, 'H', 'H', $firstDataRow, $row - 1, self::MONEY_FORMAT);
+        $this->autoFilter($sheet, 'I', $row - 1);
+        $this->autoSizeColumns($sheet, ['A' => 18, 'B' => 22, 'C' => 28, 'D' => 22, 'E' => 22, 'F' => 16, 'G' => 24, 'H' => 16, 'I' => 14]);
+        $this->applyWrappedTextRows($sheet, ['B', 'C', 'D', 'E', 'F', 'G', 'I'], $firstDataRow, $row - 2);
+        $this->configurePrintSetup($sheet, 'I', $row - 1);
     }
 
     /** @param ExecutiveReport $report */
-    private function buildCashiersSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
-    {
-        $sheet = $spreadsheet->createSheet();
-        $sheet->setTitle('Cajeros');
-
-        $row = $this->writeSheetHeader($sheet, 'Cajeros', [
-            'Cajero', 'Cobrado (L.)', 'Efectivo (L.)', 'Transferencia (L.)', 'Tarjeta (L.)', 'Otro (L.)', 'Pagos', 'Anuladas', 'Diferencia (L.)',
-        ]);
-
-        foreach ($this->rows($report['cashiers'] ?? null) as $cashier) {
-            $sheet->setCellValue("A{$row}", $this->safeText($cashier['name'] ?? ''));
-            $sheet->setCellValue("B{$row}", $this->moneyFloat($cashier['collected'] ?? '0.00'));
-            $sheet->setCellValue("C{$row}", $this->moneyFloat($cashier['cash'] ?? '0.00'));
-            $sheet->setCellValue("D{$row}", $this->moneyFloat($cashier['transfer'] ?? '0.00'));
-            $sheet->setCellValue("E{$row}", $this->moneyFloat($cashier['card'] ?? '0.00'));
-            $sheet->setCellValue("F{$row}", $this->moneyFloat($cashier['other'] ?? '0.00'));
-            $sheet->setCellValue("G{$row}", $this->safeCount($cashier['payment_count'] ?? 0));
-            $sheet->setCellValue("H{$row}", $this->safeCount($cashier['voided_count'] ?? 0));
-            $sheet->setCellValue("I{$row}", $this->moneyFloat($cashier['difference_total'] ?? '0.00'));
-            $row++;
-        }
-
-        $this->applyTableHeaderStyle($sheet, 'A4:I4');
-        $this->applyDataRowStyle($sheet, 'B5:B'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'C5:C'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'D5:D'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'E5:E'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'F5:F'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'I5:I'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'G5:G'.$row, '#,##0');
-        $this->applyDataRowStyle($sheet, 'H5:H'.$row, '#,##0');
-        $this->autoSizeColumns($sheet, ['A' => 28, 'B' => 16, 'C' => 16, 'D' => 16, 'E' => 16, 'F' => 16, 'G' => 10, 'H' => 10, 'I' => 16]);
-        $sheet->freezePane('A5');
-    }
-
-    /** @param ExecutiveReport $report */
-    private function buildCashSessionsSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
+    private function buildCashSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
     {
         $sheet = $spreadsheet->createSheet();
         $sheet->setTitle('Caja');
 
-        $row = $this->writeSheetHeader($sheet, 'Sesiones de Caja', [
-            'Cajero', 'Apertura', 'Cierre', 'Inicial (L.)', 'Esperado (L.)', 'Contado (L.)', 'Diferencia (L.)', 'Estado', 'Nota',
-        ]);
+        $headers = ['Sesion #', 'Caja fisica', 'Codigo caja', 'Cajero', 'Apertura', 'Cierre', 'Inicial (L.)', 'Esperado (L.)', 'Contado (L.)', 'Diferencia (L.)', 'Estado', 'Nota'];
+        $row = $this->writeSheetHeader($sheet, 'Sesiones de caja', $headers, 'L');
 
+        $firstDataRow = $row;
         foreach ($this->rows($report['cash_sessions'] ?? null) as $session) {
-            $sheet->setCellValue("A{$row}", $this->safeText($session['cashier'] ?? ''));
-            $sheet->setCellValue("B{$row}", $this->safeText($session['opened_at'] ?? ''));
-            $sheet->setCellValue("C{$row}", $this->safeText($session['closed_at'] ?? ''));
-            $sheet->setCellValue("D{$row}", $this->moneyFloat($session['opening_amount'] ?? '0.00'));
-            $sheet->setCellValue("E{$row}", $this->moneyFloat($session['expected_cash'] ?? '0.00'));
-            $sheet->setCellValue("F{$row}", ($session['counted_cash'] ?? null) !== null ? $this->moneyFloat($session['counted_cash']) : null);
-            $sheet->setCellValue("G{$row}", ($session['difference'] ?? null) !== null ? $this->moneyFloat($session['difference']) : null);
-            $sheet->setCellValue("H{$row}", $this->safeText($session['status'] ?? ''));
-            $sheet->setCellValue("I{$row}", $this->safeText($session['closure_note'] ?? ''));
+            $registerCode = $this->cleanText($session['cash_register_code'] ?? null);
+            $registerName = $this->cleanText($session['cash_register_name'] ?? null);
+            $registerLabel = $registerName !== '' ? $registerName : ($registerCode !== '' ? $registerCode : 'Sin caja asignada');
+
+            $sheet->setCellValue("A{$row}", $this->safeCount($session['id'] ?? 0));
+            $this->setTextCell($sheet, "B{$row}", $registerLabel);
+            $this->setTextCell($sheet, "C{$row}", $registerCode);
+            $this->setTextCell($sheet, "D{$row}", $session['cashier'] ?? '');
+            $sheet->setCellValue("E{$row}", $this->localDateTime($session['opened_at'] ?? null));
+            $sheet->setCellValue("F{$row}", $this->localDateTime($session['closed_at'] ?? null));
+            $sheet->setCellValue("G{$row}", $this->moneyFloat($session['opening_amount'] ?? '0.00'));
+            $sheet->setCellValue("H{$row}", $this->moneyFloat($session['expected_cash'] ?? '0.00'));
+            $sheet->setCellValue("I{$row}", ($session['counted_cash'] ?? null) !== null ? $this->moneyFloat($session['counted_cash']) : null);
+            $sheet->setCellValue("J{$row}", ($session['difference'] ?? null) !== null ? $this->moneyFloat($session['difference']) : null);
+            $this->setTextCell($sheet, "K{$row}", $this->statusLabel($session['status_label'] ?? $session['status'] ?? null));
+            $this->setTextCell($sheet, "L{$row}", $session['closure_note'] ?? '');
             $row++;
         }
 
-        $this->applyTableHeaderStyle($sheet, 'A4:I4');
-        $this->applyDataRowStyle($sheet, 'D5:D'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'E5:E'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'F5:F'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'G5:G'.$row, '#,##0.00');
-        $this->autoSizeColumns($sheet, ['A' => 24, 'B' => 22, 'C' => 22, 'D' => 14, 'E' => 14, 'F' => 14, 'G' => 14, 'H' => 12, 'I' => 36]);
-        $sheet->freezePane('A5');
-    }
-
-    /** @param ExecutiveReport $report */
-    private function buildPendingSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
-    {
-        $sheet = $spreadsheet->createSheet();
-        $sheet->setTitle('Pendientes');
-
-        $pending = $this->section($report['pending_aging'] ?? null);
-        $recent = $this->section($pending['0_7_days'] ?? null);
-        $midAge = $this->section($pending['8_30_days'] ?? null);
-        $old = $this->section($pending['31_plus_days'] ?? null);
-        $pendingItems = $this->rows($pending['items'] ?? null);
-        $row = $this->writeSheetHeader($sheet, 'Pendientes y Antiguedad', [
-            'Antiguedad', 'Cantidad', 'Saldo pendiente (L.)',
-        ]);
-
-        $sheet->setCellValue("A{$row}", '0 a 7 dias');
-        $sheet->setCellValue("B{$row}", $this->safeCount($recent['count'] ?? 0));
-        $sheet->setCellValue("C{$row}", $this->moneyFloat($recent['amount'] ?? '0.00'));
-        $row++;
-
-        $sheet->setCellValue("A{$row}", '8 a 30 dias');
-        $sheet->setCellValue("B{$row}", $this->safeCount($midAge['count'] ?? 0));
-        $sheet->setCellValue("C{$row}", $this->moneyFloat($midAge['amount'] ?? '0.00'));
-        $row++;
-
-        $sheet->setCellValue("A{$row}", '31 o mas dias');
-        $sheet->setCellValue("B{$row}", $this->safeCount($old['count'] ?? 0));
-        $sheet->setCellValue("C{$row}", $this->moneyFloat($old['amount'] ?? '0.00'));
-        $row++;
-
-        $row++;
-        $sheet->setCellValue("A{$row}", 'Detalle de pendientes');
-        $sheet->mergeCells("A{$row}:F{$row}");
-        $this->applySubtitleStyle($sheet, "A{$row}:F{$row}");
-        $row++;
-
-        $sheet->fromArray(
-            ['# Factura', 'Paciente', 'Emitida', 'Antiguedad (dias)', 'Total (L.)', 'Saldo (L.)'],
-            null,
-            "A{$row}"
-        );
-        $this->applyTableHeaderStyle($sheet, "A{$row}:F{$row}");
-        $row++;
-
-        foreach ($pendingItems as $item) {
-            $sheet->setCellValue("A{$row}", $this->safeText($item['invoice_number'] ?? ''));
-            $sheet->setCellValue("B{$row}", $this->safeText($item['patient'] ?? ''));
-            $sheet->setCellValue("C{$row}", $this->safeText($item['issued_at'] ?? ''));
-            $sheet->setCellValue("D{$row}", $this->safeCount($item['age_days'] ?? 0));
-            $sheet->setCellValue("E{$row}", $this->moneyFloat($item['total'] ?? '0.00'));
-            $sheet->setCellValue("F{$row}", $this->moneyFloat($item['balance_due'] ?? '0.00'));
-            $row++;
-        }
-
-        $this->applyDataRowStyle($sheet, 'E'.($row - count($pendingItems)).':E'.$row, '#,##0.00');
-        $this->applyDataRowStyle($sheet, 'F'.($row - count($pendingItems)).':F'.$row, '#,##0.00');
-        $this->autoSizeColumns($sheet, ['A' => 18, 'B' => 28, 'C' => 16, 'D' => 14, 'E' => 14, 'F' => 14]);
-    }
-
-    /** @param ExecutiveReport $report */
-    private function buildVoidsSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
-    {
-        $sheet = $spreadsheet->createSheet();
-        $sheet->setTitle('Anulaciones y reversas');
-
-        $row = $this->writeSheetHeader($sheet, 'Anulaciones y Reversas', [
-            'Tipo', '# Factura', 'Paciente', 'Monto (L.)', 'Usuario', 'Autorizado por', 'Motivo', 'Fecha',
-        ]);
-
-        foreach ($this->rows($report['voids_and_reversals'] ?? null) as $rowData) {
-            $kind = ($rowData['kind'] ?? '') === 'reversal' ? 'Reversa' : 'Anulacion';
-            $sheet->setCellValue("A{$row}", $this->safeText($kind));
-            $sheet->setCellValue("B{$row}", $this->safeText($rowData['invoice_number'] ?? ''));
-            $sheet->setCellValue("C{$row}", $this->safeText($rowData['patient'] ?? ''));
-            $sheet->setCellValue("D{$row}", $this->moneyFloat($rowData['amount'] ?? '0.00'));
-            $sheet->setCellValue("E{$row}", $this->safeText($rowData['user'] ?? ''));
-            $sheet->setCellValue("F{$row}", $this->safeText($rowData['authorized_by'] ?? ''));
-            $sheet->setCellValue("G{$row}", $this->safeText($rowData['reason'] ?? ''));
-            $sheet->setCellValue("H{$row}", $this->safeText($rowData['created_at'] ?? ''));
-            $row++;
-        }
-
-        $this->applyTableHeaderStyle($sheet, 'A4:H4');
-        $this->applyDataRowStyle($sheet, 'D5:D'.$row, '#,##0.00');
-        $this->autoSizeColumns($sheet, ['A' => 14, 'B' => 18, 'C' => 24, 'D' => 14, 'E' => 22, 'F' => 22, 'G' => 36, 'H' => 22]);
-        $sheet->freezePane('A5');
-    }
-
-    /** @param ExecutiveReport $report */
-    private function buildAuditSheet(Spreadsheet $spreadsheet, array $report, string $hospital, string $rtn): void
-    {
-        $sheet = $spreadsheet->createSheet();
-        $sheet->setTitle('Auditoria');
-
-        $row = $this->writeSheetHeader($sheet, 'Auditoria', [
-            'Indicador', 'Cantidad',
-        ]);
-
-        $audit = $this->section($report['audit_summary'] ?? null);
-
-        $rows = [
-            ['Eventos criticos', $this->safeCount($audit['critical_events'] ?? 0)],
-            ['Reimpresiones', $this->safeCount($audit['reprints'] ?? 0)],
-            ['Cambios fiscales', $this->safeCount($audit['fiscal_changes'] ?? 0)],
-            ['Diferencias de caja', $this->safeCount($audit['cash_differences'] ?? 0)],
-            ['Eventos de respaldo', $this->safeCount($audit['backup_events'] ?? 0)],
-        ];
-
-        foreach ($rows as $r) {
-            $sheet->setCellValue("A{$row}", $this->safeText($r[0]));
-            $sheet->setCellValue("B{$row}", $r[1]);
-            $row++;
-        }
-
-        $this->applyTableHeaderStyle($sheet, 'A4:B4');
-        $this->applyDataRowStyle($sheet, 'B5:B'.$row, '#,##0');
-        $this->autoSizeColumns($sheet, ['A' => 28, 'B' => 12]);
-    }
-
-    private function buildGlossarySheet(Spreadsheet $spreadsheet, string $hospital, string $rtn): void
-    {
-        $sheet = $spreadsheet->createSheet();
-        $sheet->setTitle('Glosario');
-
-        $row = $this->writeSheetHeader($sheet, 'Glosario de metricas', [
-            'Termino', 'Definicion',
-        ]);
-
-        $definitions = [
-            ['Facturado', 'Total de facturas emitidas en el periodo, excluyendo anuladas.'],
-            ['Cobrado', 'Total de pagos registrados y no anulados, en facturas no anuladas.'],
-            ['Pendiente', 'Saldo abierto de facturas emitidas o parciales.'],
-            ['Anulado', 'Dato de control. Ya esta excluido de Facturado; no se resta otra vez.'],
-            ['Reversado', 'Dato de control. Ya esta excluido de Cobrado; no se resta otra vez.'],
-            ['Efectivo esperado', 'Efectivo inicial + pagos en efectivo del turno.'],
-            ['Efectivo contado', 'Efectivo fisico reportado por el cajero al cierre.'],
-            ['Diferencia de caja', 'Contado menos esperado. Positivo = sobrante. Negativo = faltante.'],
-            ['Ticket promedio', 'Total facturado / numero de facturas.'],
-            ['Factura parcial', 'Factura con pagos parciales que mantiene saldo pendiente.'],
-            ['Reimpresion', 'Nueva emision de un comprobante ya emitido. Se audita con motivo.'],
-            ['Cobrado neto operativo', 'Pagos posteados no reversados en facturas no anuladas. Anulaciones y reversos ya estan excluidos.'],
-        ];
-
-        foreach ($definitions as $definition) {
-            $sheet->setCellValue("A{$row}", $this->safeText($definition[0]));
-            $sheet->setCellValue("B{$row}", $this->safeText($definition[1]));
-            $row++;
-        }
-
-        $this->applyTableHeaderStyle($sheet, 'A4:B4');
-        $this->autoSizeColumns($sheet, ['A' => 28, 'B' => 80]);
-        $sheet->getStyle('B5:B'.$row)->getAlignment()->setWrapText(true);
+        $this->applyDataRangeStyle($sheet, 'A', 'A', $firstDataRow, $row - 1, self::COUNT_FORMAT);
+        $this->applyDataRangeStyle($sheet, 'E', 'F', $firstDataRow, $row - 1, self::DATETIME_FORMAT);
+        $this->applyDataRangeStyle($sheet, 'G', 'J', $firstDataRow, $row - 1, self::MONEY_FORMAT);
+        $this->autoFilter($sheet, 'L', $row - 1);
+        $this->autoSizeColumns($sheet, ['A' => 12, 'B' => 24, 'C' => 16, 'D' => 22, 'E' => 18, 'F' => 18, 'G' => 14, 'H' => 14, 'I' => 14, 'J' => 14, 'K' => 22, 'L' => 36]);
+        $this->applyWrappedTextRows($sheet, ['B', 'C', 'D', 'K', 'L'], $firstDataRow, $row - 1);
+        $this->configurePrintSetup($sheet, 'L', $row - 1);
     }
 
     /** @param list<string> $headers */
-    private function writeSheetHeader(
-        Worksheet $sheet,
-        string $title,
-        array $headers,
-    ): int {
+    private function writeSheetHeader(Worksheet $sheet, string $title, array $headers, string $lastColumn): int
+    {
         $sheet->setCellValue('A1', $this->safeText($title));
-        $sheet->mergeCells('A1:'.chr(ord('A') + count($headers) - 1).'1');
-        $this->applyTitleStyle($sheet, 'A1:'.chr(ord('A') + count($headers) - 1).'1');
+        $sheet->mergeCells("A1:{$lastColumn}1");
+        $this->applyTitleStyle($sheet, "A1:{$lastColumn}1");
 
-        $row = 3;
-        $col = 'A';
+        $row = self::HEADER_ROW;
+        $column = 'A';
         foreach ($headers as $header) {
-            $sheet->setCellValue("{$col}{$row}", $this->safeText($header));
-            $col++;
+            $sheet->setCellValue("{$column}{$row}", $this->safeText($header));
+            $column++;
         }
-        $col = chr(ord($col) - 1);
-        $this->applyTableHeaderStyle($sheet, "A{$row}:{$col}{$row}");
+
+        $this->applyTableHeaderStyle($sheet, "A{$row}:{$lastColumn}{$row}");
+        $this->applyDataRowStyle($sheet, "A{$row}:{$lastColumn}{$row}", self::TEXT_FORMAT);
+        $sheet->getRowDimension(1)->setRowHeight(24);
+        $sheet->getRowDimension($row)->setRowHeight(18);
+        $sheet->freezePane('A'.($row + 1));
 
         return $row + 1;
+    }
+
+    /**
+     * Area de impresion y titulos repetidos por hoja. El titulo (fila 1) y el
+     * encabezado de tabla (fila 3) se repiten en cada pagina impresa; el ancho
+     * se ajusta a una pagina pero la altura NO se comprime (fitToHeight = 0),
+     * para no miniaturizar un detalle largo.
+     */
+    private function configurePrintSetup(
+        Worksheet $sheet,
+        string $lastColumn,
+        int $lastRow,
+        string $orientation = PageSetup::ORIENTATION_LANDSCAPE,
+    ): void {
+        $lastRow = max($lastRow, 1);
+        $pageSetup = $sheet->getPageSetup();
+        $pageSetup->setPrintArea("A1:{$lastColumn}{$lastRow}");
+        $pageSetup->setRowsToRepeatAtTop([1, self::HEADER_ROW]);
+        $pageSetup->setOrientation($orientation);
+        $pageSetup->setFitToWidth(1);
+        $pageSetup->setFitToHeight(0);
+        $pageSetup->setPaperSize(PageSetup::PAPERSIZE_LETTER);
+        $sheet->getPageMargins()->setTop(0.5)->setBottom(0.5)->setLeft(0.4)->setRight(0.4);
+    }
+
+    /**
+     * Escribe una celda de texto con tipo explicito (nunca formula) y neutraliza
+     * prefijos que Excel podria interpretar como formula.
+     */
+    private function setTextCell(Worksheet $sheet, string $coordinate, mixed $value): void
+    {
+        $sheet->setCellValueExplicit($coordinate, $this->safeText($value), DataType::TYPE_STRING);
+        $sheet->getStyle($coordinate)->getNumberFormat()->setFormatCode(self::TEXT_FORMAT);
+    }
+
+    private function autoFilter(Worksheet $sheet, string $lastColumn, int $lastDataRow): void
+    {
+        $lastRow = max($lastDataRow, self::HEADER_ROW);
+        $sheet->setAutoFilter('A'.self::HEADER_ROW.":{$lastColumn}{$lastRow}");
+    }
+
+    /** @param array<string, mixed> $filters */
+    private function filterSummary(array $filters): string
+    {
+        $parts = [];
+        foreach ([
+            'cash_session_id' => 'sesion',
+            'user_id' => 'cajero',
+            'category_id' => 'categoria',
+            'area_id' => 'area',
+            'method' => 'metodo',
+            'status' => 'estado',
+        ] as $key => $label) {
+            $value = $this->plainText($filters[$key] ?? null);
+            if ($value !== null && $value !== '') {
+                $parts[] = $label.': '.$value;
+            }
+        }
+
+        return $parts === [] ? 'Sin filtros adicionales' : implode(', ', $parts);
     }
 
     private function applyTitleStyle(Worksheet $sheet, string $range): void
     {
         $sheet->getStyle($range)->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 16,
-                'color' => ['rgb' => '0F172A'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_LEFT,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
+            'font' => ['bold' => true, 'size' => 16, 'color' => ['rgb' => '0F172A']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'vertical' => Alignment::VERTICAL_CENTER],
         ]);
     }
 
     private function applySubtitleStyle(Worksheet $sheet, string $range): void
     {
         $sheet->getStyle($range)->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 11,
-                'color' => ['rgb' => '0F766E'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_LEFT,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
+            'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '2563EB']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'vertical' => Alignment::VERTICAL_CENTER],
         ]);
     }
 
     private function applyTableHeaderStyle(Worksheet $sheet, string $range): void
     {
         $sheet->getStyle($range)->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'color' => ['rgb' => 'FFFFFF'],
-                'size' => 10,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '0F172A'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_LEFT,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => 'CBD5E1'],
-                ],
-            ],
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 10],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2563EB']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]],
         ]);
     }
 
     private function applyBoldRow(Worksheet $sheet, string $range): void
     {
         $sheet->getStyle($range)->applyFromArray([
-            'font' => [
-                'bold' => true,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'F1F5F9'],
-            ],
+            'font' => ['bold' => true],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F1F5F9']],
         ]);
+    }
+
+    private function applyDataRangeStyle(Worksheet $sheet, string $startColumn, string $endColumn, int $firstRow, int $lastRow, string $numberFormat): void
+    {
+        if ($lastRow < $firstRow) {
+            return;
+        }
+
+        $this->applyDataRowStyle($sheet, "{$startColumn}{$firstRow}:{$endColumn}{$lastRow}", $numberFormat);
     }
 
     private function applyDataRowStyle(Worksheet $sheet, string $range, string $numberFormat): void
     {
         $sheet->getStyle($range)->applyFromArray([
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => 'E2E8F0'],
-                ],
-            ],
-            'numberFormat' => [
-                'formatCode' => $numberFormat,
-            ],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E2E8F0']]],
+            'numberFormat' => ['formatCode' => $numberFormat],
         ]);
     }
 
@@ -639,11 +511,98 @@ class ExecutiveExcelExportService
         }
     }
 
+    /**
+     * Envuelve columnas textuales y da a cada fila la altura necesaria para que
+     * nombres y notas queden completos al abrir o imprimir el archivo. Las
+     * columnas numericas quedan fuera para conservar su alineacion natural.
+     *
+     * @param  list<string>  $columns
+     */
+    private function applyWrappedTextRows(Worksheet $sheet, array $columns, int $firstRow, int $lastRow): void
+    {
+        if ($lastRow < $firstRow) {
+            return;
+        }
+
+        foreach (range($firstRow, $lastRow) as $row) {
+            $lineCount = 1;
+
+            foreach ($columns as $column) {
+                $cell = $sheet->getCell("{$column}{$row}");
+                $text = (string) ($cell->getValue() ?? '');
+
+                if ($cell->getDataType() === DataType::TYPE_STRING) {
+                    $sheet->getStyle("{$column}{$row}")
+                        ->getAlignment()
+                        ->setHorizontal(Alignment::HORIZONTAL_LEFT)
+                        ->setVertical(Alignment::VERTICAL_TOP)
+                        ->setWrapText(true);
+                }
+
+                $usableWidth = max(1, (int) floor($sheet->getColumnDimension($column)->getWidth() - 2));
+                $cellLines = 0;
+
+                foreach (preg_split('/\R/u', $text) ?: [''] as $line) {
+                    $cellLines += max(1, (int) ceil(mb_strlen($line, 'UTF-8') / $usableWidth));
+                }
+
+                $lineCount = max($lineCount, $cellLines);
+            }
+
+            $sheet->getRowDimension($row)->setRowHeight(min(120, max(18, $lineCount * 15)));
+        }
+    }
+
     private function safeText(mixed $value): string
     {
-        $safe = ExcelSafe::value($this->plainText($value) ?? '');
+        $safe = ExcelSafe::value($this->cleanText($value));
 
         return is_string($safe) ? $safe : '';
+    }
+
+    private function cleanText(mixed $value): string
+    {
+        return $this->plainText($value) ?? '';
+    }
+
+    private function localDateTime(mixed $value, bool $dateOnly = false): float|string
+    {
+        $text = $this->plainText($value);
+
+        if ($text === null || trim($text) === '') {
+            return '';
+        }
+
+        if (! $this->looksLikeDate(trim($text))) {
+            return '';
+        }
+
+        try {
+            $date = Carbon::parse($text)->setTimezone(self::HOSPITAL_TIMEZONE);
+            if ($dateOnly) {
+                $date->setTime(0, 0);
+            }
+
+            return ExcelDate::PHPToExcel($date);
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    private function looksLikeDate(string $text): bool
+    {
+        return preg_match('/^\d[0-9TZtz+\-\.\/: ]*$/', $text) === 1;
+    }
+
+    private function statusLabel(mixed $status): string
+    {
+        $value = $this->cleanText($status);
+
+        return match ($value) {
+            'open' => 'Abierta',
+            'closed' => 'Cerrada',
+            default => $value,
+        };
     }
 
     private function moneyFloat(mixed $value): float
@@ -653,16 +612,26 @@ class ExecutiveExcelExportService
 
     private function moneyToCents(mixed $value): int
     {
+        $text = trim($this->cleanText($value) ?: '0');
+        $negative = str_starts_with($text, '-');
+        $magnitude = ltrim($text, '+-');
+
+        if ($magnitude === '') {
+            return 0;
+        }
+
         try {
-            return Money::parseCents($this->plainText($value) ?? '0', 'amount');
+            $cents = Money::parseCents($magnitude, 'amount');
         } catch (ValidationException) {
             return 0;
         }
+
+        return $negative ? -$cents : $cents;
     }
 
     private function quantityValue(mixed $value): float
     {
-        $string = $this->plainText($value) ?? '0';
+        $string = $this->cleanText($value) ?: '0';
 
         if (is_numeric($string)) {
             $numeric = $string + 0;
@@ -677,22 +646,20 @@ class ExecutiveExcelExportService
         }
     }
 
-    private function percentageValue(mixed $value): float
+    private function percentageFraction(mixed $value): ?float
     {
-        return $this->percentageFloat($value) / 100;
-    }
-
-    private function percentageFloat(mixed $value): float
-    {
-        $string = $this->plainText($value) ?? '0';
-
-        if (is_numeric($string)) {
-            $numeric = $string + 0;
-
-            return is_finite($numeric) ? $numeric + 0.0 : 0.0;
+        if ($value === null) {
+            return null;
         }
 
-        return 0.0;
+        $string = $this->cleanText($value) ?: '0';
+        if (! is_numeric($string)) {
+            return 0.0;
+        }
+
+        $numeric = $string + 0;
+
+        return is_finite($numeric) ? $numeric / 100 : 0.0;
     }
 
     private function safeCount(mixed $value): int
@@ -705,7 +672,7 @@ class ExecutiveExcelExportService
             return is_finite($value) ? max(0, (int) $value) : 0;
         }
 
-        $string = trim($this->plainText($value) ?? '0');
+        $string = trim($this->cleanText($value) ?: '0');
 
         if ($string === '' || ! is_numeric($string)) {
             return 0;
@@ -714,18 +681,6 @@ class ExecutiveExcelExportService
         $numeric = $string + 0;
 
         return is_finite($numeric) ? max(0, (int) $numeric) : 0;
-    }
-
-    private function pctLabel(mixed $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        $percentage = $this->percentageFloat($value);
-        $sign = $percentage > 0 ? '+' : '';
-
-        return $sign.number_format($percentage, 2).'%';
     }
 
     /** @return array<string, mixed> */

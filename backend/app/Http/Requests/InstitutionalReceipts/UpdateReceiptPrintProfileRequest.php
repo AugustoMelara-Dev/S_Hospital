@@ -132,11 +132,13 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
                 'half_letter_landscape',
                 'a5_landscape',
                 'letter_landscape',
+                'letter_portrait',
+                'a4_portrait',
                 'thermal_80mm',
                 'thermal_58mm',
             ])],
             'orientation' => ['sometimes', 'required', Rule::in(['landscape', 'portrait'])],
-            'template_code' => ['sometimes', 'required', 'string', 'max:80', Rule::in(['institutional_classic'])],
+            'template_code' => ['sometimes', 'required', 'string', 'max:80', Rule::in(['institutional_classic', 'institutional_compact'])],
             'copies_mode' => ['sometimes', 'required', Rule::in(['original_only', 'original_first', 'original_first_second'])],
             'show_copy_legend' => ['sometimes', 'required', 'boolean'],
             'show_physical_seal_space' => ['sometimes', 'required', 'boolean'],
@@ -193,8 +195,8 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
                             $validator->errors()->add('width_mm', 'El ancho personalizado debe estar entre 80 mm y 300 mm.');
                         }
 
-                        if ($height < 50 || $height > 220) {
-                            $validator->errors()->add('height_mm', 'El alto personalizado debe estar entre 50 mm y 220 mm.');
+                        if ($height < 50 || $height > 320) {
+                            $validator->errors()->add('height_mm', 'El alto personalizado debe estar entre 50 mm y 320 mm.');
                         }
                     }
 
@@ -202,6 +204,8 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
                         'half_letter_landscape' => ['width' => 215.90, 'height' => 139.70],
                         'a5_landscape' => ['width' => 210.00, 'height' => 148.00],
                         'letter_landscape' => ['width' => 279.40, 'height' => 215.90],
+                        'letter_portrait' => ['width' => 215.90, 'height' => 279.40],
+                        'a4_portrait' => ['width' => 210.00, 'height' => 297.00],
                     ];
 
                     if (isset($fixedDimensions[$paperKind])) {

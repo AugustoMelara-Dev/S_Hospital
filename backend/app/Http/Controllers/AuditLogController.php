@@ -55,7 +55,10 @@ class AuditLogController extends Controller
             'action' => $log->action,
             'result' => $log->result,
             'reason' => $log->reason,
-            'ip' => $log->ip_address ?? $log->ip,
+            // F015/T2-032: `ip` es la fuente primaria (el backfill rellena el
+            // historico); se mantiene `ip_address` como fallback durante la
+            // ventana de compatibilidad.
+            'ip' => $log->ip ?? $log->ip_address,
             'entity_type' => $log->entity_type,
             'entity_id' => $log->entity_id,
             'created_at' => $log->created_at?->toIso8601String(),

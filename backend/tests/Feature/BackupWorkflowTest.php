@@ -29,7 +29,7 @@ class BackupWorkflowTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
 
-        BackupLog::query()->create([
+        $backup = BackupLog::query()->create([
             'filename' => 'hospital-backup.sql',
             'path' => 'backups/hospital-backup.sql',
             'disk' => 'local',
@@ -40,11 +40,18 @@ class BackupWorkflowTest extends TestCase
             'checksum_sha256' => str_repeat('a', 64),
             'completed_at' => now(),
         ]);
+        $backup->forceFill([
+            'verify_status' => 'verified',
+            'verified_at' => now(),
+        ])->save();
 
         $this->actingAs($admin)
             ->getJson('/api/backups')
             ->assertOk()
             ->assertJsonPath('data.0.creator.username', $admin->username)
+            ->assertJsonPath('data.0.verify_status', 'verified')
+            ->assertJsonPath('data.0.verification_scope', 'encrypted_file_integrity')
+            ->assertJsonPath('data.0.restore_tested', false)
             ->assertJsonMissingPath('data.0.checksum_sha256')
             ->assertJsonMissingPath('data.0.filename')
             ->assertJsonMissingPath('data.0.path')
@@ -161,6 +168,44 @@ class BackupWorkflowTest extends TestCase
             ->assertOk()
             ->assertJsonPath('meta.total', 1)
             ->assertJsonMissingPath('data.0.filename')
+            ->assertJsonPath('data.0.status', BackupLog::STATUS_FAILED);
+    }
+
+    public function test_backup_viewer_receives_global_pending_count_independent_of_filter_and_pagination(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $viewer = User::factory()->create();
+        $viewer->givePermissionTo('backups.view');
+
+        foreach (range(1, 2) as $index) {
+            BackupLog::query()->create([
+                'filename' => "pending-{$index}.sql",
+                'path' => "backups/pending-{$index}.sql",
+                'disk' => 'local',
+                'status' => BackupLog::STATUS_PENDING,
+                'type' => BackupLog::TYPE_MANUAL,
+                'created_by' => $viewer->id,
+            ]);
+            BackupLog::query()->create([
+                'filename' => "failed-{$index}.sql",
+                'path' => "backups/failed-{$index}.sql",
+                'disk' => 'local',
+                'status' => BackupLog::STATUS_FAILED,
+                'type' => BackupLog::TYPE_MANUAL,
+                'created_by' => $viewer->id,
+            ]);
+        }
+
+        $this->assertFalse($viewer->can('system.status.view'));
+        $this->assertFalse($viewer->can('backups.create'));
+
+        $this->actingAs($viewer)
+            ->getJson('/api/backups?status=failed&per_page=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('meta.per_page', 1)
+            ->assertJsonPath('meta.global_pending_count', 2)
             ->assertJsonPath('data.0.status', BackupLog::STATUS_FAILED);
     }
 

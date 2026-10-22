@@ -7,6 +7,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use RuntimeException;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -216,6 +217,11 @@ class RoleManagementTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->userWithRole('admin');
 
+        Permission::query()->firstOrCreate([
+            'name' => 'receipts.void',
+            'guard_name' => 'web',
+        ]);
+
         $this->actingAs($admin)
             ->postJson('/api/admin/roles', [
                 'name' => 'invalid_receipt_void_role',
@@ -325,6 +331,43 @@ class RoleManagementTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('name');
+    }
+
+    public function test_catalog_management_role_includes_read_access_on_create_and_update(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+
+        $created = $this->actingAs($admin)->postJson('/api/admin/roles', [
+            'name' => 'catalog_dependency',
+            'permissions' => ['catalog.manage'],
+        ])->assertCreated()->assertJsonFragment(['name' => 'catalog.view']);
+
+        $id = $created->json('data.id');
+        $this->patchJson("/api/admin/roles/{$id}", [
+            'name' => 'catalog_dependency',
+            'permissions' => ['catalog.manage'],
+        ])->assertOk()->assertJsonFragment(['name' => 'catalog.view']);
+
+        $role = Role::findByName('catalog_dependency', 'web');
+        $this->assertEqualsCanonicalizing(['catalog.manage', 'catalog.view'], $role->permissions->pluck('name')->all());
+    }
+
+    public function test_exact_catalog_management_user_includes_read_access_without_unrelated_permissions(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        Role::findOrCreate('catalog_operator', 'web');
+
+        $this->actingAs($admin)->postJson('/api/admin/users', [
+            'name' => 'Catalogo prueba',
+            'email' => 'catalog-dependency@hospital.local',
+            'username' => 'catalog-dependency',
+            'password' => 'SyntheticPass123!',
+            'role' => 'catalog_operator',
+            'permissions' => ['catalog.manage'],
+            'active' => true,
+        ])->assertCreated()->assertJsonPath('data.permissions', ['catalog.manage', 'catalog.view']);
     }
 
     private function userWithRole(string $role): User

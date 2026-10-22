@@ -23,6 +23,7 @@ use App\Models\User;
 use App\Support\InvoiceAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdfWrapper;
+use Closure;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -316,9 +317,11 @@ class ReportsTest extends TestCase
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
 
         $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
-        Payment::query()
-            ->where('invoice_id', $invoiceId)
-            ->update(['amount' => '99.99']);
+        $this->withLegacyDecimalDriftAllowed(function () use ($invoiceId): void {
+            Payment::query()
+                ->where('invoice_id', $invoiceId)
+                ->update(['amount' => '99.99']);
+        });
 
         $this->actingAs($this->admin())
             ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
@@ -365,12 +368,14 @@ class ReportsTest extends TestCase
             'name' => 'Glucosa Cambiada',
             'category_id' => $newCategory->id,
         ]);
-        Invoice::query()->findOrFail($invoiceId)->items()->update([
-            'quantity' => '9.99',
-            'line_subtotal' => '999.99',
-            'tax_amount' => '999.99',
-            'line_total' => '999.99',
-        ]);
+        $this->withLegacyDecimalDriftAllowed(function () use ($invoiceId): void {
+            Invoice::query()->findOrFail($invoiceId)->items()->update([
+                'quantity' => '9.99',
+                'line_subtotal' => '999.99',
+                'tax_amount' => '999.99',
+                'line_total' => '999.99',
+            ]);
+        });
 
         $this->actingAs($this->supervisor())
             ->getJson('/api/reports/categories?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
@@ -509,8 +514,10 @@ class ReportsTest extends TestCase
             ->id;
 
         $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '69.00');
-        Invoice::query()->whereKey($invoiceId)->update(['total' => '999.99']);
-        Invoice::query()->findOrFail($invoiceId)->items()->update(['line_total' => '999.99']);
+        $this->withLegacyDecimalDriftAllowed(function () use ($invoiceId): void {
+            Invoice::query()->whereKey($invoiceId)->update(['total' => '999.99']);
+            Invoice::query()->findOrFail($invoiceId)->items()->update(['line_total' => '999.99']);
+        });
 
         $this->actingAs($this->admin())
             ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&area_id='.$glucose->area_id)
@@ -581,9 +588,11 @@ class ReportsTest extends TestCase
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
 
         $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
-        Payment::query()
-            ->where('invoice_id', $invoiceId)
-            ->update(['amount' => '99.99']);
+        $this->withLegacyDecimalDriftAllowed(function () use ($invoiceId): void {
+            Payment::query()
+                ->where('invoice_id', $invoiceId)
+                ->update(['amount' => '99.99']);
+        });
 
         $this->actingAs($this->admin())
             ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
@@ -1953,6 +1962,9 @@ class ReportsTest extends TestCase
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        // Financial scenarios use a synthetic tariff and must not inherit production catalog prices.
+        Service::query()->where('name', 'Hemograma Completo')->update(['price' => '10.00']);
+        Service::query()->where('name', 'Eritropoyetina')->update(['price' => '25.00', 'taxable' => false]);
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         FiscalSetting::query()->create([
@@ -2880,5 +2892,28 @@ class ReportsTest extends TestCase
             ->flatten()
             ->map(fn (mixed $permissionName): string => (string) $permissionName)
             ->all());
+    }
+
+    /**
+     * Drift decimal/cents deliberado: estos tests demuestran que los reportes
+     * usan las columnas enteras como fuente financiera aunque las decimales
+     * hayan derivado. En MariaDB el CHECK de coherencia (T2-014) bloquearia el
+     * UPDATE del drift; se suspende su evaluacion SOLO en esta sesion y se
+     * restaura en finally (mismo patron driver-aware de T3-022). Sin DDL: el
+     * DDL provoca commit implicito y romperia el aislamiento de RefreshDatabase.
+     */
+    private function withLegacyDecimalDriftAllowed(Closure $callback): mixed
+    {
+        if (! in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            return $callback();
+        }
+
+        DB::statement('SET SESSION check_constraint_checks = OFF');
+
+        try {
+            return $callback();
+        } finally {
+            DB::statement('SET SESSION check_constraint_checks = ON');
+        }
     }
 }

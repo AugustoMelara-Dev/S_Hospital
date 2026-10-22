@@ -10,9 +10,18 @@
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+            <exclude>tests/Feature/Concurrent</exclude>
         </testsuite>
         <testsuite name="Coverage">
             <directory>tests/Coverage</directory>
+        </testsuite>
+        <testsuite name="Concurrent">
+            <directory>tests/Feature/Concurrent</directory>
+        </testsuite>
+        <!-- COORD-14 (2026-09-17): paridad con phpunit.xml. Antes el job MariaDB
+             omitía por completo las pruebas de consola. -->
+        <testsuite name="Console">
+            <directory>tests/Console</directory>
         </testsuite>
     </testsuites>
     <source>

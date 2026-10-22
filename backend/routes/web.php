@@ -33,7 +33,7 @@ $frontendResponse = function () {
 
     if (! File::isFile($indexPath)) {
         return response(
-            'Frontend build missing. Run npm.cmd run build in frontend/ before production LAN validation.',
+            'S_Hospital no está disponible. Vuelva a abrir la aplicación. Si el problema continúa, solicite revisar la instalación.',
             503,
             ['Content-Type' => 'text/plain; charset=UTF-8'],
         );

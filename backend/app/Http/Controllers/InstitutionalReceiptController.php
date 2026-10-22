@@ -27,6 +27,19 @@ class InstitutionalReceiptController extends Controller
         ], 201);
     }
 
+    /**
+     * GET  /institutional-receipts/{receipt}/pdf          : view/download (read-only).
+     * GET  /institutional-receipts/{receipt}/pdf?preview=1: HTML preview (no print event).
+     * POST /institutional-receipts/{receipt}/pdf          : document request. Before the
+     *   first recorded print it is a first-print request (reason optional); after a
+     *   recorded print it is a reprint request and requires `receipts.reprint` plus a
+     *   human reason 5-500. A reprint recorded through this route durably increments
+     *   institutional_receipts.reprint_count and stores a `reprint` event, exactly
+     *   like POST /print-events, so there is a single persistent reprint number.
+     *
+     * None of these responses records a print event or proves physical paper output;
+     * the print-event endpoint is the logical delivery record.
+     */
     public function pdf(
         Request $request,
         InstitutionalReceipt $receipt,
@@ -47,10 +60,14 @@ class InstitutionalReceiptController extends Controller
             ]);
         }
 
+        $isReprintRequest = $request->isMethod('POST');
+
         $pdf = $pdfService->pdfForAuthorizedReceipt(
             $receipt,
             $user,
             $invoiceAccess,
+            $isReprintRequest ? $this->reprintReason($request) : null,
+            $isReprintRequest,
         );
 
         $filename = $this->safePdfFilename($receipt->receipt_number_full);
@@ -88,10 +105,6 @@ class InstitutionalReceiptController extends Controller
 
     private function reprintReason(Request $request): ?string
     {
-        if ($request->isMethod('GET')) {
-            return null;
-        }
-
         $reason = trim($request->string('reason')->toString());
 
         return $reason === '' ? null : $reason;

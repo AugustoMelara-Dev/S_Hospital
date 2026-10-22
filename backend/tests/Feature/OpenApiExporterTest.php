@@ -29,6 +29,7 @@ class OpenApiExporterTest extends TestCase
 
         $this->assertArrayHasKey('/api/health', $paths);
         $this->assertArrayHasKey('/api/system/health', $paths);
+        $this->assertArrayHasKey('/api/system/health/detail', $paths);
         $this->assertArrayHasKey('/api/auth/login', $paths);
     }
 
@@ -38,6 +39,14 @@ class OpenApiExporterTest extends TestCase
 
         $this->assertSame([], $document['paths']['/api/health']['get']['security']);
         $this->assertSame([], $document['paths']['/api/system/health']['get']['security']);
+    }
+
+    public function test_operational_endpoints_carry_security(): void
+    {
+        $document = app(OpenApiExporter::class)->document(app('router'));
+
+        $this->assertNotEmpty($document['paths']['/api/system/health/detail']['get']['security']);
+        $this->assertNotEmpty($document['paths']['/api/system/setup-status']['get']['security']);
     }
 
     public function test_authenticated_endpoints_carry_security(): void

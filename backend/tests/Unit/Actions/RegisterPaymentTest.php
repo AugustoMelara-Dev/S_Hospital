@@ -91,6 +91,10 @@ class RegisterPaymentTest extends TestCase
             'balance_due' => '115.00',
             'balance_due_cents' => 11500,
             'status' => Invoice::STATUS_ISSUED,
+            // Las facturas se crean con caja abierta (CreateInvoiceAction);
+            // el fixture debe reflejarlo para no violar el CHECK MariaDB
+            // invoices_paid_requires_cash_session al pasar a partial/paid.
+            'cash_session_id' => $this->session->id,
             'issued_by' => $this->cashier->id,
             'issued_at' => now(),
         ]);

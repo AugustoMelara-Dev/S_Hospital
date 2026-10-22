@@ -14,7 +14,7 @@ class OpenCashSessionActionConcurrencyTest extends TestCase
         $source = file_get_contents(app_path('Actions/Cash/OpenCashSessionAction.php'));
 
         $this->assertIsString($source);
-        $namedLockPosition = strpos($source, '$lockAcquired = $this->acquireOpenSessionLock()');
+        $namedLockPosition = strpos($source, '$lockAcquired = $this->acquireOpenSessionLock($registerId)');
         $userLockPosition = strpos($source, 'User::query()');
         $sessionCheckPosition = strpos($source, '$alreadyOpen = CashRegisterSession::query()');
 
@@ -26,6 +26,7 @@ class OpenCashSessionActionConcurrencyTest extends TestCase
         $this->assertStringContainsString('GET_LOCK', $source);
         $this->assertStringContainsString('RELEASE_LOCK', $source);
         $this->assertStringContainsString('->lockForUpdate()', $source);
+        $this->assertStringContainsString("->where('cash_register_id', \$registerId)", $source);
     }
 
     public function test_cash_open_concurrency_database_codes_are_treated_as_functional_validation(): void

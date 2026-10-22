@@ -325,6 +325,9 @@ class InvoiceReverseTest extends TestCase
     private function seedBillingBase(bool $partialPayments = false, bool $createInstitutionalReceiptSeries = false): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class, ReceiptPrintProfileSeeder::class]);
+        // Financial scenarios use a synthetic tariff and must not inherit production catalog prices.
+        Service::query()->where('name', 'Hemograma Completo')->update(['price' => '10.00']);
+        Service::query()->where('name', 'Eritropoyetina')->update(['price' => '25.00', 'taxable' => false]);
         FiscalSetting::query()->create([
             'receipt_template_mode' => $createInstitutionalReceiptSeries ? 'institutional' : 'thermal',
             'hospital_name' => 'Hospital San Isidro',

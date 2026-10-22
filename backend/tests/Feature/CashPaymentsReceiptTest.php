@@ -13,11 +13,14 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use Closure;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class CashPaymentsReceiptTest extends TestCase
@@ -1051,7 +1054,10 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.width', 'half_letter')
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
             ->assertJsonPath('data.invoice.paid_amount', '17.25')
-            ->assertJsonPath('data.invoice.balance_due', '0.00');
+            ->assertJsonPath('data.invoice.balance_due', '0.00')
+            // T3-004: la vista/primera impresion informa el contador durable del
+            // path legacy (0) y no lo incrementa.
+            ->assertJsonPath('data.legacy_reprint_count', 0);
 
         $audit = AuditLog::query()
             ->where('action', 'receipt.viewed')
@@ -1073,6 +1079,7 @@ class CashPaymentsReceiptTest extends TestCase
             'status' => Invoice::STATUS_PAID,
             'paid_amount' => '17.25',
             'balance_due' => '0.00',
+            'legacy_reprint_count' => 0,
         ]);
     }
 
@@ -1094,18 +1101,22 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertCreated()
             ->json('data.payment.id');
 
-        Payment::query()
-            ->whereKey($paymentId)
-            ->update(['amount' => '99.99']);
-        Invoice::query()
-            ->whereKey($invoiceId)
-            ->update(['total' => '99.99']);
+        // T3-022: drift decimal deliberado; ver withLegacyDecimalDriftAllowed().
+        $response = $this->withLegacyDecimalDriftAllowed(function () use ($paymentId, $invoiceId, $supervisor): TestResponse {
+            Payment::query()
+                ->whereKey($paymentId)
+                ->update(['amount' => '99.99']);
+            Invoice::query()
+                ->whereKey($invoiceId)
+                ->update(['total' => '99.99']);
 
-        $this->actingAs($supervisor)
-            ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
-                'reason' => 'Correccion de monto en caja',
-            ])
-            ->assertOk()
+            return $this->actingAs($supervisor)
+                ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
+                    'reason' => 'Correccion de monto en caja',
+                ]);
+        });
+
+        $response->assertOk()
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_ISSUED)
             ->assertJsonPath('data.invoice.paid_amount', '0.00')
             ->assertJsonPath('data.invoice.balance_due', '17.25');
@@ -1135,20 +1146,24 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertCreated()
             ->json('data.payment.id');
 
-        Payment::query()
-            ->whereKey($paymentId)
-            ->update(['amount' => '99.99']);
-        Invoice::query()
-            ->whereKey($invoiceId)
-            ->update([
-                'total' => '99.99',
-                'paid_amount' => '99.99',
-                'balance_due' => '99.99',
-            ]);
+        // T3-022: drift decimal deliberado; ver withLegacyDecimalDriftAllowed().
+        $response = $this->withLegacyDecimalDriftAllowed(function () use ($paymentId, $invoiceId, $cashier): TestResponse {
+            Payment::query()
+                ->whereKey($paymentId)
+                ->update(['amount' => '99.99']);
+            Invoice::query()
+                ->whereKey($invoiceId)
+                ->update([
+                    'total' => '99.99',
+                    'paid_amount' => '99.99',
+                    'balance_due' => '99.99',
+                ]);
 
-        $this->actingAs($cashier)
-            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
-            ->assertOk()
+            return $this->actingAs($cashier)
+                ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter");
+        });
+
+        $response->assertOk()
             ->assertJsonPath('data.invoice.total', '17.25')
             ->assertJsonPath('data.invoice.paid_amount', '17.25')
             ->assertJsonPath('data.invoice.balance_due', '0.00')
@@ -1324,7 +1339,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.institutional.paper_size', '80mm');
     }
 
-    public function test_zero_total_dialysis_prescription_invoice_creates_zero_payment_trace_without_cash_movement(): void
+    public function test_zero_total_dialysis_prescription_invoice_is_emitted_without_charge_and_without_payment(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
@@ -1344,6 +1359,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.total', '0.00')
             ->assertJsonPath('data.balance_due', '0.00')
             ->assertJsonPath('data.status', Invoice::STATUS_PAID)
+            ->assertJsonPath('data.settlement', Invoice::SETTLEMENT_FREE_BY_RULE)
             ->json('data.id');
 
         $this->actingAs($cashier)
@@ -1352,24 +1368,16 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.invoice.total', '0.00')
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
             ->assertJsonPath('data.items.0.special_rule_applied', true)
-            ->assertJsonCount(1, 'data.payments')
-            ->assertJsonPath('data.payments.0.method', Payment::METHOD_OTHER)
-            ->assertJsonPath('data.payments.0.amount', '0.00')
-            ->assertJsonPath('data.payments.0.reference', 'Receta dialisis: factura sin cobro')
-            ->assertJsonPath('data.payments.0.cashier', $cashier->name);
+            ->assertJsonCount(0, 'data.payments');
 
-        $this->assertDatabaseHas('payments', [
-            'invoice_id' => $invoiceId,
-            'cash_session_id' => CashRegisterSession::query()->where('user_id', $cashier->id)->value('id'),
-            'user_id' => $cashier->id,
-            'method' => Payment::METHOD_OTHER,
-            'amount' => '0.00',
-            'amount_cents' => 0,
-            'reference' => 'Receta dialisis: factura sin cobro',
-            'status' => Payment::STATUS_POSTED,
-        ]);
-        $this->assertNotNull(Payment::query()->where('invoice_id', $invoiceId)->value('paid_at'));
+        // MANDATO_DEV §8: la emision sin cobro no crea cobro ficticio.
+        $this->assertDatabaseMissing('payments', ['invoice_id' => $invoiceId]);
         $this->assertDatabaseHas('audit_logs', [
+            'action' => 'invoice.issued_without_charge',
+            'entity_type' => Invoice::class,
+            'entity_id' => $invoiceId,
+        ]);
+        $this->assertDatabaseMissing('audit_logs', [
             'action' => 'invoice.zero_amount_registered',
             'entity_type' => Invoice::class,
             'entity_id' => $invoiceId,
@@ -1377,13 +1385,12 @@ class CashPaymentsReceiptTest extends TestCase
         $this->assertDatabaseMissing('cash_movements', [
             'type' => CashMovement::TYPE_PAYMENT,
             'method' => Payment::METHOD_OTHER,
-            'amount' => '0.00',
         ]);
 
         $this->actingAs($cashier)
             ->getJson('/api/cash-sessions/current')
             ->assertOk()
-            ->assertJsonPath('data.payments_count', 1)
+            ->assertJsonPath('data.payments_count', 0)
             ->assertJsonPath('data.payments_total', '0.00')
             ->assertJsonPath('data.payments_by_method.other', '0.00')
             ->assertJsonPath('data.expected_cash_amount', '0.00');
@@ -1433,9 +1440,48 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.payments.0.cashier', 'Supervisor Caja');
     }
 
+    /**
+     * T3-022: estos tests inyectan a proposito un drift decimal legacy
+     * (`amount`/`total` <> cents/100) para probar que el dominio usa las
+     * columnas enteras como fuente financiera. En MariaDB el CHECK
+     * `payments_amount_cents_coherence` (T2-014) rechaza ese UPDATE y el
+     * escenario no puede ejercerse con el esquema tal cual.
+     *
+     * Para reproducir el estado legacy sin DDL (un ALTER TABLE provocaria
+     * commit implicito y romperia el aislamiento de RefreshDatabase) se
+     * desactiva `check_constraint_checks` solo en la sesion de pruebas y se
+     * restaura en finally. El CHECK sigue instalado; su rechazo esta cubierto
+     * por MonetaryCoherenceConstraintsTest.
+     *
+     * @template T
+     *
+     * @param  Closure(): T  $callback
+     * @return T
+     */
+    private function withLegacyDecimalDriftAllowed(Closure $callback): mixed
+    {
+        $connection = DB::connection();
+
+        if (! in_array($connection->getDriverName(), ['mysql', 'mariadb'], true)) {
+            // SQLite no instala estos CHECK (no soporta ALTER TABLE ADD CONSTRAINT).
+            return $callback();
+        }
+
+        $connection->statement('SET SESSION check_constraint_checks = OFF');
+
+        try {
+            return $callback();
+        } finally {
+            $connection->statement('SET SESSION check_constraint_checks = ON');
+        }
+    }
+
     private function seedBillingBase(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        // Financial scenarios use a synthetic tariff and must not inherit production catalog prices.
+        Service::query()->where('name', 'Hemograma Completo')->update(['price' => '10.00']);
+        Service::query()->where('name', 'Eritropoyetina')->update(['price' => '25.00', 'taxable' => false]);
         FiscalSetting::query()->create([
             'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital San Isidro',

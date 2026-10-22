@@ -14,6 +14,8 @@ class OfflineCheckConstraintsMigrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected static bool $resetSchemaAfterDdl = true;
+
     public function test_constraints_migration_is_no_op_on_sqlite(): void
     {
         $this->seedBillingBase();

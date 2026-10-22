@@ -105,6 +105,28 @@ class HealthCheckTest extends TestCase
         $this->assertStringContainsString('X-S-Hospital-Paper-Size-Warning', $actualResponse->headers->get('Access-Control-Expose-Headers', ''));
     }
 
+    public function test_public_health_endpoint_returns_liveness_only(): void
+    {
+        $response = $this->getJson('/api/system/health');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ok')
+            ->assertJsonPath('data.service', 'Sistema de Caja Hospitalaria')
+            ->assertJsonStructure(['data' => ['status', 'service', 'version']])
+            ->assertJsonMissingPath('data.database')
+            ->assertJsonMissingPath('data.queue')
+            ->assertJsonMissingPath('data.backups')
+            ->assertJsonMissingPath('data.storage')
+            ->assertJsonMissingPath('data.recent_errors')
+            ->assertJsonMissingPath('score');
+    }
+
+    public function test_operational_health_detail_requires_authentication(): void
+    {
+        $this->getJson('/api/system/health/detail')->assertUnauthorized();
+    }
+
     public function test_health_endpoint_has_rate_limit_applied(): void
     {
         $routes = app('router')->getRoutes();
@@ -124,17 +146,33 @@ class HealthCheckTest extends TestCase
         $this->assertNotNull($upRoute, 'api/health route must exist');
         $this->assertContains('throttle:public-read', $healthRoute->middleware(), 'api/system/health must use the isolated public-read bucket');
         $this->assertContains('throttle:public-read', $upRoute->middleware(), 'api/health must use the isolated public-read bucket');
+
+        $detailRoute = collect($routes)->first(fn ($candidate): bool => $candidate->uri() === 'api/system/health/detail');
+        $this->assertNotNull($detailRoute, 'api/system/health/detail route must exist');
+        $this->assertContains('auth:web', $detailRoute->gatherMiddleware(), 'detail health must require authentication');
+        $this->assertNotContains('throttle:public-read', $detailRoute->middleware(), 'detail health must not use the anonymous bucket');
     }
 
     public function test_public_operational_routes_do_not_start_sessions(): void
     {
-        foreach (['api/health', 'api/system/health', 'api/system/echo-config', 'api/system/csp-report'] as $uri) {
+        foreach (['api/health', 'api/system/health', 'api/system/csp-report'] as $uri) {
             $route = collect(app('router')->getRoutes())
                 ->first(fn ($candidate): bool => $candidate->uri() === $uri);
 
             $this->assertNotNull($route, "{$uri} route must exist");
             $this->assertNotContains(EnsureFrontendRequestsAreStateful::class, $route->gatherMiddleware(), "{$uri} must not rotate SPA session cookies.");
             $this->assertNotContains(StartSession::class, $route->gatherMiddleware(), "{$uri} must not start session storage.");
+        }
+    }
+
+    public function test_authenticated_bootstrap_routes_start_sessions(): void
+    {
+        foreach (['api/system/echo-config', 'api/system/setup-status', 'api/system/health/detail'] as $uri) {
+            $route = collect(app('router')->getRoutes())
+                ->first(fn ($candidate): bool => $candidate->uri() === $uri);
+
+            $this->assertNotNull($route, "{$uri} route must exist");
+            $this->assertContains('auth:web', $route->gatherMiddleware(), "{$uri} must require an authenticated session");
         }
     }
 }

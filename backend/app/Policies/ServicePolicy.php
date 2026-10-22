@@ -16,12 +16,12 @@ class ServicePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('catalog.view');
+        return $user->canAny(['catalog.view', 'catalog.manage']);
     }
 
     public function view(User $user, Service $service): bool
     {
-        return $user->can('catalog.view');
+        return $user->canAny(['catalog.view', 'catalog.manage']);
     }
 
     public function create(User $user): bool

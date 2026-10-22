@@ -14,6 +14,9 @@
         <testsuite name="Coverage">
             <directory>tests/Coverage</directory>
         </testsuite>
+        <testsuite name="Console">
+            <directory>tests/Console</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

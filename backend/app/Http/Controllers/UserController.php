@@ -15,6 +15,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 use Spatie\Permission\Models\Permission;
@@ -87,41 +89,45 @@ class UserController extends Controller
     {
         $validated = $request->validated();
         $actor = $this->authenticatedUser($request);
-        $oldValues = $this->auditPayload($user->load(['roles', 'permissions']));
         $role = $request->string('role')->toString();
         $attributes = [
             'name' => $request->string('name')->toString(),
             'email' => $request->string('email')->toString(),
             'username' => $request->string('username')->toString(),
         ];
-        $this->assertCanAssignRole($actor, $role, $user);
-        $this->assertProtectedUserCanChangeToRole($user, $role);
         $directPermissions = $this->directPermissionsFromRequest($request, $validated);
-        $this->assertCanSyncDirectPermissions($actor, $user, $directPermissions);
-        $this->assertActiveExactPermissionMapHasAccess($directPermissions, $user->active);
+        DB::transaction(function () use ($user, $attributes, $role, $directPermissions, $auditLogger, $request, $actor): void {
+            $this->lockProtectedRoleGuard();
+            $lockedUser = User::query()->with(['roles', 'permissions'])->lockForUpdate()->findOrFail($user->id);
+            $oldValues = $this->auditPayload($lockedUser);
+            $this->assertCanAssignRole($actor, $role, $lockedUser);
+            $this->assertProtectedUserCanChangeToRole($lockedUser, $role);
+            $this->assertCanSyncDirectPermissions($actor, $lockedUser, $directPermissions);
+            $this->assertActiveExactPermissionMapHasAccess($directPermissions, $lockedUser->active);
 
-        DB::transaction(function () use ($user, $attributes, $role, $directPermissions, $auditLogger, $request, $oldValues, $actor): void {
-            $user->update($attributes);
+            $lockedUser->update($attributes);
 
-            if (! $user->hasRole($role)) {
-                $user->syncRoles([$role]);
+            if (! $lockedUser->hasRole($role)) {
+                $lockedUser->syncRoles([$role]);
             }
 
             if ($directPermissions !== null) {
-                $user->syncPermissions($this->directPermissionsForExactAccess($directPermissions));
+                $lockedUser->syncPermissions($this->directPermissionsForExactAccess($directPermissions));
             }
 
-            $user->load(['roles', 'permissions']);
+            $lockedUser->load(['roles', 'permissions']);
 
             $auditLogger->log(
                 action: 'user.updated',
-                entity: $user,
+                entity: $lockedUser,
                 user: $actor,
                 request: $request,
                 oldValues: $oldValues,
-                newValues: $this->auditPayload($user),
+                newValues: $this->auditPayload($lockedUser),
             );
         });
+
+        $user->refresh()->load(['roles', 'permissions']);
 
         return response()->json([
             'data' => $this->transformUser($user),
@@ -131,42 +137,46 @@ class UserController extends Controller
     public function toggleActive(ToggleUserActiveRequest $request, User $user, AuditLogger $auditLogger): JsonResponse
     {
         $actor = $this->authenticatedUser($request);
-        $oldValues = $this->auditPayload($user->loadMissing(['roles', 'permissions']));
-        $newActiveState = ! $user->active;
         $reason = $request->string('reason')->trim()->toString();
-        if (! $newActiveState) {
-            $this->assertProtectedUserCanBeDeactivated($user);
-        }
 
-        if ($newActiveState) {
-            $this->assertActiveExactPermissionMapHasAccess(
-                $user->usesExactDirectPermissionMap()
-                    ? array_values($this->visibleDirectPermissionNames($user)->all())
-                    : null,
-                true,
-            );
-        }
+        DB::transaction(function () use ($user, $auditLogger, $request, $reason, $actor): void {
+            $this->lockProtectedRoleGuard();
+            $lockedUser = User::query()->with(['roles', 'permissions'])->lockForUpdate()->findOrFail($user->id);
+            $oldValues = $this->auditPayload($lockedUser);
+            $newActiveState = ! $lockedUser->active;
 
-        DB::transaction(function () use ($user, $newActiveState, $auditLogger, $request, $oldValues, $reason, $actor): void {
-            $user->update([
+            if (! $newActiveState) {
+                $this->assertProtectedUserCanBeDeactivated($lockedUser);
+            } else {
+                $this->assertActiveExactPermissionMapHasAccess(
+                    $lockedUser->usesExactDirectPermissionMap()
+                        ? array_values($this->visibleDirectPermissionNames($lockedUser)->all())
+                        : null,
+                    true,
+                );
+            }
+
+            $lockedUser->update([
                 'active' => $newActiveState,
                 'deactivated_at' => $newActiveState ? null : now(),
             ]);
             if (! $newActiveState) {
-                $user->tokens()->delete();
+                $lockedUser->tokens()->delete();
             }
-            $user->load(['roles', 'permissions']);
+            $lockedUser->load(['roles', 'permissions']);
 
             $auditLogger->log(
-                action: $user->active ? 'user.activated' : 'user.deactivated',
-                entity: $user,
+                action: $lockedUser->active ? 'user.activated' : 'user.deactivated',
+                entity: $lockedUser,
                 user: $actor,
                 request: $request,
                 oldValues: $oldValues,
-                newValues: $this->auditPayload($user),
+                newValues: $this->auditPayload($lockedUser),
                 reason: $reason === '' ? null : $reason,
             );
         });
+
+        $user->refresh()->load(['roles', 'permissions']);
 
         return response()->json([
             'data' => $this->transformUser($user),
@@ -184,8 +194,12 @@ class UserController extends Controller
             $user->forceFill([
                 'password' => Hash::make($password),
                 'must_change_password' => true,
+                'remember_token' => Str::random(60),
             ])->save();
             $user->tokens()->delete();
+            if (Schema::hasTable('sessions')) {
+                DB::table('sessions')->where('user_id', $user->id)->delete();
+            }
             $user->load(['roles', 'permissions']);
 
             $auditLogger->log(
@@ -194,7 +208,7 @@ class UserController extends Controller
                 user: $actor,
                 request: $request,
                 oldValues: $oldValues,
-                newValues: ['must_change_password' => true],
+                newValues: ['must_change_password' => true, 'sessions_revoked' => true],
                 reason: $reason,
             );
         });
@@ -302,6 +316,16 @@ class UserController extends Controller
         }
     }
 
+    private function lockProtectedRoleGuard(): void
+    {
+        Role::query()
+            ->where('guard_name', 'web')
+            ->whereIn(DB::raw('LOWER(name)'), RoleCatalog::protectedRoleNames())
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+    }
+
     private function isElevatedRole(string $role): bool
     {
         return RoleCatalog::isElevatedRoleName($role) || $this->roleContainsElevatedPermissions($role);
@@ -370,7 +394,7 @@ class UserController extends Controller
             $permissionNames[] = $permission;
         }
 
-        return array_values(collect($permissionNames)
+        return array_values(collect(RoleCatalog::withDependencies($permissionNames))
             ->map(fn (string $permission): string => $permission)
             ->pipe(fn (Collection $permissions): Collection => VisiblePermissions::rejectHidden($permissions))
             ->sort()

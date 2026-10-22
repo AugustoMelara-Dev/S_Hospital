@@ -12,8 +12,6 @@ use Illuminate\Validation\Validator;
 
 class UpdateServiceRequest extends FormRequest
 {
-    private const ERYTHROPOIETIN_PRICE_CENTS = 2500;
-
     protected function prepareForValidation(): void
     {
         if (is_array($this->input('aliases'))) {
@@ -124,7 +122,6 @@ class UpdateServiceRequest extends FormRequest
 
                 $this->validateInstitutionalRuleAssignment($validator, $service);
                 $this->validateErythropoietinRuleIntegrity($validator, $service);
-                $this->validateErythropoietinFixedPrice($validator, $service);
                 $this->validateGlobalCodes($validator, $service);
             },
         ];
@@ -148,41 +145,9 @@ class UpdateServiceRequest extends FormRequest
     {
         $serviceHasRule = $service->special_rule_code === Service::ERYTHROPOIETIN_RULE;
         $requestedRule = $this->requestedSpecialRuleCode($service);
-        $usesRule = $serviceHasRule || $requestedRule === Service::ERYTHROPOIETIN_RULE;
 
         if ($serviceHasRule && $requestedRule !== Service::ERYTHROPOIETIN_RULE) {
             $validator->errors()->add('special_rule_code', 'No se puede retirar la regla de Eritropoyetina.');
-        }
-
-        $requestedTaxable = $this->has('taxable')
-            ? $this->boolean('taxable')
-            : (bool) $service->taxable;
-
-        if ($usesRule && $requestedTaxable) {
-            $validator->errors()->add('taxable', 'Eritropoyetina debe mantenerse sin impuesto.');
-        }
-    }
-
-    private function validateErythropoietinFixedPrice(Validator $validator, Service $service): void
-    {
-        if ($validator->errors()->has('price')) {
-            return;
-        }
-
-        $specialRuleCode = $service->special_rule_code === Service::ERYTHROPOIETIN_RULE
-            ? Service::ERYTHROPOIETIN_RULE
-            : $this->requestedSpecialRuleCode($service);
-
-        if ($specialRuleCode !== Service::ERYTHROPOIETIN_RULE) {
-            return;
-        }
-
-        $price = $this->has('price')
-            ? $this->string('price')->toString()
-            : (string) $service->price;
-
-        if (Money::parseCents($price, 'price') !== self::ERYTHROPOIETIN_PRICE_CENTS) {
-            $validator->errors()->add('price', 'Eritropoyetina debe mantener precio fijo de L.25.00.');
         }
     }
 

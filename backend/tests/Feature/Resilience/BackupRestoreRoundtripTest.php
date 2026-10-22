@@ -21,6 +21,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -38,6 +39,15 @@ class BackupRestoreRoundtripTest extends TestCase
 
     public function test_sqlite_backup_encrypts_table_ddl_and_data_for_critical_tables(): void
     {
+        // Intencion del test: validar el dump SQLite en memoria, que es el
+        // unico que emite `BEGIN TRANSACTION`/`COMMIT` (ver
+        // DatabaseDumpWriter::dumpSqliteMemoryDatabase). En MariaDB/MySQL el
+        // writer toma la ruta mysqldump, cubierta por
+        // test_database_dump_writer_emits_complete_schema_for_mysql_simulation.
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            $this->markTestSkipped('Dump SQLite especifico: en MariaDB/MySQL el writer usa mysqldump (ver test_database_dump_writer_emits_complete_schema_for_mysql_simulation).');
+        }
+
         $this->seedBillingBase();
         $this->seedCriticalData();
 

@@ -4,6 +4,19 @@ namespace App\Support;
 
 class RoleCatalog
 {
+    /**
+     * @param  list<string>  $permissions
+     * @return list<string>
+     */
+    public static function withDependencies(array $permissions): array
+    {
+        if (in_array('catalog.manage', $permissions, true)) {
+            $permissions[] = 'catalog.view';
+        }
+
+        return array_values(array_unique($permissions));
+    }
+
     private const PROTECTED_ROLES = ['admin', 'root'];
 
     private const ELEVATED_ROLES = ['supervisor', 'auditor'];
@@ -25,7 +38,6 @@ class RoleCatalog
         'receipt_settings.advanced',
         'receipt_settings.update',
         'receipts.reprint_any',
-        'receipts.void',
         'reports.export',
         'reports.managerial.view',
         'settings.fiscal.update',
@@ -47,7 +59,6 @@ class RoleCatalog
         'receipt_settings.advanced' => 'Permite usar soporte tecnico de impresion.',
         'receipt_settings.update' => 'Permite cambiar recibos y series.',
         'receipts.reprint_any' => 'Permite reimprimir recibos de otros cajeros.',
-        'receipts.void' => 'Permite anular recibos.',
         'reports.export' => 'Permite exportar reportes operativos.',
         'reports.managerial.view' => 'Permite ver reportes ejecutivos.',
         'settings.fiscal.update' => 'Permite cambiar configuracion fiscal.',

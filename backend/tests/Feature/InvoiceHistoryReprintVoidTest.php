@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\Billing\CreateInvoiceAction;
 use App\Actions\Billing\VoidInvoiceAction;
 use App\Actions\Cash\OpenCashSessionAction;
+use App\Actions\Receipts\ReprintReceiptAction;
 use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
@@ -20,6 +21,7 @@ use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -204,14 +206,104 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertJsonPath('data.receipt.width', 'half_letter')
             ->assertJsonPath('data.receipt.items.0.service_name', 'Glucosa')
             ->assertJsonPath('data.receipt.items.0.unit_price', '15.00')
-            ->assertJsonPath('data.audit.action', 'invoice.reprinted');
+            ->assertJsonPath('data.receipt.institutional.copy_label', 'REIMPRESIÓN #1')
+            ->assertJsonPath('data.receipt.legacy_reprint_count', 1)
+            ->assertJsonPath('data.audit.action', 'invoice.reprinted')
+            ->assertJsonPath('data.audit.legacy_reprint_count', 1);
 
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'legacy_reprint_count' => 1,
+        ]);
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $cashier->id,
             'action' => 'invoice.reprinted',
             'entity_type' => Invoice::class,
             'entity_id' => $invoiceId,
         ]);
+    }
+
+    public function test_legacy_reprint_action_increments_the_durable_counter_and_keeps_the_snapshot(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoice = Invoice::query()->findOrFail($this->createInvoice($cashier, 'Maria Lopez', 'Glucosa'));
+        Service::query()->where('name', 'Glucosa')->update(['name' => 'Glucosa Cambiada', 'price' => '99.00']);
+
+        $first = app(ReprintReceiptAction::class)->execute($invoice, $cashier, 'half_letter', 'Primera copia solicitada');
+        $second = app(ReprintReceiptAction::class)->execute($invoice->fresh(), $cashier, 'half_letter', 'Segunda copia solicitada');
+
+        $this->assertSame('REIMPRESIÓN #1', $first['receipt']['institutional']['copy_label']);
+        $this->assertSame('REIMPRESIÓN #2', $second['receipt']['institutional']['copy_label']);
+        $this->assertSame(1, $first['receipt']['legacy_reprint_count']);
+        $this->assertSame(2, $second['receipt']['legacy_reprint_count']);
+        $this->assertSame(1, $first['audit']['legacy_reprint_count']);
+        $this->assertSame(2, $second['audit']['legacy_reprint_count']);
+
+        // Snapshot financiero intacto: el catalogo cambio y el recibo no.
+        $this->assertSame('Glucosa', $second['receipt']['items'][0]['service_name']);
+        $this->assertSame('15.00', $second['receipt']['items'][0]['unit_price']);
+        $this->assertSame('17.25', $second['receipt']['invoice']['total']);
+        $this->assertSame('0.00', $second['receipt']['invoice']['paid_amount']);
+        $this->assertSame('17.25', $second['receipt']['invoice']['balance_due']);
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'legacy_reprint_count' => 2,
+            'subtotal' => '15.00',
+            'total' => '17.25',
+        ]);
+    }
+
+    public function test_legacy_reprint_preserves_the_invoice_issued_at(): void
+    {
+        // M-W2-RCP-04: en MariaDB con explicit_defaults_for_timestamp=0 el UPDATE
+        // de legacy_reprint_count reescribia issued_at; la accion ahora lo restaura.
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoice = Invoice::query()->findOrFail($this->createInvoice($cashier, 'Maria Lopez', 'Glucosa'));
+
+        $issuedAt = now()->subDays(30)->startOfSecond()->format('Y-m-d H:i:s');
+        Invoice::query()->whereKey($invoice->id)->update(['issued_at' => $issuedAt]);
+
+        app(ReprintReceiptAction::class)->execute(
+            $invoice->fresh(),
+            $cashier,
+            'half_letter',
+            'Copia solicitada por el paciente',
+        );
+
+        $fresh = Invoice::query()->findOrFail($invoice->id);
+        $this->assertSame(1, (int) $fresh->legacy_reprint_count);
+        $this->assertSame(
+            $issuedAt,
+            (string) DB::table('invoices')->where('id', $invoice->id)->value('issued_at'),
+            'Legacy reprint must not rewrite invoices.issued_at',
+        );
+    }
+
+    public function test_sqlite_driver_does_not_reproduce_the_implicit_issued_at_rewrite(): void
+    {
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            $this->markTestSkipped('Control de driver: el defecto real solo ocurre en MariaDB.');
+        }
+
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoice = Invoice::query()->findOrFail($this->createInvoice($cashier, 'Maria Lopez', 'Glucosa'));
+
+        $issuedAt = now()->subDays(30)->startOfSecond()->format('Y-m-d H:i:s');
+        Invoice::query()->whereKey($invoice->id)->update(['issued_at' => $issuedAt]);
+
+        // UPDATE sin asignar issued_at: SQLite lo conserva (no hay ON UPDATE
+        // implicito), por eso la prueba con poder es la de MariaDB.
+        DB::table('invoices')->where('id', $invoice->id)->update(['legacy_reprint_count' => 7]);
+
+        $this->assertSame(
+            $issuedAt,
+            (string) DB::table('invoices')->where('id', $invoice->id)->value('issued_at'),
+            'SQLite has no implicit ON UPDATE; the MariaDB probe is the meaningful red test',
+        );
     }
 
     public function test_reprint_uses_invoice_fiscal_snapshot_after_settings_change(): void
@@ -652,44 +744,124 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
     }
 
-    public function test_receipt_shows_original_label_and_reprint_label_increments_per_call(): void
+    public function test_receipt_view_reports_the_durable_counter_and_legacy_reprints_are_numbered_from_it(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
         $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
 
+        // GET (vista / primera impresion): informa el contador durable sin
+        // incrementarlo y sin etiqueta de reimpresion.
         $this->actingAs($cashier)
             ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
             ->assertOk()
+            ->assertJsonPath('data.institutional.copy_label', 'Original')
+            ->assertJsonPath('data.legacy_reprint_count', 0);
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'legacy_reprint_count' => 0,
+        ]);
+        $this->assertSame(0, AuditLog::query()
+            ->where('entity_type', Invoice::class)
+            ->where('entity_id', $invoiceId)
+            ->where('action', 'invoice.reprinted')
+            ->count());
+
+        foreach ([
+            'Recibo original danado por impresora' => 1,
+            'Segunda reimpresion por peticion del paciente' => 2,
+        ] as $reason => $expectedNumber) {
+            $this->actingAs($cashier)
+                ->postJson("/api/invoices/{$invoiceId}/reprint", [
+                    'width' => 'half_letter',
+                    'reason' => $reason,
+                ])
+                ->assertOk()
+                // El numero sale del contador durable (invoices.legacy_reprint_count),
+                // nunca de COUNT(audit_logs) ni de un "#1" fabricado por la sesion.
+                ->assertJsonPath('data.receipt.institutional.copy_label', "REIMPRESIÓN #{$expectedNumber}")
+                ->assertJsonPath('data.receipt.legacy_reprint_count', $expectedNumber)
+                ->assertJsonPath('data.audit.copy_label', "REIMPRESIÓN #{$expectedNumber}")
+                ->assertJsonPath('data.audit.reason', $reason)
+                ->assertJsonPath('data.audit.legacy_reprint_count', $expectedNumber)
+                // El contador institucional no se reutiliza en el path legacy.
+                ->assertJsonMissingPath('data.audit.reprint_count');
+        }
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'legacy_reprint_count' => 2,
+        ]);
+
+        // Sesion/usuario nuevo: el GET sigue reportando el contador persistente
+        // y la etiqueta de la vista no se convierte en reimpresion.
+        $this->actingAs($this->admin())
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
+            ->assertOk()
+            ->assertJsonPath('data.legacy_reprint_count', 2)
             ->assertJsonPath('data.institutional.copy_label', 'Original');
 
-        $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$invoiceId}/reprint", [
-                'width' => 'half_letter',
-                'reason' => 'Recibo original danado por impresora',
-            ])
-            ->assertOk()
-            ->assertJsonPath('data.receipt.institutional.copy_label', 'Reimpresion #1')
-            ->assertJsonPath('data.audit.copy_label', 'Reimpresion #1')
-            ->assertJsonPath('data.audit.reprint_count', 1);
+        $this->assertSame(2, AuditLog::query()
+            ->where('entity_type', Invoice::class)
+            ->where('entity_id', $invoiceId)
+            ->where('action', 'invoice.reprinted')
+            ->count());
+    }
 
-        $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$invoiceId}/reprint", [
-                'width' => 'half_letter',
-                'reason' => 'Segunda reimpresion por peticion del paciente',
-            ])
-            ->assertOk()
-            ->assertJsonPath('data.receipt.institutional.copy_label', 'Reimpresion #2')
-            ->assertJsonPath('data.audit.reprint_count', 2);
+    public function test_legacy_reprint_requires_a_human_reason_of_5_to_500_characters(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
 
-        $this->assertDatabaseHas('audit_logs', [
-            'entity_type' => Invoice::class,
-            'entity_id' => $invoiceId,
-            'action' => 'invoice.reprinted',
+        foreach ([
+            'missing reason' => [],
+            'blank reason' => ['reason' => '     '],
+            'reason too short' => ['reason' => 'abcd'],
+            'reason too long' => ['reason' => str_repeat('a', 501)],
+        ] as $payload) {
+            $this->actingAs($cashier)
+                ->postJson("/api/invoices/{$invoiceId}/reprint", [
+                    'width' => 'half_letter',
+                    ...$payload,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('reason');
+        }
+
+        $this->assertSame(0, AuditLog::query()
+            ->where('action', 'invoice.reprinted')
+            ->count());
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'legacy_reprint_count' => 0,
         ]);
     }
 
-    public function test_reprint_with_same_idempotency_key_does_not_duplicate_audit_or_reprint_count(): void
+    public function test_legacy_reprint_action_rejects_backend_generated_reason_without_form_request(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoice = Invoice::query()->findOrFail($this->createInvoice($cashier, 'Maria Lopez', 'Glucosa'));
+
+        try {
+            app(ReprintReceiptAction::class)->execute($invoice, $cashier, 'half_letter');
+            $this->fail('Expected a reprint without a human reason to be rejected.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('reason', $exception->errors());
+        }
+
+        $this->assertSame(0, AuditLog::query()
+            ->where('action', 'invoice.reprinted')
+            ->count());
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'legacy_reprint_count' => 0,
+        ]);
+    }
+
+    public function test_reprint_with_same_idempotency_key_replays_without_duplicating_audit(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
@@ -703,27 +875,35 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->withHeaders(['Idempotency-Key' => 'invoice-reprint-'.$invoiceId])
             ->postJson("/api/invoices/{$invoiceId}/reprint", $payload)
             ->assertOk()
-            ->assertJsonPath('data.receipt.institutional.copy_label', 'Reimpresion #1')
-            ->assertJsonPath('data.audit.reprint_count', 1);
+            ->assertJsonPath('data.receipt.institutional.copy_label', 'REIMPRESIÓN #1')
+            ->assertJsonPath('data.audit.reason', 'Recibo original danado por impresora');
 
         $this->actingAs($cashier)
             ->withHeaders(['Idempotency-Key' => 'invoice-reprint-'.$invoiceId])
             ->postJson("/api/invoices/{$invoiceId}/reprint", $payload)
             ->assertOk()
             ->assertHeader('Idempotent-Replay', 'true')
-            ->assertJsonPath('data.receipt.institutional.copy_label', 'Reimpresion #1')
-            ->assertJsonPath('data.audit.reprint_count', 1);
+            ->assertJsonPath('data.receipt.institutional.copy_label', 'REIMPRESIÓN #1')
+            ->assertJsonPath('data.audit.reason', 'Recibo original danado por impresora');
 
         $this->assertSame(1, AuditLog::query()
             ->where('entity_type', Invoice::class)
             ->where('entity_id', $invoiceId)
             ->where('action', 'invoice.reprinted')
             ->count());
+        // El replay idempotente no vuelve a incrementar el contador durable.
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'legacy_reprint_count' => 1,
+        ]);
     }
 
     private function seedBillingBase(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        // Financial scenarios use a synthetic tariff and must not inherit production catalog prices.
+        Service::query()->where('name', 'Hemograma Completo')->update(['price' => '10.00']);
+        Service::query()->where('name', 'Eritropoyetina')->update(['price' => '25.00', 'taxable' => false]);
         FiscalSetting::query()->create([
             'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital San Isidro',

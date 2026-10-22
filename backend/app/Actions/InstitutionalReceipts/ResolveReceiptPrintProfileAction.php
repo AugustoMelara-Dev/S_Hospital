@@ -29,6 +29,21 @@ class ResolveReceiptPrintProfileAction
             return $default;
         }
 
+        // No declared global default: prefer the proposed principal portrait design
+        // (mandate §12) over an arbitrary lowest-id profile, which used to be the
+        // legacy landscape `media_carta_horizontal`. This does not override an
+        // admin-declared default; it only replaces the previously arbitrary
+        // fallback. An explicit assignment still wins (checked above).
+        $proposed = ReceiptPrintProfile::query()
+            ->where('active', true)
+            ->where('code', ReceiptPrintProfile::CODE_LETTER_PORTRAIT)
+            ->whereNotIn('paper_kind', ['thermal_80mm', 'thermal_58mm'])
+            ->first();
+
+        if ($proposed instanceof ReceiptPrintProfile) {
+            return $proposed;
+        }
+
         $fallback = ReceiptPrintProfile::query()
             ->where('active', true)
             ->whereNotIn('paper_kind', ['thermal_80mm', 'thermal_58mm'])

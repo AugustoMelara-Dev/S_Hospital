@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\InstitutionalReceiptSettingsController;
+use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceiptSeries;
 use App\Models\ReceiptPrintProfile;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\HondurasDistributionSeeder;
+use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use ReflectionClass;
@@ -57,7 +59,7 @@ class PreInstallationAuditTest extends TestCase
         );
 
         $this->assertStringNotContainsString(
-            "FiscalSetting::query()->first() ?? new FiscalSetting",
+            'FiscalSetting::query()->first() ?? new FiscalSetting',
             $body,
             'updateInstitution no debe volver a resolver FiscalSetting directamente.',
         );
@@ -124,7 +126,7 @@ class PreInstallationAuditTest extends TestCase
     public function test_print_profile_save_does_not_require_receipt_number_color_field(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
-        $this->seed(\Database\Seeders\ReceiptPrintProfileSeeder::class);
+        $this->seed(ReceiptPrintProfileSeeder::class);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
@@ -245,7 +247,7 @@ class PreInstallationAuditTest extends TestCase
             'receipt_paper_size' => 'half_letter',
         ]);
 
-        \App\Models\FiscalSequence::query()->create([
+        FiscalSequence::query()->create([
             'document_type' => 'invoice',
             'prefix' => 'PRE',
             'min_number' => 1,
@@ -260,7 +262,7 @@ class PreInstallationAuditTest extends TestCase
 
         (new HondurasDistributionSeeder)->run();
 
-        $sequence = \App\Models\FiscalSequence::query()->first();
+        $sequence = FiscalSequence::query()->first();
         $this->assertNotNull($sequence, 'El seeder no debe crear secuencias fiscales.');
         $this->assertSame('PRE', $sequence->prefix);
         $this->assertSame(50, $sequence->current_number);

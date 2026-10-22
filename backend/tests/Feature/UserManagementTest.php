@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use LogicException;
 use Spatie\Permission\Models\Permission;
@@ -34,6 +35,13 @@ class UserManagementTest extends TestCase
         ]);
         $target->assignRole('cajero');
         $target->createToken('terminal-caja');
+        $oldRememberToken = $target->remember_token;
+        DB::table('sessions')->insert([
+            'id' => 'target-cashier-session',
+            'user_id' => $target->id,
+            'payload' => 'synthetic',
+            'last_activity' => now()->timestamp,
+        ]);
 
         $this->actingAs($admin)
             ->postJson("/api/admin/users/{$target->id}/reset-password", [
@@ -46,10 +54,12 @@ class UserManagementTest extends TestCase
         $target->refresh();
         $this->assertTrue(Hash::check('Temporary123!', $target->password));
         $this->assertTrue($target->must_change_password);
+        $this->assertNotSame($oldRememberToken, $target->remember_token);
         $this->assertDatabaseMissing('personal_access_tokens', [
             'tokenable_type' => User::class,
             'tokenable_id' => $target->id,
         ]);
+        $this->assertDatabaseMissing('sessions', ['user_id' => $target->id]);
 
         $audit = AuditLog::query()
             ->where('action', 'user.password_reset')
@@ -61,6 +71,7 @@ class UserManagementTest extends TestCase
         $this->assertSame('success', $audit->result);
         $this->assertSame('Credencial temporal entregada al cajero titular.', $audit->reason);
         $this->assertSame(true, $audit->new_values['must_change_password'] ?? null);
+        $this->assertSame(true, $audit->new_values['sessions_revoked'] ?? null);
         $this->assertArrayNotHasKey('password', $audit->new_values ?? []);
         $this->assertArrayNotHasKey('password', $audit->old_values ?? []);
     }
@@ -866,10 +877,12 @@ class UserManagementTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->userWithRole('admin');
-        Permission::query()->firstOrCreate([
-            'name' => 'backups.restore',
-            'guard_name' => 'web',
-        ]);
+        foreach (['backups.restore', 'receipts.void'] as $legacyPermission) {
+            Permission::query()->firstOrCreate([
+                'name' => $legacyPermission,
+                'guard_name' => 'web',
+            ]);
+        }
 
         foreach (['backups.restore', 'receipts.void', 'users.assign_admin_role', 'reports.view'] as $permission) {
             $permissionSlug = str_replace('.', '-', $permission);
@@ -1008,6 +1021,33 @@ class UserManagementTest extends TestCase
 
         $this->assertTrue($admin->refresh()->active);
         $this->assertTrue($admin->hasRole('admin'));
+    }
+
+    public function test_after_one_of_two_admins_is_deactivated_the_remaining_admin_is_protected(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $operator = User::factory()->create();
+        $operator->givePermissionTo(['users.disable', 'users.assign_admin_role']);
+        $first = User::factory()->create(['active' => true]);
+        $second = User::factory()->create(['active' => true]);
+        $first->assignRole('admin');
+        $second->assignRole('admin');
+
+        $this->actingAs($operator)
+            ->postJson("/api/admin/users/{$first->id}/toggle-active", [
+                'reason' => 'Entrega de responsabilidad al segundo administrador.',
+            ])
+            ->assertOk();
+
+        $this->actingAs($operator)
+            ->postJson("/api/admin/users/{$second->id}/toggle-active", [
+                'reason' => 'Intento de retirar al administrador restante.',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('active');
+
+        $this->assertFalse($first->refresh()->active);
+        $this->assertTrue($second->refresh()->active);
     }
 
     public function test_admin_cannot_change_own_direct_permissions_from_user_editor(): void

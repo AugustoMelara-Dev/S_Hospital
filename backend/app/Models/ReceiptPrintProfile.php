@@ -44,6 +44,21 @@ class ReceiptPrintProfile extends Model
 
     public const CODE_LETTER = 'carta_horizontal';
 
+    /**
+     * Proposed principal institutional design (§12): carta vertical
+     * (215.9 x 279.4 mm = 612 x 792 pt) with 12 mm margins. For NEW installations
+     * the seeder promotes it to the single global default; installations that
+     * already had a configured default keep theirs untouched (no silent paper
+     * change, no data migration repoints existing rows).
+     */
+    public const CODE_LETTER_PORTRAIT = 'carta_vertical';
+
+    /**
+     * Configurable A4 portrait (210 x 297 mm = 595.28 x 841.89 pt). A4 is not a
+     * synonym of letter and is never substituted for media carta or A5.
+     */
+    public const CODE_A4_PORTRAIT = 'a4_vertical';
+
     public const CODE_THERMAL_80 = 'thermal_80mm';
 
     public const CODE_THERMAL_58 = 'thermal_58mm';

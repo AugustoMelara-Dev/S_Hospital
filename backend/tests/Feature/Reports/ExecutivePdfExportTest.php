@@ -85,7 +85,9 @@ class ExecutivePdfExportTest extends TestCase
         $this->assertStringContainsString('Lectura Financiera', $html);
         $this->assertStringContainsString('Recaudacion por Metodo', $html);
         $this->assertStringContainsString('Tendencia Diaria', $html);
-        $this->assertStringContainsString('Servicios y Categorias', $html);
+        $this->assertStringContainsString('Conceptos asociados a pagos', $html);
+        $this->assertStringContainsString('Cantidad cobrable', $html);
+        $this->assertStringContainsString('Cobrado en periodo', $html);
         $this->assertStringContainsString('Cajeros', $html);
         $this->assertStringContainsString('Sesiones de Caja', $html);
         $this->assertStringContainsString('Pendientes y Antiguedad', $html);
@@ -162,6 +164,90 @@ class ExecutivePdfExportTest extends TestCase
         $this->assertStringContainsString('Reporte Ejecutivo', $html);
         $this->assertStringContainsString('L. 0.00', $html);
         $this->assertStringNotContainsString('Array', $html);
+    }
+
+    public function test_executive_pdf_keeps_formatted_currency_together_in_wide_tables(): void
+    {
+        $html = app(ExecutivePdfExportService::class)->buildHtml([
+            'period' => ['from' => '2026-09-01', 'to' => '2026-09-30'],
+            'summary' => [
+                'billed_total' => '17267.25',
+                'collected_total' => '17267.25',
+                'pending_total' => '0.00',
+                'voided_total' => '0.00',
+                'average_ticket' => '17267.25',
+            ],
+            'operations' => [[
+                'date' => '2026-09-28',
+                'invoice_number' => '000-001-01-00000018',
+                'patient' => 'Paciente de prueba',
+                'cash_session_label' => 'Caja principal',
+                'cashier' => 'Cajero de prueba',
+                'total' => '17267.25',
+                'paid' => '17267.25',
+                'balance' => '0.00',
+                'status_label' => 'Pagada',
+                'receipt_document' => 'REC-A-00000018',
+            ]],
+            'cashiers' => [[
+                'name' => 'Cajero de prueba',
+                'collected' => '34551.75',
+                'cash' => '34551.75',
+                'transfer' => '0.00',
+                'card' => '0.00',
+                'other' => '0.00',
+                'payment_count' => 2,
+                'voided_count' => 0,
+                'difference_total' => '-34551.75',
+            ]],
+        ], [], 'QA', Carbon::create(2026, 9, 28, 10, 0, 0, 'America/Tegucigalpa'));
+
+        $this->assertStringContainsString('L. 17,267.25', $html);
+        $this->assertStringContainsString('L. 34,551.75', $html);
+        $this->assertStringContainsString('- L. 34,551.75', $html);
+        $this->assertStringNotContainsString('L. 17267.25', $html);
+        $this->assertStringContainsString('class="report-table report-table-wide"', $html);
+        $this->assertMatchesRegularExpression(
+            '/<td class="money-cell"[^>]*>L\. 17,267\.25<\/td>/',
+            $html,
+        );
+        $this->assertStringContainsString('.report-table .money-cell { font-variant-numeric: tabular-nums; white-space: nowrap; }', $html);
+    }
+
+    public function test_gratuities_start_with_a_data_row_and_repeat_the_header_in_continuations(): void
+    {
+        $gratuities = [];
+        for ($index = 1; $index <= 9; $index++) {
+            $gratuities[] = [
+                'invoice_number' => 'REC-'.str_pad((string) $index, 3, '0', STR_PAD_LEFT),
+                'patient' => 'Paciente '.$index,
+                'service' => 'Eritropoyetina',
+                'category' => 'Medicamentos',
+                'quantity' => '1.00',
+                'adjustment_value' => '25.00',
+                'adjustment_persisted' => true,
+                'reason' => 'Receta de diálisis',
+            ];
+        }
+
+        $html = app(ExecutivePdfExportService::class)->buildHtml([
+            'period' => ['from' => '2026-09-01', 'to' => '2026-09-30'],
+            'gratuities' => $gratuities,
+        ], [], 'QA', Carbon::create(2026, 9, 28, 10, 0, 0, 'America/Tegucigalpa'));
+
+        $gratuitiesHtml = strstr($html, '<h2 class="section-title">Gratuidades</h2>');
+        $this->assertIsString($gratuitiesHtml);
+        $this->assertStringStartsWith(
+            '<h2 class="section-title">Gratuidades</h2>',
+            $gratuitiesHtml,
+        );
+        $this->assertSame(2, substr_count($gratuitiesHtml, '<th style="text-align:left;">N Factura</th>'));
+        $this->assertSame(1, substr_count($gratuitiesHtml, 'REC-001'));
+        $this->assertSame(1, substr_count($gratuitiesHtml, 'REC-009'));
+        $this->assertMatchesRegularExpression(
+            '/<div class="keep-together"><div class="section-heading"><h2 class="section-title">Gratuidades<\/h2>.*?<tbody>.*?REC-001/s',
+            $html,
+        );
     }
 
     public function test_executive_pdf_generic_reports_view_without_concrete_permission_is_forbidden(): void

@@ -3,16 +3,21 @@
 namespace App\Console\Commands;
 
 use App\Actions\Backups\BackupFileCipher;
+use App\Actions\Backups\BackupRecoveryKitService;
 use App\Actions\Backups\EncryptBackupFileAction;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Config;
 
 class DecryptBackupCommand extends Command
 {
-    protected $signature = 'hospital:decrypt-backup {input : Archivo .sql.gz.enc} {output : Destino .sql temporal}';
+    protected $signature = 'hospital:decrypt-backup {input : Archivo .sql.gz.enc} {output : Destino .sql temporal} {--recovery-kit= : Kit institucional cifrado}';
 
     protected $description = 'Descifra un backup local cifrado para restore controlado.';
 
-    public function __construct(private readonly BackupFileCipher $cipher)
+    public function __construct(
+        private readonly BackupFileCipher $cipher,
+        private readonly BackupRecoveryKitService $recoveryKit,
+    )
     {
         parent::__construct();
     }
@@ -29,7 +34,12 @@ class DecryptBackupCommand extends Command
         }
 
         try {
-            $this->decryptToFile($input, $output);
+            $kitPath = $this->option('recovery-kit');
+            if (is_string($kitPath) && $kitPath !== '') {
+                $this->decryptWithRecoveryKit($input, $output, $kitPath);
+            } else {
+                $this->decryptToFile($input, $output);
+            }
         } catch (\Throwable) {
             $this->error('No se pudo descifrar el backup con la clave de respaldos configurada.');
 
@@ -40,6 +50,33 @@ class DecryptBackupCommand extends Command
         $this->info('Backup descifrado para restore controlado.');
 
         return self::SUCCESS;
+    }
+
+    private function decryptWithRecoveryKit(string $input, string $output, string $kitPath): void
+    {
+        if (! is_file($kitPath)) {
+            throw new \RuntimeException;
+        }
+        $kit = file_get_contents($kitPath);
+        $stdin = stream_get_contents(STDIN, 8193);
+        if (! is_string($kit) || ! is_string($stdin) || strlen($stdin) > 8192) {
+            throw new \RuntimeException;
+        }
+        $payload = json_decode($stdin, true, 3, JSON_THROW_ON_ERROR);
+        if (! is_array($payload) || ! is_string($payload['passphrase'] ?? null)) {
+            throw new \RuntimeException;
+        }
+        $keys = $this->recoveryKit->open($kit, $payload['passphrase']);
+        $originalBackupKey = Config::get('backups.encryption.key');
+        $originalAppKey = Config::get('app.key');
+        Config::set('backups.encryption.key', $keys['backup_encryption_key']);
+        Config::set('app.key', $keys['app_key']);
+        try {
+            $this->decryptToFile($input, $output);
+        } finally {
+            Config::set('backups.encryption.key', $originalBackupKey);
+            Config::set('app.key', $originalAppKey);
+        }
     }
 
     private function decryptToFile(string $input, string $output): void

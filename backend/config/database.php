@@ -59,6 +59,14 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => 'InnoDB',
+            // Zona horaria de la sesion de conexion (Laravel 12 la aplica con
+            // SET time_zone). Se usa offset fijo porque muchas instalaciones
+            // MariaDB (p. ej. XAMPP) no cargan mysql.time_zone_name y
+            // 'America/Tegucigalpa' falla con ERROR 1298. Honduras no aplica
+            // DST, por lo que -06:00 es estable todo el ano. El valor se
+            // interpola en SET time_zone='...': mantener formato de offset o
+            // nombre de zona valido, sin comillas ni punto y coma.
+            'timezone' => env('DB_TIMEZONE', '-06:00'),
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
@@ -79,6 +87,8 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => 'InnoDB',
+            // Mismo contrato que la conexion mysql; ver comentario arriba.
+            'timezone' => env('DB_TIMEZONE', '-06:00'),
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],

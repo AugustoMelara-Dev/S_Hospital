@@ -17,6 +17,8 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected bool $resetSchemaPerTest = true;
+
     public function test_it_prepares_idempotent_non_production_e2e_data(): void
     {
         $this->artisan('hospital:prepare-e2e-release-data', ['--json' => true, '--password' => 'TestPassword@E2E!'])

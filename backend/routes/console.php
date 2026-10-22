@@ -100,6 +100,34 @@ Schedule::command('hospital:backup --type=scheduled')
     ->runInBackground()
     ->description('Respaldo automatico operativo del Sistema de Caja Hospitalaria');
 
+// Copia externa cifrada (F019/HS-BK-EXT): solo se programa si el operador la
+// activo explicitamente. Sin destino real configurado no se declara desplegada.
+if ((bool) config('backups.external.enabled', false)) {
+    Schedule::command('hospital:backup-copy-external --latest')
+        ->hourly()
+        ->withoutOverlapping(30)
+        ->onOneServer()
+        ->runInBackground()
+        ->description('Copia externa cifrada del respaldo local mas reciente');
+}
+
+// Salud de respaldos (HS-BK-ALERT): evaluacion local + registro de alertas.
+Schedule::command('hospital:check-backup-health')
+    ->hourly()
+    ->withoutOverlapping(15)
+    ->onOneServer()
+    ->runInBackground()
+    ->description('Evaluar salud de respaldos y registrar alertas locales');
+
+// Verificacion de recuperabilidad (HS-BK-VERIFY): mantiene actualizada la
+// "ultima copia recuperable" (archivo + SHA-256 + llave + descifrado).
+Schedule::command('hospital:verify-backup --latest')
+    ->dailyAt('02:30')
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->runInBackground()
+    ->description('Verificar recuperabilidad del ultimo respaldo exitoso');
+
 Schedule::command('hospital:prune-audit-logs --days='.OperationalScheduleConfig::retentionDays(config('hospital.schedule.audit_retention_days'), 365))
     ->dailyAt('03:15')
     ->onOneServer()

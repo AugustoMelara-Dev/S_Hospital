@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -14,9 +15,44 @@ abstract class TestCase extends BaseTestCase
 {
     protected bool $autoIdempotencyKeyForTests = true;
 
+    /**
+     * Opt-in flag for test classes that execute DDL on MySQL/MariaDB.
+     *
+     * MySQL/MariaDB issue an implicit COMMIT for DDL (ALTER/DROP/CREATE,
+     * `migrate`, `migrate:fresh`, `Schema::drop`, ...). That commit breaks the
+     * transaction RefreshDatabase opened for the running test, so its teardown
+     * rollback no longer removes the rows it created and every later test in
+     * the same process sees leaked data (for example the fiscal_settings
+     * singleton row). When a class sets this flag the disposable schema is
+     * rebuilt once after the class ends, right before the next test boots, so
+     * the rest of the transactional suite runs against a clean migrated
+     * database without paying a full migration for every test.
+     */
+    protected static bool $resetSchemaAfterDdl = false;
+
+    /** Set by a DDL class in tearDownAfterClass; consumed by the next setUp. */
+    private static bool $schemaDirtyAfterDdl = false;
+
+    /**
+     * Opt-in flag for classes whose own tests commit data on MySQL/MariaDB even
+     * without explicit DDL (e.g. a command that seeds inside the test). The
+     * disposable schema is rebuilt after every test of the class.
+     */
+    protected bool $resetSchemaPerTest = false;
+
     protected function setUp(): void
     {
         $this->forceTestingEnvironment();
+
+        if (self::$schemaDirtyAfterDdl) {
+            self::$schemaDirtyAfterDdl = false;
+
+            // Only the external MySQL/MariaDB job can suffer the implicit DDL
+            // commit; the SQLite :memory: fast path keeps its own schema.
+            if (in_array(getenv('DB_CONNECTION'), ['mysql', 'mariadb'], true)) {
+                $this->rebuildDisposableSchema();
+            }
+        }
 
         parent::setUp();
 
@@ -33,6 +69,64 @@ abstract class TestCase extends BaseTestCase
         $this->beforeApplicationDestroyed(function (): void {
             app(PermissionRegistrar::class)->forgetCachedPermissions();
         });
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->resetSchemaPerTest && $this->app !== null
+            && in_array(getenv('DB_CONNECTION'), ['mysql', 'mariadb'], true)) {
+            try {
+                $connection = $this->app['db']->connection();
+
+                $this->app->make(Kernel::class)
+                    ->call('migrate:fresh', ['--force' => true]);
+
+                RefreshDatabaseState::$migrated = true;
+
+                // DDL committed behind Laravel's back; keep the teardown
+                // rollback from failing on a missing transaction.
+                if (method_exists($connection, 'setTransactionLevel')) {
+                    $connection->setTransactionLevel(0);
+                }
+            } catch (\Throwable $exception) {
+                fwrite(STDERR, '[TestCase] per-test schema reset failed: '.$exception->getMessage().PHP_EOL);
+            }
+        }
+
+        parent::tearDown();
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        parent::tearDownAfterClass();
+
+        if (static::$resetSchemaAfterDdl) {
+            self::$schemaDirtyAfterDdl = true;
+        }
+    }
+
+    /**
+     * Rebuild the disposable schema outside any open transaction. A DDL test
+     * left a committed transaction behind, so this runs a fresh application
+     * boot before RefreshDatabase starts the next test transaction.
+     */
+    private function rebuildDisposableSchema(): void
+    {
+        try {
+            $app = require dirname(__DIR__).'/bootstrap/app.php';
+            $kernel = $app->make(Kernel::class);
+            $kernel->bootstrap();
+
+            $exitCode = $kernel->call('migrate:fresh', ['--force' => true]);
+
+            if ($exitCode !== 0) {
+                fwrite(STDERR, '[TestCase] migrate:fresh returned '.$exitCode.' while resetting after DDL.'.PHP_EOL);
+            }
+
+            RefreshDatabaseState::$migrated = true;
+        } catch (\Throwable $exception) {
+            fwrite(STDERR, '[TestCase] schema reset after DDL failed: '.$exception->getMessage().PHP_EOL);
+        }
     }
 
     private function forceTestingEnvironment(): void

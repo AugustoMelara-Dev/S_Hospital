@@ -17,6 +17,8 @@ class FiscalSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected static bool $resetSchemaAfterDdl = true;
+
     public function test_cashier_cannot_edit_fiscal_settings(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

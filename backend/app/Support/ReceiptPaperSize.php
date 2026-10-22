@@ -22,8 +22,13 @@ class ReceiptPaperSize
     public static function fromProfilePaperKind(?string $paperKind): string
     {
         return match ($paperKind) {
-            'letter_landscape' => 'letter',
+            'letter_landscape', 'letter_portrait' => 'letter',
             'a5_landscape' => 'a5',
+            // The legacy invoice receipt only knows half_letter/letter/a5/thermal.
+            // A4 portrait has no legacy equivalent, so it uses the closest
+            // supported size (letter) for that secondary compatibility path.
+            // The institutional PDF keeps the real A4 profile snapshot.
+            'a4_portrait' => 'letter',
             'thermal_80mm' => '80mm',
             'thermal_58mm' => '58mm',
             'half_letter_landscape' => 'half_letter',

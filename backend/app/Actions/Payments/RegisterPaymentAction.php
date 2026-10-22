@@ -2,6 +2,7 @@
 
 namespace App\Actions\Payments;
 
+use App\Actions\Billing\PreservesIssuedTimestamps;
 use App\Events\InvoiceChanged;
 use App\Events\PaymentChanged;
 use App\Models\CashMovement;
@@ -21,6 +22,8 @@ use Illuminate\Validation\ValidationException;
 
 class RegisterPaymentAction
 {
+    use PreservesIssuedTimestamps;
+
     public function __construct(
         private readonly AuditLogger $auditLogger,
     ) {}
@@ -123,6 +126,7 @@ class RegisterPaymentAction
 
             $paidCents = (int) $lockedInvoice->paid_amount_cents + $amountCents;
             $nextBalanceCents = $balanceCents - $amountCents;
+            $issuedAt = $lockedInvoice->getOriginal('issued_at');
 
             $lockedInvoice->forceFill([
                 'paid_amount' => Money::formatCents($paidCents),
@@ -130,7 +134,12 @@ class RegisterPaymentAction
                 'balance_due' => Money::formatCents($nextBalanceCents),
                 'balance_due_cents' => $nextBalanceCents,
                 'status' => $nextBalanceCents === 0 ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIAL,
+                'settlement' => $nextBalanceCents === 0
+                    ? Invoice::SETTLEMENT_PAID
+                    : Invoice::SETTLEMENT_PENDING,
             ])->save();
+
+            $this->preserveInvoiceIssuedAt($lockedInvoice, $issuedAt);
 
             $this->auditLogger->log(
                 action: 'payment.registered',

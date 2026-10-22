@@ -68,6 +68,18 @@ if [ -f .env ]; then
 fi
 
 if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
+  echo "[entrypoint] Verificando respaldo recuperable antes de migrar..."
+  verify_backup_exit=0
+  if [ -n "${HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS:-}" ]; then
+    php artisan hospital:verify-migration-backup --no-interaction "--max-age-hours=${HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS}" || verify_backup_exit=$?
+  else
+    php artisan hospital:verify-migration-backup --no-interaction || verify_backup_exit=$?
+  fi
+  if [ "$verify_backup_exit" -ne 0 ]; then
+    echo "[entrypoint] ERROR: migraciones bloqueadas. No hay un respaldo cifrado, integro y recuperable para esta instalacion con datos."
+    echo "[entrypoint] Cree un respaldo verificable (php artisan hospital:backup --type=manual --json) y reinicie."
+    exit 1
+  fi
   echo "[entrypoint] Ejecutando migraciones pendientes..."
   php artisan migrate --force --no-interaction
 else

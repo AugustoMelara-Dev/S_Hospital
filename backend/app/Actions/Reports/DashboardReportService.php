@@ -101,6 +101,8 @@ class DashboardReportService
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            // Cobros reales: los pagos historicos de 0.00 quedan fuera.
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$today, $end])
             ->groupBy('payments.method')
             ->select('payments.method', DB::raw('COALESCE(SUM(payments.amount_cents), 0) as total_cents'))
@@ -160,6 +162,8 @@ class DashboardReportService
             ->join('users', 'payments.user_id', '=', 'users.id')
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            // Un pago de 0.00 no cuenta como cobro del cajero.
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$today, $end])
             ->groupBy('payments.user_id', 'users.name', 'users.username')
             ->orderByDesc('collected_cents')

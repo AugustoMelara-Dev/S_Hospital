@@ -47,6 +47,7 @@ class IncomeReportService
             'payments_by_method' => $facts['payments_by_method'],
             'invoices_by_status' => $this->invoicesByStatus($start, $end, $filters),
             'payment_count' => $facts['payment_count'],
+            'without_charge_count' => $facts['without_charge_count'],
             'invoice_count' => $this->usesPaymentScope($filters)
                 ? $this->paymentScopedInvoiceCount($start, $end, $filters)
                 : $facts['invoice_count'],
@@ -72,6 +73,7 @@ class IncomeReportService
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$start, $end])
             ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
                 $query->where('payments.cash_session_id', $filters['cash_session_id']);
@@ -128,6 +130,11 @@ class IncomeReportService
         Invoice::query()
             ->whereBetween('issued_at', [$start, $end])
             ->where('status', '!=', Invoice::STATUS_VOID)
+            // Una emision sin cobro (regla o precio cero) no cuenta como pagada.
+            ->whereNotIn('settlement', [
+                Invoice::SETTLEMENT_FREE_BY_RULE,
+                Invoice::SETTLEMENT_ZERO_PRICE,
+            ])
             ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
                 $query->where('issued_by', $filters['user_id']);
             })
@@ -228,6 +235,28 @@ class IncomeReportService
         $statuses[Invoice::STATUS_VOID] = [
             'count' => (int) ($voided->count ?? 0),
             'total' => $this->centsToMoney($voided->total_cents ?? 0),
+        ];
+
+        $withoutCharge = Invoice::query()
+            ->whereBetween('issued_at', [$start, $end])
+            ->whereIn('settlement', [
+                Invoice::SETTLEMENT_FREE_BY_RULE,
+                Invoice::SETTLEMENT_ZERO_PRICE,
+            ])
+            ->where('status', '!=', Invoice::STATUS_VOID)
+            ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
+                $query->where('issued_by', $filters['user_id']);
+            })
+            ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
+                $query->where('cash_session_id', $filters['cash_session_id']);
+            })
+            ->selectRaw('COUNT(*) as count')
+            ->selectRaw('COALESCE(SUM(total_cents), 0) as total_cents')
+            ->first();
+
+        $statuses['without_charge'] = [
+            'count' => (int) ($withoutCharge->count ?? 0),
+            'total' => $this->centsToMoney($withoutCharge->total_cents ?? 0),
         ];
 
         return $statuses;

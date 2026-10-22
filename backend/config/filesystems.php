@@ -47,6 +47,21 @@ return [
             'report' => false,
         ],
 
+        /*
+         | Disco de copia externa de respaldos (F019 / HS-BK-EXT). Por defecto
+         | el root queda vacio y la copia falla cerrado: no se declara
+         | desplegada hasta que el operador configure una ruta explicita,
+         | absoluta y fuera del storage/ y del proyecto (USB, disco externo o
+         | recurso montado, por ejemplo D:\ o /mnt/backup). No incluye
+         | credenciales; un driver remoto explicito tambien es valido.
+         */
+        'backup_external' => [
+            'driver' => env('HOSPITAL_BACKUP_EXTERNAL_DRIVER', 'local'),
+            'root' => env('HOSPITAL_BACKUP_EXTERNAL_ROOT', ''),
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

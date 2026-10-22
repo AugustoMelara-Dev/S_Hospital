@@ -18,6 +18,9 @@ class CurrentCashSessionRequest extends FormRequest
     {
         return [
             'scope' => ['sometimes', 'string', 'in:own,closable'],
+            // Filtro de lectura: se permite consultar cajas inactivas para
+            // cerrar/reportar sesiones historicas; la apertura si exige `active`.
+            'cash_register_id' => ['sometimes', 'integer', 'exists:cash_registers,id'],
         ];
     }
 }

@@ -19,6 +19,8 @@ class IndexCashSessionRequest extends FormRequest
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
             'status' => ['sometimes', 'in:open,closed'],
             'user_id' => ['sometimes', 'integer', 'exists:users,id'],
+            // Filtro de lectura/historial: incluye cajas inactivas.
+            'cash_register_id' => ['sometimes', 'integer', 'exists:cash_registers,id'],
         ];
     }
 

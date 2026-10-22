@@ -8,6 +8,8 @@ use App\Actions\Reports\OperationalMetricsService;
 use App\Models\Area;
 use App\Models\BackupLog;
 use App\Models\User;
+use App\Support\RoleCatalog;
+use App\Support\VisiblePermissions;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -23,6 +25,8 @@ use Tests\TestCase;
 class PermissionAuditTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected static bool $resetSchemaAfterDdl = true;
 
     protected function setUp(): void
     {
@@ -283,6 +287,30 @@ class PermissionAuditTest extends TestCase
         $this->assertFalse($auditor->can('backups.restore'));
         $this->assertFalse(Gate::forUser($admin)->allows('restore', $backup));
         $this->assertFalse(Gate::forUser($auditor)->allows('restore', $backup));
+    }
+
+    public function test_receipts_void_is_retired_from_the_seeded_catalog_but_remains_hidden_for_legacy_installs(): void
+    {
+        $admin = User::factory()->create(['active' => true]);
+        $admin->assignRole('admin');
+        $auditor = User::factory()->create(['active' => true]);
+        $auditor->assignRole('auditor');
+
+        $this->assertNotContains('receipts.void', RolesAndPermissionsSeeder::PERMISSIONS);
+        $this->assertDatabaseMissing('permissions', ['name' => 'receipts.void']);
+        $this->assertFalse($admin->can('receipts.void'));
+        $this->assertFalse($auditor->can('receipts.void'));
+
+        // Legacy installs may still carry the orphan permission; it must stay
+        // hidden and non-operable without any migration deleting it.
+        Permission::query()->firstOrCreate([
+            'name' => 'receipts.void',
+            'guard_name' => 'web',
+        ]);
+
+        $this->assertContains('receipts.void', VisiblePermissions::hiddenPermissionNames());
+        $this->assertContains('receipts.void', RoleCatalog::hiddenPermissionNames());
+        $this->assertFalse(RoleCatalog::isElevatedPermission('receipts.void'));
     }
 
     public function test_app_permission_checks_are_seeded_and_retired_area_scope_is_absent(): void

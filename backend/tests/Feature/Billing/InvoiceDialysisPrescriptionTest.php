@@ -91,11 +91,11 @@ class InvoiceDialysisPrescriptionTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.items.0.unit_price', '25.00')
-            ->assertJsonPath('data.items.0.tax_rate', '0.00')
-            ->assertJsonPath('data.items.0.tax_amount', '0.00')
+            ->assertJsonPath('data.items.0.tax_rate', '15.00')
+            ->assertJsonPath('data.items.0.tax_amount', '3.75')
             ->assertJsonPath('data.items.0.special_rule_applied', false)
-            ->assertJsonPath('data.tax_amount', '0.00')
-            ->assertJsonPath('data.total', '25.00')
+            ->assertJsonPath('data.tax_amount', '3.75')
+            ->assertJsonPath('data.total', '28.75')
             ->assertJsonPath('data.status', Invoice::STATUS_ISSUED);
     }
 
@@ -172,10 +172,73 @@ class InvoiceDialysisPrescriptionTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.items.0.unit_price', '25.00')
-            ->assertJsonPath('data.items.0.tax_rate', '0.00')
-            ->assertJsonPath('data.items.0.tax_amount', '0.00')
-            ->assertJsonPath('data.tax_amount', '0.00')
-            ->assertJsonPath('data.total', '25.00');
+            ->assertJsonPath('data.items.0.tax_rate', '15.00')
+            ->assertJsonPath('data.items.0.tax_amount', '3.75')
+            ->assertJsonPath('data.tax_amount', '3.75')
+            ->assertJsonPath('data.total', '28.75');
+    }
+
+    public function test_item_level_dialysis_flag_does_not_unlock_free_erythropoietin(): void
+    {
+        $this->seedBillingBase();
+        $issuer = $this->issuerWithDialysisPermission();
+        $erythropoietin = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        // F008: el flag es raiz del payload de factura; una marca por item
+        // (estado de presentacion del carrito) no autoriza la gratuidad.
+        $response = $this->actingAs($issuer)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [
+                    [
+                        'service_id' => $erythropoietin->id,
+                        'quantity' => '1.00',
+                        'dialysis_prescription' => true,
+                    ],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.items.0.unit_price', '25.00')
+            ->assertJsonPath('data.items.0.special_rule_applied', false)
+            ->assertJsonPath('data.total', '28.75');
+
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'invoice.dialysis_prescription_applied',
+            'entity_type' => Invoice::class,
+            'entity_id' => $response->json('data.id'),
+        ]);
+    }
+
+    public function test_root_dialysis_flag_is_the_single_source_of_truth_over_item_level_state(): void
+    {
+        $this->seedBillingBase();
+        $issuer = $this->issuerWithDialysisPermission();
+        $erythropoietin = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        // F008: con flag raiz autorizado, el estado por item no impide la
+        // gratuidad; la decision es unica por factura.
+        $response = $this->actingAs($issuer)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'dialysis_prescription' => true,
+                'items' => [
+                    [
+                        'service_id' => $erythropoietin->id,
+                        'quantity' => '1.00',
+                        'dialysis_prescription' => false,
+                    ],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.items.0.unit_price', '0.00')
+            ->assertJsonPath('data.items.0.special_rule_applied', true)
+            ->assertJsonPath('data.total', '0.00');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'invoice.dialysis_prescription_applied',
+            'entity_type' => Invoice::class,
+            'entity_id' => $response->json('data.id'),
+        ]);
     }
 
     private function seedBillingBase(): void

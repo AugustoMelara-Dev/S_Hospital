@@ -16,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class VoidInvoiceAction
 {
+    use PreservesIssuedTimestamps;
+
     private const MIN_VOID_REASON_LENGTH = 5;
 
     public function __construct(
@@ -91,6 +93,7 @@ class VoidInvoiceAction
                 'voided_by' => $lockedInvoice->voided_by,
                 'voided_at' => $lockedInvoice->voided_at,
             ];
+            $issuedAt = $lockedInvoice->getOriginal('issued_at');
 
             $lockedInvoice->forceFill([
                 'status' => Invoice::STATUS_VOID,
@@ -98,6 +101,8 @@ class VoidInvoiceAction
                 'voided_by' => $user->id,
                 'voided_at' => now(),
             ])->save();
+
+            $this->preserveInvoiceIssuedAt($lockedInvoice, $issuedAt);
 
             $voidedReceipts = $this->voidInstitutionalReceipt->forInvoice($lockedInvoice, $user, $reason);
 

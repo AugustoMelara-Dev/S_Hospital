@@ -17,9 +17,26 @@ class StoreInvoiceRequest extends FormRequest
             }
 
             $this->merge([
-                'patient_name' => trim($patientName),
+                'patient_name' => $this->normalizePatientName($patientName),
             ]);
         }
+    }
+
+    /**
+     * MANDATO_DEV §7: guarda el nombre con normalizacion de espacios
+     * razonable. Colapsa secuencias de espacios en blanco internos (incluidos
+     * tabuladores y saltos de linea) a un solo espacio y recorta los extremos,
+     * preservando tildes, apostrofos y nombres largos. No es una clave unica.
+     */
+    private function normalizePatientName(string $patientName): string
+    {
+        $collapsed = preg_replace('/\s+/u', ' ', $patientName);
+
+        if (! is_string($collapsed)) {
+            return trim($patientName);
+        }
+
+        return trim($collapsed);
     }
 
     public function authorize(): bool

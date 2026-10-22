@@ -34,9 +34,7 @@ class AuditInstitutionalServiceRulesAction
         }
 
         $canonicalIsValid = $canonical !== null
-            && $canonical->special_rule_code === Service::ERYTHROPOIETIN_RULE
-            && (string) $canonical->price === '25.00'
-            && $canonical->taxable === false;
+            && $canonical->special_rule_code === Service::ERYTHROPOIETIN_RULE;
 
         return [
             'valid' => $canonicalIsValid && $unexpectedServiceIds === [],

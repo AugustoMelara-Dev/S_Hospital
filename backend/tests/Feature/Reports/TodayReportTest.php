@@ -55,6 +55,7 @@ class TodayReportTest extends TestCase
                     'cash_session_open',
                     'issued_count',
                     'collected_count',
+                    'without_charge_count',
                     'billed',
                     'collected',
                     'pending',
@@ -82,6 +83,7 @@ class TodayReportTest extends TestCase
             ->assertJsonPath('data.cash_session_open', false)
             ->assertJsonPath('data.issued_count', 0)
             ->assertJsonPath('data.collected_count', 0)
+            ->assertJsonPath('data.without_charge_count', 0)
             ->assertJsonPath('data.billed', '0.00')
             ->assertJsonPath('data.collected', '0.00');
     }
@@ -145,6 +147,32 @@ class TodayReportTest extends TestCase
             ->assertJsonPath('data.payments_by_method.card', '17.25');
     }
 
+    public function test_today_report_scopes_without_charge_count_for_cashier_and_managerial_views(): void
+    {
+        $this->seedBillingBase();
+        $cashierWithFreeOperation = $this->cashier();
+        $cashierWithoutFreeOperation = $this->cashier();
+
+        Service::query()->where('name', 'Eritropoyetina')->update(['price' => '0.00']);
+        $this->createInvoice($cashierWithFreeOperation, 'Eritropoyetina');
+        $this->createInvoice($cashierWithoutFreeOperation, 'Glucosa');
+
+        $this->actingAs($cashierWithFreeOperation)
+            ->getJson('/api/reports/today')
+            ->assertOk()
+            ->assertJsonPath('data.without_charge_count', 1);
+
+        $this->actingAs($cashierWithoutFreeOperation)
+            ->getJson('/api/reports/today')
+            ->assertOk()
+            ->assertJsonPath('data.without_charge_count', 0);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/today')
+            ->assertOk()
+            ->assertJsonPath('data.without_charge_count', 1);
+    }
+
     public function test_today_report_excludes_voided_invoices_from_billed(): void
     {
         $this->seedBillingBase();
@@ -195,6 +223,36 @@ class TodayReportTest extends TestCase
             ->assertJsonPath('data.billed', '0.00')
             ->assertJsonPath('data.voided_count', 1)
             ->assertJsonPath('data.voided_amount', $voided->total);
+    }
+
+    public function test_today_report_ignores_historical_zero_payment_in_collected_count(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $session = $this->openSession($cashier);
+        $invoice = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoice->id, $session->id, Payment::METHOD_CASH, '17.25');
+
+        // Cobro ficticio legado de 0.00: no debe aparecer en el conteo del dia.
+        Payment::query()->create([
+            'invoice_id' => $invoice->id,
+            'cash_session_id' => $session->id,
+            'user_id' => $cashier->id,
+            'method' => Payment::METHOD_OTHER,
+            'amount' => '0.00',
+            'amount_cents' => 0,
+            'reference' => 'Receta dialisis: cero historico',
+            'status' => Payment::STATUS_POSTED,
+            'paid_at' => now(),
+        ]);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/reports/today')
+            ->assertOk()
+            ->assertJsonPath('data.collected_count', 1)
+            ->assertJsonPath('data.collected', '17.25')
+            ->assertJsonPath('data.payments_count_by_method.other', 0);
     }
 
     public function test_today_report_reports_backup_pending(): void

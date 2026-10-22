@@ -7,7 +7,6 @@
         @page {
             margin: {{ $profile['margin_top_mm'] }}mm {{ $profile['margin_right_mm'] }}mm {{ $profile['margin_bottom_mm'] }}mm {{ $profile['margin_left_mm'] }}mm;
         }
-
         * {
             box-sizing: border-box;
         }
@@ -176,6 +175,20 @@
             text-transform: uppercase;
         }
 
+        /* Additional visible mark for a reprint; keeps the original copy legend. */
+        .reprint-label {
+            border: 1.5px solid #111827;
+            color: #111827;
+            display: inline-block;
+            font-size: 0.86em;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            margin-left: 4px;
+            margin-top: 2px;
+            padding: 2px 6px;
+            text-transform: uppercase;
+        }
+
         .meta-table td {
             padding: 2px 5px 2px 0;
             vertical-align: top;
@@ -202,6 +215,9 @@
             margin: 9px 0 5px;
             padding-bottom: 3px;
             text-transform: uppercase;
+            /* Dompdf: never leave a section title orphaned at the bottom of a page. */
+            page-break-after: avoid;
+            break-after: avoid;
         }
 
         .items-table th,
@@ -410,7 +426,8 @@
             padding-bottom: 1px;
         }
 
-        .custom-small .copy-label {
+        .custom-small .copy-label,
+        .custom-small .reprint-label {
             padding: 1px 4px;
         }
 
@@ -589,6 +606,85 @@
             padding-bottom: 1px;
             padding-top: 1px;
         }
+
+        /* Carta vertical (612 x 792 pt) and A4 vertical (595.28 x 841.89 pt).
+           Proposed principal institutional layouts (§12). Detail text ~10 pt.
+           These classes only affect the new portrait profiles: historical
+           landscape/thermal documents keep the base 10.5px body size and are
+           never silently re-rendered. */
+        .receipt-layout.profile-carta_vertical,
+        .receipt-layout.profile-a4_vertical {
+            font-size: {{ 13.3 * $profile['font_scale'] }}px;
+            line-height: 1.35;
+            padding-top: 4px;
+        }
+
+        .profile-carta_vertical .document-header,
+        .profile-a4_vertical .document-header {
+            padding-bottom: 8px;
+        }
+
+        .profile-carta_vertical .document-band,
+        .profile-a4_vertical .document-band {
+            margin: 9px 0;
+            padding: 8px 0;
+        }
+
+        .profile-carta_vertical .receipt-meta-panel td,
+        .profile-a4_vertical .receipt-meta-panel td {
+            padding: 3px 8px 3px 0;
+        }
+
+        .profile-carta_vertical .section-title,
+        .profile-a4_vertical .section-title {
+            margin: 11px 0 6px;
+            padding-bottom: 4px;
+        }
+
+        .profile-carta_vertical .items-table th,
+        .profile-carta_vertical .items-table td,
+        .profile-a4_vertical .items-table th,
+        .profile-a4_vertical .items-table td {
+            padding-bottom: 5px;
+            padding-top: 5px;
+        }
+
+        .profile-carta_vertical .totals-table,
+        .profile-a4_vertical .totals-table {
+            width: 52%;
+        }
+
+        .profile-carta_vertical .signature-grid,
+        .profile-a4_vertical .signature-grid {
+            margin-top: 30px;
+        }
+
+        /* Hierarchy: patient and grand total are the two values the cashier and
+           the patient must read first. Highlighted on the portrait profiles
+           without changing the historical landscape/thermal rendering. */
+        .primary-patient {
+            font-weight: 700;
+        }
+
+        .profile-carta_vertical .primary-patient,
+        .profile-a4_vertical .primary-patient {
+            font-size: 1.12em;
+        }
+
+        .profile-carta_vertical .grand-total td,
+        .profile-a4_vertical .grand-total td {
+            font-size: 1.3em;
+        }
+
+        .copy-sequence {
+            color: #374151;
+            display: inline-block;
+            font-size: 0.82em;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            margin-left: 4px;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
@@ -626,6 +722,36 @@
         'other' => 'Otro',
         default => $method ?: 'No registrado',
     };
+
+    $formatMoney = static function (mixed $value): ?string {
+        try {
+            if (! is_int($value) && ! is_string($value)) {
+                return null;
+            }
+
+            $cents = \App\Support\Money::parseCents((string) $value, 'receipt_amount');
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $absolute = abs($cents);
+        $whole = number_format(intdiv($absolute, 100), 0, '.', ',');
+        $decimal = str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
+
+        return ($cents < 0 ? '-' : '').$whole.'.'.$decimal;
+    };
+
+    $moneyLabel = static function (mixed $value) use ($formatMoney): string {
+        $formatted = $formatMoney($value);
+
+        return $formatted === null ? '—' : 'L. '.$formatted;
+    };
+
+    $negativeMoneyLabel = static function (mixed $value) use ($formatMoney): string {
+        $formatted = $formatMoney($value);
+
+        return $formatted === null ? '—' : '- L. '.$formatted;
+    };
 @endphp
 @foreach ($pages as $page)
     @php
@@ -653,6 +779,9 @@
         <div class="receipt-layout profile-{{ $profile['code'] }}" data-receipt-style="minimal-monochrome">
         @if ($page['draft'])
             <div class="draft-watermark">{{ $page['watermark'] }}</div>
+        @endif
+        @if (! empty($page['test_notice']))
+            <div class="draft-watermark" data-receipt-test-notice>{{ $page['test_notice'] }}</div>
         @endif
 
         <header class="document-header">
@@ -686,7 +815,10 @@
                 <tr>
                     <td style="width: 58%;">
                         <div class="document-title">Recibo institucional</div>
-                        <span class="copy-label">{{ $page['copy_label'] }}</span>
+                        <span class="copy-label" data-receipt-copy-label="{{ $page['copy_label'] }}">{{ $page['copy_label'] }}</span>
+                        @if (! empty($page['reprint_label']))
+                            <span class="reprint-label">{{ $page['reprint_label'] }}</span>
+                        @endif
                     </td>
                     <td style="text-align: right;">
                         <span class="label">Recibo No.</span><br>
@@ -793,7 +925,7 @@
             <div class="thermal-meta-list thermal-operation-meta">
                 <div class="thermal-meta-field">
                     <span class="label">Paciente / enterante</span>
-                    <span class="thermal-meta-value">{{ $page['payer_name'] }}</span>
+                    <span class="thermal-meta-value primary-patient">{{ $page['payer_name'] }}</span>
                 </div>
                 <div class="thermal-meta-field">
                     <span class="label">Cajero</span>
@@ -817,7 +949,7 @@
         @else
             <table class="meta-table receipt-meta-panel">
                 <tr>
-                    <td style="width: 34%;"><span class="label">Paciente / enterante</span><br>{{ $page['payer_name'] }}</td>
+                    <td style="width: 34%;"><span class="label">Paciente / enterante</span><br><span class="primary-patient">{{ $page['payer_name'] }}</span></td>
                     <td><span class="label">Cajero</span><br>{{ $cashier ?: 'No registrado' }}</td>
                     <td><span class="label">Caja</span><br>{{ $payment['cash_context']['cash_register_label'] ?? 'No registrada' }}</td>
                     <td><span class="label">Método</span><br>{{ $paymentMethodSummary }}</td>
@@ -847,7 +979,7 @@
                             </div>
                             <div class="thermal-payment-field">
                                 <span class="label">Monto</span>
-                                <span class="thermal-payment-value">L. {{ $postedPayment['amount'] ?? '0.00' }}</span>
+                                <span class="thermal-payment-value">{{ $moneyLabel($postedPayment['amount'] ?? null) }}</span>
                             </div>
                             <div class="thermal-payment-field">
                                 <span class="label">Referencia</span>
@@ -876,7 +1008,7 @@
                             <tr>
                                 <td>{{ $formatDate($postedPayment['paid_at'] ?? null) ?: 'No registrada' }}</td>
                                 <td>{{ $paymentLabel($postedPayment['method'] ?? null) }}</td>
-                                <td class="money">L. {{ $postedPayment['amount'] ?? '0.00' }}</td>
+                                <td class="money">{{ $moneyLabel($postedPayment['amount'] ?? null) }}</td>
                                 <td>{{ $postedPayment['reference'] ?? 'Sin referencia' }}</td>
                                 <td>{{ $postedPayment['cashier_name'] ?? 'No registrado' }}</td>
                             </tr>
@@ -901,12 +1033,19 @@
             </thead>
             <tbody>
                 @forelse ($items as $item)
+                    @php
+                        $itemDescriptors = collect([$item['category_name'] ?? null, $item['area_name'] ?? null])
+                            ->filter(fn ($value) => is_string($value) && trim($value) !== '')
+                            ->map(fn (string $value) => trim($value))
+                            ->unique()
+                            ->values();
+                    @endphp
                     <tr>
                         <td>
                             {{ $item['service_name'] ?: 'Servicio hospitalario' }}
-                            @if (! empty($item['category_name']) || ! empty($item['area_name']))
+                            @if ($itemDescriptors->isNotEmpty())
                                 <span class="item-meta">
-                                    {{ collect([$item['category_name'] ?? null, $item['area_name'] ?? null])->filter()->implode(' / ') }}
+                                    {{ $itemDescriptors->implode(' / ') }}
                                 </span>
                             @endif
                             @if (! empty($item['notes']))
@@ -915,10 +1054,10 @@
                         </td>
                         <td class="qty">{{ $item['quantity'] }}</td>
                         @if (! $isThermal)
-                            <td class="money">L. {{ $item['unit_price'] }}</td>
-                            <td class="money">L. {{ $item['tax_amount'] }}</td>
+                            <td class="money">{{ $moneyLabel($item['unit_price']) }}</td>
+                            <td class="money">{{ $moneyLabel($item['tax_amount']) }}</td>
                         @endif
-                        <td class="money">L. {{ $item['line_total'] }}</td>
+                        <td class="money">{{ $moneyLabel($item['line_total']) }}</td>
                     </tr>
                 @empty
                     <tr>
@@ -932,33 +1071,33 @@
             <table class="totals-table">
                 <tr>
                     <td>Subtotal</td>
-                    <td class="money">L. {{ $invoice['subtotal'] }}</td>
+                    <td class="money">{{ $moneyLabel($invoice['subtotal']) }}</td>
                 </tr>
                 <tr>
                     <td>Exento</td>
-                    <td class="money">L. {{ $invoice['exempt_amount'] }}</td>
+                    <td class="money">{{ $moneyLabel($invoice['exempt_amount']) }}</td>
                 </tr>
                 @if (($invoice['discount_amount'] ?? '0.00') !== '0.00')
                     <tr>
                         <td>Descuento</td>
-                        <td class="money">L. {{ $invoice['discount_amount'] }}</td>
+                        <td class="money">{{ $negativeMoneyLabel($invoice['discount_amount']) }}</td>
                     </tr>
                 @endif
                 <tr>
                     <td>{{ $taxLabel ?: 'Impuesto' }}</td>
-                    <td class="money">L. {{ $invoice['tax_amount'] }}</td>
+                    <td class="money">{{ $moneyLabel($invoice['tax_amount']) }}</td>
                 </tr>
                 <tr class="grand-total">
                     <td>Total</td>
-                    <td class="money">L. {{ $invoice['total'] }}</td>
+                    <td class="money">{{ $moneyLabel($invoice['total']) }}</td>
                 </tr>
                 <tr>
                     <td>Pagado</td>
-                    <td class="money">L. {{ $invoice['paid_amount'] }}</td>
+                    <td class="money">{{ $moneyLabel($invoice['paid_amount']) }}</td>
                 </tr>
                 <tr>
                     <td>Saldo</td>
-                    <td class="money">L. {{ $invoice['balance_due'] }}</td>
+                    <td class="money">{{ $moneyLabel($invoice['balance_due']) }}</td>
                 </tr>
             </table>
 
@@ -966,6 +1105,9 @@
                 <div class="amount-words">
                     <span class="label">Monto en letras</span><br>
                     {{ $page['amount_statement'] }}
+                    @if (! empty($page['amount_total_note']))
+                        <br>{{ $page['amount_total_note'] }}
+                    @endif
                 </div>
             @endif
 
@@ -985,8 +1127,8 @@
             </tr>
         </table>
 
-        @if ($profile['show_copy_legend'])
-            <div class="copy-legend">{{ $page['copy_label'] }}@if (! empty($page['institution']['receipt_footer_text'])) - {{ $page['institution']['receipt_footer_text'] }}@endif</div>
+        @if ($profile['show_copy_legend'] && ! empty($page['institution']['receipt_footer_text']))
+            <div class="copy-legend">{{ $page['institution']['receipt_footer_text'] }}</div>
         @endif
         </div>
     </section>

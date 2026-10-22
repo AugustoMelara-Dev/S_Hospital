@@ -13,7 +13,7 @@ use RuntimeException;
 
 class ServiceCatalogSeeder extends Seeder
 {
-    private const EXPECTED_SERVICE_COUNT = 122;
+    private const EXPECTED_SERVICE_COUNT = 151;
 
     private const CATALOG_PATH = 'database/seeders/data/catalogo_servicios_inicial.csv';
 
@@ -86,15 +86,20 @@ class ServiceCatalogSeeder extends Seeder
                 ];
                 $operationalData = [
                     'price' => $row['precio_lps'],
-                    'taxable' => $specialRuleCode === Service::ERYTHROPOIETIN_RULE
-                        ? false
-                        : $this->truthy($row['taxable']),
-                    'active' => true,
+                    'taxable' => $this->truthy($row['taxable']),
+                    'active' => $this->truthy($row['activo']),
+                    'visible_in_billing' => $this->truthy($row['visible_en_cobro']),
+                    'is_billable' => $this->truthy($row['facturable']),
+                    'description' => $row['descripcion'] !== '' ? $row['descripcion'] : null,
                     'special_rule_code' => $specialRuleCode,
                 ];
                 $serviceData = $isNewService
                     ? array_merge($metadataData, $operationalData)
                     : $metadataData;
+
+                if ($row['aliases'] !== '' && ($isNewService || blank($service->aliases))) {
+                    $serviceData['aliases'] = $row['aliases'];
+                }
 
                 if (isset(self::VALIDATION_CODES[$serviceSourceKey])) {
                     foreach (self::VALIDATION_CODES[$serviceSourceKey] as $field => $value) {
@@ -148,7 +153,7 @@ class ServiceCatalogSeeder extends Seeder
     }
 
     /**
-     * @return list<array{categoria: string, servicio: string, precio_lps: string, taxable: string, regla_especial: string}>
+     * @return list<array{categoria: string, servicio: string, precio_lps: string, taxable: string, regla_especial: string, source_key: string, activo: string, visible_en_cobro: string, facturable: string, descripcion: string, aliases: string}>
      */
     private function readCatalogRows(): array
     {
@@ -186,7 +191,19 @@ class ServiceCatalogSeeder extends Seeder
                 'precio_lps' => $this->price(trim($row['precio_lps'] ?? '0.00')),
                 'taxable' => trim($row['taxable'] ?? 'si'),
                 'regla_especial' => trim($row['regla_especial'] ?? ''),
+                'source_key' => trim($row['source_key'] ?? ''),
+                'activo' => trim($row['activo'] ?? 'si'),
+                'visible_en_cobro' => trim($row['visible_en_cobro'] ?? 'si'),
+                'facturable' => trim($row['facturable'] ?? 'si'),
+                'descripcion' => trim($row['descripcion'] ?? ''),
+                'aliases' => trim($row['aliases'] ?? ''),
             ];
+
+            if (! preg_match('/^csv:service:[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)+$/', $normalizedRow['source_key'])) {
+                throw new RuntimeException(
+                    "Invalid or missing stable source_key for {$normalizedRow['categoria']} / {$normalizedRow['servicio']}.",
+                );
+            }
 
             $serviceKey = $this->serviceSourceKey($normalizedRow);
 
@@ -259,7 +276,7 @@ class ServiceCatalogSeeder extends Seeder
     }
 
     /**
-     * @param  array{categoria: string, servicio: string, precio_lps: string, taxable: string, regla_especial: string}  $row
+     * @param  array{categoria: string, servicio: string, precio_lps: string, taxable: string, regla_especial: string, source_key: string, activo: string, visible_en_cobro: string, facturable: string, descripcion: string, aliases: string}  $row
      */
     private function serviceSourceHash(array $row): string
     {
@@ -269,6 +286,11 @@ class ServiceCatalogSeeder extends Seeder
             $row['precio_lps'],
             $row['taxable'],
             $row['regla_especial'],
+            $row['activo'],
+            $row['visible_en_cobro'],
+            $row['facturable'],
+            $row['descripcion'],
+            $row['aliases'],
         ]));
     }
 
@@ -342,11 +364,11 @@ class ServiceCatalogSeeder extends Seeder
     }
 
     /**
-     * @param  array{categoria: string, servicio: string}  $row
+     * @param  array{source_key: string}  $row
      */
     private function serviceSourceKey(array $row): string
     {
-        return 'csv:service:'.$this->slug($row['categoria']).':'.$this->slug($row['servicio']);
+        return $row['source_key'];
     }
 
     private function slug(string $value): string

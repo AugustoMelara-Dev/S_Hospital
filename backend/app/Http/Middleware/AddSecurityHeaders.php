@@ -178,6 +178,12 @@ class AddSecurityHeaders
             $authority = "{$authorityHost}:{$port}";
             $sources[] = "ws://{$authority}";
             $sources[] = "wss://{$authority}";
+
+            // TLS terminated on the standard port: browsers serialize
+            // wss://host without the :443 suffix, so allow both forms.
+            if ($port === 443) {
+                $sources[] = "wss://{$authorityHost}";
+            }
         }
 
         return array_values(array_unique($sources));

@@ -3,15 +3,24 @@
 namespace App\Actions\InstitutionalReceipts;
 
 use App\Models\InstitutionalReceiptSeries;
+use App\Support\RestoreReconciliation;
 use Illuminate\Validation\ValidationException;
 
 class ReserveInstitutionalReceiptNumberAction
 {
+    public function __construct(
+        private readonly RestoreReconciliation $restoreReconciliation,
+    ) {}
+
     /**
      * @return array{series: InstitutionalReceiptSeries, number: int, full: string}
      */
     public function execute(): array
     {
+        // HS-RESTORE-SEQUENCE: la reserva de recibos tambien falla cerrado
+        // mientras la reconciliacion post-restore siga pendiente.
+        $this->restoreReconciliation->assertEmissionAllowed('recibos institucionales');
+
         $series = InstitutionalReceiptSeries::query()
             ->where('document_type', InstitutionalReceiptSeries::DOCUMENT_TYPE)
             ->where('active', true)

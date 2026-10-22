@@ -68,6 +68,12 @@ class CloseCashSessionAction
                 ]);
             }
 
+            // Hora de apertura original, capturada antes de escribir: MariaDB
+            // con `explicit_defaults_for_timestamp=0` marca el primer TIMESTAMP
+            // (`opened_at`) con ON UPDATE current_timestamp() y corromperia la
+            // apertura al cerrar. Ver `preserveOpenedAt()`.
+            $openedAt = $lockedSession->getOriginal('opened_at');
+
             $expectedCents = Money::parseCents($reconciliation['expected_cash_amount'], 'expected_cash_amount');
             $closingCents = Money::parseCents($payload['closing_amount'], 'closing_amount');
             $closingBreakdown = $this->normalizeClosingBreakdown($payload['closing_breakdown'] ?? null);
@@ -112,12 +118,19 @@ class CloseCashSessionAction
                 'pending_invoice_count_snapshot' => $pendingInvoiceCount,
                 'pending_amount_snapshot' => $reconciliation['pending_amount'],
                 'status' => CashRegisterSession::STATUS_CLOSED,
+                // Libera el slot unico `(cash_register_id, open_marker)` y el
+                // `unique(open_user_id)` conservado; sin esto la caja quedaria
+                // bloqueada para la siguiente sesion.
+                'open_marker' => null,
                 'open_user_id' => null,
                 'closed_by_user_id' => $user->id,
                 'closing_notes' => $notes === '' ? null : $notes,
                 'closing_breakdown' => $closingBreakdown,
+                'opened_at' => $openedAt,
                 'closed_at' => now(),
             ])->save();
+
+            $this->preserveOpenedAt($lockedSession, $openedAt);
 
             AuditLog::query()->create([
                 'user_id' => $user->id,
@@ -170,8 +183,47 @@ class CloseCashSessionAction
                 CashSessionChanged::dispatch($lockedSession->refresh(), 'closed');
             });
 
-            return $lockedSession->load(['user:id,name,username', 'closedBy:id,name,username']);
+            return $lockedSession->load(['user:id,name,username', 'closedBy:id,name,username', 'cashRegister:id,code,name']);
         });
+    }
+
+    /**
+     * Impide que el ON UPDATE current_timestamp() implicito de MariaDB reescriba
+     * la hora de apertura al cerrar la caja. Eloquent omite las fechas que no
+     * cambiaron, asi que reafirmamos la columna con una auto-asignacion
+     * explicita: en MySQL/MariaDB una columna asignada a si misma en el UPDATE
+     * no dispara el auto-update. Es el mismo mecanismo que usan las
+     * migraciones M-W2-DB-01 para preservar historia. Una vez que hs-db
+     * retire el ON UPDATE del esquema, esta reafirmacion es inofensiva.
+     */
+    private function preserveOpenedAt(CashRegisterSession $session, mixed $openedAt): void
+    {
+        if ($openedAt === null) {
+            return;
+        }
+
+        if (! in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            return;
+        }
+
+        // Se asigna el valor original explicitamente: una auto-asignacion
+        // (`opened_at = opened_at`) no sirve, porque el UPDATE del cierre ya
+        // reescribio la columna con NOW() antes de llegar aqui. Se afina el
+        // `mixed` de `getOriginal()` sin castearlo a ciegas.
+        $value = match (true) {
+            $openedAt instanceof \DateTimeInterface => $openedAt->format('Y-m-d H:i:s'),
+            is_string($openedAt) => $openedAt,
+            is_int($openedAt), is_float($openedAt) => (string) $openedAt,
+            default => null,
+        };
+
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        CashRegisterSession::query()
+            ->whereKey($session->getKey())
+            ->update(['opened_at' => $value]);
     }
 
     /**

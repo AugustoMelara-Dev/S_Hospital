@@ -23,6 +23,7 @@ class UpdateCategoryRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:120'],
             'active' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'availability_change_reason' => ['nullable', 'string', 'min:5', 'max:500'],
         ];
     }
 
@@ -34,17 +35,27 @@ class UpdateCategoryRequest extends FormRequest
                 /** @var Category|null $category */
                 $category = $this->route('category');
 
-                if ($category === null || ! $this->filled('name')) {
+                if ($category === null) {
                     return;
                 }
 
-                $exists = Category::query()
-                    ->where('slug', Str::slug($this->string('name')))
-                    ->whereKeyNot($category->id)
-                    ->exists();
+                if ($this->filled('name')) {
+                    $exists = Category::query()
+                        ->where('slug', Str::slug($this->string('name')))
+                        ->whereKeyNot($category->id)
+                        ->exists();
 
-                if ($exists) {
-                    $validator->errors()->add('name', 'Ya existe una categoria con un nombre equivalente.');
+                    if ($exists) {
+                        $validator->errors()->add('name', 'Ya existe una categoria con un nombre equivalente.');
+                    }
+                }
+
+                if (
+                    $this->has('active')
+                    && $this->boolean('active') !== (bool) $category->active
+                    && ! $this->filled('availability_change_reason')
+                ) {
+                    $validator->errors()->add('availability_change_reason', 'Indique el motivo del cambio de disponibilidad de la categoria.');
                 }
             },
         ];

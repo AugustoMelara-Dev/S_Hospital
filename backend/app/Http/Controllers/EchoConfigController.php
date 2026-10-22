@@ -7,9 +7,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 
 /**
- * Public configuration endpoint for the cashier client to bootstrap
+ * Authenticated configuration endpoint for the cashier client to bootstrap
  * laravel-echo with the correct Soketi/Pusher connection. Returns only
- * non-secret values (host, port, scheme). The private-channel auth endpoint
+ * non-secret values (host, port, scheme) and normalizes ws/wss to the
+ * canonical http/https scheme. The private-channel auth endpoint
  * (POST /broadcasting/auth) is registered by Laravel and validates the user.
  */
 class EchoConfigController extends Controller
@@ -62,11 +63,23 @@ class EchoConfigController extends Controller
         return is_string($value) ? $value : $default;
     }
 
+    /**
+     * Soketi/pusher-js accept ws/wss in addition to http/https. Normalize to
+     * the canonical scheme so the TLS overlay (PUSHER_CLIENT_SCHEME=wss)
+     * reports `scheme: https` and `useTLS: true` instead of silently falling
+     * back to the plain-HTTP defaults.
+     */
     private function validScheme(mixed $scheme, string $default): string
     {
-        return is_string($scheme) && in_array(strtolower($scheme), ['http', 'https'], true)
-            ? strtolower($scheme)
-            : $default;
+        if (! is_string($scheme)) {
+            return $default;
+        }
+
+        return match (strtolower(trim($scheme))) {
+            'https', 'wss' => 'https',
+            'http', 'ws' => 'http',
+            default => $default,
+        };
     }
 
     private function validHost(mixed $host): string

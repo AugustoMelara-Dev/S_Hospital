@@ -10,6 +10,8 @@ use LogicException;
 
 /**
  * @property int $id
+ * @property int|null $cash_register_id
+ * @property int|null $open_marker
  * @property int $user_id
  * @property int|null $open_user_id
  * @property int|null $closed_by_user_id
@@ -32,6 +34,7 @@ use LogicException;
  * @property Carbon|null $updated_at
  * @property-read User|null $user
  * @property-read User|null $closedBy
+ * @property-read CashRegister|null $cashRegister
  */
 class CashRegisterSession extends Model
 {
@@ -39,7 +42,16 @@ class CashRegisterSession extends Model
 
     public const STATUS_CLOSED = 'closed';
 
+    /**
+     * Valor de `open_marker` en una sesion abierta. NULL cuando esta cerrada.
+     * El indice unico `(cash_register_id, open_marker)` hace que una caja solo
+     * pueda tener una sesion con este marcador a la vez.
+     */
+    public const OPEN_MARKER = 1;
+
     protected $fillable = [
+        'cash_register_id',
+        'open_marker',
         'user_id',
         'open_user_id',
         'closed_by_user_id',
@@ -63,6 +75,8 @@ class CashRegisterSession extends Model
     protected function casts(): array
     {
         return [
+            'cash_register_id' => 'integer',
+            'open_marker' => 'integer',
             'opening_amount' => 'decimal:2',
             'closing_amount' => 'decimal:2',
             'expected_amount' => 'decimal:2',
@@ -103,6 +117,12 @@ class CashRegisterSession extends Model
     public function closedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'closed_by_user_id');
+    }
+
+    /** @return BelongsTo<CashRegister, $this> */
+    public function cashRegister(): BelongsTo
+    {
+        return $this->belongsTo(CashRegister::class, 'cash_register_id');
     }
 
     /** @return HasMany<Payment, $this> */

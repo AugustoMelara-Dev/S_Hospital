@@ -38,8 +38,13 @@ class ServiceCatalogTest extends TestCase
         $this->seed(ServiceCatalogSeeder::class);
 
         $this->assertSame(5, Category::query()->count());
-        $this->assertSame(5, Area::query()->count());
-        $this->assertSame(122, Service::query()->count());
+        // F016 fase 1 (migracion 2026_09_13_220001, T2-040): a las 5 areas del
+        // CSV se suma la contraparte canonica "Otros" creada por la migracion
+        // incluso en instalacion nueva (la usa areaSlugForCategory como default).
+        $this->assertSame(6, Area::query()->count());
+        $this->assertSame(1, Area::query()->where('slug', 'otros')->count());
+        $this->assertSame(151, Service::query()->count());
+        $this->assertSame(149, Service::query()->where('active', true)->count());
         $this->assertSame(0, Service::query()->whereNull('area_id')->count());
 
         $erythropoietin = Service::query()
@@ -47,7 +52,7 @@ class ServiceCatalogTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame('25.00', $erythropoietin->price);
-        $this->assertFalse($erythropoietin->taxable);
+        $this->assertTrue($erythropoietin->taxable);
         $this->assertSame(Service::ERYTHROPOIETIN_RULE, $erythropoietin->special_rule_code);
         $this->assertNotNull($erythropoietin->source_key);
         $this->assertNotNull($erythropoietin->source_hash);
@@ -85,7 +90,7 @@ class ServiceCatalogTest extends TestCase
 
         $this->assertSame(5, Category::query()->count());
         $this->assertSame(6, ServiceArea::query()->count());
-        $this->assertSame(122, Service::query()->count());
+        $this->assertSame(151, Service::query()->count());
     }
 
     public function test_service_catalog_seeder_retires_rows_removed_from_the_managed_csv(): void
@@ -119,7 +124,7 @@ class ServiceCatalogTest extends TestCase
         $this->assertFalse($obsoleteService->visible_in_billing);
         $this->assertFalse($obsoleteService->is_billable);
         $this->assertFalse($obsoleteCategory->active);
-        $this->assertSame(122, Service::query()->where('active', true)->count());
+        $this->assertSame(149, Service::query()->where('active', true)->count());
     }
 
     public function test_service_catalog_seeder_preserves_existing_operational_service_changes(): void
@@ -187,12 +192,126 @@ class ServiceCatalogTest extends TestCase
 
         $this->seed(ServiceCatalogSeeder::class);
 
-        $this->assertSame(122, Service::query()->count());
+        $this->assertSame(151, Service::query()->count());
         $this->assertDatabaseHas('services', [
             'source_key' => $sourceKey,
             'name' => 'Eritropoyetina',
             'slug' => 'eritropoyetina',
         ]);
+    }
+
+    public function test_service_catalog_source_key_is_explicit_and_does_not_change_with_display_name(): void
+    {
+        $method = new \ReflectionMethod(ServiceCatalogSeeder::class, 'serviceSourceKey');
+        $method->setAccessible(true);
+        $seeder = new ServiceCatalogSeeder;
+
+        $legacyKey = 'csv:service:servicios-generales:estancia-administrativa';
+
+        $this->assertSame($legacyKey, $method->invoke($seeder, [
+            'source_key' => $legacyKey,
+            'categoria' => 'Servicios generales',
+            'servicio' => 'Estancia administrativa',
+        ]));
+        $this->assertSame($legacyKey, $method->invoke($seeder, [
+            'source_key' => $legacyKey,
+            'categoria' => 'Servicios generales',
+            'servicio' => 'Internamiento',
+        ]));
+    }
+
+    public function test_photo_catalog_loads_confirmed_prices_and_keeps_ambiguous_kdh_out_of_billing(): void
+    {
+        $this->seed(ServiceCatalogSeeder::class);
+
+        foreach ([
+            ['csv:service:laboratorio:general-de-heces', '15.00'],
+            ['csv:service:laboratorio:hemograma-completo', '35.00'],
+            ['csv:service:laboratorio:hematocrito', '10.00'],
+            ['csv:service:laboratorio:hepatitis-abc', '65.00'],
+            ['csv:service:laboratorio:hdl-colesterol', '20.00'],
+            ['csv:service:laboratorio:helicobacter-pylori', '85.00'],
+            ['csv:service:laboratorio:cd4', '50.00'],
+            ['csv:service:laboratorio:urocultivo', '80.00'],
+            ['csv:service:laboratorio:hemoglobina-glicosilada-hba-c', '105.00'],
+            ['csv:service:radiologia:mano', '65.00'],
+            ['csv:service:radiologia:torax', '45.00'],
+            ['csv:service:radiologia:columna-lumbar', '85.00'],
+            ['csv:service:radiologia:pelvis', '45.00'],
+            ['csv:service:radiologia:pre-d-p-oblicua-y-lat', '65.00'],
+            ['csv:service:radiologia:articulacion-proxofeno-coxofeno', '45.00'],
+            ['csv:service:radiologia:lumbosacra', '85.00'],
+            ['csv:service:radiologia:poner-yeso', '45.00'],
+            ['csv:service:odontologia:extraccion', '20.00'],
+            ['csv:service:odontologia:tapado', '105.00'],
+        ] as [$sourceKey, $price]) {
+            $this->assertDatabaseHas('services', [
+                'source_key' => $sourceKey,
+                'price' => $price,
+                'active' => true,
+                'visible_in_billing' => true,
+                'is_billable' => true,
+            ]);
+        }
+
+        $this->assertDatabaseHas('services', [
+            'name' => 'Gases Arteriales',
+            'price' => '305.00',
+        ]);
+        $this->assertDatabaseHas('services', [
+            'name' => 'Gases Arteriales (si viene de la privada)',
+            'price' => '600.00',
+        ]);
+        $this->assertDatabaseHas('services', [
+            'name' => 'Unidad de Sangre fuera del hospital',
+            'price' => '1500.00',
+        ]);
+
+        foreach (['K.D.H. (tarifa L. 10)', 'K.D.H. (tarifa L. 35)'] as $name) {
+            $this->assertDatabaseHas('services', [
+                'name' => $name,
+                'active' => false,
+                'visible_in_billing' => false,
+                'is_billable' => false,
+                'description' => 'Pendiente de confirmación administrativa; no disponible para cobro.',
+            ]);
+        }
+
+        $this->assertSame(1, Service::query()->where('name', 'Pre D.P. Oblicua y Lat.')->count());
+        $this->assertSame(1, Service::query()->where('name', 'Articulación Proxofeno Coxofeno')->count());
+        $this->assertSame(1, Service::query()->whereRaw('lower(name) = ?', ['tibia derecha'])->count());
+    }
+
+    public function test_catalog_semantic_rename_preserves_local_tariff_and_historical_invoice_snapshot(): void
+    {
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $service = Service::query()
+            ->where('source_key', 'csv:service:servicios-generales:estancia-administrativa')
+            ->firstOrFail();
+        $serviceId = $service->id;
+        $service->forceFill([
+            'name' => 'Estancia administrativa',
+            'slug' => 'estancia-administrativa',
+            'price' => '999.00',
+            'taxable' => false,
+        ])->save();
+
+        $invoice = $this->createIssuedInvoiceForService($service, User::factory()->create());
+        $item = $invoice->items()->sole();
+        $snapshotName = $item->service_name;
+        $snapshotPrice = $item->unit_price;
+
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $service->refresh();
+        $item->refresh();
+        $this->assertSame($serviceId, $service->id);
+        $this->assertSame('Internamiento', $service->name);
+        $this->assertSame('999.00', $service->price);
+        $this->assertFalse($service->taxable);
+        $this->assertSame($snapshotName, $item->service_name);
+        $this->assertSame($snapshotPrice, $item->unit_price);
     }
 
     public function test_service_catalog_price_parser_rejects_invalid_decimal_values(): void
@@ -280,10 +399,12 @@ class ServiceCatalogTest extends TestCase
         $inactiveArea = Area::query()->firstOrFail();
         $inactiveArea->forceFill(['active' => false])->save();
 
+        // 6 areas tras el seed (5 del CSV + "Otros" canonica de la migracion
+        // 2026_09_13_220001); al desactivar 1 quedan 5 activas.
         $this->actingAs($catalogViewer)
             ->getJson('/api/areas?active=1')
             ->assertOk()
-            ->assertJsonCount(4, 'data');
+            ->assertJsonCount(5, 'data');
 
         $this->actingAs($reportViewer)
             ->getJson('/api/areas?active=0')
@@ -355,8 +476,14 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($cashier)
             ->getJson('/api/services?per_page=150')
             ->assertOk()
-            ->assertJsonCount(122, 'data')
-            ->assertJsonPath('meta.total', 122);
+            ->assertJsonCount(150, 'data')
+            ->assertJsonPath('meta.total', 151);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?per_page=150&page=2')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('meta.total', 151);
 
         $this->actingAs($cashier)
             ->getJson('/api/services?per_page=151')
@@ -511,8 +638,11 @@ class ServiceCatalogTest extends TestCase
         $admin = $this->admin();
         $cashier = $this->cashier();
         $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
-        $laboratory = ServiceArea::query()->where('slug', 'laboratorio')->firstOrFail();
-        $rayos = ServiceArea::query()->where('slug', 'rayos-x')->firstOrFail();
+        // `services.area_id` referencia `areas` (canonica) y la validacion usa
+        // exists:areas,id. Los ids de `service_areas` (legacy) divergen en
+        // MariaDB por el autoincremento entre tablas; usar Area evita el 422.
+        $laboratory = Area::query()->where('slug', 'laboratorio')->firstOrFail();
+        $rayos = Area::query()->where('slug', 'rayos-x')->firstOrFail();
 
         $this->actingAs($admin)
             ->patchJson("/api/services/{$glucose->id}", [
@@ -873,7 +1003,7 @@ class ServiceCatalogTest extends TestCase
         }
     }
 
-    public function test_erythropoietin_rule_requires_the_fixed_twenty_five_lempira_price(): void
+    public function test_erythropoietin_price_comes_from_the_authorized_catalog(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
@@ -882,31 +1012,22 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->patchJson("/api/services/{$service->id}", [
                 'price' => '30.00',
-                'price_change_reason' => 'Intento de cambiar tarifa fija',
+                'price_change_reason' => 'Tarifa autorizada por administracion',
                 'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
             ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('price');
+            ->assertOk()
+            ->assertJsonPath('data.price', '30.00')
+            ->assertJsonPath('data.special_rule_code', Service::ERYTHROPOIETIN_RULE);
 
-        $this->assertSame('25.00', $service->refresh()->price);
-
-        $this->actingAs($admin)
-            ->postJson('/api/services', [
-                'category_id' => $service->category_id,
-                'area_id' => $service->area_id,
-                'name' => 'Eritropoyetina alterna',
-                'price' => '30.00',
-                'taxable' => false,
-                'active' => true,
-                'visible_in_billing' => true,
-                'is_billable' => true,
-                'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
-            ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('price');
+        $this->assertSame('30.00', $service->refresh()->price);
+        $this->assertDatabaseHas('service_price_histories', [
+            'service_id' => $service->id,
+            'old_price' => '25.00',
+            'new_price' => '30.00',
+        ]);
     }
 
-    public function test_erythropoietin_rule_requires_non_taxable_service_on_create(): void
+    public function test_erythropoietin_rule_cannot_be_assigned_from_catalog_create(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
@@ -925,11 +1046,11 @@ class ServiceCatalogTest extends TestCase
                 'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('taxable')
-            ->assertJsonMissingValidationErrors('price');
+            ->assertJsonValidationErrors('special_rule_code')
+            ->assertJsonMissingValidationErrors(['price', 'taxable']);
     }
 
-    public function test_erythropoietin_rule_requires_non_taxable_service_on_update(): void
+    public function test_erythropoietin_rule_cannot_be_assigned_from_catalog_update(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
@@ -938,12 +1059,12 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->patchJson("/api/services/{$service->id}", [
                 'price' => '25.00',
-                'price_change_reason' => 'Correccion para regla fija de farmacia',
+                'price_change_reason' => 'Tarifa autorizada por farmacia',
                 'special_rule_code' => Service::ERYTHROPOIETIN_RULE,
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('taxable')
-            ->assertJsonMissingValidationErrors('price');
+            ->assertJsonValidationErrors('special_rule_code')
+            ->assertJsonMissingValidationErrors(['price', 'taxable']);
 
         $service->refresh();
 
@@ -951,7 +1072,7 @@ class ServiceCatalogTest extends TestCase
         $this->assertNull($service->special_rule_code);
     }
 
-    public function test_erythropoietin_catalog_rule_cannot_be_cleared_or_made_taxable(): void
+    public function test_erythropoietin_rule_is_preserved_while_price_and_tax_follow_catalog(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
@@ -960,23 +1081,25 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->patchJson("/api/services/{$service->id}", [
                 'price' => '30.00',
-                'price_change_reason' => 'Intento de retirar regla fija',
+                'price_change_reason' => 'Tarifa autorizada por administracion',
                 'taxable' => true,
-                'tax_change_reason' => 'Intento de activar impuesto',
-                'special_rule_code' => null,
+                'tax_change_reason' => 'Tratamiento fiscal autorizado',
             ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors([
-                'price',
-                'special_rule_code',
-                'taxable',
-            ]);
+            ->assertOk()
+            ->assertJsonPath('data.price', '30.00')
+            ->assertJsonPath('data.taxable', true)
+            ->assertJsonPath('data.special_rule_code', Service::ERYTHROPOIETIN_RULE);
 
         $service->refresh();
 
-        $this->assertSame('25.00', $service->price);
-        $this->assertFalse($service->taxable);
+        $this->assertSame('30.00', $service->price);
+        $this->assertTrue($service->taxable);
         $this->assertSame(Service::ERYTHROPOIETIN_RULE, $service->special_rule_code);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['special_rule_code' => null])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('special_rule_code');
     }
 
     public function test_invalid_price_update_returns_validation_error_before_price_reason_check(): void
@@ -1111,7 +1234,7 @@ class ServiceCatalogTest extends TestCase
 
         $this->assertSame($originalCategoryId, $audit->old_values['category_id']);
         $this->assertSame($originalAreaId, $audit->old_values['area_id']);
-        $this->assertNull($audit->old_values['aliases']);
+        $this->assertSame('Glucosa (Glicemia)', $audit->old_values['aliases']);
         $this->assertSame($newCategory->id, $audit->new_values['category_id']);
         $this->assertSame($newArea->id, $audit->new_values['area_id']);
         $this->assertSame('azucar, glucemia, glicemia', $audit->new_values['aliases']);
@@ -1250,6 +1373,85 @@ class ServiceCatalogTest extends TestCase
         }
 
         $this->assertSame($originalPrice, $service->refresh()->price);
+    }
+
+    public function test_catalog_manager_can_read_catalog_detail_and_history_without_separate_view_permission(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo('catalog.manage');
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->actingAs($manager)->getJson('/api/categories')->assertOk();
+        $this->actingAs($manager)->getJson('/api/services')->assertOk();
+        $this->actingAs($manager)
+            ->getJson("/api/services/{$service->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $service->id);
+        $this->actingAs($manager)
+            ->getJson("/api/services/{$service->id}/history")
+            ->assertOk();
+    }
+
+    public function test_service_history_exposes_useful_changes_actor_and_reason(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'price' => '31.50',
+                'price_change_reason' => 'Tarifa aprobada para el nuevo periodo',
+            ])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->getJson("/api/services/{$service->id}/history")
+            ->assertOk()
+            ->assertJsonPath('data.0.label', 'Precio actualizado')
+            ->assertJsonPath('data.0.reason', 'Tarifa aprobada para el nuevo periodo')
+            ->assertJsonPath('data.0.user.id', $admin->id)
+            ->assertJsonPath('data.0.changes.0.field', 'price')
+            ->assertJsonPath('data.0.changes.0.after', '31.50')
+            ->assertJsonMissingPath('data.0.changes.0.internal_code');
+    }
+
+    public function test_category_deactivation_reports_impact_and_requires_reason(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $category = Category::query()->has('services')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->getJson('/api/categories')
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $category->id,
+                'services_count' => $category->services()->count(),
+                'active_services_count' => $category->services()->where('active', true)->count(),
+            ]);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/categories/{$category->id}", ['active' => false])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('availability_change_reason');
+
+        $reason = 'Categoría suspendida por revisión administrativa';
+        $this->actingAs($admin)
+            ->patchJson("/api/categories/{$category->id}", [
+                'active' => false,
+                'availability_change_reason' => $reason,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.active', false);
+
+        $this->assertSame($reason, AuditLog::query()
+            ->where('entity_type', Category::class)
+            ->where('entity_id', $category->id)
+            ->latest('id')
+            ->firstOrFail()
+            ->reason);
     }
 
     private function admin(): User

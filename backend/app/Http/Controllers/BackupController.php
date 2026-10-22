@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Backups\CreateBackupAction;
 use App\Actions\Backups\ReconcileStaleBackupLogsAction;
+use App\Actions\Backups\VerifyBackupAction;
 use App\Http\Requests\Backups\DownloadBackupRequest;
 use App\Http\Requests\Backups\IndexBackupRequest;
 use App\Http\Requests\Backups\StoreBackupRequest;
@@ -24,6 +25,9 @@ class BackupController extends Controller
     ): JsonResponse {
         $reconcileStaleBackupLogs->execute();
         $validated = $request->validated();
+        $globalPendingCount = BackupLog::query()
+            ->where('status', BackupLog::STATUS_PENDING)
+            ->count();
 
         $backups = BackupLog::query()
             ->with('creator:id,name,username')
@@ -40,6 +44,7 @@ class BackupController extends Controller
                 'current_page' => $backups->currentPage(),
                 'per_page' => $backups->perPage(),
                 'total' => $backups->total(),
+                'global_pending_count' => $globalPendingCount,
             ],
         ]);
     }
@@ -192,6 +197,12 @@ class BackupController extends Controller
             'created_at' => $backupLog->created_at,
             'updated_at' => $backupLog->updated_at,
             'creator' => $backupLog->creator,
+            'verify_status' => $backupLog->verify_status,
+            'verified_at' => $backupLog->verified_at,
+            'verification_scope' => $backupLog->verify_status === VerifyBackupAction::STATUS_VERIFIED
+                ? VerifyBackupAction::SCOPE_ENCRYPTED_FILE_INTEGRITY
+                : null,
+            'restore_tested' => false,
         ];
 
         if ($backupLog->status === BackupLog::STATUS_FAILED) {

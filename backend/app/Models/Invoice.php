@@ -45,6 +45,8 @@ use LogicException;
  * @property string $balance_due
  * @property int $balance_due_cents
  * @property string $status
+ * @property string $settlement
+ * @property int $legacy_reprint_count
  * @property int|null $cash_session_id
  * @property int $issued_by
  * @property Carbon|null $issued_at
@@ -67,6 +69,18 @@ class Invoice extends Model
     public const STATUS_PAID = 'paid';
 
     public const STATUS_VOID = 'void';
+
+    /**
+     * Liquidacion contable explicita, separada de `status` para no romper
+     * recibos/anulaciones: una emision gratuita por regla NO es un cobro.
+     */
+    public const SETTLEMENT_PENDING = 'pending';
+
+    public const SETTLEMENT_PAID = 'paid';
+
+    public const SETTLEMENT_FREE_BY_RULE = 'free_by_rule';
+
+    public const SETTLEMENT_ZERO_PRICE = 'zero_price';
 
     protected $fillable = [
         'invoice_number',
@@ -103,6 +117,7 @@ class Invoice extends Model
         'balance_due',
         'balance_due_cents',
         'status',
+        'settlement',
         'cash_session_id',
         'issued_by',
         'issued_at',
@@ -134,6 +149,7 @@ class Invoice extends Model
             'balance_due' => 'decimal:2',
             'balance_due_cents' => 'integer',
             'tax_rate_snapshot' => 'decimal:2',
+            'legacy_reprint_count' => 'integer',
             'fiscal_valid_until' => 'date',
             'issued_at' => 'datetime',
             'voided_at' => 'datetime',
@@ -188,5 +204,18 @@ class Invoice extends Model
     public function fiscalSequence(): BelongsTo
     {
         return $this->belongsTo(FiscalSequence::class);
+    }
+
+    public function isFreeByRule(): bool
+    {
+        return $this->settlement === self::SETTLEMENT_FREE_BY_RULE;
+    }
+
+    public function isWithoutCharge(): bool
+    {
+        return in_array($this->settlement, [
+            self::SETTLEMENT_FREE_BY_RULE,
+            self::SETTLEMENT_ZERO_PRICE,
+        ], true);
     }
 }

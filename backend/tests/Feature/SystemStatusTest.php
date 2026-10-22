@@ -22,7 +22,8 @@ class SystemStatusTest extends TestCase
 
     public function test_setup_status_handles_fresh_database_without_seeded_roles(): void
     {
-        $this->getJson('/api/system/setup-status')
+        $this->actingAs(User::factory()->create())
+            ->getJson('/api/system/setup-status')
             ->assertOk()
             ->assertJsonPath('needs_setup', true)
             ->assertJsonPath('steps.admin_exists', false)
@@ -40,10 +41,16 @@ class SystemStatusTest extends TestCase
         ]);
         $inactiveAdmin->assignRole('admin');
 
-        $this->getJson('/api/system/setup-status')
+        $this->actingAs(User::factory()->create())
+            ->getJson('/api/system/setup-status')
             ->assertOk()
             ->assertJsonPath('needs_setup', true)
             ->assertJsonPath('steps.admin_exists', false);
+    }
+
+    public function test_setup_status_is_not_publicly_readable(): void
+    {
+        $this->getJson('/api/system/setup-status')->assertUnauthorized();
     }
 
     public function test_admin_can_view_operational_status_without_secret_values(): void

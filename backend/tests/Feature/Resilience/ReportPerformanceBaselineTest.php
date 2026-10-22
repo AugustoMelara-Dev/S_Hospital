@@ -15,6 +15,7 @@ use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\Money;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -168,7 +169,11 @@ class ReportPerformanceBaselineTest extends TestCase
 
         for ($i = 0; $i < 100; $i++) {
             $service = $services[$i % 3];
-            $lineSubtotalCents = (int) $service->price_cents;
+            // El catalogo vigente guarda `price` (decimal:2), no `price_cents`.
+            // Se convierte con el helper de centavos para que los pagos del
+            // fixture tengan importe real y sigan midiendo el presupuesto.
+            $unitPriceCents = Money::parseCents((string) $service->price, 'service.price');
+            $lineSubtotalCents = $unitPriceCents;
             $taxCents = (int) round($lineSubtotalCents * 0.15);
             $lineTotalCents = $lineSubtotalCents + $taxCents;
             $totalCents += $lineTotalCents;
@@ -209,8 +214,8 @@ class ReportPerformanceBaselineTest extends TestCase
                 'area_name' => $service->area?->name ?? '',
                 'quantity' => '1.00',
                 'quantity_cents' => 100,
-                'unit_price' => number_format($service->price_cents / 100, 2, '.', ''),
-                'unit_price_cents' => (int) $service->price_cents,
+                'unit_price' => number_format($unitPriceCents / 100, 2, '.', ''),
+                'unit_price_cents' => $unitPriceCents,
                 'tax_rate' => '15.00',
                 'tax_amount' => number_format($taxCents / 100, 2, '.', ''),
                 'tax_amount_cents' => $taxCents,

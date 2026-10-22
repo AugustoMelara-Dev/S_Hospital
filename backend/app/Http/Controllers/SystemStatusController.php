@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Backups\LastRecoverableBackupAction;
 use App\Actions\Backups\ReconcileStaleBackupLogsAction;
 use App\Actions\Reports\OperationalMetricsService;
 use App\Actions\System\BuildOperationalStatusAction;
@@ -32,7 +33,7 @@ use Throwable;
  * @phpstan-type BackupStorageStatus array{writable: bool, free_bytes: float|null}
  * @phpstan-type SchedulerHeartbeatStatus array{status: string, last_tick_at: string|null, last_result: mixed, last_message: mixed, age_seconds: float|int|null, ticks_in_db: int, ticks_last_24h: int, expected: string}
  * @phpstan-type QueueStatus array{connection: string, jobs_table_available: bool, failed_jobs_table_available: bool, failed_jobs_count: int|null, pending_backup_jobs: int|null, scheduler_heartbeat: SchedulerHeartbeatStatus}
- * @phpstan-type BackupStatus array{pending_count: int, failed_count: int, worker_recently_active: bool, oldest_pending_at: string|null, stale_pending_count: int, stale_pending_threshold_minutes: int, last_success_at: string|null, last_success_file_exists: bool, last_success_checksum_matches: bool, last_failure_at: string|null, last_failure_message: string|null, dump_binary: DumpBinaryStatus, storage: BackupStorageStatus, queue: QueueStatus}
+ * @phpstan-type BackupStatus array{pending_count: int, failed_count: int, worker_recently_active: bool, oldest_pending_at: string|null, stale_pending_count: int, stale_pending_threshold_minutes: int, last_success_at: string|null, last_success_file_exists: bool, last_success_checksum_matches: bool, last_recoverable_at: string|null, last_recoverable_backup_id: int|null, last_recoverable_age_seconds: int|null, last_failure_at: string|null, last_failure_message: string|null, dump_binary: DumpBinaryStatus, storage: BackupStorageStatus, queue: QueueStatus}
  * @phpstan-type RuntimeStatus array{logs_writable: bool, cache_writable: bool, laravel_log: array{exists: bool, size_bytes: int|null, modified_at: string|null}, backup_automation_log: array{exists: bool, size_bytes: int|null, modified_at: string|null}, frontend_build: array{available: bool, modified_at: string|null}, installed_version: string, latest_migration: string|null, migration_count: int|null, pending_migration_count: int, pending_migrations: list<string>}
  */
 class SystemStatusController extends Controller
@@ -348,6 +349,7 @@ class SystemStatusController extends Controller
         $operationalMetrics = app(OperationalMetricsService::class)->snapshot();
         $metricBackups = $this->statusSection($operationalMetrics['backups'] ?? null);
         $queueStatus = $this->queueStatus();
+        $lastRecoverable = app(LastRecoverableBackupAction::class)->execute();
         $workerRecentlyActive = ($metricBackups['worker_recently_active'] ?? false) === true;
         $lastSuccessFile = [
             'exists' => ($metricBackups['latest_success_file_exists'] ?? null) === true,
@@ -382,6 +384,9 @@ class SystemStatusController extends Controller
             'last_success_at' => $lastSuccess?->completed_at?->toJSON(),
             'last_success_file_exists' => $lastSuccessFile['exists'],
             'last_success_checksum_matches' => $lastSuccessFile['checksum_matches'],
+            'last_recoverable_at' => $lastRecoverable['verified_at'] ?? null,
+            'last_recoverable_backup_id' => $lastRecoverable['id'] ?? null,
+            'last_recoverable_age_seconds' => $lastRecoverable['age_seconds'] ?? null,
             'last_failure_at' => $lastFailure?->completed_at?->toJSON(),
             'last_failure_message' => OperationalMessageSanitizer::message($lastFailure?->error_message),
             'dump_binary' => $this->dumpBinaryStatus(),

@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\DB;
  *     invoice_count: int,
  *     payment_count: int,
  *     total_collected: string,
- *     payments_by_method: array<string, string>
+ *     payments_by_method: array<string, string>,
+ *     without_charge_count: int
  * }
  */
 class FinancialFactsService
@@ -43,7 +44,27 @@ class FinancialFactsService
             'payment_count' => $paymentFacts['payment_count'],
             'total_collected' => $this->centsToMoney($paymentFacts['collected_cents']),
             'payments_by_method' => $paymentFacts['payments_by_method'],
+            // MANDATO_DEV §8: las emisiones sin cobro (regla EPO por linea o
+            // precio cero configurado) se cuentan aparte y nunca como
+            // operaciones cobradas ni como pagos de 0.00.
+            'without_charge_count' => $this->withoutChargeCount($start, $end, $filters),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function withoutChargeCount(Carbon $start, Carbon $end, array $filters): int
+    {
+        return (int) Invoice::query()
+            ->whereBetween('issued_at', [$start, $end])
+            ->whereIn('settlement', [
+                Invoice::SETTLEMENT_FREE_BY_RULE,
+                Invoice::SETTLEMENT_ZERO_PRICE,
+            ])
+            ->where('status', '!=', Invoice::STATUS_VOID)
+            ->tap(fn (Builder $query) => $this->applyInvoiceFilters($query, $filters))
+            ->count();
     }
 
     /**
@@ -224,6 +245,7 @@ class FinancialFactsService
             })
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$start, $end])
             ->tap(fn (Builder $query) => $this->applyPaymentFilters($query, $filters, includeItemFilters: ! $hasItemFilter));
 
@@ -365,6 +387,7 @@ class FinancialFactsService
             ->select('payments.invoice_id')
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->where('payments.amount_cents', '!=', 0)
             ->whereBetween('payments.paid_at', [$start, $end])
             ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
                 $query->where('payments.user_id', $filters['user_id']);

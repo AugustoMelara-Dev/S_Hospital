@@ -128,6 +128,33 @@ class MoneyTest extends TestCase
         )));
     }
 
+    public function test_allocate_returns_empty_list_for_no_weights(): void
+    {
+        $this->assertSame([], Money::fromCents(100)->allocate([]));
+    }
+
+    public function test_allocate_conserves_total_for_awkward_splits(): void
+    {
+        $cases = [
+            [100, [1, 1, 1]],
+            [1, [1, 1, 1]],
+            [99, [7, 11, 13]],
+            [5, [1, 1, 1, 1, 1, 1, 1]],
+            [123456, [3, 3, 3, 3]],
+            [-7, [1, 2, 4]],
+        ];
+
+        foreach ($cases as [$totalCents, $weights]) {
+            $shares = Money::fromCents($totalCents)->allocate($weights);
+
+            $this->assertCount(count($weights), $shares, "Cantidad de partes para {$totalCents}.");
+            $this->assertSame($totalCents, array_sum(array_map(
+                static fn (Money $share): int => $share->toCents(),
+                $shares,
+            )), "La asignacion de {$totalCents} no conserva los centavos.");
+        }
+    }
+
     public function test_equals_compares_by_cents(): void
     {
         $this->assertTrue(Money::fromCents(100)->equals(Money::fromCents(100)));

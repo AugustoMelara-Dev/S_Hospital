@@ -21,7 +21,7 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
-return Application::configure(basePath: dirname(__DIR__))
+$application = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -127,3 +127,15 @@ return Application::configure(basePath: dirname(__DIR__))
             return response()->view('maintenance', ['message' => $message], 503);
         });
     })->create();
+
+// Laravel 12 only recognizes paths beginning with / or \ as absolute by
+// default. Native Windows deployments use drive-qualified cache paths, so
+// register both separator variants before the HTTP/console kernel bootstraps.
+foreach (range('A', 'Z') as $drive) {
+    foreach ([$drive, strtolower($drive)] as $driveVariant) {
+        $application->addAbsoluteCachePathPrefix($driveVariant.':\\');
+        $application->addAbsoluteCachePathPrefix($driveVariant.':/');
+    }
+}
+
+return $application;

@@ -78,7 +78,7 @@ class AuditInstitutionalServiceRulesCommandTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function test_canonical_service_with_wrong_price_or_tax_is_invalid(): void
+    public function test_catalog_price_and_tax_do_not_invalidate_the_institutional_rule(): void
     {
         $this->seed(ServiceCatalogSeeder::class);
 
@@ -91,7 +91,7 @@ class AuditInstitutionalServiceRulesCommandTest extends TestCase
         ])->save();
 
         $this->assertSame([
-            'valid' => false,
+            'valid' => true,
             'canonical_service_id' => $canonical->id,
             'unexpected_service_ids' => [],
         ], app(AuditInstitutionalServiceRulesAction::class)->execute());

@@ -3,15 +3,24 @@
 namespace App\Actions\Billing;
 
 use App\Models\FiscalSequence;
+use App\Support\RestoreReconciliation;
 use Illuminate\Validation\ValidationException;
 
 class GenerateFiscalNumberAction
 {
+    public function __construct(
+        private readonly RestoreReconciliation $restoreReconciliation,
+    ) {}
+
     /**
      * @return array{sequence: FiscalSequence, invoice_number: string, next_number: int}
      */
     public function execute(): array
     {
+        // HS-RESTORE-SEQUENCE: sin reconciliacion post-restore confirmada no
+        // se consume ningun correlativo (fail-closed, antes de toda lectura).
+        $this->restoreReconciliation->assertEmissionAllowed('facturas');
+
         $documentType = 'invoice';
         $sequences = FiscalSequence::query()
             ->where('document_type', $documentType)

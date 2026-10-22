@@ -283,7 +283,7 @@ class RoleController extends Controller
             $normalizedPermissions[] = $permission;
         }
 
-        return ['name' => $name, 'permissions' => $normalizedPermissions];
+        return ['name' => $name, 'permissions' => RoleCatalog::withDependencies($normalizedPermissions)];
     }
 
     private function roleId(Role $role): int

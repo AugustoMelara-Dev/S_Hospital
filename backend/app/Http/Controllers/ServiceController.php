@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Catalog\DeleteServiceRequest;
 use App\Http\Requests\Catalog\IndexServiceRequest;
+use App\Http\Requests\Catalog\IndexServiceHistoryRequest;
 use App\Http\Requests\Catalog\StoreServiceRequest;
 use App\Http\Requests\Catalog\UpdateServiceRequest;
 use App\Models\AuditLog;
@@ -92,6 +93,48 @@ class ServiceController extends Controller
                 'current_page' => $services->currentPage(),
                 'per_page' => $services->perPage(),
                 'total' => $services->total(),
+            ],
+        ]);
+    }
+
+    public function show(Service $service): JsonResponse
+    {
+        Gate::authorize('view', $service);
+
+        return response()->json([
+            'data' => $service->load('category:id,name,slug,active,sort_order', 'area:id,name,slug,active'),
+        ]);
+    }
+
+    public function history(IndexServiceHistoryRequest $request, Service $service): JsonResponse
+    {
+        $page = AuditLog::query()
+            ->with('user:id,name,username')
+            ->where('entity_type', Service::class)
+            ->where('entity_id', $service->id)
+            ->where('action', 'like', 'service.%')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate($request->perPage());
+
+        return response()->json([
+            'data' => collect($page->items())->map(fn (AuditLog $log): array => [
+                'id' => $log->id,
+                'action' => $log->action,
+                'label' => $this->historyActionLabel($log->action),
+                'reason' => $this->historyReason($log),
+                'created_at' => $log->created_at?->toIso8601String(),
+                'user' => $log->user ? [
+                    'id' => $log->user->id,
+                    'name' => $log->user->name,
+                    'username' => $log->user->username,
+                ] : null,
+                'changes' => $this->historyChanges($log),
+            ])->values(),
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
             ],
         ]);
     }
@@ -358,6 +401,62 @@ class ServiceController extends Controller
             'special_rule_code' => $service->special_rule_code,
             'print_on_receipt' => $service->print_on_receipt,
         ];
+    }
+
+    /** @return list<array{field: string, label: string, before: mixed, after: mixed}> */
+    private function historyChanges(AuditLog $log): array
+    {
+        $labels = [
+            'name' => 'Nombre',
+            'aliases' => 'Referencias de búsqueda',
+            'price' => 'Precio',
+            'taxable' => 'Aplica ISV',
+            'active' => 'Activo',
+            'visible_in_billing' => 'Visible en caja',
+            'is_billable' => 'Facturable',
+        ];
+        $oldValues = $log->old_values ?? [];
+        $newValues = $log->new_values ?? [];
+        $changes = [];
+
+        foreach ($labels as $field => $label) {
+            $before = $oldValues[$field] ?? null;
+            $after = $newValues[$field] ?? null;
+
+            if ($log->old_values !== null && $before === $after) {
+                continue;
+            }
+
+            $changes[] = compact('field', 'label', 'before', 'after');
+        }
+
+        return $changes;
+    }
+
+    private function historyReason(AuditLog $log): ?string
+    {
+        foreach (['price_change_reason', 'tax_change_reason', 'availability_change_reason'] as $field) {
+            $value = $log->new_values[$field] ?? null;
+
+            if (is_string($value) && trim($value) !== '') {
+                return trim($value);
+            }
+        }
+
+        return $log->reason;
+    }
+
+    private function historyActionLabel(string $action): string
+    {
+        return match ($action) {
+            'service.created' => 'Concepto creado',
+            'service.price_updated' => 'Precio actualizado',
+            'service.tax_updated' => 'Impuesto actualizado',
+            'service.active_updated', 'service.deactivated' => 'Disponibilidad actualizada',
+            'service.visibility_updated' => 'Visibilidad en caja actualizada',
+            'service.billability_updated' => 'Facturación actualizada',
+            default => 'Datos actualizados',
+        };
     }
 
     /**

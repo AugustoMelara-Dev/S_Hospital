@@ -174,6 +174,36 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonValidationErrors('patient_name');
     }
 
+    public function test_patient_name_collapses_internal_whitespace_and_preserves_unicode(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => "  Juan   Perez O'Brien  ",
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.patient_name', "Juan Perez O'Brien")
+            ->json('data.id');
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'patient_name' => "Juan Perez O'Brien",
+        ]);
+
+        // Tildes, apostrofos y tabuladores/saltos de linea no rompen el nombre.
+        $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => "  María\tLópez \n de   la Cruz  ",
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.patient_name', 'María López de la Cruz');
+    }
+
     public function test_patient_name_above_180_chars_is_rejected(): void
     {
         $this->seedBillingBase();
@@ -504,7 +534,7 @@ class InvoiceCreationTest extends TestCase
         }
     }
 
-    public function test_erythropoietin_normal_is_charged_at_twenty_five(): void
+    public function test_erythropoietin_normal_uses_the_authorized_catalog_price_and_tax(): void
     {
         $this->seedBillingBase();
         $erythropoietin = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
@@ -516,11 +546,11 @@ class InvoiceCreationTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.items.0.unit_price', '25.00')
-            ->assertJsonPath('data.items.0.tax_rate', '0.00')
-            ->assertJsonPath('data.items.0.tax_amount', '0.00')
+            ->assertJsonPath('data.items.0.tax_rate', '15.00')
+            ->assertJsonPath('data.items.0.tax_amount', '3.75')
             ->assertJsonPath('data.items.0.special_rule_applied', false)
-            ->assertJsonPath('data.tax_amount', '0.00')
-            ->assertJsonPath('data.total', '25.00');
+            ->assertJsonPath('data.tax_amount', '3.75')
+            ->assertJsonPath('data.total', '28.75');
     }
 
     public function test_erythropoietin_with_dialysis_prescription_is_free_and_snapshotted(): void
@@ -737,6 +767,8 @@ class InvoiceCreationTest extends TestCase
         int $maxNumber = 99999999,
     ): void {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        // Financial scenarios use a synthetic tariff and must not inherit production catalog prices.
+        Service::query()->where('name', 'Hemograma Completo')->update(['price' => '10.00']);
         $this->createFiscalSettings();
         FiscalSequence::query()->create([
             'document_type' => 'invoice',

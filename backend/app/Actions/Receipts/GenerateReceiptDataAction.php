@@ -43,6 +43,12 @@ class GenerateReceiptDataAction
 
         return [
             'width' => $paperSize,
+            // T3-004: contador durable por factura del path legacy. El GET de
+            // recibo lo informa sin incrementarlo; solo ReprintReceiptAction lo
+            // sube (dentro de su transaccion y con lock). El frontend decide
+            // primera impresion vs reimpresion con este valor del servidor, no
+            // con estado de sesion ni con COUNT(audit_logs).
+            'legacy_reprint_count' => (int) $invoice->legacy_reprint_count,
             'hospital' => [
                 'name' => HospitalName::display($invoice->hospital_name),
                 'rtn' => $invoice->hospital_rtn,

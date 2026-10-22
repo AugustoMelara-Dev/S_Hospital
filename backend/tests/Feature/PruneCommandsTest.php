@@ -257,7 +257,9 @@ class PruneCommandsTest extends TestCase
     public function test_audit_admin_helper_resets_bypass_flag_even_when_callback_throws(): void
     {
         $driver = DB::connection()->getDriverName();
-        $this->assertNotContains($driver, ['mysql', 'mariadb'], 'Este test no aplica en MariaDB/MySQL porque la sesion es por conexion real.');
+        if (in_array($driver, ['mysql', 'mariadb'], true)) {
+            $this->markTestSkipped('SQLite-only: en MariaDB/MySQL el bypass usa una sesion real; lo cubre test_prune_command_uses_audit_admin_helper_for_real_driver.');
+        }
 
         $thrown = false;
         try {

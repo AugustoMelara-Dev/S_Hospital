@@ -36,9 +36,9 @@ class OpenApiExporter
             'security' => false,
         ],
         '/api/system/setup-status' => [
-            'summary' => 'One-shot setup status for the operator wizard',
+            'summary' => 'One-shot setup status for the authenticated operator wizard',
             'tags' => ['system'],
-            'security' => false,
+            'security' => true,
         ],
         '/api/system/status' => [
             'summary' => 'Detailed operational status (env, db, queue, evidence)',
@@ -46,9 +46,14 @@ class OpenApiExporter
             'security' => true,
         ],
         '/api/system/health' => [
-            'summary' => 'Public health snapshot (db, queue, backups, storage, errors)',
+            'summary' => 'Public liveness probe (status, service, version only)',
             'tags' => ['system'],
             'security' => false,
+        ],
+        '/api/system/health/detail' => [
+            'summary' => 'Operational health snapshot (db, queue, backups, storage, errors)',
+            'tags' => ['system'],
+            'security' => true,
         ],
         '/api/system/csp-report' => [
             'summary' => 'CSP violation report endpoint',

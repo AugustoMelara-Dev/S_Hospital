@@ -9,6 +9,11 @@ use Symfony\Component\Process\Process;
 
 class DatabaseDumpWriter
 {
+    public function __construct(
+        private ?PortableMysqlDumpSanitizer $portableDumpSanitizer = null,
+        private ?PrivateCredentialFile $privateCredentialFile = null,
+    ) {}
+
     public function dumpTo(string $absolutePath): void
     {
         $connection = Config::get('database.default');
@@ -72,6 +77,11 @@ class DatabaseDumpWriter
         }
 
         $defaultsFile = $this->createMysqlDefaultsFile($password);
+        $rawDumpPath = tempnam(dirname($absolutePath), 'hospital-mysql-raw-');
+        if ($rawDumpPath === false) {
+            $this->removeDefaultsFile($defaultsFile);
+            throw new RuntimeException('No se pudo crear el archivo temporal del dump MariaDB.');
+        }
 
         try {
             $command = [
@@ -80,7 +90,8 @@ class DatabaseDumpWriter
                 '--single-transaction',
                 '--quick',
                 '--skip-comments',
-                '--result-file='.$absolutePath,
+                '--triggers',
+                '--result-file='.$rawDumpPath,
                 '--host='.$this->configString($config, 'host', '127.0.0.1'),
                 '--port='.$this->configPort($config),
                 '--user='.$this->requiredConfigString($config, 'username'),
@@ -94,8 +105,12 @@ class DatabaseDumpWriter
             if (! $process->isSuccessful()) {
                 throw new RuntimeException($this->sanitizeDumpError($process->getErrorOutput() ?: $process->getOutput()));
             }
+
+            ($this->portableDumpSanitizer ??= new PortableMysqlDumpSanitizer)
+                ->sanitizeFile($rawDumpPath, $absolutePath);
         } finally {
             $this->removeDefaultsFile($defaultsFile);
+            @unlink($rawDumpPath);
         }
 
         $this->appendRestoreReconciliation($absolutePath);
@@ -103,26 +118,15 @@ class DatabaseDumpWriter
 
     private function createMysqlDefaultsFile(string $password): string
     {
-        $path = tempnam(sys_get_temp_dir(), 'hospital-mysql-');
-        if ($path === false) {
-            throw new RuntimeException('No se pudo crear archivo temporal seguro para credenciales de backup.');
-        }
-
         $escapedPassword = addcslashes($password, "\\\"\n\r");
-        if (file_put_contents($path, "[client]\npassword=\"{$escapedPassword}\"\n") === false) {
-            @unlink($path);
-            throw new RuntimeException('No se pudo escribir archivo temporal seguro para credenciales de backup.');
-        }
-
-        @chmod($path, 0600);
-
-        return $path;
+        return ($this->privateCredentialFile ??= new PrivateCredentialFile)
+            ->create("[client]\npassword=\"{$escapedPassword}\"\n");
     }
 
     private function removeDefaultsFile(string $path): void
     {
         if ($path !== '' && is_file($path)) {
-            @unlink($path);
+            ($this->privateCredentialFile ??= new PrivateCredentialFile)->remove($path);
         }
     }
 
@@ -222,13 +226,14 @@ class DatabaseDumpWriter
 
     private function appendRestoreReconciliation(string $absolutePath): void
     {
+        $sql = PHP_EOL.$this->restoreReconciliationSql().PHP_EOL;
         $written = file_put_contents(
             $absolutePath,
-            PHP_EOL.$this->restoreReconciliationSql().PHP_EOL,
+            $sql,
             FILE_APPEND | LOCK_EX,
         );
 
-        if ($written === false) {
+        if ($written === false || $written !== strlen($sql)) {
             throw new RuntimeException('No se pudo completar la reconciliacion del dump para restauracion.');
         }
     }

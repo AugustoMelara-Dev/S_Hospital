@@ -17,13 +17,15 @@ class ReceiptProfileAssignmentTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_global_fallback_resolves_media_carta_default(): void
+    public function test_global_fallback_resolves_the_seeded_portrait_default(): void
     {
         $this->seed(ReceiptPrintProfileSeeder::class);
 
         $profile = app(ResolveReceiptPrintProfileAction::class)->execute();
 
-        $this->assertSame(ReceiptPrintProfile::CODE_HALF_LETTER, $profile->code);
+        // C1-RCP-02 (mandato §12): la instalación nueva propone carta vertical
+        // (612 x 792 pt) como diseño principal. Ya no es media carta apaisada.
+        $this->assertSame(ReceiptPrintProfile::CODE_LETTER_PORTRAIT, $profile->code);
     }
 
     public function test_user_assignment_overrides_global_assignment(): void

@@ -21,6 +21,8 @@ class CalculateInvoiceTotalsAction
      * @param  list<array{service: Service, quantity: string, notes: ?string}>  $items
      * @return array{
      *     subtotal: string, subtotal_cents: int,
+     *     taxable_base: string, taxable_base_cents: int,
+     *     exempt: string, exempt_cents: int,
      *     tax_amount: string, tax_amount_cents: int,
      *     discount_amount: string, discount_amount_cents: int,
      *     total: string, total_cents: int,
@@ -38,9 +40,14 @@ class CalculateInvoiceTotalsAction
             $service = $item['service'];
             $quantityUnits = $this->parseDecimalUnits($item['quantity'], 'items.quantity');
             $specialRuleApplied = $this->appliesErythropoietinRule($service, $patientDialysisPrescription);
-            $lineTaxable = $service->taxable && ! $this->hasErythropoietinRule($service);
-            $unitPriceCents = $specialRuleApplied ? 0 : $this->parseMoneyCents((string) $service->price);
+            // La regla de gratuidad solo cambia el importe efectivo de la línea.
+            // El tratamiento fiscal siempre proviene del catálogo autorizado.
+            $lineTaxable = $service->taxable;
+            $registeredUnitPriceCents = $this->parseMoneyCents((string) $service->price);
+            $unitPriceCents = $specialRuleApplied ? 0 : $registeredUnitPriceCents;
             $lineSubtotalCents = intdiv(($unitPriceCents * $quantityUnits) + 50, 100);
+            $registeredLineSubtotalCents = intdiv(($registeredUnitPriceCents * $quantityUnits) + 50, 100);
+            $ruleAdjustmentCents = $registeredLineSubtotalCents - $lineSubtotalCents;
 
             $subtotal = $subtotal->plus(Money::fromCents($lineSubtotalCents));
             if ($lineTaxable) {
@@ -70,6 +77,11 @@ class CalculateInvoiceTotalsAction
                 'quantity_cents' => $quantityUnits,
                 'unit_price' => $this->formatMoney($unitPriceCents),
                 'unit_price_cents' => $unitPriceCents,
+                'unit_price_registered' => $this->formatMoney($registeredUnitPriceCents),
+                'unit_price_registered_cents' => $registeredUnitPriceCents,
+                'rule_adjustment' => $this->formatMoney($ruleAdjustmentCents),
+                'rule_adjustment_cents' => $ruleAdjustmentCents,
+                'rule_cause' => $this->ruleCause($specialRuleApplied),
                 'tax_rate' => $lineTaxable ? $this->formatRate($taxRateBasisPoints) : '0.00',
                 'line_subtotal' => $this->formatMoney($lineSubtotalCents),
                 'line_subtotal_cents' => $lineSubtotalCents,
@@ -82,11 +94,17 @@ class CalculateInvoiceTotalsAction
         $taxCents = intdiv(($taxableSubtotalCents * $taxRateBasisPoints) + 5000, 10000);
         $calculatedItems = $this->distributeInvoiceTax($calculatedItems, $taxCents, $taxRateBasisPoints);
         $discountCents = 0;
-        $totalCents = $subtotal->toCents() + $taxCents - $discountCents;
+        $subtotalCents = $subtotal->toCents();
+        $exemptCents = $subtotalCents - $taxableSubtotalCents;
+        $totalCents = $subtotalCents + $taxCents - $discountCents;
 
         return [
-            'subtotal' => $this->formatMoney($subtotal->toCents()),
-            'subtotal_cents' => $subtotal->toCents(),
+            'subtotal' => $this->formatMoney($subtotalCents),
+            'subtotal_cents' => $subtotalCents,
+            'taxable_base' => $this->formatMoney($taxableSubtotalCents),
+            'taxable_base_cents' => $taxableSubtotalCents,
+            'exempt' => $this->formatMoney($exemptCents),
+            'exempt_cents' => $exemptCents,
             'tax_amount' => $this->formatMoney($taxCents),
             'tax_amount_cents' => $taxCents,
             'discount_amount' => $this->formatMoney($discountCents),
@@ -149,6 +167,15 @@ class CalculateInvoiceTotalsAction
     {
         return $patientDialysisPrescription
             && $this->hasErythropoietinRule($service);
+    }
+
+    private function ruleCause(bool $specialRuleApplied): ?string
+    {
+        if (! $specialRuleApplied) {
+            return null;
+        }
+
+        return 'Medicamento elegible sin cobro por receta/dialisis autorizada ('.Service::ERYTHROPOIETIN_RULE.').';
     }
 
     private function hasErythropoietinRule(Service $service): bool

@@ -16,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class ReverseInvoiceAction
 {
+    use PreservesIssuedTimestamps;
+
     public function __construct(
         private readonly InvoiceAccess $invoiceAccess,
         private readonly VoidPaymentAction $voidPayment,
@@ -128,12 +130,15 @@ class ReverseInvoiceAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            $issuedAt = $reloaded->getOriginal('issued_at');
             $reloaded->forceFill([
                 'status' => Invoice::STATUS_VOID,
                 'void_reason' => $reason,
                 'voided_by' => $user->id,
                 'voided_at' => now(),
             ])->save();
+
+            $this->preserveInvoiceIssuedAt($reloaded, $issuedAt);
 
             AuditLog::query()->create([
                 'user_id' => $user->id,

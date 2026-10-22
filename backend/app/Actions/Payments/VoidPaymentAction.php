@@ -2,6 +2,7 @@
 
 namespace App\Actions\Payments;
 
+use App\Actions\Billing\PreservesIssuedTimestamps;
 use App\Actions\InstitutionalReceipts\VoidInstitutionalReceiptAction;
 use App\Events\InvoiceChanged;
 use App\Events\PaymentChanged;
@@ -19,6 +20,8 @@ use Illuminate\Validation\ValidationException;
 
 class VoidPaymentAction
 {
+    use PreservesIssuedTimestamps;
+
     public function __construct(private readonly VoidInstitutionalReceiptAction $voidInstitutionalReceipt) {}
 
     /**
@@ -101,12 +104,16 @@ class VoidPaymentAction
                 'balance_due' => (string) $lockedInvoice->balance_due,
             ];
 
+            $paidAt = $lockedPayment->getOriginal('paid_at');
+
             $lockedPayment->forceFill([
                 'status' => Payment::STATUS_VOID,
                 'voided_by' => $user->id,
                 'voided_at' => now(),
                 'void_reason' => $reason,
             ])->save();
+
+            $this->preservePaymentPaidAt($lockedPayment, $paidAt);
 
             if ($cashSession->status !== CashRegisterSession::STATUS_CLOSED) {
                 CashMovement::query()->create([
@@ -127,6 +134,7 @@ class VoidPaymentAction
                 ->sum('amount_cents');
             $invoiceTotalCents = (int) $lockedInvoice->total_cents;
             $balanceCents = max(0, $invoiceTotalCents - $postedPaidCents);
+            $issuedAt = $lockedInvoice->getOriginal('issued_at');
 
             $lockedInvoice->forceFill([
                 'paid_amount' => Money::formatCents($postedPaidCents),
@@ -136,7 +144,12 @@ class VoidPaymentAction
                 'status' => $postedPaidCents === 0
                     ? Invoice::STATUS_ISSUED
                     : ($balanceCents === 0 ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIAL),
+                'settlement' => $postedPaidCents > 0 && $balanceCents === 0
+                    ? Invoice::SETTLEMENT_PAID
+                    : Invoice::SETTLEMENT_PENDING,
             ])->save();
+
+            $this->preserveInvoiceIssuedAt($lockedInvoice, $issuedAt);
 
             $voidedReceipts = $this->voidInstitutionalReceipt->forInvoice($lockedInvoice, $user, $reason);
 

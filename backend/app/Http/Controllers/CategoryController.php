@@ -18,6 +18,10 @@ class CategoryController extends Controller
     public function index(IndexCategoryRequest $request): JsonResponse
     {
         $categories = Category::query()
+            ->withCount([
+                'services',
+                'services as active_services_count' => fn ($query) => $query->where('active', true),
+            ])
             ->when($request->has('active'), fn ($query) => $query->where('active', $request->boolean('active')))
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -59,6 +63,8 @@ class CategoryController extends Controller
         $category = DB::transaction(function () use ($request, $category, $user): Category {
             $oldValues = $this->auditPayload($category);
             $data = $request->validated();
+            $availabilityChangeReason = $data['availability_change_reason'] ?? null;
+            unset($data['availability_change_reason']);
 
             if (array_key_exists('name', $data)) {
                 $data['slug'] = Str::slug($request->string('name')->toString());
@@ -69,7 +75,14 @@ class CategoryController extends Controller
                 'updated_by' => $user->id,
             ])->save();
 
-            $this->audit($request, $user, 'category.updated', $category->refresh(), $oldValues);
+            $this->audit(
+                $request,
+                $user,
+                'category.updated',
+                $category->refresh(),
+                $oldValues,
+                is_string($availabilityChangeReason) ? trim($availabilityChangeReason) : null,
+            );
 
             return $category->refresh();
         });
@@ -90,7 +103,7 @@ class CategoryController extends Controller
     /**
      * @param  array<string, mixed>|null  $oldValues
      */
-    private function audit(FormRequest $request, User $user, string $action, Category $category, ?array $oldValues): void
+    private function audit(FormRequest $request, User $user, string $action, Category $category, ?array $oldValues, ?string $reason = null): void
     {
         app(AuditLogger::class)->log(
             action: $action,
@@ -99,6 +112,7 @@ class CategoryController extends Controller
             request: $request,
             oldValues: $oldValues,
             newValues: $this->auditPayload($category),
+            reason: $reason,
         );
     }
 }

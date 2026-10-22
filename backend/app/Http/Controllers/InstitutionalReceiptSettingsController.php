@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Fiscal\UpdateFiscalInstitutionAction;
+use App\Actions\InstitutionalReceipts\InstitutionalReceiptDocumentPlan;
 use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
 use App\Actions\InstitutionalReceipts\ResolveReceiptPrintProfileAction;
 use App\Http\Requests\InstitutionalReceipts\StoreReceiptSeriesRequest;
@@ -60,11 +61,20 @@ class InstitutionalReceiptSettingsController extends Controller
 
     public function updateInstitution(UpdateReceiptInstitutionRequest $request, UpdateFiscalInstitutionAction $action): JsonResponse
     {
+        // `input()` is mixed; UpdateReceiptInstitutionRequest already validates
+        // `receipt_template_mode` as `sometimes|string|in:institutional`, so a
+        // present value is always a string. Narrow explicitly to satisfy the
+        // typed action signature without touching the default or the fiscal mode.
+        $receiptTemplateMode = $request->input('receipt_template_mode', 'institutional');
+        if (! is_string($receiptTemplateMode)) {
+            $receiptTemplateMode = 'institutional';
+        }
+
         $setting = $action->execute(
             user: $this->authenticatedUser($request),
             validated: $request->validated(),
             request: $request,
-            receiptTemplateMode: $request->input('receipt_template_mode', 'institutional'),
+            receiptTemplateMode: $receiptTemplateMode,
         );
 
         return response()->json([
@@ -282,15 +292,32 @@ class InstitutionalReceiptSettingsController extends Controller
         ]);
     }
 
-    public function testPreview(TestReceiptPreviewRequest $request, ResolveReceiptPrintProfileAction $resolver): JsonResponse
-    {
+    public function testPreview(
+        TestReceiptPreviewRequest $request,
+        ResolveReceiptPrintProfileAction $resolver,
+        InstitutionalReceiptPdfService $pdfService,
+    ): JsonResponse {
         $user = $this->authenticatedUser($request);
         $profile = $request->filled('profile_id') || $request->filled('profile_code')
             ? $this->profileFromRequest($request->validated())
             : $resolver->execute($user);
+
+        if ($request->hasAdvancedDraftFields() && ! $user->can('receipt_settings.advanced')) {
+            return $this->denyAdvancedDraftPreview($request, $profile);
+        }
+
         $deniedResponse = $this->denySupportOnlyTestProfileWithoutAdvanced($request, $profile);
         if ($deniedResponse instanceof JsonResponse) {
             return $deniedResponse;
+        }
+
+        // Unsaved form state: render the transient draft, never persist it and
+        // never consume a correlativo. This is what makes the preview the real
+        // document of the BORRADOR instead of the previously saved profile.
+        $appliedProfile = $request->draftProfile($profile);
+
+        if ($this->isSupportOnlyPaperKind($appliedProfile) && ! $user->can('receipt_settings.advanced')) {
+            return $this->denyAdvancedDraftPreview($request, $profile);
         }
 
         $series = InstitutionalReceiptSeries::query()
@@ -300,6 +327,19 @@ class InstitutionalReceiptSettingsController extends Controller
 
         $nextNumber = $series ? $series->current_number + 1 : null;
 
+        $sample = [
+            'payer_name' => $request->input('payer_name', 'Paciente de prueba'),
+            'concept' => $request->input('concept', 'Servicios hospitalarios de prueba'),
+            'amount' => $request->input('amount', '0.00'),
+        ];
+
+        // C3-P2: the single canonical result of the generator. `copy_count` /
+        // `copy_labels` are kept for compatibility, but the page count, the
+        // composition and the distribution come from the measured document, not
+        // from counting copies.
+        $plan = $pdfService->planForDraft($sample, $appliedProfile, $series);
+        $copyLabels = $plan->copyLabels();
+
         $this->audit(
             $this->authenticatedUser($request)->id,
             'institutional_receipt.test_preview_requested',
@@ -308,6 +348,7 @@ class InstitutionalReceiptSettingsController extends Controller
             null,
             [
                 'profile_code' => $profile->code,
+                'draft_applied' => $request->draftOverrides() !== [],
                 'next_receipt_number' => $nextNumber,
                 'reserved_number' => false,
             ]
@@ -318,12 +359,18 @@ class InstitutionalReceiptSettingsController extends Controller
                 'watermark' => 'PRUEBA - SIN VALIDEZ',
                 'reserved_number' => false,
                 'next_receipt_number' => $nextNumber,
-                'profile' => $profile,
-                'sample' => [
-                    'payer_name' => $request->input('payer_name', 'Paciente de prueba'),
-                    'concept' => $request->input('concept', 'Servicios hospitalarios de prueba'),
-                    'amount' => $request->input('amount', '0.00'),
-                ],
+                'profile' => $appliedProfile,
+                'persisted_profile' => $profile,
+                'draft_applied' => $request->draftOverrides() !== [],
+                'copy_labels' => $copyLabels,
+                'copy_count' => count($copyLabels),
+                'copy_plan' => $this->copyPlan($plan),
+                'document' => $plan->toArray(),
+                // Real engine HTML (same blade/dompdf source as the PDF), so the
+                // settings preview is not a parallel mockup. No print event and no
+                // number is reserved by rendering it.
+                'html' => $plan->html(),
+                'sample' => $sample,
             ],
         ]);
     }
@@ -337,9 +384,20 @@ class InstitutionalReceiptSettingsController extends Controller
         $profile = $request->filled('profile_id') || $request->filled('profile_code')
             ? $this->profileFromRequest($request->validated())
             : $resolver->execute($user);
+
+        if ($request->hasAdvancedDraftFields() && ! $user->can('receipt_settings.advanced')) {
+            return $this->denyAdvancedDraftPreview($request, $profile);
+        }
+
         $deniedResponse = $this->denySupportOnlyTestProfileWithoutAdvanced($request, $profile);
         if ($deniedResponse instanceof JsonResponse) {
             return $deniedResponse;
+        }
+
+        $appliedProfile = $request->draftProfile($profile);
+
+        if ($this->isSupportOnlyPaperKind($appliedProfile) && ! $user->can('receipt_settings.advanced')) {
+            return $this->denyAdvancedDraftPreview($request, $profile);
         }
 
         $series = InstitutionalReceiptSeries::query()
@@ -347,8 +405,8 @@ class InstitutionalReceiptSettingsController extends Controller
             ->where('active', true)
             ->first();
 
-        $pdf = $pdfService->pdfForDraft($request->validated(), $profile, $series);
-        $pdfService->recordTestPrintEvent($profile, $user);
+        $pdf = $pdfService->pdfForDraft($request->validated(), $appliedProfile, $series);
+        $pdfService->recordTestPrintEvent($appliedProfile, $user);
 
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
@@ -448,6 +506,53 @@ class InstitutionalReceiptSettingsController extends Controller
         return $profile->isSupportOnly();
     }
 
+    /**
+     * Thermal / support-only paper cannot be previewed with the standard
+     * permission and cannot be silently reached through the unsaved draft either.
+     */
+    private function isSupportOnlyPaperKind(ReceiptPrintProfile $profile): bool
+    {
+        return in_array((string) $profile->paper_kind, ['thermal_80mm', 'thermal_58mm'], true);
+    }
+
+    private function denyAdvancedDraftPreview(TestReceiptPreviewRequest $request, ReceiptPrintProfile $profile): JsonResponse
+    {
+        AuditLogger::log(
+            action: 'receipt_settings.advanced_denied',
+            entity: $profile,
+            request: $request,
+            newValues: ['attempted_fields' => array_keys($request->draftOverrides())],
+            reason: 'Intento de previsualizar un borrador con campos avanzados sin permiso.',
+            result: 'failed',
+        );
+
+        return response()->json([
+            'message' => 'Este cambio requiere el permiso receipt_settings.advanced.',
+            'errors' => [
+                'receipt_settings.advanced' => [
+                    'No tiene permiso para previsualizar papel, orientacion, margenes, tamano, fuente o escala del recibo.',
+                ],
+            ],
+        ], 403);
+    }
+
+    /**
+     * Compatibility view of the copy plan. The copy count and labels come from
+     * the canonical plan, and the instruction no longer claims "one page per
+     * copy": pages are a measured property of the document, not of the copy set.
+     *
+     * @return array<string, mixed>
+     */
+    private function copyPlan(InstitutionalReceiptDocumentPlan $plan): array
+    {
+        return [
+            'copy_count' => $plan->copyCount(),
+            'copy_labels' => $plan->copyLabels(),
+            'single_set' => true,
+            'instruction' => $plan->printInstruction(),
+        ];
+    }
+
     private function denySupportOnlyTestProfileWithoutAdvanced(
         TestReceiptPreviewRequest $request,
         ReceiptPrintProfile $profile,
@@ -477,25 +582,6 @@ class InstitutionalReceiptSettingsController extends Controller
                 ],
             ],
         ], 403);
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function institutionFields(): array
-    {
-        return [
-            'hospital_name',
-            'rtn',
-            'address',
-            'phone',
-            'slogan',
-            'government_line',
-            'secretariat_line',
-            'receipt_location',
-            'receipt_footer_text',
-            'receipt_template_mode',
-        ];
     }
 
     /** @return Builder<InstitutionalReceiptSeries> */

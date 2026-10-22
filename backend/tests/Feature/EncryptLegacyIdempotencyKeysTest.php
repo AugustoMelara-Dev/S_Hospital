@@ -13,6 +13,8 @@ class EncryptLegacyIdempotencyKeysTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected static bool $resetSchemaAfterDdl = true;
+
     public function test_encrypts_legacy_plaintext_idempotency_keys()
     {
         DB::table('idempotency_keys')->truncate();

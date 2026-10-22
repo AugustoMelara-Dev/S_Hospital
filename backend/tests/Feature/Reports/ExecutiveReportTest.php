@@ -5,6 +5,7 @@ namespace Tests\Feature\Reports;
 use App\Actions\Billing\CreateInvoiceAction;
 use App\Actions\Cash\OpenCashSessionAction;
 use App\Actions\Payments\RegisterPaymentAction;
+use App\Actions\Reports\ExecutiveReportService;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -19,6 +20,8 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use ReflectionMethod;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -182,6 +185,42 @@ class ExecutiveReportTest extends TestCase
             ->assertJsonPath('data.accounting_policy.exclusions_already_applied', true);
     }
 
+    public function test_complete_export_does_not_silently_truncate_after_five_thousand_operations(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $prototype = $this->createInvoice($cashier, 'Glucosa');
+        $issuedAt = Carbon::now('America/Tegucigalpa');
+        $attributes = $prototype->getAttributes();
+        unset($attributes['id']);
+
+        foreach (array_chunk(range(2, ExecutiveReportService::MAX_TABLE_ROWS + 1), 20) as $numbers) {
+            $rows = [];
+            foreach ($numbers as $number) {
+                $row = $attributes;
+                $row['invoice_number'] = 'EXP-'.str_pad((string) $number, 8, '0', STR_PAD_LEFT);
+                $row['patient_name'] = 'Paciente export '.$number;
+                $row['issued_at'] = $issuedAt;
+                $row['created_at'] = $issuedAt;
+                $row['updated_at'] = $issuedAt;
+                $rows[] = $row;
+            }
+            DB::table('invoices')->insert($rows);
+        }
+
+        $method = new ReflectionMethod(ExecutiveReportService::class, 'operations');
+        $filters = [];
+        $start = $issuedAt->copy()->startOfDay();
+        $end = $issuedAt->copy()->endOfDay();
+        $service = app(ExecutiveReportService::class);
+
+        $screenRows = $method->invoke($service, $start, $end, $filters, false);
+        $exportRows = $method->invoke($service, $start, $end, $filters, true);
+
+        $this->assertCount(ExecutiveReportService::MAX_TABLE_ROWS, $screenRows);
+        $this->assertCount(ExecutiveReportService::MAX_TABLE_ROWS + 1, $exportRows);
+    }
+
     public function test_executive_summary_excludes_voided_invoices_from_billed(): void
     {
         $this->seedBillingBase();
@@ -276,6 +315,137 @@ class ExecutiveReportTest extends TestCase
         $this->assertEquals($glucosa->total, $cashMethod['amount']);
     }
 
+    public function test_executive_detail_and_gratuities_show_persisted_rule_adjustment(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $cashier->givePermissionTo('patients.mark_dialysis_prescription');
+        $cashier->refresh();
+        $this->openSession($cashier);
+
+        $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'dialysis_prescription' => true,
+                'items' => [[
+                    'service_id' => Service::query()->where('name', 'Eritropoyetina')->firstOrFail()->id,
+                    'quantity' => '1.00',
+                ]],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.settlement', Invoice::SETTLEMENT_FREE_BY_RULE);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            // Resumen: el ajuste ya sale de la fila persistida (L 25.00 EPO).
+            ->assertJsonPath('data.summary.gratuity_adjustment_persisted', true)
+            ->assertJsonPath('data.summary.gratuity_adjustment_total', '25.00')
+            // Detalle: precio registrado + ajuste + importe final.
+            ->assertJsonPath('data.detail.0.unit_price', '25.00')
+            ->assertJsonPath('data.detail.0.rule_adjustment', '25.00')
+            ->assertJsonPath('data.detail.0.rule_adjustment_persisted', true)
+            ->assertJsonPath('data.detail.0.line_total', '0.00')
+            ->assertJsonPath('data.detail.0.is_free', true)
+            // Gratuidades: cantidad entregada sin cobro y valor del ajuste.
+            ->assertJsonPath('data.gratuities.0.unit_price', '25.00')
+            ->assertJsonPath('data.gratuities.0.adjustment_value', '25.00')
+            ->assertJsonPath('data.gratuities.0.adjustment_persisted', true)
+            // La emision sin cobro no infla cobros reales.
+            ->assertJsonPath('data.summary.collected_total', '0.00')
+            ->assertJsonPath('data.summary.receipt_count', 0);
+    }
+
+    public function test_executive_paid_count_separates_without_charge_emissions(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $cashier->givePermissionTo('patients.mark_dialysis_prescription');
+        $cashier->refresh();
+        $session = $this->openSession($cashier);
+
+        // Cobro real: una factura pagada con dinero.
+        $paid = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $paid->id, $session->id, Payment::METHOD_CASH, $paid->total);
+
+        // Emision sin cobro: conserva status=paid pero settlement=free_by_rule.
+        $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'dialysis_prescription' => true,
+                'items' => [[
+                    'service_id' => Service::query()->where('name', 'Eritropoyetina')->firstOrFail()->id,
+                    'quantity' => '1.00',
+                ]],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.settlement', Invoice::SETTLEMENT_FREE_BY_RULE);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.summary.invoice_count', 2)
+            // Solo la factura cobrada cuenta como pagada; la gratuita va aparte.
+            ->assertJsonPath('data.summary.paid_count', 1)
+            ->assertJsonPath('data.summary.without_charge_count', 1)
+            ->assertJsonPath('data.summary.receipt_count', 1)
+            ->assertJsonPath('data.summary.collected_total', $paid->total);
+    }
+
+    public function test_executive_collections_and_methods_exclude_historical_zero_payments(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $session = $this->openSession($cashier);
+
+        $invoice = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $invoice->id, $session->id, Payment::METHOD_CASH, $invoice->total);
+
+        // Pago historico de importe 0.00 en `other` (cobro ficticio legado).
+        // No se borra, pero deja de contar como cobro real.
+        Payment::query()->create([
+            'invoice_id' => $invoice->id,
+            'cash_session_id' => $session->id,
+            'user_id' => $cashier->id,
+            'method' => Payment::METHOD_OTHER,
+            'amount' => '0.00',
+            'amount_cents' => 0,
+            'reference' => 'Receta dialisis: factura sin cobro',
+            'status' => Payment::STATUS_POSTED,
+            'paid_at' => now(),
+        ]);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->assertJsonPath('data.summary.receipt_count', 1)
+            ->assertJsonPath('data.summary.collected_total', $invoice->total);
+
+        $otherMethod = collect($response->json('data.payment_methods'))->firstWhere('method', Payment::METHOD_OTHER);
+        $this->assertSame(0, $otherMethod['count']);
+        $this->assertSame('0.00', $otherMethod['amount']);
+
+        // Solo el cobro real aparece en la tabla Cobros.
+        $this->assertCount(1, $response->json('data.collections'));
+        $this->assertSame(Payment::METHOD_CASH, $response->json('data.collections.0.method'));
+        $this->assertSame($invoice->total, $response->json('data.collections.0.amount'));
+
+        // El cajero cuenta solo el cobro real.
+        $cashierRow = collect($response->json('data.cashiers'))->firstWhere('user_id', $cashier->id);
+        $this->assertNotNull($cashierRow);
+        $this->assertSame(1, $cashierRow['payment_count']);
+        $this->assertSame($invoice->total, $cashierRow['collected']);
+    }
+
     public function test_executive_filters_panels_by_cash_session_and_method(): void
     {
         $this->seedBillingBase();
@@ -303,6 +473,75 @@ class ExecutiveReportTest extends TestCase
         $this->assertSame(['Glucosa'], collect($response->json('data.services.top_by_amount'))->pluck('service')->all());
         $this->assertSame([$cashierA->id], collect($response->json('data.cashiers'))->pluck('user_id')->all());
         $this->assertSame([$sessionA->id], collect($response->json('data.cash_sessions'))->pluck('id')->all());
+    }
+
+    public function test_services_panels_exclude_free_and_zero_value_lines_from_paid_mixed_invoice(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $cashier->givePermissionTo('patients.mark_dialysis_prescription');
+        $cashier->refresh();
+        $session = $this->openSession($cashier);
+
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $glucose->update(['price' => '0.00', 'taxable' => false]);
+        $hemogram = Service::query()->where('name', 'Hemograma Completo')->firstOrFail();
+        $epo = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $invoice = app(CreateInvoiceAction::class)->execute([
+            'patient_name' => 'Paciente mezcla cobrable y gratuita',
+            'dialysis_prescription' => true,
+            'items' => [
+                ['service_id' => $hemogram->id, 'quantity' => '2.00'],
+                ['service_id' => $epo->id, 'quantity' => '3.00'],
+                ['service_id' => $glucose->id, 'quantity' => '4.00'],
+            ],
+        ], $cashier->fresh());
+        $this->payInvoice($cashier, $invoice->id, $session->id, Payment::METHOD_CASH, $invoice->total);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $data = $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame(['Hemograma Completo'], collect($data['services']['top_by_amount'])->pluck('service')->all());
+        $this->assertSame(['Hemograma Completo'], collect($data['services']['top_by_quantity'])->pluck('service')->all());
+        $this->assertEquals(2.0, collect($data['services']['by_category'])->sum(fn (array $row): float => (float) $row['quantity']));
+        $this->assertEquals(2.0, collect($data['services']['by_area'])->sum(fn (array $row): float => (float) $row['quantity']));
+        $this->assertSame('3.00', collect($data['gratuities'])->firstWhere('service', 'Eritropoyetina')['quantity']);
+
+        $detailByService = collect($data['detail'])->keyBy('service');
+        $this->assertSame('0.00', $detailByService['Eritropoyetina']['line_total']);
+        $this->assertSame('0.00', $detailByService['Glucosa']['line_total']);
+    }
+
+    public function test_services_panels_use_payment_date_without_requiring_issuance_in_same_period(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $session = $this->openSession($cashier);
+
+        $paidToday = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $paidToday->id, $session->id, Payment::METHOD_CASH, $paidToday->total);
+        $paidToday->update(['issued_at' => now()->subDay()]);
+
+        $paidTomorrow = $this->createInvoice($cashier, 'Hemograma Completo');
+        $this->payInvoice($cashier, $paidTomorrow->id, $session->id, Payment::METHOD_CASH, $paidTomorrow->total);
+        Payment::query()->where('invoice_id', $paidTomorrow->id)->update(['paid_at' => now()->addDay()]);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $response = $this->actingAs($admin)
+            ->getJson('/api/reports/executive?date_from='.$today.'&date_to='.$today)
+            ->assertOk();
+
+        $this->assertSame(['Glucosa'], collect($response->json('data.services.top_by_amount'))->pluck('service')->all());
+        $this->assertSame($paidToday->total, $response->json('data.services.top_by_amount.0.total'));
+        $this->assertSame($paidToday->total, $response->json('data.services.top_by_amount.0.collected'));
+        $this->assertSame($paidToday->total, $response->json('data.summary.collected_total'));
+        $this->assertSame($paidTomorrow->total, $response->json('data.summary.billed_total'));
     }
 
     public function test_executive_includes_cash_sessions_with_differences(): void

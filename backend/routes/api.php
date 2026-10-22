@@ -5,6 +5,7 @@ use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CashSessionController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientErrorLogController;
@@ -42,11 +43,10 @@ Route::post('/system/csp-report', [CspReportController::class, 'store'])
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
     ->middleware('throttle:csp-report');
 
+// Public liveness only: status/service/version. The operational snapshot
+// (queues, backups, storage, audit errors) lives in /api/system/health/detail
+// behind auth + system.status.view.
 Route::get('/system/health', [HealthController::class, 'show'])
-    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
-    ->middleware('throttle:public-read');
-
-Route::get('/system/echo-config', [EchoConfigController::class, 'show'])
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
     ->middleware('throttle:public-read');
 
@@ -55,10 +55,6 @@ Route::get('/system/openapi', function () {
 
     return response()->json($document);
 })->middleware(['web', 'auth:web', 'user.active', 'password.changed', 'throttle.user:30,1']);
-
-Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus'])
-    ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
-    ->middleware('throttle:public-read');
 
 Route::get('/settings/logo', [LogoController::class, 'show'])
     ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
@@ -82,6 +78,14 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
         ->middleware('throttle.user:10,1');
     Route::post('/auth/logout', [AuthController::class, 'logout'])
         ->middleware('throttle.user:60,1');
+
+    // Client bootstrap endpoints. They expose only what an authenticated
+    // session needs (realtime host/port without secrets, setup flags and the
+    // permission-gated operational snapshot); anonymous access is no longer
+    // provided for these.
+    Route::get('/system/health/detail', [HealthController::class, 'detail']);
+    Route::get('/system/echo-config', [EchoConfigController::class, 'show']);
+    Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus']);
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/settings/operational', [FiscalSettingsController::class, 'operational']);
@@ -138,6 +142,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
         Route::patch('/service-areas/{serviceArea}', [ServiceAreaController::class, 'update']);
 
         Route::get('/services', [ServiceController::class, 'index']);
+        Route::get('/services/{service}', [ServiceController::class, 'show']);
+        Route::get('/services/{service}/history', [ServiceController::class, 'history']);
         Route::post('/services', [ServiceController::class, 'store'])
             ->middleware('throttle.user:60,1');
         Route::patch('/services/{service}', [ServiceController::class, 'update'])
@@ -146,6 +152,10 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:30,1');
 
         Route::get('/invoices', [InvoiceController::class, 'index']);
+        Route::post('/invoices/preview', [InvoiceController::class, 'preview'])
+            ->middleware('throttle.user:120,1');
+        Route::post('/invoices/receipt-preview', [InvoiceController::class, 'receiptPreview'])
+            ->middleware('throttle.user:60,1');
         Route::post('/invoices', [InvoiceController::class, 'store'])
             ->middleware(['throttle.user:60,1', 'idempotency']);
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
@@ -154,7 +164,10 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
         Route::post('/invoices/{invoice}/reverse', [InvoiceController::class, 'reverse'])
             ->middleware(['throttle.user:10,1', 'idempotency']);
 
+        Route::get('/cash-registers', [CashRegisterController::class, 'index']);
         Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
+        Route::get('/cash-sessions/consolidated', [CashSessionController::class, 'consolidated'])
+            ->middleware('throttle.user:30,1');
         Route::post('/cash-sessions/open', [CashSessionController::class, 'open'])
             ->middleware(['throttle.user:30,1', 'idempotency']);
         Route::post('/cash-sessions/{cashSession}/close', [CashSessionController::class, 'close'])

@@ -2,6 +2,7 @@
 
 namespace App\Actions\InstitutionalReceipts;
 
+use App\Actions\Billing\PreservesIssuedTimestamps;
 use App\Models\AuditLog;
 use App\Models\InstitutionalReceipt;
 use App\Models\Invoice;
@@ -10,6 +11,10 @@ use Illuminate\Support\Collection;
 
 class VoidInstitutionalReceiptAction
 {
+    // M-W2-RCP-04: anular no debe dejar que MariaDB reescriba
+    // `institutional_receipts.issued_at`.
+    use PreservesIssuedTimestamps;
+
     /**
      * @return Collection<int, InstitutionalReceipt>
      */
@@ -32,12 +37,19 @@ class VoidInstitutionalReceiptAction
                 'voided_at' => $receipt->voided_at,
             ];
 
+            // M-W2-RCP-04: capturar issued_at antes de anular (hecho historico de
+            // emision); la anulacion agrega el estado y el motivo, no reemite.
+            $issuedAt = $receipt->issued_at;
+
             $receipt->forceFill([
                 'status' => InstitutionalReceipt::STATUS_VOID,
                 'voided_by' => $user->id,
                 'voided_at' => now(),
                 'void_reason' => $reason,
             ])->save();
+
+            // Restaura el hecho historico reasignandolo de forma explicita.
+            $this->restoreTimestamp('institutional_receipts', $receipt->getKey(), 'issued_at', $issuedAt);
 
             AuditLog::query()->create([
                 'user_id' => $user->id,

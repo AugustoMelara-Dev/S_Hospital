@@ -5,7 +5,10 @@ namespace App\Actions\Backups;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class PruneBackupsAction
 {
@@ -54,6 +57,18 @@ class PruneBackupsAction
             $query->where('type', $type);
         }
 
+        // La FK RESTRICT del ledger de copias externas (T2-025) impide borrar
+        // un respaldo con copias registradas. Se excluyen de la poda: la copia
+        // externa puede ser la ultima copia recuperable.
+        if (Schema::hasTable('backup_external_copies')) {
+            $query->whereNotExists(function ($subQuery): void {
+                $subQuery
+                    ->select(DB::raw(1))
+                    ->from('backup_external_copies')
+                    ->whereColumn('backup_external_copies.backup_log_id', 'backup_logs.id');
+            });
+        }
+
         $prunableBackups = $query
             ->orderByDesc('completed_at')
             ->orderByDesc('id')
@@ -70,18 +85,43 @@ class PruneBackupsAction
                 continue;
             }
 
+            if ($this->hasExternalCopy($backupLog)) {
+                $this->audit($backupLog, 'backup.prune_skipped');
+
+                continue;
+            }
+
             if (! $this->deleteFileIfSafe($backupLog)) {
                 $this->audit($backupLog, 'backup.prune_skipped');
 
                 continue;
             }
 
+            try {
+                $backupLog->delete();
+            } catch (Throwable) {
+                // Carrera con una copia externa creada tras la consulta.
+                $this->audit($backupLog, 'backup.prune_skipped');
+
+                continue;
+            }
+
             $this->audit($backupLog, 'backup.pruned');
-            $backupLog->delete();
             $pruned++;
         }
 
         return $pruned;
+    }
+
+    private function hasExternalCopy(BackupLog $backupLog): bool
+    {
+        if (! Schema::hasTable('backup_external_copies')) {
+            return false;
+        }
+
+        return DB::table('backup_external_copies')
+            ->where('backup_log_id', $backupLog->id)
+            ->exists();
     }
 
     private function isOldEnough(BackupLog $backupLog, Carbon $cutoff): bool

@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $quantity_cents
  * @property string $unit_price
  * @property int $unit_price_cents
+ * @property int $unit_price_registered_cents
+ * @property int $rule_adjustment_cents
  * @property string $tax_rate
  * @property string $tax_amount
  * @property int $tax_amount_cents
@@ -53,6 +55,8 @@ class InvoiceItem extends Model
         'quantity_cents',
         'unit_price',
         'unit_price_cents',
+        'unit_price_registered_cents',
+        'rule_adjustment_cents',
         'tax_rate',
         'tax_amount',
         'tax_amount_cents',
@@ -72,6 +76,8 @@ class InvoiceItem extends Model
             'quantity_cents' => 'integer',
             'unit_price' => 'decimal:2',
             'unit_price_cents' => 'integer',
+            'unit_price_registered_cents' => 'integer',
+            'rule_adjustment_cents' => 'integer',
             'tax_rate' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'tax_amount_cents' => 'integer',

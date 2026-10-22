@@ -162,10 +162,12 @@ class AuthTest extends TestCase
 
         $user = User::factory()->create();
         $user->assignRole('cajero');
-        Permission::query()->firstOrCreate([
-            'name' => 'backups.restore',
-            'guard_name' => 'web',
-        ]);
+        foreach (['backups.restore', 'receipts.void'] as $legacyPermission) {
+            Permission::query()->firstOrCreate([
+                'name' => $legacyPermission,
+                'guard_name' => 'web',
+            ]);
+        }
         $user->syncPermissions([User::EXACT_ACCESS_MARKER_PERMISSION, 'backups.restore', 'cash.view', 'receipts.void', 'reports.view']);
 
         $response = $this->actingAs($user)

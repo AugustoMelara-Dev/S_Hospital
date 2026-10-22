@@ -10,6 +10,8 @@ class MonetaryCheckConstraintsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected static bool $resetSchemaAfterDdl = true;
+
     public function test_check_constraints_migration_is_idempotent_against_partial_application(): void
     {
         if (getenv('HOSPITAL_TEST_DB_ALREADY_MIGRATED') === '1') {

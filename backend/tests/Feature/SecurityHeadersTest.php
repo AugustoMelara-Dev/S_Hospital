@@ -135,4 +135,40 @@ class SecurityHeadersTest extends TestCase
         $response->assertOk();
         $this->assertSame('noindex, nofollow, noarchive', $response->headers->get('X-Robots-Tag'));
     }
+
+    public function test_hsts_is_emitted_only_for_secure_production_requests(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $this->get('https://192.168.1.10/up')
+            ->assertOk()
+            ->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+
+        $this->get('http://192.168.1.10/up')
+            ->assertOk()
+            ->assertHeaderMissing('Strict-Transport-Security');
+    }
+
+    public function test_hsts_is_not_emitted_outside_production(): void
+    {
+        $this->get('https://192.168.1.10/up')
+            ->assertOk()
+            ->assertHeaderMissing('Strict-Transport-Security');
+    }
+
+    public function test_csp_includes_the_bare_wss_form_when_the_realtime_port_is_443(): void
+    {
+        config()->set('broadcasting.connections.pusher.client_options', [
+            'host' => 'hospital.local',
+            'port' => 443,
+            'scheme' => 'wss',
+        ]);
+
+        $csp = (string) $this->get('/up')->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString(
+            "connect-src 'self' ws://hospital.local:443 wss://hospital.local:443 wss://hospital.local",
+            $csp
+        );
+    }
 }

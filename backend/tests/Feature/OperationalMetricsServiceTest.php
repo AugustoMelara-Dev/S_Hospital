@@ -7,6 +7,9 @@ namespace Tests\Feature;
 use App\Actions\Reports\OperationalMetricsService;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
+use App\Models\User;
+use App\Support\AuditAdmin;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +21,16 @@ use Tests\TestCase;
 class OperationalMetricsServiceTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function healthViewer(): User
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('admin');
+
+        return $user->refresh();
+    }
 
     public function test_backup_health_queries_have_a_status_completed_at_index(): void
     {
@@ -54,7 +67,10 @@ class OperationalMetricsServiceTest extends TestCase
         $this->assertArrayHasKey('storage', $snapshot);
         $this->assertArrayHasKey('recent_errors', $snapshot);
 
-        $this->assertSame('sqlite', $snapshot['database']['driver']);
+        // Driver-aware: la suite rapida corre en sqlite en memoria y la de
+        // MariaDB en mysql; el snapshot debe reflejar la conexion activa
+        // (motor consultado por conexion real), no un valor hardcodeado.
+        $this->assertSame(DB::connection()->getDriverName(), $snapshot['database']['driver']);
         $this->assertTrue($snapshot['database']['connected']);
         $this->assertArrayHasKey('pending', $snapshot['queue']);
         $this->assertArrayHasKey('failed', $snapshot['queue']);
@@ -64,12 +80,38 @@ class OperationalMetricsServiceTest extends TestCase
         $this->assertArrayHasKey('backup_files', $snapshot['storage']);
     }
 
-    public function test_health_endpoint_returns_snapshot(): void
+    public function test_public_health_endpoint_does_not_expose_operational_sections(): void
     {
         $response = $this->getJson('/api/system/health');
 
         $response->assertOk()
-            ->assertJsonPath('data.database.driver', 'sqlite')
+            ->assertJsonPath('data.status', 'ok')
+            ->assertJsonMissingPath('data.database')
+            ->assertJsonMissingPath('data.queue')
+            ->assertJsonMissingPath('data.backups')
+            ->assertJsonMissingPath('data.storage')
+            ->assertJsonMissingPath('data.recent_errors')
+            ->assertJsonMissingPath('score');
+    }
+
+    public function test_health_detail_endpoint_forbids_users_without_system_status_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->getJson('/api/system/health/detail')
+            ->assertForbidden();
+    }
+
+    public function test_health_detail_endpoint_returns_snapshot_for_authorized_users(): void
+    {
+        $response = $this->actingAs($this->healthViewer())
+            ->getJson('/api/system/health/detail');
+
+        $response->assertOk()
+            ->assertJsonPath('data.database.driver', DB::connection()->getDriverName())
             ->assertJsonPath('data.database.connected', true);
     }
 
@@ -85,7 +127,7 @@ class OperationalMetricsServiceTest extends TestCase
         $this->assertTrue($snapshot['database']['connected']);
     }
 
-    public function test_health_endpoint_builds_data_and_score_from_one_snapshot(): void
+    public function test_health_detail_endpoint_builds_data_and_score_from_one_snapshot(): void
     {
         $metrics = new class extends OperationalMetricsService
         {
@@ -113,14 +155,15 @@ class OperationalMetricsServiceTest extends TestCase
         };
         $this->app->instance(OperationalMetricsService::class, $metrics);
 
-        $this->getJson('/api/system/health')
+        $this->actingAs($this->healthViewer())
+            ->getJson('/api/system/health/detail')
             ->assertOk()
             ->assertJsonPath('score.healthy', true);
 
         $this->assertSame(1, $metrics->snapshotCalls);
     }
 
-    public function test_health_endpoint_hides_internal_recent_error_details(): void
+    public function test_health_detail_endpoint_hides_internal_recent_error_details(): void
     {
         AuditLog::query()->create([
             'user_id' => null,
@@ -133,7 +176,8 @@ class OperationalMetricsServiceTest extends TestCase
             'created_at' => now(),
         ]);
 
-        $response = $this->getJson('/api/system/health');
+        $response = $this->actingAs($this->healthViewer())
+            ->getJson('/api/system/health/detail');
 
         $response->assertOk()
             ->assertJsonPath('data.recent_errors.0.action', 'backup.failed')
@@ -341,7 +385,16 @@ class OperationalMetricsServiceTest extends TestCase
 
         $this->assertFileExists($migrationPath);
         $migration = require $migrationPath;
-        $migration->up();
+
+        // El trigger append-only `trg_audit_logs_no_update` (MariaDB/MySQL)
+        // bloquea el UPDATE directo; el DML correctivo de auditoria corre bajo
+        // el bypass soportado `@app_audit_admin_op` (App\Support\AuditAdmin),
+        // mismo patron que `2026_09_13_210001_backfill_audit_logs_ip_from_ip_address`
+        // y `hospital:prune-audit-logs`. En SQLite (sin trigger) el helper es
+        // transparente y el UPDATE se ejecuta igual que antes.
+        AuditAdmin::run(static function () use ($migration): void {
+            $migration->up();
+        });
 
         $this->assertSame('failed', $legacy->fresh()->result);
         $this->assertSame('success', $successful->fresh()->result);
@@ -375,9 +428,10 @@ class OperationalMetricsServiceTest extends TestCase
         $this->assertNull($score['snapshot_generated_at']);
     }
 
-    public function test_health_endpoint_returns_the_score_alongside_the_snapshot(): void
+    public function test_health_detail_endpoint_returns_the_score_alongside_the_snapshot(): void
     {
-        $response = $this->getJson('/api/system/health');
+        $response = $this->actingAs($this->healthViewer())
+            ->getJson('/api/system/health/detail');
 
         $response->assertOk()
             ->assertJsonStructure([

@@ -236,7 +236,7 @@ class ReportController extends Controller
         ExecutiveReportService $reports,
         ExecutivePdfExportService $pdfService,
     ): Response {
-        $report = $reports->report($request->authorizedFilters(), $request->user());
+        $report = $reports->report($request->authorizedFilters(), $request->user(), completeExport: true);
 
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
             'hospital_name' => 'Hospital San Isidro',
@@ -268,7 +268,7 @@ class ReportController extends Controller
         ExecutiveReportService $reports,
         ExecutiveExcelExportService $excelService,
     ): StreamedResponse {
-        $report = $reports->report($request->authorizedFilters(), $request->user());
+        $report = $reports->report($request->authorizedFilters(), $request->user(), completeExport: true);
 
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
             'hospital_name' => 'Hospital San Isidro',

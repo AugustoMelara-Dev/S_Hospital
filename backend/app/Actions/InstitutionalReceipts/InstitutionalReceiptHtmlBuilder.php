@@ -8,13 +8,57 @@ use App\Models\InstitutionalReceiptSeries;
 use App\Models\ReceiptPrintProfile;
 use App\Support\HospitalName;
 use App\Support\Money;
+use App\Support\PaperSize;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 
 class InstitutionalReceiptHtmlBuilder
 {
     /**
-     * @return array<int, string>
+     * Composition returned by `compositionFor()` when the two destinations of the
+     * document fit on ONE sheet as two stacked half-sheet zones.
+     */
+    public const COMPOSITION_PAIRED = ReceiptSheetComposition::PAIRED;
+
+    /**
+     * Composition with one logical page per destination. Also the only fallback:
+     * a document that does not fit as two stacked zones keeps one legible page
+     * per destination instead of hiding lines to force a single sheet.
+     */
+    public const COMPOSITION_SINGLE = ReceiptSheetComposition::SINGLE;
+
+    /**
+     * Legacy institutional layout. Historical receipts snapshot this code and
+     * keep rendering their original composition (landscape, thermal, small
+     * custom), so a new template never silently rewrites an issued document.
+     */
+    public const TEMPLATE_CLASSIC = 'institutional_classic';
+
+    /**
+     * New principal institutional layout (T-RC-01 / mandate §11): a single
+     * compact column designed for carta vertical / A4 vertical that keeps 1-11
+     * ordinary lines on one page per copy. Only the portrait profiles seeded for
+     * NEW installations snapshot this code; historical documents keep classic.
+     */
+    public const TEMPLATE_COMPACT = 'institutional_compact';
+
+    public function __construct(
+        private readonly AmountToSpanishWords $amountToSpanishWords = new AmountToSpanishWords,
+        private readonly ReceiptSheetComposition $sheetComposition = new ReceiptSheetComposition,
+    ) {}
+
+    /**
+     * Copy labels in delivery order. Every match arm is a literal list, so the
+     * result is a `list<string>` (ORIGINAL / PRIMERA COPIA / SEGUNDA COPIA order
+     * is part of the contract used by the PDF, the preview and the settings UI).
+     *
+     * Destination labels of the two stacked zones of a PAIRED sheet are a
+     * different, explicit axis (patient / hospital archive); see
+     * `ReceiptSheetComposition::pairDestinations()`. The copy labels above stay
+     * unchanged so a print event keeps recording the same copy set.
+     *
+     * @return list<string>
      */
     public function copyLabels(string $copyMode): array
     {
@@ -25,12 +69,436 @@ class InstitutionalReceiptHtmlBuilder
         };
     }
 
-    public function forReceipt(InstitutionalReceipt $receipt, bool $draft = false): string
+    /**
+     * Number of logical copies (pages of the copy set) a copy mode produces.
+     * Used by the preview/dialog to state how many pages the PDF will contain:
+     * "una copia del conjunto" so the operator does not print the set three times.
+     */
+    public function copyCount(string $copyMode): int
     {
-        return View::make('pdf.institutional-receipts.classic', [
-            'pages' => $this->pagesForReceipt($receipt, $draft),
-            'profile' => $this->normalizedProfile($receipt->profile_snapshot),
+        return count($this->copyLabels($copyMode));
+    }
+
+    /**
+     * @param  string|null  $reprintLabel  Explicit `REIMPRESIÓN #n` override. The
+     *                                     POST /pdf reprint path reserves a number under the row lock and renders
+     *                                     that exact consumed number; passing null keeps deriving the label from
+     *                                     the persistent counter (`reprintLabelFor`).
+     */
+    public function forReceipt(InstitutionalReceipt $receipt, bool $draft = false, ?string $reprintLabel = null): string
+    {
+        $profile = $this->normalizedProfile($receipt->profile_snapshot);
+        $pages = $this->pagesForReceipt($receipt, $draft, $reprintLabel ?? $this->reprintLabelFor($receipt));
+        $composition = $this->compositionFor($receipt->template_code, $receipt->copy_mode, $pages, $profile);
+
+        return $this->render($receipt->template_code, $composition, $pages, $profile);
+    }
+
+    /**
+     * Canonical result of the generator for an ISSUED receipt.
+     *
+     * Unlike `forReceipt()` (which returns only the HTML), this measures the
+     * generated document with a fresh Dompdf instance and reports the real page
+     * count, the requested vs used composition and the distribution of the copy
+     * set over those pages. It is the single result every surface (settings,
+     * preview, download) must read; it is not persisted.
+     */
+    public function planForReceipt(InstitutionalReceipt $receipt, bool $draft = false, ?string $reprintLabel = null): InstitutionalReceiptDocumentPlan
+    {
+        $profile = $this->normalizedProfile($receipt->profile_snapshot);
+        $pages = $this->pagesForReceipt($receipt, $draft, $reprintLabel ?? $this->reprintLabelFor($receipt));
+
+        return $this->planForPages($receipt->template_code, $receipt->copy_mode, $pages, $profile, $draft);
+    }
+
+    /**
+     * Single entry point that turns a copy set into a rendered document. The
+     * composition decides the view: the two-zone sheet has its own view, and the
+     * paper decides the density inside the compact family (a media carta sheet is
+     * a real half sheet and gets the condensed composition of its own; a
+     * letter/A4 sheet keeps the roomy one).
+     *
+     * @param  list<array<string, mixed>>  $pages
+     * @param  array<string, mixed>  $profile
+     */
+    private function render(?string $templateCode, string $composition, array $pages, array $profile): string
+    {
+        $view = $templateCode === self::TEMPLATE_COMPACT
+            ? ($composition === self::COMPOSITION_PAIRED
+                ? 'pdf.institutional-receipts.compact-pair'
+                : 'pdf.institutional-receipts.compact')
+            : 'pdf.institutional-receipts.classic';
+
+        return View::make($view, [
+            'pages' => $pages,
+            'sheets' => $this->sheetComposition->sheetsFor($pages, $composition),
+            'profile' => $profile,
+            'composition' => $composition,
+            'density' => $this->zoneDensityFor($profile, $composition),
+            'destinationLabel' => $this->sheetComposition->destinationLabelFor(...),
+            'cutLineLabel' => (string) config('institutional_receipts.cut_line_label', 'Línea de corte'),
+            'unknownAdjustmentLabel' => (string) config('institutional_receipts.unknown_adjustment_label', 'No registrado'),
         ])->render();
+    }
+
+    /**
+     * Density of the compact family. `full` is the letter/A4 composition (1-11
+     * ordinary lines per page, ~10.5 pt detail); `half` is the media carta
+     * composition, which is a native half-sheet design: it condenses the
+     * institutional masthead, the meta band and the closing/signature block, but
+     * keeps the same 14 px (~10.5 pt) detail type so the paper stays readable.
+     */
+    private function densityFor(array $profile): string
+    {
+        return ($profile['paper_kind'] ?? null) === 'half_letter_landscape' ? 'half' : 'full';
+    }
+
+    /**
+     * Density actually used to compose ONE zone of the sheet.
+     *
+     * A stacked two-zone sheet gives each destination only half of the sheet, so
+     * each zone must be composed with the condensed half-sheet density even
+     * though the paper itself is letter/A4. Passing the full density here was
+     * why the real engine never approved the pair: two roomy compositions cannot
+     * share one page, so the document silently fell back to one page per
+     * destination. The fit proof (`pairFitsOnOnePage`) must use the same density
+     * the final document uses, or it would approve a sheet the renderer then
+     * overflows.
+     *
+     * @param  array<string, mixed>  $profile
+     */
+    private function zoneDensityFor(array $profile, string $composition): string
+    {
+        if ($composition === self::COMPOSITION_PAIRED) {
+            return 'half';
+        }
+
+        return $this->densityFor($profile);
+    }
+
+    /**
+     * Decides whether the copy set of this document is delivered as ONE sheet with
+     * two stacked zones or as one page per destination.
+     *
+     * Only the compact family is eligible, only a two-destination copy set can be
+     * stacked, and only a sheet that can actually host two half-sheet zones
+     * (letter portrait / A4 portrait; a media carta sheet is already a half sheet,
+     * so it keeps one page per destination). The last word belongs to the real
+     * engine: the candidate sheet is rendered and kept only when it lands on
+     * exactly one page. Otherwise the per-destination pages are used, so a long
+     * operation is never squeezed and no line is hidden.
+     *
+     * @param  list<array<string, mixed>>  $pages
+     * @param  array<string, mixed>  $profile
+     */
+    private function compositionFor(?string $templateCode, string $copyMode, array $pages, array $profile): string
+    {
+        if ($this->preferredCompositionFor($templateCode, $copyMode, $pages, $profile) !== self::COMPOSITION_PAIRED) {
+            return self::COMPOSITION_SINGLE;
+        }
+
+        return $this->pairFitsOnOnePage($pages, $profile)
+            ? self::COMPOSITION_PAIRED
+            : self::COMPOSITION_SINGLE;
+    }
+
+    /**
+     * Composition this document ASKS for, before the engine proves it fits.
+     *
+     * It is the "solicitada" half of the canonical plan: the two-zone sheet is
+     * preferred whenever the template, the configuration, the copy set and the
+     * paper geometry allow it; the fit proof decides the "usada" one. Keeping the
+     * two apart is what lets the plan explain, in legible words, why a document
+     * was delivered with a different composition than the preferred one.
+     *
+     * @param  list<array<string, mixed>>  $pages
+     * @param  array<string, mixed>  $profile
+     */
+    private function preferredCompositionFor(?string $templateCode, string $copyMode, array $pages, array $profile): string
+    {
+        if ($templateCode !== self::TEMPLATE_COMPACT) {
+            return self::COMPOSITION_SINGLE;
+        }
+
+        if (! (bool) config('institutional_receipts.two_zone_sheet.enabled', true)) {
+            return self::COMPOSITION_SINGLE;
+        }
+
+        if (count($pages) !== 2 || count($this->copyLabels($copyMode)) !== 2) {
+            return self::COMPOSITION_SINGLE;
+        }
+
+        if (($profile['paper_kind'] ?? null) === 'half_letter_landscape') {
+            return self::COMPOSITION_SINGLE;
+        }
+
+        $minimumHeightMm = (float) config('institutional_receipts.two_zone_sheet.min_paper_height_mm', 250.0);
+        $heightPt = $this->paperHeightPt($profile);
+
+        if ($heightPt <= 0.0 || ($heightPt * 25.4 / 72.0) < $minimumHeightMm) {
+            return self::COMPOSITION_SINGLE;
+        }
+
+        return self::COMPOSITION_PAIRED;
+    }
+
+    /**
+     * The fit proof. The two stacked zones are a strictly sequential flow, so the
+     * engine's page count answers the exact question: one page means both zones
+     * fit above the page bottom; two or more means they do not, and the caller
+     * falls back. A rendering failure is never treated as a fit.
+     *
+     * @param  list<array<string, mixed>>  $pages
+     * @param  array<string, mixed>  $profile
+     */
+    private function pairFitsOnOnePage(array $pages, array $profile): bool
+    {
+        try {
+            $html = View::make('pdf.institutional-receipts.compact-pair', [
+                'pages' => $pages,
+                'sheets' => $this->sheetComposition->sheetsFor($pages, self::COMPOSITION_PAIRED),
+                'profile' => $profile,
+                'composition' => self::COMPOSITION_PAIRED,
+                'density' => $this->zoneDensityFor($profile, self::COMPOSITION_PAIRED),
+                'destinationLabel' => $this->sheetComposition->destinationLabelFor(...),
+                'cutLineLabel' => (string) config('institutional_receipts.cut_line_label', 'Línea de corte'),
+                'unknownAdjustmentLabel' => (string) config('institutional_receipts.unknown_adjustment_label', 'No registrado'),
+            ])->render();
+
+            $wrapper = Pdf::loadHTML($html);
+            $wrapper->setPaper(PaperSize::fromProfileSnapshot($profile));
+            $dompdf = $wrapper->getDomPDF();
+            $dompdf->render();
+
+            return $dompdf->getCanvas()->get_page_count() === 1;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $profile
+     */
+    private function paperHeightPt(array $profile): float
+    {
+        try {
+            $paper = PaperSize::fromProfileSnapshot($profile);
+        } catch (\Throwable) {
+            return 0.0;
+        }
+
+        return (float) $paper[3];
+    }
+
+    /**
+     * Builds the canonical plan of one copy set.
+     *
+     * The page count is MEASURED on the generated document: a brand-new Dompdf
+     * wrapper is created for this document only (`measuredPageCount`), so no
+     * instance already contaminated by a previous render is reused. The fit proof
+     * keeps its own instance too. Counting copies is never an answer here.
+     *
+     * @param  list<array<string, mixed>>  $pages
+     * @param  array<string, mixed>  $profile
+     */
+    private function planForPages(?string $templateCode, string $copyMode, array $pages, array $profile, bool $draft, ?string $forcedComposition = null): InstitutionalReceiptDocumentPlan
+    {
+        $requested = $forcedComposition ?? $this->preferredCompositionFor($templateCode, $copyMode, $pages, $profile);
+        $used = $forcedComposition ?? $this->compositionFor($templateCode, $copyMode, $pages, $profile);
+
+        $html = $this->render($templateCode, $used, $pages, $profile);
+        $paper = PaperSize::fromProfileSnapshot($profile);
+        $copyLabels = $this->copyLabels($copyMode);
+        $sheets = $this->sheetComposition->sheetsFor($pages, $used);
+        $pageCount = $this->measuredPageCount($html, $paper);
+        $sheetCount = count($sheets);
+
+        $distribution = $this->distributionFor($templateCode, $used, $sheets, $pageCount, $paper, $profile);
+        $alternativeOutput = $requested !== $used || $pageCount > $sheetCount;
+        $paperKind = $profile['paper_kind'] ?? null;
+
+        return new InstitutionalReceiptDocumentPlan(
+            html: $html,
+            paperKind: is_string($paperKind) ? $paperKind : '',
+            orientation: $paper[2] >= $paper[3] ? 'landscape' : 'portrait',
+            widthPt: (float) $paper[2],
+            heightPt: (float) $paper[3],
+            copyLabels: $copyLabels,
+            destinations: $this->destinationsFor($used, $copyLabels),
+            pageCount: $pageCount,
+            sheetCount: $sheetCount,
+            requestedComposition: $requested,
+            usedComposition: $used,
+            distribution: $distribution,
+            alternativeOutput: $alternativeOutput,
+            alternativeReason: $this->alternativeReasonFor($requested, $used, $pageCount, $sheetCount, count($copyLabels)),
+            draft: $draft,
+        );
+    }
+
+    /**
+     * Real page count of one generated document, on a FRESH engine instance.
+     *
+     * Reusing a wrapper that already rendered a previous document is exactly what
+     * would report a contaminated count; a new wrapper per document makes the
+     * measurement belong to the bytes that are delivered.
+     *
+     * @param  array{0: int, 1: int, 2: float, 3: float}  $paper
+     */
+    private function measuredPageCount(string $html, array $paper): int
+    {
+        $wrapper = Pdf::loadHTML($html);
+        $wrapper->setPaper($paper);
+        $dompdf = $wrapper->getDomPDF();
+        $dompdf->render();
+
+        return (int) $dompdf->getCanvas()->get_page_count();
+    }
+
+    /**
+     * How the copy set is distributed over the pages of the document.
+     *
+     * Each `.receipt-page` block starts a new page (`page-break-after: always`), so
+     * when the measured total equals the number of blocks every block is exactly
+     * one page and no extra render is needed. When the total is larger, the blocks
+     * are measured one by one to attribute the overflow instead of guessing it
+     * from the copy count.
+     *
+     * @param  list<array{destinations: list<string|null>, pages: list<array<string, mixed>>}>  $sheets
+     * @param  array{0: int, 1: int, 2: float, 3: float}  $paper
+     * @param  array<string, mixed>  $profile
+     * @return list<array{sheet: int, destinations: list<string>, pages: int}>
+     */
+    private function distributionFor(?string $templateCode, string $composition, array $sheets, int $pageCount, array $paper, array $profile): array
+    {
+        $distribution = [];
+
+        if ($pageCount === count($sheets)) {
+            foreach ($sheets as $index => $sheet) {
+                $distribution[] = [
+                    'sheet' => $index + 1,
+                    'destinations' => $this->sheetDestinations($sheet),
+                    'pages' => 1,
+                ];
+            }
+
+            return $distribution;
+        }
+
+        foreach ($sheets as $index => $sheet) {
+            $sheetHtml = $this->render($templateCode, $composition, $sheet['pages'], $profile);
+
+            $distribution[] = [
+                'sheet' => $index + 1,
+                'destinations' => $this->sheetDestinations($sheet),
+                'pages' => $this->measuredPageCount($sheetHtml, $paper),
+            ];
+        }
+
+        return $distribution;
+    }
+
+    /**
+     * Destination labels of one sheet, in zone order. A stacked zone has its own
+     * destination label; a single-destination sheet keeps the copy legend the
+     * profile already declares.
+     *
+     * @param  array{destinations: list<string|null>, pages: list<array<string, mixed>>}  $sheet
+     * @return list<string>
+     */
+    private function sheetDestinations(array $sheet): array
+    {
+        $labels = [];
+
+        foreach ($sheet['pages'] as $index => $page) {
+            $label = $this->sheetComposition->destinationLabelFor($sheet, $index)
+                ?? $this->stringValue($page['copy_label'] ?? null, '');
+
+            if ($label !== '') {
+                $labels[] = $label;
+            }
+        }
+
+        return $labels;
+    }
+
+    /**
+     * Distinct destinations of the whole document, in delivery order. Used by the
+     * headline so two stacked zones are named, not counted as two pages.
+     *
+     * @param  list<string>  $copyLabels
+     * @return list<string>
+     */
+    private function destinationsFor(string $composition, array $copyLabels): array
+    {
+        if ($composition !== self::COMPOSITION_PAIRED) {
+            return $copyLabels;
+        }
+
+        return $this->sheetComposition->pairDestinations();
+    }
+
+    /**
+     * Legible reason of a delivered composition other than the preferred one.
+     *
+     * Two cases are distinguished because they mean different things to the
+     * operator: the two-zone sheet did not admit the detail (so each destination
+     * gets a full page), or one given destination alone needed more than one page.
+     */
+    private function alternativeReasonFor(string $requested, string $used, int $pageCount, int $sheetCount, int $copyCount): ?string
+    {
+        if ($requested === self::COMPOSITION_PAIRED && $used !== self::COMPOSITION_PAIRED) {
+            return 'La hoja de dos zonas no admitió el detalle: se emitió una página completa por ejemplar, sin ocultar líneas.';
+        }
+
+        if ($pageCount > $sheetCount) {
+            $copies = $copyCount === 1 ? '1 ejemplar' : $copyCount.' ejemplares';
+
+            return 'El detalle necesita páginas adicionales: '.$copies.', '.$pageCount.' páginas PDF.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Single source of the template resolution. The receipt snapshots the
+     * template it was issued with, so a historical document keeps its own
+     * composition; an unknown/legacy value falls back to classic, never to an
+     * unhandled error. Only the explicit compact code selects the compact family;
+     * the compact family then decides between the single and the two-zone views
+     * from the composition (see `render()`).
+     */
+    public function templateView(?string $templateCode): string
+    {
+        return $templateCode === self::TEMPLATE_COMPACT
+            ? 'pdf.institutional-receipts.compact'
+            : 'pdf.institutional-receipts.classic';
+    }
+
+    /**
+     * HS-PRINT-DELIVERY: legend source for the reprint mark.
+     *
+     * The number comes from the persistent counter `institutional_receipts.reprint_count`
+     * (plus the recorded print events that prove a previous logical delivery). It never
+     * comes from COUNT(audit_logs), which is prunable and only an audit trail.
+     *
+     * - No recorded print yet: this is the first document of the issued receipt, so it
+     *   must never be labeled as a reprint.
+     * - Otherwise: the next reprint number is reprint_count + 1 (a first print event
+     *   without reprints yields #1; after one recorded reprint the next legend is #2).
+     *
+     * The legend marks a logical reprint request/delivery; it does not prove that paper
+     * physically left a printer.
+     */
+    public function reprintLabelFor(InstitutionalReceipt $receipt): ?string
+    {
+        $hasRecordedPrint = $receipt->printEvents()->exists();
+
+        if ((int) $receipt->reprint_count <= 0 && ! $hasRecordedPrint) {
+            return null;
+        }
+
+        return 'REIMPRESIÓN #'.max(1, (int) $receipt->reprint_count + 1);
     }
 
     /**
@@ -38,113 +506,305 @@ class InstitutionalReceiptHtmlBuilder
      */
     public function forDraft(array $data, ReceiptPrintProfile $profile, ?InstitutionalReceiptSeries $series = null): string
     {
+        /*
+         * Un borrador usa la MISMA decisión de composición que la emisión.
+         *
+         * Antes forzaba `single` con el argumento de que «el borrador es un
+         * conjunto de una sola copia», pero eso no era cierto: `draftPages()`
+         * construye una página por etiqueta de `copies_mode`, igual que la
+         * emisión. Con dos ejemplares sobre carta, la vista previa anunciaba dos
+         * páginas mientras el documento emitido cabía en una hoja de dos zonas.
+         *
+         * El borrador NO consume correlativo, no crea factura, pago ni recibo y no
+         * registra evento de reimpresión: eso no cambia. Lo único que cambia es que
+         * la distribución se decide con la misma función que la emisión.
+         */
+        $pages = $this->draftPages($data, $profile, $series);
+        $normalized = $this->profileFromModel($profile);
+        $composition = $this->compositionFor(
+            $profile->template_code,
+            $profile->copies_mode,
+            $pages,
+            $normalized,
+        );
+
+        return $this->render($profile->template_code, $composition, $pages, $normalized);
+    }
+
+    /**
+     * Canonical result of the generator for a DRAFT (unsaved profile / test print).
+     *
+     * The draft keeps its documented single-copy-set composition, so the plan
+     * reports it as both requested and used: the sample document the operator is
+     * about to test-print is measured as it really is.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function planForDraft(array $data, ReceiptPrintProfile $profile, ?InstitutionalReceiptSeries $series = null): InstitutionalReceiptDocumentPlan
+    {
+        /*
+         * Sin composición forzada: el plan del borrador se decide con las mismas
+         * reglas que el emitido (`preferredCompositionFor` + la prueba de cabida
+         * del motor real). Así, para contenido y configuración equivalentes, ambas
+         * rutas declaran el mismo papel, la misma densidad por zona, los mismos
+         * ejemplares y destinos, la misma alternativa por desbordamiento y el
+         * mismo número de páginas medido.
+         *
+         * Lo que sigue siendo distinto y NO se exige igual: número, fecha, marca de
+         * prueba y metadatos del PDF. La correspondencia es semántica y de
+         * geometría, no binaria.
+         */
+        return $this->planForPages(
+            $profile->template_code,
+            $profile->copies_mode,
+            $this->draftPages($data, $profile, $series),
+            $this->profileFromModel($profile),
+            true,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<array<string, mixed>>
+     */
+    private function draftPages(array $data, ReceiptPrintProfile $profile, ?InstitutionalReceiptSeries $series = null): array
+    {
         $settings = FiscalSetting::query()->firstOrNew();
-        $amount = Money::formatCents(Money::parseCents($this->numericString($data['amount'] ?? null, '0.00'), 'amount'));
+        $amount = $this->moneyValue(null, $data['amount'] ?? null);
         $payerName = $this->stringValue($data['payer_name'] ?? null, 'Paciente de prueba');
         $concept = $this->stringValue($data['concept'] ?? null, 'Servicios hospitalarios de prueba');
+        $watermark = $this->stringValue($data['watermark'] ?? null, 'PRUEBA - SIN VALIDEZ');
+        $amountWords = $this->stringValue($data['amount_words'] ?? null, $watermark);
+        $amountStatement = $this->stringValue(
+            $data['amount_statement'] ?? null,
+            $this->amountStatement($series?->legal_text, $amountWords),
+        );
+        $amountTotalNote = $this->stringValue($data['amount_total_note'] ?? null);
+        $invoiceDraft = is_array($data['invoice'] ?? null) ? $data['invoice'] : [];
+        $items = $this->draftItems($data, $concept, $amount);
 
-        return View::make('pdf.institutional-receipts.classic', [
-            'pages' => collect($this->copyLabels($profile->copies_mode))
-                ->map(fn (string $copyLabel): array => [
-                    'copy_label' => $copyLabel,
-                    'draft' => true,
-                    'watermark' => 'PRUEBA - SIN VALIDEZ',
-                    'institution' => [
-                        'government_line' => $settings->government_line ?: '',
-                        'secretariat_line' => $settings->secretariat_line ?: '',
-                        'hospital_name' => HospitalName::display($settings->hospital_name),
-                        'rtn' => $settings->rtn ?: '',
-                        'address' => $settings->address ?: '',
-                        'phone' => $settings->phone ?: '',
-                        'receipt_location' => $settings->receipt_location ?: '',
-                        'receipt_footer_text' => $settings->receipt_footer_text ?: '',
-                        'logo_data_uri' => $this->logoDataUriForProfile($profile),
+        $pages = [];
+
+        foreach ($this->copyLabels($profile->copies_mode) as $index => $copyLabel) {
+            $pages[] = [
+                'copy_label' => $copyLabel,
+                'copy_index' => $index + 1,
+                'copy_total' => $this->copyCount($profile->copies_mode),
+                'reprint_label' => null,
+                'draft' => true,
+                'watermark' => $watermark,
+                'institution' => [
+                    'government_line' => $settings->government_line ?: '',
+                    'secretariat_line' => $settings->secretariat_line ?: '',
+                    'hospital_name' => HospitalName::display($settings->hospital_name),
+                    'rtn' => $settings->rtn ?: '',
+                    'address' => $settings->address ?: '',
+                    'phone' => $settings->phone ?: '',
+                    'receipt_location' => $settings->receipt_location ?: '',
+                    'receipt_footer_text' => $settings->receipt_footer_text ?: '',
+                    'logo_data_uri' => $this->logoDataUriForProfile($profile),
+                ],
+                'series' => [
+                    'series' => $series?->series ?: 'PRUEBA',
+                    'receipt_number_full' => $series ? $this->formatDraftNumber($series) : 'PRUEBA-SIN-NUMERO',
+                    'receipt_number_color' => $this->safeHexColor($series?->receipt_number_color),
+                    'legal_text' => $series?->legal_text ?: '',
+                ],
+                'amount' => $amount,
+                'issued_at' => now(),
+                'payer_name' => $payerName,
+                'amount_words' => $amountWords,
+                'amount_statement' => $amountStatement,
+                'amount_total_note' => $amountTotalNote !== '' ? $amountTotalNote : null,
+                'concept' => $concept,
+                'status' => 'issued',
+                'invoice' => [
+                    'invoice_number' => 'PRUEBA-SIN-FACTURA',
+                    'fiscal_cai' => null,
+                    'fiscal_range_from' => null,
+                    'fiscal_range_to' => null,
+                    'fiscal_valid_until' => null,
+                    'patient_name' => $payerName,
+                    'issued_at' => now()->toIso8601String(),
+                    'tax_label' => $this->stringValue($invoiceDraft['tax_label'] ?? null, 'ISV'),
+                    'tax_rate_snapshot' => $invoiceDraft['tax_rate_snapshot'] ?? null,
+                    'subtotal' => $this->moneyValue(null, $invoiceDraft['subtotal'] ?? $amount),
+                    'exempt_amount' => $this->moneyValue(null, $invoiceDraft['exempt_amount'] ?? $amount),
+                    'tax_amount' => $this->moneyValue(null, $invoiceDraft['tax_amount'] ?? '0.00'),
+                    'discount_amount' => $this->moneyValue(null, $invoiceDraft['discount_amount'] ?? '0.00'),
+                    'total' => $this->moneyValue(null, $invoiceDraft['total'] ?? $amount),
+                    'paid_amount' => $this->moneyValue(null, $invoiceDraft['paid_amount'] ?? $amount),
+                    'balance_due' => $this->moneyValue(null, $invoiceDraft['balance_due'] ?? '0.00'),
+                ],
+                'payment' => [
+                    'selected_payment' => null,
+                    'posted_payments' => [],
+                    'cash_context' => [
+                        'cash_register_label' => null,
+                        'cashier_name' => null,
+                        'opened_at' => null,
                     ],
-                    'series' => [
-                        'series' => $series?->series ?: 'PRUEBA',
-                        'receipt_number_full' => $series ? $this->formatDraftNumber($series) : 'PRUEBA-SIN-NUMERO',
-                        'receipt_number_color' => $this->safeHexColor($series?->receipt_number_color),
-                        'legal_text' => $series?->legal_text ?: '',
+                    'issued_by' => [
+                        'name' => null,
                     ],
-                    'amount' => $amount,
-                    'issued_at' => now(),
-                    'payer_name' => $payerName,
-                    'amount_words' => 'PRUEBA - SIN VALIDEZ',
-                    'amount_statement' => $this->amountStatement($series?->legal_text, 'PRUEBA - SIN VALIDEZ'),
-                    'concept' => $concept,
-                    'status' => 'issued',
-                    'invoice' => [
-                        'invoice_number' => 'PRUEBA-SIN-FACTURA',
-                        'fiscal_cai' => null,
-                        'fiscal_range_from' => null,
-                        'fiscal_range_to' => null,
-                        'fiscal_valid_until' => null,
-                        'patient_name' => $payerName,
-                        'issued_at' => now()->toIso8601String(),
-                        'tax_label' => 'ISV',
-                        'tax_rate_snapshot' => null,
-                        'subtotal' => $amount,
-                        'exempt_amount' => $amount,
-                        'tax_amount' => '0.00',
-                        'discount_amount' => '0.00',
-                        'total' => $amount,
-                        'paid_amount' => $amount,
-                        'balance_due' => '0.00',
-                    ],
-                    'payment' => [
-                        'selected_payment' => null,
-                        'posted_payments' => [],
-                        'cash_context' => [
-                            'cash_register_label' => null,
-                            'cashier_name' => null,
-                            'opened_at' => null,
-                        ],
-                        'issued_by' => [
-                            'name' => null,
-                        ],
-                    ],
-                    'items' => [[
-                        'service_name' => $concept,
-                        'category_name' => null,
-                        'area_name' => null,
-                        'quantity' => '1.00',
-                        'unit_price' => $amount,
-                        'tax_rate' => null,
-                        'tax_amount' => '0.00',
-                        'line_subtotal' => $amount,
-                        'line_total' => $amount,
-                        'notes' => null,
-                    ]],
-                ])
-                ->all(),
-            'profile' => $this->profileFromModel($profile),
-        ])->render();
+                ],
+                'items' => $items,
+            ];
+        }
+
+        return $pages;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<array<string, mixed>>
+     */
+    private function draftItems(array $data, string $concept, ?string $amount): array
+    {
+        $provided = $data['items'] ?? null;
+
+        if (! is_array($provided) || $provided === []) {
+            return [[
+                'service_name' => $concept,
+                'category_name' => null,
+                'area_name' => null,
+                'quantity' => '1.00',
+                'unit_price' => $amount,
+                'reference_unit_price' => $amount,
+                'tax_rate' => null,
+                'tax_amount' => '0.00',
+                'line_subtotal' => $amount,
+                'line_total' => $amount,
+                'adjustment' => null,
+                'adjustment_unknown' => false,
+                'rule_adjusted' => false,
+                'notes' => null,
+            ]];
+        }
+
+        return array_values(collect($provided)
+            ->filter(fn (mixed $item): bool => is_array($item))
+            ->map(fn (array $item): array => [
+                'service_name' => $this->stringValue($item['service_name'] ?? null, 'Servicio hospitalario'),
+                'category_name' => $this->stringValue($item['category_name'] ?? null),
+                'area_name' => $this->stringValue($item['area_name'] ?? null),
+                'quantity' => $this->numericString($item['quantity'] ?? null, '1.00'),
+                'unit_price' => $this->moneyValue($item['unit_price_cents'] ?? null, $item['unit_price'] ?? null),
+                'reference_unit_price' => $this->moneyValue(
+                    $item['unit_price_registered_cents'] ?? null,
+                    $item['unit_price_registered'] ?? $item['unit_price'] ?? null,
+                ),
+                'tax_rate' => $item['tax_rate'] ?? null,
+                'tax_amount' => $this->moneyValue($item['tax_amount_cents'] ?? null, $item['tax_amount'] ?? null),
+                'line_subtotal' => $this->moneyValue($item['line_subtotal_cents'] ?? null, $item['line_subtotal'] ?? null),
+                'line_total' => $this->moneyValue($item['line_total_cents'] ?? null, $item['line_total'] ?? null),
+                'adjustment' => $this->lineAdjustmentValue($item),
+                'adjustment_unknown' => false,
+                'rule_adjusted' => ($item['special_rule_applied'] ?? false) === true,
+                'notes' => $this->stringValue($item['notes'] ?? null),
+            ])
+            ->all());
     }
 
     /**
      * @return list<array<string, mixed>>
      */
-    private function pagesForReceipt(InstitutionalReceipt $receipt, bool $draft): array
+    private function pagesForReceipt(InstitutionalReceipt $receipt, bool $draft, ?string $reprintLabel = null): array
     {
-        return array_values(collect($this->copyLabels($receipt->copy_mode))
-            ->map(fn (string $copyLabel): array => [
+        $copyLabels = $this->copyLabels($receipt->copy_mode);
+        $copyTotal = count($copyLabels);
+        // Lab/validation documents must be unambiguous: a downloaded PDF that
+        // carries a placeholder fiscal authorization must show the same big test
+        // notice the preview shows, so it cannot pass for a real fiscal receipt.
+        $nonFiscalNotice = $this->nonFiscalNotice($receipt);
+        $invoice = $this->normalizedInvoice($receipt->invoice_snapshot ?? []);
+        $amounts = $this->amountReference($receipt, $invoice);
+
+        return array_values(collect($copyLabels)
+            ->map(fn (string $copyLabel, int $index): array => [
                 'copy_label' => $copyLabel,
+                'copy_index' => $index + 1,
+                'copy_total' => $copyTotal,
+                'reprint_label' => $draft ? null : $reprintLabel,
                 'draft' => $draft,
                 'watermark' => $draft ? 'PRUEBA - SIN VALIDEZ' : null,
+                'test_notice' => $nonFiscalNotice,
                 'institution' => $this->normalizedInstitution($receipt->institution_snapshot),
                 'series' => $this->normalizedSeries($receipt->series_snapshot, $receipt->receipt_number_full),
                 'amount' => Money::formatCents((int) $receipt->amount_cents),
                 'issued_at' => $receipt->issued_at,
                 'payer_name' => $receipt->payer_name,
                 'amount_words' => $receipt->amount_words,
-                'amount_statement' => $this->amountStatement($receipt->series_snapshot['legal_text'] ?? null, $receipt->amount_words),
+                'amount_statement' => $amounts['statement'],
+                'amount_total_note' => $amounts['total_note'],
                 'concept' => $receipt->concept,
                 'status' => $receipt->status,
-                'invoice' => $this->normalizedInvoice($receipt->invoice_snapshot ?? []),
+                'invoice' => $invoice,
                 'payment' => $this->normalizedPayment($receipt->payment_snapshot ?? []),
                 'items' => $this->normalizedItems($receipt->items_snapshot ?? []),
             ])
             ->all());
+    }
+
+    /**
+     * The amount the "en letras" sentence refers to, and the explicit statement of
+     * that reference.
+     *
+     * The institutional legal text ("haber enterado ... la suma de") describes the
+     * amount RECEIVED, so the words must describe the amount actually received and
+     * never a different figure. Two cases:
+     *
+     * - Nothing was received (amount zero, or a snapshot that explicitly records a
+     *   zero received amount): a legitimate zero. The words of the zero amount are
+     *   kept, the "haber enterado" formula is replaced by the configured
+     *   without-charge notice, and no sentence claims cash was received.
+     * - Something was received: the received amount is spoken. When the received
+     *   amount differs from the document total (a partial payment snapshot), the
+     *   total is stated separately so the reader can never attribute the words to
+     *   the wrong figure.
+     *
+     * The received amount is read from `invoice_snapshot.paid_amount_cents` when the
+     * snapshot really carries it; otherwise the receipt amount itself is the
+     * received amount (which is what every pre-existing snapshot means), so a
+     * historical document is never reinterpreted.
+     *
+     * @param  array<string, mixed>  $invoice
+     * @return array{statement: string, total_note: string|null}
+     */
+    private function amountReference(InstitutionalReceipt $receipt, array $invoice): array
+    {
+        $receiptCents = (int) $receipt->amount_cents;
+        $snapshot = is_array($receipt->invoice_snapshot) ? $receipt->invoice_snapshot : [];
+
+        $totalCents = $this->centsOrNull($snapshot['total_cents'] ?? null) ?? $receiptCents;
+        $paidCents = $this->centsOrNull($snapshot['paid_amount_cents'] ?? null) ?? $receiptCents;
+
+        $words = trim((string) $receipt->amount_words);
+        $legalText = trim($this->stringValue($receipt->series_snapshot['legal_text'] ?? null));
+
+        if ($paidCents <= 0) {
+            $withoutCharge = trim((string) config(
+                'institutional_receipts.without_charge_notice',
+                'Documento sin cobro: no se recibió efectivo.',
+            ));
+
+            return [
+                'statement' => trim($words.' '.$withoutCharge),
+                'total_note' => null,
+            ];
+        }
+
+        $paidWords = $paidCents === $receiptCents && $words !== ''
+            ? $words
+            : $this->amountToSpanishWords->forCents($paidCents);
+
+        return [
+            'statement' => $this->amountStatement($legalText !== '' ? $legalText : null, $paidWords),
+            'total_note' => $paidCents === $totalCents
+                ? null
+                : 'Total del documento: L. '.Money::formatCents($totalCents)
+                    .' (en letras: '.$this->amountToSpanishWords->forCents($totalCents).').',
+        ];
     }
 
     /**
@@ -198,6 +858,13 @@ class InstitutionalReceiptHtmlBuilder
             'show_copy_legend' => $this->boolValue($snapshot['show_copy_legend'] ?? null, true),
             'show_physical_seal_space' => $this->boolValue($snapshot['show_physical_seal_space'] ?? null, true),
             'paper_kind' => $this->stringValue($snapshot['paper_kind'] ?? null),
+            // Paper geometry travels with the profile so the composition can resolve
+            // the exact sheet through PaperSize (one geometry source) without
+            // re-reading the profile row. `orientation` is informational: the native
+            // sheet geometry already encodes it.
+            'orientation' => $this->stringValue($snapshot['orientation'] ?? null, 'portrait'),
+            'width_mm' => $this->numericString($snapshot['width_mm'] ?? null, ''),
+            'height_mm' => $this->numericString($snapshot['height_mm'] ?? null, ''),
         ];
     }
 
@@ -236,13 +903,13 @@ class InstitutionalReceiptHtmlBuilder
             'issued_at' => $snapshot['issued_at'] ?? null,
             'tax_label' => $snapshot['tax_label'] ?? 'ISV',
             'tax_rate_snapshot' => $snapshot['tax_rate_snapshot'] ?? null,
-            'subtotal' => $this->moneyValue($snapshot['subtotal_cents'] ?? null, $snapshot['subtotal'] ?? '0.00'),
-            'exempt_amount' => $this->moneyValue($snapshot['exempt_amount_cents'] ?? null, $snapshot['exempt_amount'] ?? '0.00'),
-            'tax_amount' => $this->moneyValue($snapshot['tax_amount_cents'] ?? null, $snapshot['tax_amount'] ?? '0.00'),
-            'discount_amount' => $this->moneyValue($snapshot['discount_amount_cents'] ?? null, $snapshot['discount_amount'] ?? '0.00'),
-            'total' => $this->moneyValue($snapshot['total_cents'] ?? null, $snapshot['total'] ?? '0.00'),
-            'paid_amount' => $this->moneyValue($snapshot['paid_amount_cents'] ?? null, $snapshot['paid_amount'] ?? '0.00'),
-            'balance_due' => $this->moneyValue($snapshot['balance_due_cents'] ?? null, $snapshot['balance_due'] ?? '0.00'),
+            'subtotal' => $this->moneyValue($snapshot['subtotal_cents'] ?? null, $snapshot['subtotal'] ?? null),
+            'exempt_amount' => $this->moneyValue($snapshot['exempt_amount_cents'] ?? null, $snapshot['exempt_amount'] ?? null),
+            'tax_amount' => $this->moneyValue($snapshot['tax_amount_cents'] ?? null, $snapshot['tax_amount'] ?? null),
+            'discount_amount' => $this->moneyValue($snapshot['discount_amount_cents'] ?? null, $snapshot['discount_amount'] ?? null),
+            'total' => $this->moneyValue($snapshot['total_cents'] ?? null, $snapshot['total'] ?? null),
+            'paid_amount' => $this->moneyValue($snapshot['paid_amount_cents'] ?? null, $snapshot['paid_amount'] ?? null),
+            'balance_due' => $this->moneyValue($snapshot['balance_due_cents'] ?? null, $snapshot['balance_due'] ?? null),
         ];
     }
 
@@ -257,7 +924,7 @@ class InstitutionalReceiptHtmlBuilder
             ->filter(fn (mixed $payment): bool => is_array($payment))
             ->map(fn (array $payment): array => [
                 'method' => $payment['method'] ?? '',
-                'amount' => $this->moneyValue($payment['amount_cents'] ?? null, $payment['amount'] ?? '0.00'),
+                'amount' => $this->moneyValue($payment['amount_cents'] ?? null, $payment['amount'] ?? null),
                 'reference' => $payment['reference'] ?? null,
                 'paid_at' => $payment['paid_at'] ?? null,
                 'cashier_name' => $payment['cashier_name'] ?? null,
@@ -268,7 +935,7 @@ class InstitutionalReceiptHtmlBuilder
         return [
             'selected_payment' => $selectedPayment ? [
                 'method' => $selectedPayment['method'] ?? '',
-                'amount' => $this->moneyValue($selectedPayment['amount_cents'] ?? null, $selectedPayment['amount'] ?? '0.00'),
+                'amount' => $this->moneyValue($selectedPayment['amount_cents'] ?? null, $selectedPayment['amount'] ?? null),
                 'reference' => $selectedPayment['reference'] ?? null,
                 'paid_at' => $selectedPayment['paid_at'] ?? null,
                 'cashier_name' => $selectedPayment['cashier_name'] ?? null,
@@ -292,23 +959,210 @@ class InstitutionalReceiptHtmlBuilder
                 'category_name' => $item['category_name'] ?? null,
                 'area_name' => $item['area_name'] ?? null,
                 'quantity' => $item['quantity'] ?? '1.00',
-                'unit_price' => $this->moneyValue($item['unit_price_cents'] ?? null, $item['unit_price'] ?? '0.00'),
+                'unit_price' => $this->moneyValue($item['unit_price_cents'] ?? null, $item['unit_price'] ?? null),
+                // Price column of a rule-adjusted line: the registered catalogue
+                // price (the amount the services table is charged against) so that
+                // reference price − authorized adjustment = importe stays true. A
+                // line without a proven adjustment keeps the applied price.
+                'reference_unit_price' => $this->referenceUnitPrice($item),
                 'tax_rate' => $item['tax_rate'] ?? null,
-                'tax_amount' => $this->moneyValue($item['tax_amount_cents'] ?? null, $item['tax_amount'] ?? '0.00'),
-                'line_subtotal' => $this->moneyValue($item['line_subtotal_cents'] ?? null, $item['line_subtotal'] ?? '0.00'),
-                'line_total' => $this->moneyValue($item['line_total_cents'] ?? null, $item['line_total'] ?? '0.00'),
+                'tax_amount' => $this->moneyValue($item['tax_amount_cents'] ?? null, $item['tax_amount'] ?? null),
+                'line_subtotal' => $this->moneyValue($item['line_subtotal_cents'] ?? null, $item['line_subtotal'] ?? null),
+                'line_total' => $this->moneyValue($item['line_total_cents'] ?? null, $item['line_total'] ?? null),
+                'adjustment' => $this->lineAdjustmentValue($item),
+                'adjustment_unknown' => $this->lineAdjustmentIsUnknown($item),
+                // La procedencia del ajuste distingue una gratuidad autorizada
+                // de un precio de catálogo legítimamente cero sin copiar al
+                // comprobante el código ni el estado técnico de la regla.
+                'rule_adjusted' => $this->lineAdjustmentValue($item) !== null
+                    || ($item['rule_adjustment_persisted'] ?? null) === false,
                 'notes' => $item['notes'] ?? null,
             ])
             ->all());
     }
 
-    private function moneyValue(mixed $cents, mixed $fallback): string
+    /**
+     * TRUE only when the snapshot explicitly declares that the per-line rule
+     * adjustment was never recorded (`rule_adjustment_persisted = false`, the
+     * provenance flag shipped with the line contract). Such a line must print
+     * "no registered" instead of `L. 0.00`: a zero would claim a measured
+     * adjustment the historical record never had.
+     *
+     * A snapshot that does not carry the flag at all (older documents) is not
+     * declared unknown here; it simply proves no adjustment, which is what the
+     * document has always shown.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function lineAdjustmentIsUnknown(array $item): bool
     {
-        if (is_numeric($cents)) {
+        return ($item['rule_adjustment_persisted'] ?? null) === false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    private function referenceUnitPrice(array $item): ?string
+    {
+        $applied = $this->moneyValue($item['unit_price_cents'] ?? null, $item['unit_price'] ?? null);
+
+        $registeredCents = $this->centsOrNull($item['unit_price_registered_cents'] ?? null)
+            ?? $this->centsOrNull($item['unit_price_registered'] ?? null);
+
+        if ($registeredCents === null) {
+            return $applied;
+        }
+
+        if ($this->lineAdjustmentValue($item) === null) {
+            return $applied;
+        }
+
+        return Money::formatCents($registeredCents);
+    }
+
+    /**
+     * Authorized adjustment the line snapshot proves, as a money string, or null
+     * when it proves none.
+     *
+     * The compact template prints this in its own "Ajuste autorizado" column.
+     * Priority is the value billing already persisted (the rule adjustment of an
+     * eligible line), then the registered unit price against the applied one
+     * (times the quantity), then the registered line amount against the applied
+     * one. A normal line resolves to null, so the document prints an empty cell
+     * instead of a fabricated `L. 0.00` discount. Cents arithmetic only.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function lineAdjustmentValue(array $item): ?string
+    {
+        // Explicit provenance: the record declares the adjustment was never
+        // written, so nothing can be printed as a measured value (not even zero).
+        if ($this->lineAdjustmentIsUnknown($item)) {
+            return null;
+        }
+
+        foreach ([
+            'rule_adjustment', 'adjustment_amount', 'discount_amount',
+            'rule_adjustment_cents', 'adjustment_amount_cents', 'discount_amount_cents',
+        ] as $key) {
+            $cents = array_key_exists($key, $item) ? $this->centsOrNull($item[$key]) : null;
+
+            if ($cents !== null && $cents > 0) {
+                return Money::formatCents($cents);
+            }
+        }
+
+        $registeredUnitCents = $this->centsOrNull($item['unit_price_registered_cents'] ?? null)
+            ?? $this->centsOrNull($item['unit_price_registered'] ?? null);
+        $appliedUnitCents = $this->centsOrNull($item['unit_price_cents'] ?? null)
+            ?? $this->centsOrNull($item['unit_price'] ?? null);
+
+        if ($registeredUnitCents !== null && $appliedUnitCents !== null && $registeredUnitCents > $appliedUnitCents) {
+            $units = $this->centsOrNull($item['quantity'] ?? null);
+
+            if ($units !== null && $units > 0) {
+                return Money::formatCents(intdiv((($registeredUnitCents - $appliedUnitCents) * $units) + 50, 100));
+            }
+        }
+
+        $registeredLineCents = $this->centsOrNull($item['line_subtotal_cents'] ?? null)
+            ?? $this->centsOrNull($item['line_subtotal'] ?? null);
+        $appliedLineCents = $this->centsOrNull($item['line_total_cents'] ?? null)
+            ?? $this->centsOrNull($item['line_total'] ?? null);
+
+        if ($registeredLineCents !== null && $appliedLineCents !== null && $registeredLineCents > $appliedLineCents) {
+            return Money::formatCents($registeredLineCents - $appliedLineCents);
+        }
+
+        return null;
+    }
+
+    /**
+     * Integer cents from a snapshot value, or null when the value is absent or
+     * not a well-formed non-negative amount. Quantities use the same two-decimal
+     * convention (`1.00` = 100 units), which is what `invoice_items.quantity_cents`
+     * stores.
+     */
+    private function centsOrNull(mixed $value): ?int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_float($value) && is_finite($value)) {
+            return (int) round($value);
+        }
+
+        if (is_string($value)) {
+            $trimmed = trim($value);
+
+            if (preg_match('/^\d+(\.\d{1,2})?$/', $trimmed) === 1) {
+                return Money::parseCents($trimmed, 'amount');
+            }
+        }
+
+        return null;
+    }
+
+    private function moneyValue(mixed $cents, mixed $fallback): ?string
+    {
+        if (is_int($cents)) {
+            return Money::formatCents($cents);
+        }
+
+        if (is_string($cents) && preg_match('/^-?\d+$/', trim($cents)) === 1) {
+            return Money::formatCents((int) trim($cents));
+        }
+
+        if (is_float($cents) && is_finite($cents) && floor($cents) === $cents) {
             return Money::formatCents((int) $cents);
         }
 
-        return Money::formatCents(Money::parseCents($this->numericString($fallback, '0.00'), 'amount'));
+        $numeric = $this->numericString($fallback, '');
+        if ($numeric === '') {
+            return null;
+        }
+
+        try {
+            return Money::formatCents(Money::parseCents($numeric, 'amount'));
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Detects a lab/validation document by its placeholder fiscal data, so the
+     * real downloaded PDF shows the same honest "prueba, sin validez fiscal"
+     * notice the engine preview shows. A document with no fiscal data at all is
+     * not pretending and gets no notice.
+     */
+    private function nonFiscalNotice(InstitutionalReceipt $receipt): ?string
+    {
+        $series = is_array($receipt->series_snapshot) ? $receipt->series_snapshot : [];
+        $invoice = is_array($receipt->invoice_snapshot) ? $receipt->invoice_snapshot : [];
+
+        $candidates = array_values(array_filter(
+            [$series['range_authorization'] ?? null, $invoice['fiscal_cai'] ?? null],
+            static fn (mixed $value): bool => is_string($value) && trim($value) !== '',
+        ));
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        $markers = ['VALIDACION', 'VALIDACIÓN', 'PRUEBA', 'DEMO', 'SIN VALIDEZ', 'SIN-VALIDEZ', 'TEST'];
+
+        foreach ($candidates as $value) {
+            $upper = mb_strtoupper(trim((string) $value));
+
+            foreach ($markers as $marker) {
+                if (str_contains($upper, $marker)) {
+                    return 'DOCUMENTO DE PRUEBA - SIN VALIDEZ FISCAL';
+                }
+            }
+        }
+
+        return null;
     }
 
     private function formatDraftNumber(InstitutionalReceiptSeries $series): string

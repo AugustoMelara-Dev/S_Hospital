@@ -3,18 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Billing\CreateInvoiceAction;
+use App\Actions\Billing\PreviewInvoiceReceiptAction;
+use App\Actions\Billing\PreviewInvoiceTotalsAction;
 use App\Actions\Billing\ReverseInvoiceAction;
 use App\Actions\Billing\VoidInvoiceAction;
+use App\Actions\Reports\LineRuleProvenance;
 use App\Http\Requests\Billing\IndexInvoiceRequest;
+use App\Http\Requests\Billing\PreviewInvoiceReceiptRequest;
+use App\Http\Requests\Billing\PreviewInvoiceRequest;
 use App\Http\Requests\Billing\ReverseInvoiceRequest;
 use App\Http\Requests\Billing\ShowInvoiceRequest;
 use App\Http\Requests\Billing\StoreInvoiceRequest;
 use App\Http\Requests\Billing\VoidInvoiceRequest;
 use App\Models\InstitutionalReceipt;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\InvoiceAccess;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -45,7 +52,7 @@ class InvoiceController extends Controller
                 'issuer:id,name,username',
                 'cashSession:id,user_id,status,opened_at,closed_at',
                 'cashSession.user:id,name,username',
-                'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,issued_at',
+                'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,copy_mode,issued_at',
                 'issuedInstitutionalReceipts.printEvents:id,institutional_receipt_id',
             ])
             ->when(
@@ -131,24 +138,54 @@ class InvoiceController extends Controller
     public function store(StoreInvoiceRequest $request, CreateInvoiceAction $createInvoice): JsonResponse
     {
         $invoice = $createInvoice->execute($request->payload(), $this->authenticatedUser($request), $request);
+        $this->attachLineRuleContract($invoice);
 
         return response()->json([
             'data' => $this->withInstitutionalReceiptSummary($invoice),
         ], 201);
     }
 
-    public function show(ShowInvoiceRequest $request, Invoice $invoice): JsonResponse
+    /**
+     * Financial prevalidation/preview. Computes domain totals (integer cents)
+     * without emitting a fiscal number, consuming a correlative, registering a
+     * payment or issuing a receipt. Requires the `invoices.create` permission.
+     */
+    public function preview(PreviewInvoiceRequest $request, PreviewInvoiceTotalsAction $preview): JsonResponse
     {
         return response()->json([
-            'data' => $this->withInstitutionalReceiptSummary($invoice->load([
-                'items',
-                'payments.user:id,name,username',
-                'cashSession.user:id,name,username',
-                'issuer:id,name,username',
-                'voidedBy:id,name,username',
-                'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,issued_at',
-                'issuedInstitutionalReceipts.printEvents:id,institutional_receipt_id',
-            ])),
+            'data' => $preview->execute($request->payload(), $this->authenticatedUser($request)),
+        ]);
+    }
+
+    /**
+     * Canonical institutional document preview for the current POS draft.
+     * It reuses server valuation and the real receipt renderer without emitting
+     * an invoice, reserving a number, registering a payment or creating a receipt.
+     */
+    public function receiptPreview(
+        PreviewInvoiceReceiptRequest $request,
+        PreviewInvoiceReceiptAction $previewReceipt,
+    ): JsonResponse {
+        return response()->json([
+            'data' => $previewReceipt->execute($request->payload(), $this->authenticatedUser($request)),
+        ]);
+    }
+
+    public function show(ShowInvoiceRequest $request, Invoice $invoice): JsonResponse
+    {
+        $invoice->load([
+            'items',
+            'payments.user:id,name,username',
+            'cashSession.user:id,name,username',
+            'issuer:id,name,username',
+            'voidedBy:id,name,username',
+            'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,copy_mode,issued_at',
+            'issuedInstitutionalReceipts.printEvents:id,institutional_receipt_id',
+        ]);
+        $this->attachLineRuleContract($invoice);
+
+        return response()->json([
+            'data' => $this->withInstitutionalReceiptSummary($invoice),
         ]);
     }
 
@@ -181,6 +218,46 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Expone por linea el contrato de regla que ya se persiste en
+     * `invoice_items`: precio de catalogo registrado, ajuste por regla, causa
+     * textual y la procedencia del ajuste. Las lineas historicas backfilleadas
+     * (migracion 2026_09_18_000002) conservan el entero 0, pero se marcan con
+     * `rule_adjustment_persisted = false` para que el consumidor no presente
+     * "0.00" como si el ajuste se hubiera medido. Ver LineRuleProvenance.
+     */
+    private function attachLineRuleContract(Invoice $invoice): void
+    {
+        if (! $invoice->relationLoaded('items')) {
+            $invoice->load('items');
+        }
+
+        $invoice->items->each(function (InvoiceItem $item): void {
+            $applied = (bool) $item->special_rule_applied;
+            // getAttribute() devuelve mixed: el cast del modelo garantiza int en
+            // runtime, pero el acceso directo tipa como int no-null y ocultaria
+            // el caso defensivo de una columna nula.
+            $registeredRaw = $item->getAttribute('unit_price_registered_cents');
+            $effectiveRaw = $item->getAttribute('unit_price_cents');
+            $registered = is_numeric($registeredRaw) ? (int) $registeredRaw : null;
+            $effective = is_numeric($effectiveRaw) ? (int) $effectiveRaw : null;
+
+            $item->setAttribute(
+                'unit_price_registered',
+                $registered !== null ? Money::formatCents($registered) : null,
+            );
+            $item->setAttribute(
+                'rule_adjustment',
+                Money::formatCents((int) ($item->rule_adjustment_cents ?? 0)),
+            );
+            $item->setAttribute('rule_cause', LineRuleProvenance::cause($applied));
+            $item->setAttribute(
+                'rule_adjustment_persisted',
+                LineRuleProvenance::adjustmentRecorded($applied, $registered, $effective),
+            );
+        });
+    }
+
+    /**
      * @param  Invoice|array<int, Invoice>|Collection<int, Invoice>  $invoices
      * @return Invoice|array<int, Invoice>|Collection<int, Invoice>
      */
@@ -203,7 +280,7 @@ class InvoiceController extends Controller
 
         if (! $invoice->relationLoaded('issuedInstitutionalReceipts')) {
             $invoice->load([
-                'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,issued_at',
+                'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,copy_mode,issued_at',
                 'issuedInstitutionalReceipts.printEvents:id,institutional_receipt_id',
             ]);
         }
@@ -215,6 +292,7 @@ class InvoiceController extends Controller
             'receipt_number_full' => $receipt->receipt_number_full,
             'status' => $receipt->status,
             'reprint_count' => $receipt->reprint_count,
+            'copy_mode' => $receipt->copy_mode,
             'print_events_count' => $receipt->relationLoaded('printEvents') ? $receipt->printEvents->count() : 0,
             'has_print_events' => $receipt->relationLoaded('printEvents') && $receipt->printEvents->isNotEmpty(),
             'issued_at' => $receipt->issued_at?->toISOString(),

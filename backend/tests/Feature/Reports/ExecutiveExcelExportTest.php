@@ -19,11 +19,17 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
+/**
+ * T-UI-04: el XLSX ejecutivo debe entregar exactamente las hojas Resumen,
+ * Operaciones, Detalle, Cobros y Caja, con tipos numericos reales, numeros de
+ * factura como texto, gratuidad identificada y sin formulas vivas.
+ */
 class ExecutiveExcelExportTest extends TestCase
 {
     use RefreshDatabase;
@@ -35,7 +41,7 @@ class ExecutiveExcelExportTest extends TestCase
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
-    public function test_executive_excel_endpoint_returns_xlsx_with_expected_sheets(): void
+    public function test_executive_excel_endpoint_returns_xlsx_with_the_five_mandated_sheets(): void
     {
         $this->seedBillingBase();
         $admin = $this->admin();
@@ -55,57 +61,84 @@ class ExecutiveExcelExportTest extends TestCase
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             (string) $response->headers->get('content-type')
         );
-        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
-        $this->assertSame('no-cache', $response->headers->get('Pragma'));
-        $this->assertSame('0', $response->headers->get('Expires'));
 
-        // Generate the same workbook directly to verify sheet content. The
-        // streamed download response cannot be captured by the test
-        // binary but the service is the source of truth.
-        $report = app(ExecutiveReportService::class)
-            ->report(['date_from' => $today, 'date_to' => $today], $admin);
-        $fiscal = FiscalSetting::first();
-
-        $spreadsheet = app(ExecutiveExcelExportService::class)->generate(
-            $report,
-            $fiscal->toArray(),
-            Carbon::createFromFormat('Y-m-d', $today),
-            Carbon::createFromFormat('Y-m-d', $today),
-            $admin->name,
+        $spreadsheet = $this->generateReportWorkbook($admin, $today);
+        $this->assertSame(
+            ['Resumen', 'Operaciones', 'Detalle', 'Cobros', 'Caja'],
+            $spreadsheet->getSheetNames(),
         );
-
-        $tempFile = tempnam(sys_get_temp_dir(), 'exec_xlsx_').'.xlsx';
-        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
-        $writer->save($tempFile);
-
-        $loaded = IOFactory::createReaderForFile($tempFile)->load($tempFile);
-        $sheetTitles = $loaded->getSheetNames();
-
-        $this->assertContains('Resumen', $sheetTitles);
-        $this->assertContains('Cobros por metodo', $sheetTitles);
-        $this->assertContains('Facturado diario', $sheetTitles);
-        $this->assertContains('Servicios', $sheetTitles);
-        $this->assertContains('Cajeros', $sheetTitles);
-        $this->assertContains('Caja', $sheetTitles);
-        $this->assertContains('Pendientes', $sheetTitles);
-        $this->assertContains('Anulaciones y reversas', $sheetTitles);
-        $this->assertContains('Auditoria', $sheetTitles);
-        $this->assertContains('Glosario', $sheetTitles);
-
-        $glossary = $loaded->getSheetByName('Glosario');
-        $this->assertNotNull($glossary);
-        $glossaryText = implode(' ', array_map(
-            static fn (array $row): string => implode(' ', array_map('strval', $row)),
-            $glossary->toArray(),
-        ));
-        $this->assertStringContainsString('Cobrado neto operativo', $glossaryText);
-        $this->assertStringContainsString('ya estan excluidos', $glossaryText);
-        $this->assertStringNotContainsString('Total facturado menos anulado y reversado', $glossaryText);
-
-        @unlink($tempFile);
     }
 
-    public function test_executive_excel_summary_sheet_contains_kpis_and_comparison(): void
+    public function test_operations_and_collections_sheets_carry_patient_box_and_types(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $session = $this->openSession($cashier);
+
+        $invoice = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $invoice->id, $session->id, Payment::METHOD_TRANSFER, $invoice->total);
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $spreadsheet = $this->generateReportWorkbook($admin, $today);
+
+        $operations = $spreadsheet->getSheetByName('Operaciones');
+        $this->assertNotNull($operations);
+        $this->assertSame('Paciente', $operations->getCell('C3')->getValue());
+        $this->assertSame('Maria Lopez', $operations->getCell('C4')->getValue());
+        $this->assertSame('Pagada', $operations->getCell('I4')->getValue());
+        $this->assertSame('Cobrada', $operations->getCell('J4')->getValue());
+        $this->assertTrue(is_numeric($operations->getCell('A4')->getValue()), 'La fecha debe ser serial Excel.');
+        $this->assertSame('dd/mm/yyyy', $operations->getStyle('A4')->getNumberFormat()->getFormatCode());
+        $this->assertSame('#,##0.00', $operations->getStyle('F4')->getNumberFormat()->getFormatCode());
+        // Numero de factura como texto explicito (conserve ceros iniciales).
+        $this->assertNotSame('f', $operations->getCell('B4')->getDataType());
+        $this->assertStringStartsWith('000-001-01-', (string) $operations->getCell('B4')->getValue());
+
+        $collections = $spreadsheet->getSheetByName('Cobros');
+        $this->assertNotNull($collections);
+        $this->assertSame('Maria Lopez', $collections->getCell('C4')->getValue());
+        $this->assertSame('Transferencia', $collections->getCell('F4')->getValue());
+        $this->assertSame('Cobrado', $collections->getCell('I4')->getValue());
+        $this->assertSame('dd/mm/yyyy hh:mm', $collections->getStyle('A4')->getNumberFormat()->getFormatCode());
+        $this->assertSame('#,##0.00', $collections->getStyle('H4')->getNumberFormat()->getFormatCode());
+    }
+
+    public function test_detail_sheet_identifies_gratuity_by_line_and_keeps_registered_price_column(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+
+        $invoice = $this->createFreeInvoice($cashier, 'Eritropoyetina');
+
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $spreadsheet = $this->generateReportWorkbook($admin, $today);
+        $detail = $spreadsheet->getSheetByName('Detalle');
+
+        $this->assertNotNull($detail);
+        $this->assertSame('Maria Lopez', $detail->getCell('C4')->getValue());
+        $this->assertSame('Eritropoyetina', $detail->getCell('D4')->getValue());
+        $this->assertStringContainsString('EPO', (string) $detail->getCell('L4')->getValue());
+        $this->assertSame('#,##0.00', $detail->getStyle('H4')->getNumberFormat()->getFormatCode());
+        $this->assertSame('#,##0.00', $detail->getStyle('I4')->getNumberFormat()->getFormatCode());
+
+        // Gratuidad identificada tambien en el Resumen.
+        $summary = $spreadsheet->getSheetByName('Resumen');
+        $flat = array_map(
+            static fn (array $row): string => implode(' | ', array_map('strval', $row)),
+            $summary->toArray(),
+        );
+        $this->assertTrue((bool) array_filter($flat, fn (string $line): bool => str_contains($line, 'Lineas gratuitas')));
+        $this->assertSame(1, $summary->getCell('B26')->getValue());
+        $this->assertSame('#,##0', $summary->getStyle('B26')->getNumberFormat()->getFormatCode());
+
+        // La operacion gratuita no crea un pago ficticio.
+        $this->assertSame(0, Payment::query()->where('invoice_id', $invoice->id)->count());
+        $this->assertSame(1, $invoice->refresh()->settlement === Invoice::SETTLEMENT_FREE_BY_RULE ? 1 : 0);
+    }
+
+    public function test_summary_counts_money_and_percentages_have_distinct_types(): void
     {
         $this->seedBillingBase();
         $admin = $this->admin();
@@ -116,369 +149,176 @@ class ExecutiveExcelExportTest extends TestCase
         $this->payInvoice($cashier, $invoice->id, $session->id, Payment::METHOD_CASH, $invoice->total);
 
         $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $spreadsheet = $this->generateReportWorkbook($admin, $today);
+        $summary = $spreadsheet->getSheetByName('Resumen');
 
-        $service = app(ExecutiveExcelExportService::class);
-        $report = app(ExecutiveReportService::class)
-            ->report(['date_from' => $today, 'date_to' => $today], $admin);
-        $fiscal = FiscalSetting::first();
-
-        $spreadsheet = $service->generate(
-            $report,
-            $fiscal->toArray(),
-            Carbon::createFromFormat('Y-m-d', $today),
-            Carbon::createFromFormat('Y-m-d', $today),
-            'Admin',
-        );
-
-        $sheet = $spreadsheet->getSheetByName('Resumen');
-        $this->assertNotNull($sheet);
-
-        $contents = $sheet->toArray(null, true, true, true);
-        $flat = array_map(static fn ($row) => implode(' | ', array_map(static fn ($v) => (string) $v, $row)), $contents);
-
-        $this->assertTrue((bool) array_filter($flat, fn ($line) => str_contains($line, 'Total Facturado')));
-        $this->assertTrue((bool) array_filter($flat, fn ($line) => str_contains($line, 'Total Cobrado')));
-        $this->assertTrue((bool) array_filter($flat, fn ($line) => str_contains($line, 'Anulado')));
-        $this->assertTrue((bool) array_filter($flat, fn ($line) => str_contains($line, 'Ticket Promedio')));
+        $this->assertSame('"L." #,##0.00', $summary->getStyle('B10')->getNumberFormat()->getFormatCode());
+        $this->assertSame('#,##0', $summary->getStyle('B15')->getNumberFormat()->getFormatCode());
+        $this->assertIsInt($summary->getCell('B15')->getValue());
+        // La fila de encabezado usa el azul institucional y la primera fila de
+        // datos no hereda ese relleno.
+        $this->assertSame('2563EB', $summary->getStyle('A9')->getFill()->getStartColor()->getRGB());
+        $this->assertNotSame('2563EB', $summary->getStyle('A10')->getFill()->getStartColor()->getRGB());
     }
 
-    public function test_executive_excel_without_audit_view_omits_audit_sheets(): void
+    public function test_long_text_wraps_with_readable_rows_without_changing_money_alignment(): void
     {
-        $this->seedBillingBase();
-        $viewer = User::factory()->create();
-        $this->grantDirectPermissions($viewer, [
-            'reports.view',
-            'reports.managerial.view',
-            'reports.export',
-        ]);
-        $admin = $this->admin();
-        $cashier = $this->cashier();
-        $voided = $this->createInvoice($cashier, 'Glucosa');
-
-        $voided->update([
-            'status' => Invoice::STATUS_VOID,
-            'voided_by' => $admin->id,
-            'voided_at' => Carbon::now('America/Tegucigalpa'),
-            'void_reason' => 'Motivo ejecutivo reservado',
-        ]);
-
-        $today = Carbon::now('America/Tegucigalpa')->toDateString();
-        $report = app(ExecutiveReportService::class)
-            ->report(['date_from' => $today, 'date_to' => $today], $viewer);
-        $fiscal = FiscalSetting::first();
-
-        $spreadsheet = app(ExecutiveExcelExportService::class)->generate(
-            $report,
-            $fiscal->toArray(),
-            Carbon::createFromFormat('Y-m-d', $today),
-            Carbon::createFromFormat('Y-m-d', $today),
-            $viewer->name,
-        );
-
-        $sheetTitles = $spreadsheet->getSheetNames();
-
-        $this->assertContains('Resumen', $sheetTitles);
-        $this->assertContains('Glosario', $sheetTitles);
-        $this->assertNotContains('Anulaciones y reversas', $sheetTitles);
-        $this->assertNotContains('Auditoria', $sheetTitles);
-    }
-
-    public function test_executive_excel_escapes_formula_like_text_from_report_payload(): void
-    {
-        $dangerousFormula = '=HYPERLINK("http://example.invalid")';
-        $dangerousPlus = '+SUM(1,1)';
-        $dangerousAt = '@SUM(1,1)';
-
+        $patient = 'Paciente con nombre suficientemente largo para ocupar dos lineas completas';
+        $note = 'Cierre conciliado con una observacion extensa que debe permanecer visible en una sola fila completa.';
         $report = [
-            'summary' => [],
-            'comparison' => [],
-            'payment_methods' => [[
-                'label' => $dangerousFormula,
-                'amount' => '10.00',
-                'count' => 1,
-                'percentage' => '100',
+            'summary' => ['billed_total' => '1029.25', 'invoice_count' => 1],
+            'operations' => [[
+                'date' => '2026-09-28', 'invoice_number' => '000-001-01-00000001', 'patient' => $patient,
+                'cash_session_label' => 'Caja principal / Sesion 1', 'cashier' => 'Caja Hospitalaria',
+                'total' => '1029.25', 'paid' => '1029.25', 'balance' => '0.00', 'status_label' => 'Pagada',
+                'settlement_label' => 'Cobrada', 'receipt_document' => 'REC-A-00000001',
             ]],
-            'daily_trend' => [[
-                'date' => $dangerousPlus,
-                'billed' => '10.00',
-                'collected' => '10.00',
-                'pending' => '0.00',
-                'voided_count' => 0,
-                'invoice_count' => 1,
+            'detail' => [[
+                'date' => '2026-09-28', 'invoice_number' => '000-001-01-00000001', 'patient' => $patient,
+                'service' => 'Servicio hospitalario con descripcion completa', 'category' => 'Laboratorio', 'area' => 'Laboratorio',
+                'quantity' => '1', 'unit_price' => '1029.25', 'rule_adjustment' => '0.00',
+                'tax' => '0.00', 'line_total' => '1029.25', 'is_free' => false,
+            ], [
+                'date' => '2026-09-28', 'invoice_number' => '000-001-01-00000002', 'patient' => $patient,
+                'service' => 'Servicio historico', 'category' => 'Laboratorio', 'area' => 'Laboratorio',
+                'quantity' => '1', 'unit_price' => '0.00', 'rule_adjustment' => '0.00',
+                'rule_adjustment_persisted' => false, 'tax' => '0.00', 'line_total' => '0.00', 'is_free' => true,
             ]],
-            'services' => [
-                'top_by_amount' => [[
-                    'service' => $dangerousFormula,
-                    'category' => $dangerousPlus,
-                    'quantity' => '1.00',
-                    'total' => '10.00',
-                    'collected' => '10.00',
-                ]],
-                'top_by_quantity' => [],
-                'by_category' => [[
-                    'category' => $dangerousAt,
-                    'quantity' => '1.00',
-                    'total' => '10.00',
-                    'collected' => '10.00',
-                    'item_count' => 1,
-                ]],
-                'by_area' => [[
-                    'area' => $dangerousFormula,
-                    'quantity' => '1.00',
-                    'total' => '10.00',
-                    'item_count' => 1,
-                ]],
-            ],
-            'cashiers' => [[
-                'name' => $dangerousFormula,
-                'collected' => '10.00',
-                'cash' => '10.00',
-                'transfer' => '0.00',
-                'card' => '0.00',
-                'other' => '0.00',
-                'payment_count' => 1,
-                'voided_count' => 0,
-                'difference_total' => '0.00',
+            'collections' => [[
+                'paid_at' => '2026-09-28T10:00:00-06:00', 'invoice_number' => '000-001-01-00000001',
+                'patient' => $patient, 'cash_session_label' => 'Caja principal / Sesion 1', 'cashier' => 'Caja Hospitalaria',
+                'method_label' => 'Transferencia', 'reference' => 'REFERENCIA-EXTENSA-00000001',
+                'amount' => '1029.25', 'status_label' => 'Cobrado',
             ]],
             'cash_sessions' => [[
-                'cashier' => $dangerousFormula,
-                'opened_at' => $dangerousPlus,
-                'closed_at' => $dangerousAt,
-                'opening_amount' => '10.00',
-                'expected_cash' => '10.00',
-                'counted_cash' => '10.00',
-                'difference' => '0.00',
-                'status' => $dangerousFormula,
-                'closure_note' => $dangerousPlus,
+                'id' => 1, 'cash_register_name' => 'Caja principal', 'cash_register_code' => 'CAJA-01',
+                'cashier' => 'Caja Hospitalaria', 'opened_at' => '2026-09-28T08:00:00-06:00',
+                'closed_at' => '2026-09-28T10:00:00-06:00', 'opening_amount' => '100.00',
+                'expected_cash' => '1129.25', 'counted_cash' => '1129.25', 'difference' => '0.00',
+                'status_label' => 'Cerrada', 'closure_note' => $note,
             ]],
-            'pending_aging' => [
-                '0_7_days' => ['count' => 1, 'amount' => '10.00'],
-                '8_30_days' => ['count' => 0, 'amount' => '0.00'],
-                '31_plus_days' => ['count' => 0, 'amount' => '0.00'],
-                'items' => [[
-                    'invoice_number' => $dangerousFormula,
-                    'patient' => $dangerousPlus,
-                    'issued_at' => $dangerousAt,
-                    'age_days' => 1,
-                    'total' => '10.00',
-                    'balance_due' => '10.00',
-                ]],
-            ],
-            'voids_and_reversals' => [[
-                'kind' => 'void',
-                'invoice_number' => $dangerousFormula,
-                'patient' => $dangerousPlus,
-                'amount' => '10.00',
-                'user' => $dangerousAt,
-                'authorized_by' => $dangerousFormula,
-                'reason' => $dangerousPlus,
-                'created_at' => $dangerousAt,
-            ]],
-            'audit_summary' => [],
-        ];
-
-        $spreadsheet = app(ExecutiveExcelExportService::class)->generate(
-            $report,
-            ['hospital_name' => $dangerousFormula, 'rtn' => $dangerousPlus],
-            Carbon::create(2026, 6, 1, 0, 0, 0, 'America/Tegucigalpa'),
-            Carbon::create(2026, 6, 1, 0, 0, 0, 'America/Tegucigalpa'),
-            $dangerousAt,
-        );
-
-        $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Resumen')->getCell('A2')->getValue());
-        $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Cobros por metodo')->getCell('A4')->getValue());
-        $this->assertSame("'{$dangerousPlus}", $spreadsheet->getSheetByName('Facturado diario')->getCell('A4')->getValue());
-        $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Servicios')->getCell('A6')->getValue());
-        $this->assertSame("'{$dangerousPlus}", $spreadsheet->getSheetByName('Servicios')->getCell('B6')->getValue());
-        $this->assertSame("'{$dangerousAt}", $spreadsheet->getSheetByName('Servicios')->getCell('A13')->getValue());
-        $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Servicios')->getCell('A17')->getValue());
-        $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Cajeros')->getCell('A4')->getValue());
-        $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Caja')->getCell('A4')->getValue());
-        $this->assertSame("'{$dangerousPlus}", $spreadsheet->getSheetByName('Caja')->getCell('B4')->getValue());
-        $this->assertSame("'{$dangerousAt}", $spreadsheet->getSheetByName('Caja')->getCell('C4')->getValue());
-        $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Caja')->getCell('H4')->getValue());
-        $this->assertSame("'{$dangerousPlus}", $spreadsheet->getSheetByName('Caja')->getCell('I4')->getValue());
-        $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Pendientes')->getCell('A10')->getValue());
-        $this->assertSame("'{$dangerousPlus}", $spreadsheet->getSheetByName('Pendientes')->getCell('B10')->getValue());
-        $this->assertSame("'{$dangerousAt}", $spreadsheet->getSheetByName('Pendientes')->getCell('C10')->getValue());
-        $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('B4')->getValue());
-        $this->assertSame("'{$dangerousPlus}", $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('C4')->getValue());
-        $this->assertSame("'{$dangerousAt}", $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('E4')->getValue());
-        $this->assertSame("'{$dangerousFormula}", $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('F4')->getValue());
-        $this->assertSame("'{$dangerousPlus}", $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('G4')->getValue());
-        $this->assertSame("'{$dangerousAt}", $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('H4')->getValue());
-    }
-
-    public function test_executive_excel_sanitizes_malformed_numeric_payloads(): void
-    {
-        $report = [
-            'summary' => [
-                'billed_total' => 'monto-danado',
-                'collected_total' => 'NaN',
-                'pending_total' => 'Infinity',
-                'voided_total' => null,
-                'reversed_total' => '0.00',
-                'invoice_count' => 'no-numero',
-                'receipt_count' => 'recibos-danados',
-                'paid_count' => 'pagadas-danadas',
-                'partial_count' => 'parciales-danadas',
-                'pending_count' => 'pendientes-danadas',
-                'voided_count' => 'anuladas-danadas',
-                'average_ticket' => 'ticket-danado',
-            ],
-            'comparison' => [
-                'billed' => ['delta_percentage' => 'Infinity'],
-                'collected' => ['delta_percentage' => 'NaN'],
-            ],
-            'payment_methods' => [[
-                'label' => 'Efectivo',
-                'amount' => 'monto-danado',
-                'count' => 'no-numero',
-                'percentage' => 'Infinity',
-            ]],
-            'daily_trend' => [[
-                'date' => '2026-06-01',
-                'billed' => 'monto-danado',
-                'collected' => 'NaN',
-                'pending' => 'Infinity',
-                'voided_count' => 'no-numero',
-                'invoice_count' => 'conteo-danado',
-            ]],
-            'services' => [
-                'top_by_amount' => [[
-                    'service' => 'Glucosa',
-                    'category' => 'Laboratorio',
-                    'quantity' => 'cantidad-danada',
-                    'total' => 'monto-danado',
-                    'collected' => 'NaN',
-                ]],
-                'top_by_quantity' => [],
-                'by_category' => [],
-                'by_area' => [],
-            ],
-            'cashiers' => [],
-            'cash_sessions' => [],
-            'pending_aging' => [
-                '0_7_days' => ['count' => 'no-numero', 'amount' => 'monto-danado'],
-                '8_30_days' => ['count' => 0, 'amount' => '0.00'],
-                '31_plus_days' => ['count' => 0, 'amount' => '0.00'],
-                'items' => [[
-                    'invoice_number' => 'REC-001',
-                    'patient' => 'Maria Lopez',
-                    'issued_at' => '2026-06-01',
-                    'age_days' => 'edad-danada',
-                    'total' => 'monto-danado',
-                    'balance_due' => 'NaN',
-                ]],
-            ],
-            'voids_and_reversals' => [],
-            'audit_summary' => [
-                'critical_events' => 'no-numero',
-                'reprints' => 'NaN',
-                'fiscal_changes' => 'Infinity',
-                'cash_differences' => 'monto-danado',
-                'backup_events' => null,
-            ],
         ];
 
         $spreadsheet = app(ExecutiveExcelExportService::class)->generate(
             $report,
             ['hospital_name' => 'Hospital San Isidro', 'rtn' => '08011999123456'],
-            Carbon::create(2026, 6, 1, 0, 0, 0, 'America/Tegucigalpa'),
-            Carbon::create(2026, 6, 1, 0, 0, 0, 'America/Tegucigalpa'),
-            'Admin',
+            Carbon::create(2026, 9, 28, 0, 0, 0, 'America/Tegucigalpa'),
+            Carbon::create(2026, 9, 28, 0, 0, 0, 'America/Tegucigalpa'),
+            'Administrador',
         );
 
-        $summary = $spreadsheet->getSheetByName('Resumen');
-        $methods = $spreadsheet->getSheetByName('Cobros por metodo');
-        $daily = $spreadsheet->getSheetByName('Facturado diario');
-        $services = $spreadsheet->getSheetByName('Servicios');
-        $pending = $spreadsheet->getSheetByName('Pendientes');
+        foreach ([['Operaciones', 'C4'], ['Detalle', 'C4'], ['Cobros', 'C4'], ['Caja', 'L4']] as [$sheetName, $cell]) {
+            $sheet = $spreadsheet->getSheetByName($sheetName);
+            $this->assertTrue($sheet->getStyle($cell)->getAlignment()->getWrapText(), "{$sheetName}!{$cell} debe envolver texto.");
+            $this->assertGreaterThanOrEqual(30, $sheet->getRowDimension(4)->getRowHeight(), "{$sheetName}!4 debe mostrar al menos dos lineas.");
+        }
 
-        $this->assertSame(0.0, $summary->getCell('B8')->getValue());
-        $this->assertSame('0.00%', $summary->getCell('C8')->getValue());
-        $this->assertSame(0, $summary->getCell('B14')->getValue());
-        $this->assertSame(0, $summary->getCell('B15')->getValue());
-        $this->assertSame(0, $summary->getCell('B16')->getValue());
-        $this->assertSame(0, $summary->getCell('B17')->getValue());
-        $this->assertSame(0, $summary->getCell('B18')->getValue());
-        $this->assertSame(0.0, $methods->getCell('B4')->getValue());
-        $this->assertSame(0, $methods->getCell('C4')->getValue());
-        $this->assertSame(0.0, $methods->getCell('D4')->getValue());
-        $this->assertSame(0.0, $daily->getCell('B4')->getValue());
-        $this->assertSame(0.0, $daily->getCell('C4')->getValue());
-        $this->assertSame(0.0, $daily->getCell('D4')->getValue());
-        $this->assertSame(0, $daily->getCell('E4')->getValue());
-        $this->assertSame(0, $daily->getCell('F4')->getValue());
-        $this->assertSame(0.0, $services->getCell('C6')->getValue());
-        $this->assertSame(0.0, $services->getCell('D6')->getValue());
-        $this->assertSame(0.0, $services->getCell('E6')->getValue());
-        $this->assertSame(0, $pending->getCell('D10')->getValue());
-        $this->assertSame(0.0, $pending->getCell('E10')->getValue());
-        $this->assertSame(0.0, $pending->getCell('F10')->getValue());
+        $this->assertSame($patient, $spreadsheet->getSheetByName('Operaciones')->getCell('C4')->getValue());
+        $this->assertSame($note, $spreadsheet->getSheetByName('Caja')->getCell('L4')->getValue());
+        $this->assertFalse($spreadsheet->getSheetByName('Operaciones')->getStyle('F4')->getAlignment()->getWrapText());
+        $this->assertSame('#,##0.00', $spreadsheet->getSheetByName('Operaciones')->getStyle('F4')->getNumberFormat()->getFormatCode());
+        $this->assertFalse($spreadsheet->getSheetByName('Detalle')->getStyle('I4')->getAlignment()->getWrapText());
+        $this->assertNotSame(Alignment::HORIZONTAL_LEFT, $spreadsheet->getSheetByName('Detalle')->getStyle('I4')->getAlignment()->getHorizontal());
+        $this->assertSame('#,##0.00', $spreadsheet->getSheetByName('Detalle')->getStyle('I4')->getNumberFormat()->getFormatCode());
+        $this->assertSame('No registrado', $spreadsheet->getSheetByName('Detalle')->getCell('I5')->getValue());
+        $this->assertTrue($spreadsheet->getSheetByName('Detalle')->getStyle('I5')->getAlignment()->getWrapText());
+        $this->assertSame(Alignment::HORIZONTAL_LEFT, $spreadsheet->getSheetByName('Detalle')->getStyle('I5')->getAlignment()->getHorizontal());
+        $this->assertSame('"L." #,##0.00', $spreadsheet->getSheetByName('Resumen')->getStyle('B10')->getNumberFormat()->getFormatCode());
+        $this->assertSame('#,##0', $spreadsheet->getSheetByName('Resumen')->getStyle('B15')->getNumberFormat()->getFormatCode());
     }
 
-    public function test_executive_excel_normalizes_structured_payload_values(): void
+    public function test_empty_period_still_builds_the_five_sheets(): void
     {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+
+        $spreadsheet = $this->generateReportWorkbook($admin, $today);
+        $this->assertSame(['Resumen', 'Operaciones', 'Detalle', 'Cobros', 'Caja'], $spreadsheet->getSheetNames());
+        $this->assertNull($spreadsheet->getSheetByName('Operaciones')->getCell('A4')->getValue());
+        $this->assertSame(0, $spreadsheet->getSheetByName('Resumen')->getCell('B15')->getValue());
+    }
+
+    public function test_formula_like_text_is_never_a_live_formula(): void
+    {
+        $dangerous = '=HYPERLINK("http://example.invalid")';
+        $plus = '+SUM(1,1)';
+
         $report = [
-            'summary' => ['billed_total' => ['invalid']],
-            'comparison' => ['billed' => ['delta_percentage' => ['invalid']]],
-            'payment_methods' => [[
-                'label' => ['invalid'],
-                'amount' => ['invalid'],
-                'count' => ['invalid'],
-                'percentage' => ['invalid'],
+            'summary' => ['invoice_count' => 1],
+            'operations' => [[
+                'date' => '2026-06-01', 'invoice_number' => $dangerous, 'patient' => $plus,
+                'cash_session_label' => $dangerous, 'cashier' => $plus, 'total' => '10.00',
+                'paid' => '10.00', 'balance' => '0.00', 'status_label' => $dangerous,
+                'settlement_label' => $plus, 'receipt_document' => $dangerous,
             ]],
-            'daily_trend' => [['date' => ['invalid']]],
-            'services' => [
-                'top_by_amount' => [['service' => ['invalid']]],
-                'top_by_quantity' => ['invalid-row'],
-                'by_category' => [['category' => ['invalid']]],
-                'by_area' => [['area' => ['invalid']]],
-            ],
-            'cashiers' => [['name' => ['invalid']]],
-            'cash_sessions' => [['cashier' => ['invalid'], 'counted_cash' => ['invalid'], 'difference' => ['invalid']]],
-            'pending_aging' => [
-                '0_7_days' => ['invalid'],
-                '8_30_days' => null,
-                '31_plus_days' => 'invalid',
-                'items' => [['invoice_number' => ['invalid']]],
-            ],
-            'voids_and_reversals' => [['amount' => ['invalid']]],
-            'audit_summary' => ['critical_events' => ['invalid']],
+            'detail' => [[
+                'date' => '2026-06-01', 'invoice_number' => $dangerous, 'patient' => $plus,
+                'service' => $dangerous, 'category' => $plus, 'area' => $dangerous,
+                'quantity' => '1.00', 'unit_price' => '10.00', 'rule_adjustment' => '0.00',
+                'tax' => '0.00', 'line_total' => '10.00', 'is_free' => false,
+            ]],
+            'collections' => [[
+                'paid_at' => '2026-06-01T10:00:00-06:00', 'invoice_number' => $dangerous,
+                'patient' => $plus, 'cash_session_label' => $dangerous, 'cashier' => $plus,
+                'method_label' => $dangerous, 'reference' => $plus, 'amount' => '10.00',
+                'status_label' => $dangerous,
+            ]],
+            'cash_sessions' => [],
+            'gratuities' => [],
         ];
 
         $spreadsheet = app(ExecutiveExcelExportService::class)->generate(
             $report,
-            ['hospital_name' => ['invalid'], 'rtn' => ['invalid']],
+            ['hospital_name' => $dangerous, 'rtn' => $plus],
             Carbon::create(2026, 6, 1, 0, 0, 0, 'America/Tegucigalpa'),
             Carbon::create(2026, 6, 1, 0, 0, 0, 'America/Tegucigalpa'),
-            'Admin',
+            $plus,
         );
 
-        $this->assertSame('Hospital General San Isidro', $spreadsheet->getSheetByName('Resumen')->getCell('A2')->getValue());
-        $this->assertSame('RTN: N/A', $spreadsheet->getSheetByName('Resumen')->getCell('A3')->getValue());
-        $this->assertSame(0.0, $spreadsheet->getSheetByName('Resumen')->getCell('B8')->getValue());
-        $this->assertSame('', $spreadsheet->getSheetByName('Cobros por metodo')->getCell('A4')->getValue());
-        $this->assertSame('', $spreadsheet->getSheetByName('Facturado diario')->getCell('A4')->getValue());
-        $this->assertSame('', $spreadsheet->getSheetByName('Servicios')->getCell('A6')->getValue());
-        $this->assertSame('', $spreadsheet->getSheetByName('Cajeros')->getCell('A4')->getValue());
-        $this->assertSame('', $spreadsheet->getSheetByName('Caja')->getCell('A4')->getValue());
-        $this->assertSame('', $spreadsheet->getSheetByName('Pendientes')->getCell('A10')->getValue());
-        $this->assertSame(0.0, $spreadsheet->getSheetByName('Anulaciones y reversas')->getCell('D4')->getValue());
-        $this->assertSame(0, $spreadsheet->getSheetByName('Auditoria')->getCell('B4')->getValue());
+        foreach ($spreadsheet->getAllSheets() as $sheet) {
+            foreach ($sheet->getRowIterator() as $row) {
+                foreach ($row->getCellIterator() as $cell) {
+                    $value = $cell->getValue();
+                    if (is_string($value) && $value !== '' && preg_match('/^[=+@]/', $value) === 1) {
+                        $this->fail("Formula sin neutralizar en {$sheet->getTitle()}!{$cell->getCoordinate()}");
+                    }
+                }
+            }
+        }
+
+        $summary = $spreadsheet->getSheetByName('Resumen');
+        $this->assertStringStartsWith("'", (string) $summary->getCell('A2')->getValue());
+        $operations = $spreadsheet->getSheetByName('Operaciones');
+        $this->assertSame("'".$dangerous, $operations->getCell('B4')->getValue());
+        $this->assertSame("'".$plus, $operations->getCell('C4')->getValue());
     }
 
     public function test_executive_excel_requires_reports_export_permission(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
-
         $today = Carbon::now('America/Tegucigalpa')->toDateString();
 
         $this->actingAs($cashier)
             ->getJson('/api/reports/executive/excel?date_from='.$today.'&date_to='.$today)
             ->assertForbidden();
+    }
+
+    /** @param array<string, mixed> $overrides */
+    private function generateReportWorkbook(User $admin, string $today): Spreadsheet
+    {
+        $report = app(ExecutiveReportService::class)
+            ->report(['date_from' => $today, 'date_to' => $today], $admin);
+        $fiscal = FiscalSetting::firstOrFail();
+
+        return app(ExecutiveExcelExportService::class)->generate(
+            $report,
+            $fiscal->toArray(),
+            Carbon::createFromFormat('Y-m-d', $today),
+            Carbon::createFromFormat('Y-m-d', $today),
+            $admin->name,
+        );
     }
 
     private function seedBillingBase(): void
@@ -493,6 +333,7 @@ class ExecutiveExcelExportTest extends TestCase
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
             'receipt_paper_size' => 'half_letter',
+            'partial_payments_enabled' => true,
         ]);
 
         FiscalSequence::query()->create([
@@ -522,6 +363,7 @@ class ExecutiveExcelExportTest extends TestCase
             'payments.view',
             'receipts.view',
             'receipts.reprint',
+            'patients.mark_dialysis_prescription',
         ]);
 
         return $cashier->refresh();
@@ -561,13 +403,23 @@ class ExecutiveExcelExportTest extends TestCase
             ], $cashier->fresh());
     }
 
-    private function payInvoice(
-        User $cashier,
-        int $invoiceId,
-        int $sessionId,
-        string $method,
-        string $amount,
-    ): void {
+    private function createFreeInvoice(User $cashier, string $serviceName): Invoice
+    {
+        $this->openSession($cashier);
+
+        return app(CreateInvoiceAction::class)
+            ->execute([
+                'patient_name' => 'Maria Lopez',
+                'items' => [[
+                    'service_id' => Service::query()->where('name', $serviceName)->firstOrFail()->id,
+                    'quantity' => '1.00',
+                ]],
+                'dialysis_prescription' => true,
+            ], $cashier->fresh());
+    }
+
+    private function payInvoice(User $cashier, int $invoiceId, int $sessionId, string $method, string $amount): void
+    {
         app(RegisterPaymentAction::class)
             ->execute(
                 Invoice::query()->findOrFail($invoiceId),
@@ -575,15 +427,16 @@ class ExecutiveExcelExportTest extends TestCase
                     'cash_session_id' => $sessionId,
                     'method' => $method,
                     'amount' => $amount,
+                    'reference' => in_array($method, [Payment::METHOD_CARD, Payment::METHOD_TRANSFER], true)
+                        ? 'REF-'.$method.'-'.$invoiceId
+                        : null,
                 ],
                 $cashier->fresh(),
                 app(InvoiceAccess::class),
             );
     }
 
-    /**
-     * @param  array<int, string>  $permissionNames
-     */
+    /** @param array<int, string> $permissionNames */
     private function grantDirectPermissions(User $user, array $permissionNames): void
     {
         $permissions = Permission::query()

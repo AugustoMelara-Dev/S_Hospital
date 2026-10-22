@@ -7,6 +7,17 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Poda de llaves de idempotencia con retencion acotada.
+ *
+ * La porcion legacy (`operation_idempotency_keys`) esta en RETIRO DIFERIDO
+ * (T2-040): dejo de tener escritores el 2026-07-01 y su modelo fue eliminado
+ * en 44538b7e; el middleware vigente usa `idempotency_keys`. La poda se
+ * conserva por politica de retencion y este comando es el UNICO consumidor de
+ * runtime permitido de la tabla legacy. No agregar nuevos escritores/lectores;
+ * un drop requiere copia verificada y autorizacion (fase destructiva fuera de
+ * esta campana). Los metodos de la tabla legacy estan marcados @deprecated.
+ */
 class PruneIdempotencyKeysCommand extends Command
 {
     protected $signature = 'hospital:prune-idempotency-keys
@@ -40,6 +51,8 @@ class PruneIdempotencyKeysCommand extends Command
         }
 
         $deletedLegacy = $this->deleteInChunks('idempotency_keys', $this->legacyScope(...), $cutoff, $chunk);
+
+        // @deprecated tabla legacy `operation_idempotency_keys` (retiro diferido T2-040).
         $deletedOperation = $this->deleteInChunks('operation_idempotency_keys', $this->operationScope(...), $cutoff, $chunk);
 
         $this->components->info(sprintf(
@@ -60,6 +73,9 @@ class PruneIdempotencyKeysCommand extends Command
         return $this->legacyScope(DB::table('idempotency_keys'), $cutoff)->count();
     }
 
+    /**
+     * @deprecated Tabla legacy `operation_idempotency_keys` (retiro diferido T2-040).
+     */
     private function countOperationKeys(\DateTimeInterface $cutoff): int
     {
         if (! Schema::hasTable('operation_idempotency_keys')) {
@@ -80,6 +96,9 @@ class PruneIdempotencyKeysCommand extends Command
         });
     }
 
+    /**
+     * @deprecated Tabla legacy `operation_idempotency_keys` (retiro diferido T2-040).
+     */
     private function operationScope(Builder $query, \DateTimeInterface $cutoff): Builder
     {
         return $query->where('updated_at', '<', $cutoff);

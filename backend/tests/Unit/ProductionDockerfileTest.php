@@ -109,7 +109,6 @@ class ProductionDockerfileTest extends TestCase
             '!frontend/public/**',
             '!frontend/src/**',
             '!frontend/vite-plugins/**',
-            '!frontend/.env.production',
             '!frontend/index.html',
             '!frontend/package.json',
             '!frontend/pnpm-lock.yaml',
@@ -125,6 +124,14 @@ class ProductionDockerfileTest extends TestCase
                 "Production Docker context must include {$runtimePath}.",
             );
         }
+
+        // SEC-01-F1 (2026-09-17): frontend/.env.production NO debe entrar al
+        // contexto de build. El build es same-origin (base.ts:234 usa
+        // `import.meta.env.VITE_API_BASE_URL?.trim() ?? ''`, y
+        // resolveApiBaseUrl('') devuelve ''), así que excluirlo es idéntico en
+        // comportamiento y evita hornear en la imagen cualquier valor futuro de
+        // ese archivo. Evidencia: M-W1-SEC-01-R2 y RV-M-W1-SEC-01.
+        $this->assertStringNotContainsString('!frontend/.env.production', $dockerignore);
     }
 
     public function test_composer_builder_validates_php_on_the_runtime_base(): void

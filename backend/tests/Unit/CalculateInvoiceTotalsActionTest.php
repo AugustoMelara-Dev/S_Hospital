@@ -136,7 +136,7 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $this->assertSame('0.00', $items[0]['line_total']);
     }
 
-    public function test_erythropoietin_fixed_price_is_not_taxed_without_dialysis_prescription(): void
+    public function test_erythropoietin_without_prescription_uses_catalog_price_and_taxability(): void
     {
         $erythropoietin = $this->createService(
             price: '25.00',
@@ -149,10 +149,10 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         ], '15.00');
 
         $this->assertSame('25.00', $result['subtotal']);
-        $this->assertSame('0.00', $result['tax_amount']);
-        $this->assertSame('25.00', $result['total']);
-        $this->assertSame('0.00', $result['items'][0]['tax_rate']);
-        $this->assertSame('0.00', $result['items'][0]['tax_amount']);
+        $this->assertSame('3.75', $result['tax_amount']);
+        $this->assertSame('28.75', $result['total']);
+        $this->assertSame('15.00', $result['items'][0]['tax_rate']);
+        $this->assertSame('3.75', $result['items'][0]['tax_amount']);
         $this->assertFalse($result['items'][0]['special_rule_applied']);
     }
 
@@ -220,6 +220,92 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $this->assertSame(2500, $item['unit_price_cents']);
         $this->assertSame(2875, $item['line_total_cents']);
         $this->assertSame('Test note', $item['notes']);
+    }
+
+    public function test_fractional_quantity_line_subtotal_rounds_half_up_away_from_zero(): void
+    {
+        $service = $this->createService(price: '0.03', taxable: false);
+
+        $result = $this->action->execute([
+            ['service' => $service, 'quantity' => '0.5', 'notes' => null],
+        ], '15.00');
+
+        // 0.03 * 0.5 = 0.015 -> half-up = 0.02 (floor would yield 0.01).
+        $this->assertSame('0.02', $result['subtotal']);
+        $this->assertSame(2, $result['subtotal_cents']);
+        $this->assertSame('0.02', $result['items'][0]['line_subtotal']);
+        $this->assertSame(2, $result['items'][0]['line_subtotal_cents']);
+        $this->assertSame('0.02', $result['total']);
+    }
+
+    public function test_invoice_tax_largest_remainder_is_deterministic_and_complete(): void
+    {
+        $service = $this->createService(price: '0.10', taxable: true);
+
+        $result = $this->action->execute(
+            array_fill(0, 3, ['service' => $service, 'quantity' => '1', 'notes' => null]),
+            '15.00'
+        );
+
+        // 30 cents * 15% = 4.5 -> ISV de factura 5 centavos; base [1,1,1] y
+        // los 2 centavos restantes van a las lineas de menor indice.
+        $this->assertSame('0.30', $result['subtotal']);
+        $this->assertSame(5, $result['tax_amount_cents']);
+        $this->assertSame([2, 2, 1], array_column($result['items'], 'tax_amount_cents'));
+        $this->assertSame($result['tax_amount_cents'], array_sum(array_column($result['items'], 'tax_amount_cents')));
+        $this->assertSame('0.35', $result['total']);
+    }
+
+    public function test_line_sums_always_reconcile_with_invoice_totals(): void
+    {
+        $taxable = $this->createService(price: '33.33', taxable: true);
+        $nonTaxable = $this->createService(price: '10.05', taxable: false);
+        $erythropoietin = $this->createService(
+            price: '25.00',
+            taxable: true,
+            specialRuleCode: Service::ERYTHROPOIETIN_RULE
+        );
+
+        $result = $this->action->execute([
+            ['service' => $taxable, 'quantity' => '1.33', 'notes' => null],
+            ['service' => $nonTaxable, 'quantity' => '2.25', 'notes' => null],
+            ['service' => $erythropoietin, 'quantity' => '1', 'notes' => null],
+        ], '15.00', true);
+
+        // Invariante que CreateInvoiceAction verifica antes de emitir.
+        $this->assertSame(
+            $result['subtotal_cents'],
+            array_sum(array_column($result['items'], 'line_subtotal_cents'))
+        );
+        $this->assertSame(
+            $result['tax_amount_cents'],
+            array_sum(array_column($result['items'], 'tax_amount_cents'))
+        );
+        $this->assertSame(
+            $result['total_cents'],
+            array_sum(array_column($result['items'], 'line_total_cents'))
+        );
+        $this->assertSame(
+            $result['total_cents'],
+            $result['subtotal_cents'] + $result['tax_amount_cents'] - $result['discount_amount_cents']
+        );
+    }
+
+    public function test_decimal_quantity_preserves_cent_units_in_snapshot(): void
+    {
+        $service = $this->createService(price: '10.00', taxable: true);
+
+        $result = $this->action->execute([
+            ['service' => $service, 'quantity' => '2.25', 'notes' => null],
+        ], '15.00');
+
+        $item = $result['items'][0];
+        $this->assertSame('2.25', $item['quantity']);
+        $this->assertSame(225, $item['quantity_cents']);
+        $this->assertSame(1000, $item['unit_price_cents']);
+        $this->assertSame(2250, $item['line_subtotal_cents']);
+        $this->assertSame(2250, $result['subtotal_cents']);
+        $this->assertSame(2588, $result['total_cents']);
     }
 
     private function createService(

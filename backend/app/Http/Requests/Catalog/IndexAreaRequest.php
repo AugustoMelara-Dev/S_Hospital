@@ -8,7 +8,7 @@ class IndexAreaRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('catalog.view') === true
+        return $this->user()?->canAny(['catalog.view', 'catalog.manage']) === true
             || $this->user()?->can('reports.managerial.view') === true;
     }
 

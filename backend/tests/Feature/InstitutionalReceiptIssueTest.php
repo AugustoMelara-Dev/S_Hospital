@@ -38,8 +38,15 @@ class InstitutionalReceiptIssueTest extends TestCase
             ->assertJsonPath('data.amount', '1234.56')
             ->assertJsonPath('data.amount_cents', 123456)
             ->assertJsonPath('data.payer_name', 'Maria Lopez')
-            ->assertJsonPath('data.template_code', 'institutional_classic')
-            ->assertJsonPath('data.print_profile_code', ReceiptPrintProfile::CODE_HALF_LETTER)
+            // T-RC-01 (mandato §11): la instalación nueva usa la plantilla
+            // compacta nueva, no la clásica histórica.
+            ->assertJsonPath('data.template_code', 'institutional_compact')
+            // C1-RCP-02 (mandato §12): la instalación nueva resuelve carta
+            // vertical como diseño principal, no media carta apaisada.
+            ->assertJsonPath('data.print_profile_code', ReceiptPrintProfile::CODE_LETTER_PORTRAIT)
+            // T-RC-01: un ejemplar para el paciente es el valor por defecto; las
+            // copias adicionales son una selección explícita. El recibo congela el
+            // copy_mode resuelto al emitir.
             ->assertJsonPath('data.copy_mode', 'original_only');
 
         $receiptId = $response->json('data.id');

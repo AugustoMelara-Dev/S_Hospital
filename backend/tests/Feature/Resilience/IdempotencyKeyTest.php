@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Resilience;
 
 use App\Models\AuditLog;
+use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -17,6 +18,7 @@ use App\Models\User;
 use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
@@ -132,6 +134,89 @@ class IdempotencyKeyTest extends TestCase
         $this->assertSame($firstPaymentId, $second->json('data.payment.id'));
 
         $this->assertSame(1, Payment::query()->where('invoice_id', $invoiceId)->count());
+    }
+
+    public function test_replayed_payment_does_not_duplicate_cash_movement_or_invoice_amounts(): void
+    {
+        $this->seedBillingBase();
+        $this->togglePartial(true);
+
+        $cashier = $this->cashierWithOpenSession();
+        $sessionId = $this->openSessionFor($cashier, '500.00');
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $payload = [
+            'cash_session_id' => $sessionId,
+            'method' => Payment::METHOD_CASH,
+            'amount' => '17.25',
+        ];
+        $key = (string) Str::uuid();
+
+        $first = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => $key])
+            ->postJson("/api/invoices/{$invoiceId}/payments", $payload)
+            ->assertCreated();
+
+        $second = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => $key])
+            ->postJson("/api/invoices/{$invoiceId}/payments", $payload)
+            ->assertCreated()
+            ->assertHeader('Idempotent-Replay', 'true');
+
+        $this->assertSame($first->json('data.payment.id'), $second->json('data.payment.id'));
+
+        // Invariante de negocio: el replay reutiliza el pago original; no
+        // crea un segundo movimiento de caja ni altera la factura.
+        $this->assertSame(1, Payment::query()->where('invoice_id', $invoiceId)->count());
+        $this->assertSame(1, CashMovement::query()
+            ->where('cash_session_id', $sessionId)
+            ->where('type', CashMovement::TYPE_PAYMENT)
+            ->count());
+
+        $invoice = Invoice::query()->findOrFail($invoiceId);
+        $this->assertSame(1725, (int) $invoice->paid_amount_cents);
+        $this->assertSame(0, (int) $invoice->balance_due_cents);
+        $this->assertSame(Invoice::STATUS_PAID, $invoice->status);
+        $this->assertSame(
+            (int) $invoice->total_cents,
+            (int) $invoice->paid_amount_cents + (int) $invoice->balance_due_cents
+        );
+
+        $this->actingAs($cashier)
+            ->getJson('/api/cash-sessions/current')
+            ->assertOk()
+            ->assertJsonPath('data.payments_count', 1)
+            ->assertJsonPath('data.payments_total', '17.25');
+    }
+
+    public function test_database_unique_constraint_blocks_duplicate_reservations(): void
+    {
+        $cashier = User::factory()->create();
+
+        $reservation = [
+            'user_id' => $cashier->id,
+            'route_signature' => 'POST api/invoices/1/payments',
+            'idempotency_key' => 'db-unique-'.uniqid(),
+            'request_fingerprint' => hash('sha256', 'first-payload'),
+            'response_status' => null,
+            'response_body' => null,
+            'completed_at' => null,
+        ];
+
+        IdempotencyKey::query()->create($reservation);
+
+        // El middleware depende de este backstop de base de datos para la
+        // carrera entre dos workers con la misma clave.
+        $this->expectException(QueryException::class);
+        IdempotencyKey::query()->create($reservation);
     }
 
     public function test_same_idempotency_key_with_different_payload_is_rejected(): void

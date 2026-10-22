@@ -41,7 +41,9 @@ class InstitutionalReceiptSettingsTest extends TestCase
         $this->actingAs($admin)
             ->getJson('/api/settings/institutional-receipts')
             ->assertOk()
-            ->assertJsonPath('data.print_profiles.0.code', 'media_carta_horizontal');
+            // C1-RCP-02 (mandato §12): en instalación nueva el primer perfil
+            // listado es carta vertical, el predeterminado global propuesto.
+            ->assertJsonPath('data.print_profiles.0.code', ReceiptPrintProfile::CODE_LETTER_PORTRAIT);
 
         $this->actingAs($admin)
             ->putJson('/api/settings/institutional-receipts/institution', $this->validInstitutionPayload())
@@ -88,7 +90,9 @@ class InstitutionalReceiptSettingsTest extends TestCase
         $response = $this->actingAs($user)
             ->getJson('/api/settings/institutional-receipts')
             ->assertOk()
-            ->assertJsonPath('data.print_profiles.0.code', ReceiptPrintProfile::CODE_HALF_LETTER);
+            // La asignación global a media carta no cambia el predeterminado del
+            // catálogo; el orden sigue priorizando `is_global_default`.
+            ->assertJsonPath('data.print_profiles.0.code', ReceiptPrintProfile::CODE_LETTER_PORTRAIT);
 
         $payload = $response->json('data');
         $encoded = json_encode($payload, JSON_THROW_ON_ERROR);
@@ -396,7 +400,7 @@ class InstitutionalReceiptSettingsTest extends TestCase
             'updated_by' => $admin->id,
         ]);
 
-        $this->actingAs($admin)
+        $preview = $this->actingAs($admin)
             ->postJson('/api/settings/institutional-receipts/test-preview', [
                 'profile_code' => ReceiptPrintProfile::CODE_HALF_LETTER,
                 'payer_name' => 'Paciente de prueba',
@@ -404,7 +408,24 @@ class InstitutionalReceiptSettingsTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.watermark', 'PRUEBA - SIN VALIDEZ')
-            ->assertJsonPath('data.next_receipt_number', 5);
+            ->assertJsonPath('data.next_receipt_number', 5)
+            ->assertJsonPath('data.reserved_number', false)
+            // M-W2-RCP-02: the settings preview consumes the real engine HTML and
+            // the copy set from this response instead of a parallel mockup.
+            ->assertJsonPath('data.copy_count', 3)
+            ->assertJsonPath('data.copy_labels.0', 'ORIGINAL')
+            ->assertJsonPath('data.copy_labels.1', 'PRIMERA COPIA')
+            ->assertJsonPath('data.copy_labels.2', 'SEGUNDA COPIA');
+
+        $previewHtml = $preview->json('data.html');
+        $this->assertIsString($previewHtml);
+        $this->assertStringContainsString('class="receipt-layout profile-media_carta_horizontal"', $previewHtml);
+        $this->assertSame(3, substr_count($previewHtml, 'data-receipt-copy-label='));
+        $this->assertStringContainsString('data-receipt-copy-label="ORIGINAL"', $previewHtml);
+        $this->assertStringContainsString('data-receipt-copy-label="PRIMERA COPIA"', $previewHtml);
+        $this->assertStringContainsString('data-receipt-copy-label="SEGUNDA COPIA"', $previewHtml);
+        $this->assertStringNotContainsString('Copia 1 de 3', $previewHtml);
+        $this->assertStringContainsString('PRUEBA - SIN VALIDEZ', $previewHtml);
 
         $this->assertSame(4, $series->fresh()->current_number);
         $this->assertDatabaseHas('audit_logs', [

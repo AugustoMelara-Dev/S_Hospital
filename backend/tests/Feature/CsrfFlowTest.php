@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -42,11 +43,15 @@ class CsrfFlowTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_setup_status_endpoint_is_publicly_readable(): void
+    public function test_setup_status_endpoint_requires_authentication(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->getJson('/api/system/setup-status')->assertUnauthorized();
+    }
 
-        $response = $this->getJson('/api/system/setup-status');
+    public function test_setup_status_endpoint_is_readable_for_an_authenticated_session(): void
+    {
+        $response = $this->actingAs(User::factory()->create())
+            ->getJson('/api/system/setup-status');
 
         $response->assertOk();
     }

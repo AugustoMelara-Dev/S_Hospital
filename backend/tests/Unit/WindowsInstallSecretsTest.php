@@ -127,7 +127,14 @@ class WindowsInstallSecretsTest extends TestCase
         $this->assertGreaterThan($install, $audit);
         $this->assertGreaterThan($audit, $typecheck);
         $this->assertGreaterThan($build, $budget);
-        $this->assertStringContainsString('pnpm audit --audit-level high', $frontendJob);
+        // T3-020/T3-024: el paso audita con `pnpm audit --json` + post-proceso
+        // fail-closed (cualquier advisory, tamano/shape inesperado o exit != 0
+        // bloquean), en paridad con scripts/security/run-security-checks.ps1
+        // (-FailOnSeverity info). Reemplaza al antiguo `--audit-level high`.
+        $this->assertStringContainsString('pnpm audit --json', $frontendJob);
+        $this->assertStringContainsString('metadata.vulnerabilities', $frontendJob);
+        $this->assertStringContainsString('fail on ANY advisory', $frontendJob);
+        $this->assertStringContainsString('AUDIT_STATUS', $frontendJob);
         $this->assertStringContainsString('pnpm run budget:bundle', $frontendJob);
         $this->assertStringNotContainsString('--ignore-registry-errors', $frontendJob);
     }
