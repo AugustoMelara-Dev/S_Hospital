@@ -51,11 +51,11 @@ en el equipo hospitalario de destino.
    ```powershell
    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/native/build_native_payload.ps1 `
      -ProjectRoot . `
-     -ProductionBackendRoot artifacts/native-staging/backend `
+     -ProductionBackendRoot artifacts/native-staging/backend-2026.10.22.8 `
      -FrontendDistRoot frontend/dist `
      -RuntimeCache artifacts/native-cache `
-     -OutputRoot artifacts/native-payload `
-     -Version 2026.09.28
+     -OutputRoot artifacts/native-payload-2026.10.22.8 `
+     -Version 2026.10.22.8
    ```
 
 5. Prepare Inno Setup 6.5.4 en modo portátil dentro de la caché. El script fija
@@ -70,8 +70,8 @@ en el equipo hospitalario de destino.
 
    ```powershell
    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/native/build_native_installer.ps1 `
-     -PayloadRoot artifacts/native-payload `
-     -Version 2026.09.28 `
+     -PayloadRoot artifacts/native-payload-2026.10.22.8 `
+     -Version 2026.10.22.8 `
      -IsccPath artifacts/tool-cache/inno-6.5.4-portable/ISCC.exe
    ```
 
@@ -89,6 +89,11 @@ instalador comprueba además su firma Authenticode y lo instala con las
 [opciones silenciosas oficiales](https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170)
 antes de iniciar PHP o MariaDB. Un código 3010 queda registrado para que Windows
 solicite reinicio al cerrar el instalador.
+
+El payload incluye `LEEME.txt`, con los pasos de configuración de cada hospital.
+Al preparar el kit copie también la guía vigente y la entrega actual con los
+nombres `GUIA_UNA_COMPUTADORA.md` y `ENTREGA_ACTUAL.md`, junto al EXE y
+`SHA256SUMS.txt`. No incluya binarios del kit en Git.
 
 ## Instalación y primer acceso
 

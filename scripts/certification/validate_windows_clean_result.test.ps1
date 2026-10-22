@@ -35,7 +35,7 @@ function New-Result {
         [string] $EvidenceRoot,
         [string[]] $EvidenceFiles,
         [string] $PhysicalStatus = 'PENDING',
-        [string] $SourceCommit = '5e7d48ecd6b7d8a0f647d8892e90fe8ac1b91c3e',
+        [string] $SourceCommit = $contract.ExpectedSourceCommit,
         [string] $RootStatus = 'PASSED'
     )
     $tests = [ordered]@{}
@@ -104,6 +104,36 @@ function Invoke-ChildScript {
 
 $root = Join-Path ([System.IO.Path]::GetTempPath()) ('s-hospital-result-test-' + [Guid]::NewGuid().ToString('N'))
 try {
+    # The validator contract tests use a complete synthetic candidate, never
+    # the historical installer or promotion folders in the working tree.
+    $projectRoot = Join-Path $root 'project'
+    $fixtureScripts = Join-Path $projectRoot 'scripts\certification'
+    New-Item -ItemType Directory -Path $fixtureScripts -Force | Out-Null
+    foreach ($name in @('validate_windows_clean_result.ps1','promote_to_usb.ps1','windows_clean_result_contract.ps1','windows-clean-result.schema.json')) {
+        Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $fixtureScripts $name)
+    }
+    $staging = Join-Path $projectRoot 'installer-output\STAGING-PENDING-CERTIFICACION'
+    New-Item -ItemType Directory -Path $staging -Force | Out-Null
+    $fixtureExe = Join-Path $staging 'S_Hospital-Instalador.exe'
+    [IO.File]::WriteAllText($fixtureExe, 'synthetic installer fixture', [Text.UTF8Encoding]::new($false))
+    $fixtureHash = (Get-FileHash -LiteralPath $fixtureExe -Algorithm SHA256).Hash.ToLowerInvariant()
+    $fixtureSize = (Get-Item -LiteralPath $fixtureExe).Length
+    $fixtureContract = Join-Path $fixtureScripts 'windows_clean_result_contract.ps1'
+    $contractText = Get-Content -LiteralPath $fixtureContract -Raw
+    $contractText = $contractText.Replace($contract.ExpectedInstallerSha256, $fixtureHash).Replace([string]$contract.ExpectedInstallerSizeBytes, [string]$fixtureSize)
+    Set-Content -LiteralPath $fixtureContract -Value $contractText -Encoding UTF8
+    $contract.ExpectedInstallerSha256 = $fixtureHash
+    $contract.ExpectedInstallerSizeBytes = $fixtureSize
+    Set-Content -LiteralPath (Join-Path $staging 'S_Hospital-Instalador.exe.sha256') -Value $fixtureHash -Encoding ASCII
+    [ordered]@{source_commit=$contract.ExpectedSourceCommit;installer_sha256=$fixtureHash;installer_size_bytes=$fixtureSize} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $staging 'CANDIDATE-MANIFEST.json') -Encoding UTF8
+    $validator = Join-Path $fixtureScripts 'validate_windows_clean_result.ps1'
+    $promoter = Join-Path $fixtureScripts 'promote_to_usb.ps1'
+    $blockedEvidence = Join-Path $projectRoot $contract.EvidenceRoot
+    New-Item -ItemType Directory -Path $blockedEvidence -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $blockedEvidence 'RESULT.json') -Value '{"status":"PENDING"}' -Encoding UTF8
+    $usbDir = Join-Path $projectRoot 'installer-output\ENTREGA-USB'
+    New-Item -ItemType Directory -Path $usbDir -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $usbDir 'NO_ENTREGAR_AUN.txt') -Value 'synthetic pending certification' -Encoding UTF8
     $evidenceRoot = Join-Path $root 'windows-clean'
     $files = New-TestEvidence -Root $evidenceRoot
     $resultPath = Join-Path $evidenceRoot 'RESULT.json'

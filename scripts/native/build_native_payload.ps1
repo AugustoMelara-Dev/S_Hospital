@@ -63,6 +63,12 @@ try {
             Copy-NativeDirectoryContents -Source $sourceDirectory -Destination (Join-Path $backendOut $directory)
         }
     }
+    # This command creates laboratory identities and must never ship, even
+    # though it also rejects APP_ENV=production at runtime.
+    $e2eCommand = Join-Path $backendOut 'app\Console\Commands\PrepareE2eReleaseDataCommand.php'
+    if (Test-Path -LiteralPath $e2eCommand -PathType Leaf) {
+        Remove-Item -LiteralPath $e2eCommand -Force
+    }
     $bootstrapSource = Join-Path $ProductionBackendRoot 'bootstrap'
     $bootstrapOut = Join-Path $backendOut 'bootstrap'
     New-Item -ItemType Directory -Path $bootstrapOut -Force | Out-Null
@@ -93,6 +99,10 @@ try {
         if (Test-Path -LiteralPath $sourceFile -PathType Leaf) { Copy-Item -LiteralPath $sourceFile -Destination (Join-Path $backendOut $file) }
     }
     Copy-NativeDirectoryContents -Source $FrontendDistRoot -Destination (Join-Path $stage 'app\frontend\dist')
+    $readmeSource = Join-Path $ProjectRoot 'installer\native\LEEME.txt'
+    if (Test-Path -LiteralPath $readmeSource -PathType Leaf) {
+        Copy-Item -LiteralPath $readmeSource -Destination (Join-Path $stage 'LEEME.txt')
+    }
 
     $nativeScriptsOut = Join-Path $stage 'scripts\native'
     New-Item -ItemType Directory -Path $nativeScriptsOut -Force | Out-Null

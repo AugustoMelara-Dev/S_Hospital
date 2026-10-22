@@ -37,16 +37,21 @@ FLUSH PRIVILEGES;
     $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$mariaServer;$info.Arguments='--defaults-file="'+$config+'" --bootstrap';$info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.RedirectStandardInput=$true;$info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true
     $process=[Diagnostics.Process]::new();$process.StartInfo=$info
     try{
-        if(-not$process.Start()){throw'Synthetic MariaDB bootstrap could not start.'}
+        if(-not$process.Start()){throw 'Synthetic MariaDB bootstrap could not start.'}
         $stdout=$process.StandardOutput.ReadToEndAsync();$stderr=$process.StandardError.ReadToEndAsync();$process.StandardInput.Write($sql);$process.StandardInput.Close()
-        if(-not$process.WaitForExit(60000)){$process.Kill();throw'Synthetic MariaDB secure bootstrap timed out.'};$process.WaitForExit();[void]$stdout.Wait(5000);[void]$stderr.Wait(5000)
+        if(-not$process.WaitForExit(60000)){$process.Kill();throw 'Synthetic MariaDB secure bootstrap timed out.'};$process.WaitForExit();[void]$stdout.Wait(5000);[void]$stderr.Wait(5000)
         $exit=$process.ExitCode;$safeError=Redact-BootstrapText $stderr.Result;$safeLog=if(Test-Path $log){Redact-BootstrapText (Get-Content $log -Raw)}else{''}
-        if($safeError.Contains($appPassword)-or$safeError.Contains($rootPassword)-or$safeLog.Contains($appPassword)-or$safeLog.Contains($rootPassword)){throw'Bootstrap diagnostic redaction exposed a synthetic canary.'}
-        $result=[ordered]@{passed=($exit-eq0);exit_code=$exit;init_exit_code=$initExit;stderr_summary=($safeError.Trim()|Select-Object -First 1);error_log_tail=@(($safeLog-split"`r?`n")|Where-Object{$_}|Select-Object -Last 12)}
+        if($safeError.Contains($appPassword)-or$safeError.Contains($rootPassword)-or$safeLog.Contains($appPassword)-or$safeLog.Contains($rootPassword)){throw 'Bootstrap diagnostic redaction exposed a synthetic canary.'}
+        $result=[ordered]@{unsupported_bootstrap_rejected=($exit-ne0);exit_code=$exit;init_exit_code=$initExit;stderr_summary=($safeError.Trim()|Select-Object -First 1);error_log_tail=@(($safeLog-split"`r?`n")|Where-Object{$_}|Select-Object -Last 12)}
         $result|ConvertTo-Json -Depth 6
-        if($exit-ne0){exit 1}
+        # MariaDB 11.4 intentionally rejects account DDL in --bootstrap mode.
+        # The supported product path uses isolated named-pipe SQL instead.
+        $bootstrapSource = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'lib\native_database_bootstrap.ps1') -Raw
+        if ($exit -eq 0 -or $safeLog -notmatch 'ERROR: 1290') { throw 'Expected MariaDB bootstrap account-DDL rejection was not observed.' }
+        if ($bootstrapSource -match '--bootstrap' -or $bootstrapSource -notmatch '--named-pipe' -or $bootstrapSource -notmatch '--skip-networking') { throw 'Product must use the isolated named-pipe security path.' }
+        Write-Host '[ OK ] Unsupported bootstrap DDL is rejected; product uses isolated named-pipe security.'
     }finally{$process.Dispose();$sql=$null}
 }
 finally{
-    if(Test-Path $root){$full=[IO.Path]::GetFullPath($root);$prefix=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')+'\';if(-not$full.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)-or[IO.Path]::GetFileName($full)-notmatch'^s-hospital-mariadb-bootstrap-[0-9a-f]{32}$'){throw'Refusing unsafe bootstrap fixture cleanup.'};[IO.Directory]::Delete($full,$true)}
+    if(Test-Path $root){$full=[IO.Path]::GetFullPath($root);$prefix=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')+'\';if(-not$full.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)-or[IO.Path]::GetFileName($full)-notmatch'^s-hospital-mariadb-bootstrap-[0-9a-f]{32}$'){throw 'Refusing unsafe bootstrap fixture cleanup.'};[IO.Directory]::Delete($full,$true)}
 }

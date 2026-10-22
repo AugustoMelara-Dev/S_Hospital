@@ -12,7 +12,9 @@ Set-StrictMode -Version Latest
 . (Join-Path $PSScriptRoot 'lib\native_initial_repair.ps1')
 
 if([string]::IsNullOrWhiteSpace($PreviousReleaseRoot)){$PreviousReleaseRoot=Join-Path (Split-Path $PSScriptRoot -Parent) '..\artifacts\native-payload-2026.09.28.3'}
-if([string]::IsNullOrWhiteSpace($CandidateReleaseRoot)){$CandidateReleaseRoot=Join-Path (Split-Path $PSScriptRoot -Parent) '..\artifacts\native-payload-2026.09.28.4'}
+# Strict policy follows the current payload, not the historical .4 fixture
+# that predates the isolated database bootstrap runtime file.
+if([string]::IsNullOrWhiteSpace($CandidateReleaseRoot)){$CandidateReleaseRoot=Join-Path (Split-Path $PSScriptRoot -Parent) '..\artifacts\native-payload'}
 $previous=(Resolve-Path -LiteralPath $PreviousReleaseRoot).Path
 $candidate=(Resolve-Path -LiteralPath $CandidateReleaseRoot).Path
 $artifactsRoot=[IO.Path]::GetFullPath((Split-Path $previous -Parent))

@@ -3,7 +3,7 @@ param([string]$OutputPath='')
 $ErrorActionPreference='Stop';Set-StrictMode -Version Latest
 . (Join-Path $PSScriptRoot 'lib\native_acl.ps1')
 $identity=[Security.Principal.WindowsIdentity]::GetCurrent();$principal=New-Object Security.Principal.WindowsPrincipal($identity)
-if(-not$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw'This ACL integration test requires an elevated disposable test directory.'}
+if(-not$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'This ACL integration test requires an elevated disposable test directory.'}
 function Get-SidAce([string]$Path,[string]$Sid){@((Get-Acl -LiteralPath $Path).Access|Where-Object{$_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value-eq$Sid})}
 function Has-Rights($Aces,[Security.AccessControl.FileSystemRights]$Rights){@($Aces|Where-Object{($_.FileSystemRights-band$Rights)-eq$Rights}).Count-gt0}
 $root=Join-Path ([IO.Path]::GetTempPath()) ('s-hospital-acl-profiles-'+[guid]::NewGuid().ToString('N'))
@@ -40,7 +40,7 @@ try{
 finally{
  if(Test-Path -LiteralPath $root){
   $temp=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')+'\';$full=[IO.Path]::GetFullPath($root)
-  if(-not$full.StartsWith($temp,[StringComparison]::OrdinalIgnoreCase)-or[IO.Path]::GetFileName($full)-notmatch'^s-hospital-acl-profiles-[0-9a-f]{32}$'){throw'Refusing unsafe ACL integration cleanup path.'}
+  if(-not$full.StartsWith($temp,[StringComparison]::OrdinalIgnoreCase)-or[IO.Path]::GetFileName($full)-notmatch'^s-hospital-acl-profiles-[0-9a-f]{32}$'){throw 'Refusing unsafe ACL integration cleanup path.'}
   Remove-Item -LiteralPath $full -Recurse -Force
  }
 }

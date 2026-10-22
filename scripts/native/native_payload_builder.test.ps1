@@ -20,6 +20,9 @@ try {
         New-Item -ItemType Directory -Path (Split-Path $path -Parent) -Force | Out-Null
         Set-Content -LiteralPath $path -Value $relative -Encoding ASCII
     }
+    $e2eCommand = Join-Path $backend 'app\Console\Commands\PrepareE2eReleaseDataCommand.php'
+    New-Item -ItemType Directory -Path (Split-Path $e2eCommand -Parent) -Force | Out-Null
+    Set-Content -LiteralPath $e2eCommand -Value 'laboratory command must not ship' -Encoding ASCII
     New-Item -ItemType Directory -Path (Join-Path $backend 'tests') -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $backend 'bootstrap\cache') -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $backend 'tests\MustNotShip.php') -Value 'test' -Encoding ASCII
@@ -69,6 +72,7 @@ try {
     if (-not $validation.Ready) { throw "Built payload is invalid: $($validation.Reasons -join '; ')" }
     if (Test-Path -LiteralPath (Join-Path $output 'app\backend\.env')) { throw 'Backend secrets leaked into payload.' }
     if (Test-Path -LiteralPath (Join-Path $output 'app\backend\tests')) { throw 'Development tests leaked into payload.' }
+    if (Test-Path -LiteralPath (Join-Path $output 'app\backend\app\Console\Commands\PrepareE2eReleaseDataCommand.php')) { throw 'Laboratory setup command leaked into payload.' }
     if (Test-Path -LiteralPath (Join-Path $output 'app\backend\bootstrap\cache\config.php')) { throw 'Bootstrap config cache leaked into payload.' }
     if (Test-Path -LiteralPath (Join-Path $output 'app\backend\database\seeders\DatabaseSeeder.php')) { throw 'DatabaseSeeder leaked into payload.' }
     if (Test-Path -LiteralPath (Join-Path $output 'app\backend\database\seeders\DevelopmentValidationSeeder.php')) { throw 'Development seeder leaked into payload.' }

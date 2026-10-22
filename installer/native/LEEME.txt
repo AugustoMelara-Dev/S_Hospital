@@ -1,0 +1,19 @@
+S_Hospital - Instalacion Windows sin Internet
+
+Cada hospital requiere su propia instalacion, administrador, catalogo y datos.
+
+1. Verifique el SHA-256 del EXE con SHA256SUMS.txt. Ejecute con doble clic y acepte UAC.
+No requiere Docker, PHP, MariaDB, Node.js ni Internet en el hospital.
+Si SmartScreen avisa, confirme procedencia y hash antes de Mas informacion > Ejecutar de todas formas. El candidato no tiene firma Authenticode.
+
+2. Cree el primer administrador. Una actualizacion conserva datos y configuracion.
+
+3. En Administracion > Ajustes complete identidad/logo, RTN y CAI/rango/vencimiento autorizados cuando correspondan. Configure Impuestos y revise las tasas del catalogo antes de cobrar; la semilla es exenta por defecto. Importe/exporte su propio catalogo CSV o XLSX.
+
+4. En Ajustes > Impresion elija el papel real: carta, media carta, 80 mm o 58 mm. En el dialogo del navegador use escala 100 %, papel coincidente y sin encabezados ni pies. Pruebe la impresora fisica antes del uso con pacientes.
+
+5. Abra caja, cobre con nombre del paciente, imprima, consulte reportes y cierre caja. Para otra copia use Reimprimir en Recibos sin registrar un segundo cobro. Anular requiere permiso y motivo.
+
+6. Revise el respaldo inicial y los respaldos diarios. Exporte una copia y el kit de recuperacion a una unidad externa. Una copia solo en esta PC no protege frente a perder el equipo.
+
+Consulte GUIA_UNA_COMPUTADORA.md y ENTREGA_ACTUAL.md del kit para instrucciones completas y las comprobaciones pendientes.
