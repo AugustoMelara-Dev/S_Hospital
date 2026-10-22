@@ -106,3 +106,10 @@ hospital-ai/release/PARCHE_TRACKED.patch
 # Instaladores compilados (nunca en git)
 installer/native/output/
 installer/native/tests/output/
+
+# Local agent tooling artifacts (session-specific, never committed)
+.playwright-cli/
+frontend/.playwright-cli/
+
+# Bulky QA debugging output (failure traces); curated evidence goes to qa/redesign-proof/
+qa/current-report-traces/
