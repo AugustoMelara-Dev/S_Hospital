@@ -243,7 +243,7 @@ export function AdminSidebar({
               {cashSessionLoading
                 ? 'Consultando caja…'
                 : cashOpen
-                  ? cashSession?.cash_register?.name ?? `Turno #${cashSession?.id}`
+                  ? cashSession?.cash_register?.name ?? 'Caja abierta'
                   : 'Sin caja abierta'}
             </span>
             <span className="block truncate text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-faint)]">

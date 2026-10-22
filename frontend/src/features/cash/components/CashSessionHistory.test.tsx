@@ -62,8 +62,10 @@ describe('CashSessionHistory', () => {
 
     const table = await screen.findByRole('table', { name: /turnos de caja registrados/i });
     const rows = within(table).getAllByRole('row');
-    expect(rows[1]).toHaveTextContent(/#12.*caja emergencia.*EMERG-01.*abierta.*pendiente.*pendiente/i);
-    expect(rows[2]).toHaveTextContent(/#11.*cerrada.*L\. 0\.00.*L\. 0\.00/i);
+    expect(rows[1]).toHaveTextContent(/28\/09\/2026.*caja emergencia.*abierta.*pendiente.*pendiente/i);
+    expect(rows[2]).toHaveTextContent(/28\/09\/2026.*cerrada.*L\. 0\.00.*L\. 0\.00/i);
+    // Ni el número interno del turno ni el código de la caja física.
+    expect(table).not.toHaveTextContent(/#12|#11|EMERG-01/);
     expect(within(rows[1]).getByRole('link', { name: /ver operaciones/i })).toHaveAttribute(
       'href',
       '/recibos?reconciliation_cash_session_id=12',
@@ -77,16 +79,16 @@ describe('CashSessionHistory', () => {
         meta: { current_page: 1, per_page: 10, total: 11 },
       })
       .mockResolvedValueOnce({
-        data: [session({ id: 2, status: 'closed', closing_amount: '125.00', difference_amount: '25.00' })],
+        data: [session({ id: 2, status: 'closed', opened_at: '2026-09-27T07:30:00-06:00', closing_amount: '125.00', difference_amount: '25.00' })],
         meta: { current_page: 2, per_page: 10, total: 11 },
       });
 
     renderHistory(false);
-    await screen.findByText('#12');
+    await screen.findAllByText(/28\/09\/2026/);
     await userEvent.click(screen.getByRole('button', { name: /siguiente/i }));
 
     await waitFor(() => expect(getCashSessions).toHaveBeenLastCalledWith({ page: 2, perPage: 10 }));
-    expect(await screen.findByText('#2')).toBeVisible();
+    expect((await screen.findAllByText(/27\/09\/2026/))[0]).toBeVisible();
     expect(screen.queryByRole('link', { name: /ver operaciones/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/sin acceso a recibos/i).length).toBeGreaterThan(0);
   });

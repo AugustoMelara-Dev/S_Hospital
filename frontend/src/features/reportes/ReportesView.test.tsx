@@ -138,11 +138,14 @@ describe('ReportesView', () => {
     expect(screen.getByRole('region', { name: 'Operaciones' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Caja' })).not.toBeInTheDocument();
     expect(screen.getByText('Pagada', { selector: '[data-ui-status]' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Operaciones' })).not.toHaveTextContent(/CAJA-01/);
 
     fireEvent.click(within(tabs).getByRole('tab', { name: /^Caja \(/ }));
     expect(screen.getByRole('region', { name: 'Caja' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Operaciones' })).not.toBeInTheDocument();
-    expect(screen.getAllByText('Caja Principal (CAJA-01)').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Caja Principal').length).toBeGreaterThanOrEqual(1);
+    // Solo el nombre de la caja: ni su código interno ni el número de sesión.
+    expect(screen.getByRole('region', { name: 'Caja' })).not.toHaveTextContent(/CAJA-01|#\d+/);
 
     fireEvent.click(within(tabs).getByRole('tab', { name: /^Gratuidades \(/ }));
     expect(screen.getByRole('region', { name: 'Gratuidades' })).toBeInTheDocument();
@@ -179,8 +182,11 @@ describe('ReportesView', () => {
     renderReportes();
 
     const scope = screen.getByTestId('reporte-scope');
-    expect(scope).toHaveTextContent('Ámbito general');
-    expect(scope).toHaveTextContent(/Período \d{4}-\d{2}-\d{2}/);
+    expect(scope).toHaveTextContent('Todas las cajas');
+    expect(scope).not.toHaveTextContent(/ámbito/i);
+    // El período se lee en formato local, nunca como fecha ISO de máquina.
+    expect(scope).toHaveTextContent(/(Del|Día) \d{2}\/\d{2}\/\d{4}/);
+    expect(scope).not.toHaveTextContent(/\d{4}-\d{2}-\d{2}|→/);
     expect(screen.queryByText(/ámbito autorizado del servidor/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/misma fuente/i)).not.toBeInTheDocument();
   });
@@ -406,7 +412,7 @@ describe('ReportesView', () => {
     expect(await screen.findByText(/cajeros y cajas no disponibles/i)).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Resumen del período' })).toBeInTheDocument();
     expect(screen.getByLabelText(/^cajero$/i)).toBeDisabled();
-    expect(screen.getByLabelText(/caja o sesión/i)).toBeDisabled();
+    expect(screen.getByLabelText(/caja o turno/i)).toBeDisabled();
     expect(screen.queryByRole('option', { name: /todos los cajeros/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /exportar pdf/i })).toBeEnabled();
 
@@ -457,7 +463,8 @@ describe('ReportesView', () => {
     );
 
     expect(screen.getByLabelText(/^categoría$/i)).toHaveValue('1');
-    expect(screen.getByRole('option', { name: /categoría #1 · selección conservada/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /categoría seleccionada · selección conservada/i })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /#1/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /aplicar/i })).toBeDisabled();
     expect(screen.getByText(/vuelva a cargar los filtros antes de aplicar esta selección o exportar/i)).toBeInTheDocument();
   });

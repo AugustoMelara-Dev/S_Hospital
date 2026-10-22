@@ -289,7 +289,9 @@ describe('ResumenView', () => {
 
     const panel = await screen.findByRole('region', { name: /caja y turno actual/i });
     expect(within(panel).getAllByText(/caja abierta/i)).toHaveLength(1);
-    expect(within(panel).getByText(/sesión #4/i)).toBeInTheDocument();
+    // El número interno de la sesión no se muestra; sí la hora de apertura.
+    expect(panel).not.toHaveTextContent(/sesión\s*#|#4/i);
+    expect(within(panel).getByText(/abierta desde \d{2}\/\d{2}\/\d{4}/i)).toBeInTheDocument();
     // Un saldo en cero no ocupa una fila.
     expect(within(panel).queryByText(/saldo pendiente/i)).toBeNull();
   });

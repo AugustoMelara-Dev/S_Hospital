@@ -267,7 +267,6 @@ export function CashBoxView({
 
   const activeSession = session ?? cashSession;
   const cashRegisterName = activeSession?.cash_register?.name ?? 'Caja no disponible';
-  const cashRegisterCode = activeSession?.cash_register?.code ?? null;
   const selectedOpeningRegister = pendingOpening
     ? cashRegistersQuery.data?.find((cashRegister) => cashRegister.id === pendingOpening.cash_register_id) ?? null
     : null;
@@ -289,7 +288,7 @@ export function CashBoxView({
   const isOpen = activeSession?.status === 'open';
   const isOwnSession = Boolean(activeSession && currentUserId === activeSession.user_id);
   const sessionCashier = activeSession
-    ? activeSession.user?.name ?? activeSession.user?.username ?? `Cajero #${activeSession.user_id}`
+    ? activeSession.user?.name ?? activeSession.user?.username ?? 'Cajero sin nombre registrado'
     : null;
   const operatorName = currentUserName ?? sessionCashier ?? null;
   const pendingWork = confirmedPendingWork(activeSession);
@@ -531,11 +530,6 @@ export function CashBoxView({
         <div className="grid gap-px bg-[var(--ui-line)] sm:grid-cols-3">
           <IdentityCell label="Caja física">
             <span className="font-medium">{cashRegisterName}</span>
-            {cashRegisterCode ? (
-              <span className="mt-0.5 block text-[length:var(--ui-text-xs)] tabular-nums text-[color:var(--ui-ink-soft)]">
-                {cashRegisterCode}
-              </span>
-            ) : null}
           </IdentityCell>
           <IdentityCell label="Operador">
             <span className="font-medium tabular-nums">{operatorName ?? 'Sin operador'}</span>
@@ -545,13 +539,16 @@ export function CashBoxView({
               </span>
             ) : null}
           </IdentityCell>
-          <IdentityCell label="Sesión">
+          <IdentityCell label="Turno">
             {isOpen && activeSession ? (
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <StatusStamp status="cobrado" label="Caja abierta" />
-                <span className="tabular-nums text-[color:var(--ui-ink-soft)]">#{activeSession.id}</span>
                 <span className="text-[color:var(--ui-ink-soft)]">
-                  {isOwnSession ? 'propia' : canCloseAnyCash ? 'Supervisión habilitada' : 'de otro cajero'}
+                  {isOwnSession
+                    ? 'Turno abierto por usted'
+                    : canCloseAnyCash
+                      ? 'Turno de otro cajero · supervisión habilitada'
+                      : 'Turno de otro cajero'}
                 </span>
               </span>
             ) : isLoading ? (
@@ -645,6 +642,7 @@ export function CashBoxView({
             payments_by_method: closedSummarySession.payments_by_method,
             pending_invoice_count: closedSummarySession.pending_invoice_count,
             pending_amount: closedSummarySession.pending_amount,
+            opened_at: closedSummarySession.opened_at,
             closed_at: closedSummarySession.closed_at,
             closing_breakdown: closedSummarySession.closing_breakdown,
           }}
@@ -802,6 +800,7 @@ export function CashBoxView({
         open={confirmingClose}
         onOpenChange={setConfirmingClose}
         session={{
+          opened_at: activeSession?.opened_at ?? null,
           opening_amount: activeSession?.opening_amount ?? null,
           expected_cash_amount: activeSession?.expected_cash_amount ?? activeSession?.expected_amount ?? undefined,
           payments_by_method: activeSession?.payments_by_method,
@@ -836,7 +835,7 @@ export function CashBoxView({
         <dl className="grid divide-y divide-[var(--ui-line)] border-y border-[var(--ui-line)] text-[length:var(--ui-text-sm)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
           <div className="px-3 py-3">
             <dt className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Caja física</dt>
-            <dd className="mt-1 font-semibold">{selectedOpeningRegister ? `${selectedOpeningRegister.name} · ${selectedOpeningRegister.code}` : 'Caja no disponible'}</dd>
+            <dd className="mt-1 font-semibold">{selectedOpeningRegister ? selectedOpeningRegister.name : 'Caja no disponible'}</dd>
           </div>
           <div className="px-3 py-3 sm:text-right">
             <dt className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Monto inicial</dt>

@@ -331,7 +331,7 @@ export function activeFilterChips(filters: InvoiceFilters): RecibosActiveFilter[
   const status = STATUS_FILTER_OPTIONS.find((option) => option.value === (filters.status ?? ''));
   if (status?.value) chips.push({ key: 'status', label: status.label });
 
-  if (filters.cash_session_id) chips.push({ key: 'cash', label: `Caja #${filters.cash_session_id}` });
+  if (filters.cash_session_id) chips.push({ key: 'cash', label: 'Turno de caja seleccionado' });
   if (filters.balance_state === 'pending') chips.push({ key: 'balance', label: 'Saldo pendiente' });
   if (filters.receipt_state === 'missing') chips.push({ key: 'receipt', label: 'Comprobante pendiente' });
 

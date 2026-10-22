@@ -14,7 +14,8 @@ import {
   type AdminColumn,
 } from '@/design-system/admin/components';
 import { FREE_LINE_BADGE_CLASS, GHOST_BUTTON } from '../reportesUi';
-import { formatCajaLabel, reporteCents, reporteStatusTone } from '../formato';
+import { humanCajaLabel } from '@/lib/format/cajaLabel';
+import { cajaStatusLabel, formatCajaLabel, reporteCents, reporteStatusTone } from '../formato';
 import type {
   ReporteCaja,
   ReporteCobro,
@@ -161,7 +162,7 @@ export function ReporteOperacionesTabla({ rows }: { rows: ReporteOperacion[] }) 
     { key: 'fecha', header: 'Fecha', cell: (row) => formatDate(row.date) },
     { key: 'numero', header: 'N.º factura', mobilePrimary: true, cell: (row) => <span className="tabular-nums">{row.invoice_number}</span> },
     { key: 'paciente', header: 'Paciente', cell: (row) => row.patient },
-    { key: 'caja', header: 'Caja / sesión', cell: (row) => row.cash_session_label ?? '—' },
+    { key: 'caja', header: 'Caja', cell: (row) => (row.cash_session_label ? humanCajaLabel(row.cash_session_label) : '—') },
     { key: 'cajero', header: 'Cajero', cell: (row) => row.cashier ?? '—' },
     { key: 'total', header: 'Total', align: 'right', mobilePrimary: true, cell: (row) => <MoneyText cents={reporteCents(row.total)} /> },
     { key: 'pagado', header: 'Pagado', align: 'right', cell: (row) => <MoneyText cents={reporteCents(row.paid)} /> },
@@ -236,7 +237,7 @@ export function ReporteCobrosTabla({ rows }: { rows: ReporteCobro[] }) {
     { key: 'fecha', header: 'Fecha de pago', cell: (row) => formatDateTime(row.paid_at) },
     { key: 'numero', header: 'N.º factura', mobilePrimary: true, cell: (row) => <span className="tabular-nums">{row.invoice_number}</span> },
     { key: 'paciente', header: 'Paciente', cell: (row) => row.patient },
-    { key: 'caja', header: 'Caja / sesión', cell: (row) => row.cash_session_label ?? '—' },
+    { key: 'caja', header: 'Caja', cell: (row) => (row.cash_session_label ? humanCajaLabel(row.cash_session_label) : '—') },
     { key: 'cajero', header: 'Cajero', cell: (row) => row.cashier ?? '—' },
     { key: 'metodo', header: 'Método', cell: (row) => row.method_label },
     { key: 'referencia', header: 'Referencia', cell: (row) => row.reference ?? '—' },
@@ -267,8 +268,7 @@ export function ReporteCobrosTabla({ rows }: { rows: ReporteCobro[] }) {
 
 export function ReporteCajaTabla({ rows }: { rows: ReporteCaja[] }) {
   const columns: AdminColumn<ReporteCaja>[] = [
-    { key: 'id', header: 'Sesión', cell: (row) => `#${row.id}` },
-    { key: 'caja', header: 'Caja física', mobilePrimary: true, cell: (row) => formatCajaLabel(row.cash_register_name, row.cash_register_code, row.id) },
+    { key: 'caja', header: 'Caja física', mobilePrimary: true, cell: (row) => formatCajaLabel(row.cash_register_name) },
     { key: 'cajero', header: 'Responsable', cell: (row) => row.cashier },
     { key: 'apertura', header: 'Apertura', cell: (row) => formatDateTime(row.opened_at) },
     { key: 'cierre', header: 'Cierre', cell: (row) => (row.closed_at ? formatDateTime(row.closed_at) : '—') },
@@ -280,7 +280,7 @@ export function ReporteCajaTabla({ rows }: { rows: ReporteCaja[] }) {
       key: 'estado',
       header: 'Estado',
       cell: (row) => {
-        const tone = reporteStatusTone(row.status_label ?? row.status);
+        const tone = reporteStatusTone(cajaStatusLabel(row.status_label, row.status));
         return <StatusStamp status={tone.status} label={tone.label} />;
       },
     },

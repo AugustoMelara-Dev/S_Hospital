@@ -115,6 +115,15 @@ function parseDate(value: string | Date | null | undefined): Date | null {
     return Number.isNaN(value.getTime()) ? null : value;
   }
 
+  // Un día calendario «AAAA-MM-DD» (cortes, períodos de reporte) se lee en la
+  // hora local: `new Date('2026-10-22')` lo interpretaría como medianoche UTC y
+  // en Honduras (UTC-6) mostraría el día anterior.
+  const dayOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (dayOnly) {
+    const local = new Date(Number(dayOnly[1]), Number(dayOnly[2]) - 1, Number(dayOnly[3]));
+    return Number.isNaN(local.getTime()) ? null : local;
+  }
+
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }

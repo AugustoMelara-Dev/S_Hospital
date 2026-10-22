@@ -397,6 +397,8 @@ describe('CobrarView · recorrido continuo', () => {
     // El catálogo es el área hermana de la estación, no una tercera torre.
     expect(screen.getByRole('region', { name: 'Agregar conceptos' })).toBeVisible();
     expect(screen.getByText('Caja abierta')).toBeVisible();
+    // El chip de caja no expone el número interno de la sesión.
+    expect(screen.queryByText(/sesión\s*#/i)).not.toBeInTheDocument();
   });
 
   it('abre un borrador real del comprobante sin emitir ni cobrar', async () => {

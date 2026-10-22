@@ -220,6 +220,7 @@ describe('CloseSessionDialog', () => {
       <CashCloseSummaryPanel
         session={{
           id: 12,
+          opened_at: '2026-07-06T08:00:00-06:00',
           opening_amount: '100.00',
           expected_cash_amount: '125.00',
           payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
@@ -237,7 +238,8 @@ describe('CloseSessionDialog', () => {
 
     const exportedBlob = createObjectURL.mock.calls[0]?.[0] as Blob;
     const exportedText = await readBlobText(exportedBlob);
-    expect(exportedText).toContain('"Sesión de caja","#12"');
+    expect(exportedText).toContain('"Turno abierto","06/07/2026');
+    expect(exportedText).not.toMatch(/#12|Sesión de caja/);
     expect(exportedText).toContain('"Cerrada","06/07/2026');
     expect(exportedText).toContain('"Nota","Turno entregado"');
   });

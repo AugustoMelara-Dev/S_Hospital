@@ -51,3 +51,11 @@ describe('formatDateTimeEs', () => {
     expect(formatDateTimeEs('not-a-date')).toBe('-');
   });
 });
+
+describe('date-only (calendar day) strings', () => {
+  it('reads AAAA-MM-DD as a local calendar day, never shifting to the previous day', () => {
+    expect(formatDate('2026-10-22')).toBe('22/10/2026');
+    expect(formatDate('2026-01-01')).toBe('01/01/2026');
+    expect(formatDateLong('2026-10-22')).toBe('22 de octubre de 2026');
+  });
+});

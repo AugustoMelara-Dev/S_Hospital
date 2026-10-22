@@ -235,7 +235,7 @@ describe('recibosModel', () => {
       { key: 'query', label: 'Paciente María López' },
       { key: 'range', label: '01/09/2026 – 18/09/2026' },
       { key: 'status', label: 'Pagada' },
-      { key: 'cash', label: 'Caja #4' },
+      { key: 'cash', label: 'Turno de caja seleccionado' },
     ]);
 
     expect(activeFilterChips({ page: 1, per_page: 10, invoice_number: '000-001-01-00000010' })).toEqual([

@@ -72,11 +72,34 @@ describe('resolveApiBaseUrl', () => {
 
     const message = userSafeErrorMessage(error, 'No se pudo emitir la factura.');
 
-    expect(message).toMatch(/patient name: Ingrese el nombre del paciente\./i);
-    expect(message).toMatch(/items #1 \(quantity\): La cantidad debe ser mayor a cero\./i);
-    expect(message).toMatch(/items #2 \(service id\): El servicio no existe\., No es facturable\./i);
-    expect(message).not.toMatch(/patient_name/);
-    expect(message).not.toMatch(/items\.0\.quantity/);
+    expect(message).toMatch(/Nombre del paciente: Ingrese el nombre del paciente\./);
+    expect(message).toMatch(/Concepto 1 \(cantidad\): La cantidad debe ser mayor a cero\./);
+    expect(message).toMatch(/Concepto 2 \(servicio\): El servicio no existe\., No es facturable\./);
+    expect(message).not.toMatch(/patient_name|patient name/i);
+    expect(message).not.toMatch(/items|quantity|service id|#/i);
+  });
+
+  it('never shows internal field names or framework defaults in validation messages', () => {
+    const error = new ApiError('The given data was invalid.', 422, {
+      special_rule_code: ['The special_rule_code field is required.'],
+      tax_rate_id: ['Seleccione un impuesto válido para tax_rate_id.'],
+      'meta.internal_flag': ['Valor no permitido.'],
+    });
+
+    const message = userSafeErrorMessage(error, 'No se pudo guardar el servicio.');
+
+    expect(message).toMatch(/Regla especial: Revise los datos del formulario\./);
+    expect(message).not.toMatch(/field is required/i);
+    expect(message).toMatch(/Impuesto: Seleccione un impuesto válido para impuesto\./);
+    expect(message).toMatch(/Valor no permitido\./);
+    expect(message).not.toMatch(/special_rule_code|tax_rate_id|internal_flag|meta|given data/i);
+  });
+
+  it('replaces raw HTTP codes, 404 model errors and runtime exceptions with actionable Spanish text', () => {
+    expect(userSafeErrorMessage(new ApiError('HTTP 404', 404), 'fallback')).toMatch(/no se encontró el registro/i);
+    expect(userSafeErrorMessage(new ApiError('HTTP 418', 418), 'No se pudo guardar.')).toBe('No se pudo guardar.');
+    expect(userSafeErrorMessage(new TypeError("Cannot read properties of undefined (reading 'id')"), 'No se pudo cargar.')).toBe('No se pudo cargar.');
+    expect(userSafeErrorMessage(new Error('Clave 6f1c2a9e-3b7d-4c1e-9a2f-0d5e8b7c6a41 repetida'), 'No se pudo cobrar.')).toBe('No se pudo cobrar.');
   });
 
   it('labels cash session validation errors as caja for cashiers', () => {

@@ -41,8 +41,7 @@ function humanPayment(payload: PaymentChangedEvent): string {
 }
 
 function humanCash(payload: CashSessionChangedEvent): string {
-  const verb = payload.change === 'opened' ? 'Caja abierta' : 'Caja cerrada';
-  return `${verb} #${payload.id}.`;
+  return payload.change === 'opened' ? 'Se abrió un turno de caja.' : 'Se cerró un turno de caja.';
 }
 
 /**

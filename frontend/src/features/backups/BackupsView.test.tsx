@@ -22,8 +22,8 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={onStatus} />);
 
-    expect(await screen.findByText(/copia creada m.s reciente.*revise su integridad/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/restauración no probada en este equipo/i)).not.toHaveLength(0);
+    expect(await screen.findByText(/copia creada m.s reciente.*confirme que qued. revisada/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/recuperación aún no ensayada en este equipo/i)).not.toHaveLength(0);
     expect(screen.getByText(/sin fallos desde la última copia exitosa/i)).toBeInTheDocument();
     expect(screen.getByText(/0 pendientes · 0 fallidos recientes/i)).toBeInTheDocument();
     await waitFor(() => expect(apiClient.getBackups).toHaveBeenCalledTimes(1));
@@ -54,12 +54,12 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    await waitFor(() => expect(screen.getByRole('status', { name: /salud del respaldo/i })).toHaveTextContent(/estado: sin verificar/i));
+    await waitFor(() => expect(screen.getByRole('status', { name: /salud del respaldo/i })).toHaveTextContent(/estado: copia sin revisar/i));
     const health = screen.getByRole('status', { name: /salud del respaldo/i });
-    expect(health).toHaveTextContent(/sin integridad confirmada/i);
-    expect(health).toHaveTextContent(/restauración no probada en este equipo/i);
+    expect(health).toHaveTextContent(/ninguna copia revisada todavía/i);
+    expect(health).toHaveTextContent(/recuperación aún no ensayada en este equipo/i);
     expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).toHaveTextContent(
-      /integridad no verificada.*restauración no probada/i,
+      /copia sin revisar.*recuperación aún no ensayada/i,
     );
   });
 
@@ -71,9 +71,12 @@ describe('BackupsView', () => {
     });
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    await waitFor(() => expect(screen.getByRole('status', { name: /salud del respaldo/i })).toHaveTextContent(/estado: integridad verificada/i));
+    await waitFor(() => expect(screen.getByRole('status', { name: /salud del respaldo/i })).toHaveTextContent(/estado: copia revisada/i));
     const health = screen.getByRole('status', { name: /salud del respaldo/i });
-    expect(health).toHaveTextContent(/restauración no probada en este equipo/i);
+    expect(health).toHaveTextContent(/recuperación aún no ensayada en este equipo/i);
+    // Lenguaje simple: nada de jerga técnica de verificación.
+    expect(health).toHaveTextContent(/respaldo automático/i);
+    expect(health).not.toHaveTextContent(/integridad|requiere prueba|automatismo|restauración probada/i);
   });
 
   beforeEach(() => {
@@ -419,7 +422,7 @@ describe('BackupsView', () => {
     await waitFor(() => {
       expect(within(kpis).queryByText(/^Sin respaldo$/i)).not.toBeInTheDocument();
     });
-    expect(within(kpis).getByText(/copia creada m.s reciente.*revise su integridad/i)).toBeInTheDocument();
+    expect(within(kpis).getByText(/copia creada m.s reciente.*confirme que qued. revisada/i)).toBeInTheDocument();
   });
 
   it('shows a safe backup age when the last successful timestamp is malformed', async () => {
@@ -518,7 +521,7 @@ describe('BackupsView', () => {
 
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
-    expect(await screen.findByText(/integridad del respaldo no confirmada/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no se pudo revisar la última copia/i)).toBeInTheDocument();
     expect(screen.getByText(/cree uno nuevo antes de usarlo para una recuperación/i)).toBeInTheDocument();
     expect(screen.queryByText(/hospital-backup-.*\.sql/i)).not.toBeInTheDocument();
   });
@@ -570,7 +573,7 @@ describe('BackupsView', () => {
     renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
 
     expect(await screen.findByText(/estado operativo no disponible/i)).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: /salud del respaldo/i })).toHaveTextContent(/Estado: Error/i);
+    expect(screen.getByRole('status', { name: /salud del respaldo/i })).toHaveTextContent(/Estado: Con problemas/i);
     expect(screen.getByText(/no se puede crear un respaldo porque no se confirmó si existe otro pendiente/i)).toBeVisible();
     expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /reintentar estado/i })).toBeEnabled();
@@ -717,7 +720,7 @@ describe('BackupsView', () => {
     expect(screen.getByRole('columnheader', { name: /acciones/i })).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: /nombre/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/hospital-backup-.*\.sql\.enc/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).toHaveTextContent(/integridad verificada.*restauración no probada/i);
+    expect(screen.getByRole('region', { name: /historial de respaldos locales/i })).toHaveTextContent(/copia revisada.*recuperación aún no ensayada/i);
     expect(screen.getAllByRole('cell').some((cell) => cell.className.includes('text-right'))).toBe(true);
     expect(screen.getByText(/respaldo en proceso/i)).toBeInTheDocument();
     expect(screen.getByText(/archivo creado correctamente/i)).toBeInTheDocument();
@@ -1011,7 +1014,7 @@ describe('BackupsView', () => {
     await waitFor(() => {
       expect(onStatus).toHaveBeenCalledWith(expect.objectContaining({
         level: 'success',
-        message: 'Respaldo creado con integridad verificada. La restauración se prueba por separado.',
+        message: 'Respaldo creado y revisado. La recuperación se ensaya por separado.',
       }));
     });
     expect(onStatus.mock.calls.map(([status]) => (

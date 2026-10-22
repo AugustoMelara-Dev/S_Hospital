@@ -238,7 +238,9 @@ describe('ReceiptPreview', () => {
     expect(screen.getByText('Estado')).toBeInTheDocument();
     expect(screen.getByText('RTN: 08011999123456')).toBeInTheDocument();
     expect(screen.getByText('Tel. 2444-0000')).toBeInTheDocument();
-    expect(screen.getByText('Caja #7')).toBeInTheDocument();
+    // La caja se nombra sin el número interno de la sesión.
+    expect(screen.getByText('Caja del turno')).toBeInTheDocument();
+    expect(screen.queryByText(/caja #7/i)).not.toBeInTheDocument();
     expect(screen.getByRole('rowheader', { name: 'Exento' })).toBeInTheDocument();
     expect(screen.getByText('DIECISIETE LEMPIRAS CON 25/100 CENTAVOS')).toBeInTheDocument();
     const printRoot = document.querySelector('[data-receipt-print-root]');

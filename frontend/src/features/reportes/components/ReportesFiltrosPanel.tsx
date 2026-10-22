@@ -339,7 +339,7 @@ export function ReportesFiltrosPanel({
                     ) : (
                       <option value={filters.user_id !== undefined ? String(filters.user_id) : 'todos'}>
                         {filters.user_id !== undefined
-                          ? `Cajero #${filters.user_id} · selección conservada`
+                          ? 'Cajero seleccionado · selección conservada'
                           : unavailableOptionLabel(cashOptionsStatus, 'Sin cajeros disponibles')}
                       </option>
                     )}
@@ -351,12 +351,12 @@ export function ReportesFiltrosPanel({
                   </select>
                 </AdminField>
 
-                <AdminField label="Caja / sesión" htmlFor="reportes-caja">
+                <AdminField label="Caja o turno" htmlFor="reportes-caja">
                   <select
                     id="reportes-caja"
                     value={filters.cash_session_id !== undefined ? String(filters.cash_session_id) : 'todos'}
                     disabled={disabled || cashOptionsStatus !== 'ready'}
-                    aria-label="Caja o sesión"
+                    aria-label="Caja o turno"
                     onChange={(event) =>
                       onChange(setOptionalNumber(filters, 'cash_session_id', event.target.value))
                     }
@@ -367,8 +367,8 @@ export function ReportesFiltrosPanel({
                     ) : (
                       <option value={filters.cash_session_id !== undefined ? String(filters.cash_session_id) : 'todos'}>
                         {filters.cash_session_id !== undefined
-                          ? `Sesión #${filters.cash_session_id} · selección conservada`
-                          : unavailableOptionLabel(cashOptionsStatus, 'Sin sesiones disponibles')}
+                          ? 'Turno seleccionado · selección conservada'
+                          : unavailableOptionLabel(cashOptionsStatus, 'Sin turnos disponibles')}
                       </option>
                     )}
                     {cajas.map((option) => (
@@ -395,7 +395,7 @@ export function ReportesFiltrosPanel({
                     ) : (
                       <option value={filters.category_id !== undefined ? String(filters.category_id) : 'todos'}>
                         {filters.category_id !== undefined
-                          ? `Categoría #${filters.category_id} · selección conservada`
+                          ? 'Categoría seleccionada · selección conservada'
                           : unavailableOptionLabel(categoryOptionsStatus, 'Sin categorías disponibles')}
                       </option>
                     )}

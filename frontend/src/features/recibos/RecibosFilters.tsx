@@ -177,7 +177,7 @@ export function RecibosFilters({
               {cashSessions.map((session) => (
                 <option key={session.id} value={String(session.id)}>
                   {session.cash_register
-                    ? `${session.cash_register.name} · ${session.cash_register.code}`
+                    ? session.cash_register.name
                     : 'Turno de caja'}{' '}
                   · {session.user?.name ?? session.user?.username ?? 'Operador no disponible'} ·{' '}
                   {session.status === 'open' ? 'abierta' : `cerrada ${formatDateTimeEs(session.closed_at)}`}

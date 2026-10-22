@@ -8,6 +8,7 @@ import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { receiptPaperPresentation } from '../../modules/receipts/paperPolicy';
 import { printReceiptDocument } from '../../printing/browserPrint';
+import { humanCajaLabel } from '@/lib/format/cajaLabel';
 
 type ReceiptPreviewProps = {
   onNewInvoice?: () => void;
@@ -157,7 +158,7 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt }: ReceiptPrevie
                   <th scope="row">Cajero</th>
                   <td>{receipt.invoice.cashier ?? 'No registrado'}</td>
                   <th scope="row">Caja</th>
-                  <td>{receipt.invoice.cash_register_label ?? 'No registrada'}</td>
+                  <td>{receipt.invoice.cash_register_label ? humanCajaLabel(receipt.invoice.cash_register_label) : 'No registrada'}</td>
                 </tr>
               ) : null}
             </tbody>

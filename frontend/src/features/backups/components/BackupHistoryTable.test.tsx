@@ -45,7 +45,7 @@ describe('BackupHistoryTable responsive history', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByRole('list', { name: /historial de respaldos locales/i })).toBeInTheDocument();
     expect(screen.getByText(/caja principal/i)).toBeInTheDocument();
-    expect(screen.getByText(/integridad verificada.*restauración no probada/i)).toBeInTheDocument();
+    expect(screen.getByText(/copia revisada.*recuperación aún no ensayada/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /descargar respaldo del/i }));
     expect(onDownloadRequest).toHaveBeenCalledWith(successfulBackup);
   });

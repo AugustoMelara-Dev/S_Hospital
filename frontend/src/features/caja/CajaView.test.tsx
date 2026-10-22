@@ -95,11 +95,13 @@ describe('CajaView', () => {
     expect(screen.queryByRole('heading', { level: 2, name: /^turno de caja$/i })).not.toBeInTheDocument();
     const context = screen.getByRole('region', { name: /caja, usuario y sesión/i });
     expect(context).toHaveTextContent(/caja azul qa/i);
-    expect(context).toHaveTextContent(/AZB-QA/i);
+    // Ni el código interno de la caja ni el número de sesión se muestran.
+    expect(context).not.toHaveTextContent(/AZB-QA/i);
     expect(context).toHaveTextContent(/usuario 2/i);
-    expect(context).toHaveTextContent(/#4/);
+    expect(context).not.toHaveTextContent(/#\s*4\b/);
     expect(context).toHaveTextContent(/abierta/i);
-    expect(context).toHaveTextContent(/propia/i);
+    expect(context).toHaveTextContent(/turno abierto por usted/i);
+    expect(context).not.toHaveTextContent(/propia/i);
   });
 
   it('shows supervision when the open session belongs to another cashier', async () => {

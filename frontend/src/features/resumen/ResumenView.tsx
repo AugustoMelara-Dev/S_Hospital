@@ -25,7 +25,7 @@ import {
   StatusStamp,
   type AdminColumn,
 } from '@/design-system/admin/components';
-import { formatDateTimeEs } from '@/lib/format/formatDate';
+import { formatDate, formatDateTimeEs } from '@/lib/format/formatDate';
 import { cn } from '@/lib/utils';
 import {
   apiMoneyCents,
@@ -84,7 +84,7 @@ export function ResumenView() {
             <AdminChip tone={isManagerial ? 'accent' : 'neutral'}>
               {reportScopeLabel(isManagerial)}
             </AdminChip>
-            <AdminChip>{today ? `Hoy · ${today.date}` : 'Hoy'}</AdminChip>
+            <AdminChip>{today ? `Hoy · ${formatDate(today.date)}` : 'Hoy'}</AdminChip>
           </>
         }
         actions={
@@ -131,7 +131,7 @@ export function ResumenView() {
               Actividad de hoy
             </h2>
             <span className="text-[length:var(--ui-text-xs)] tabular-nums text-[color:var(--ui-ink-faint)]">
-              {today?.date ? `Corte ${today.date}` : 'Fecha no disponible'}
+              {today?.date ? `Corte del ${formatDate(today.date)}` : 'Fecha no disponible'}
             </span>
           </div>
           <AdminStatBand role="group" aria-label="Cohortes del corte" columns={4}>
@@ -335,7 +335,7 @@ function ShiftSummary({
               ) : isOpen ? (
                 <AdminChip tone="accent">
                   <span className="size-1.5 rounded-full bg-[var(--ui-action)]" />
-                  Caja abierta · Sesión #{session?.id}
+                  Caja abierta
                 </AdminChip>
               ) : (
                 <AdminChip tone="neutral">Sin caja abierta</AdminChip>

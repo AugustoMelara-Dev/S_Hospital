@@ -68,7 +68,7 @@ export function automaticBackupHeartbeatLabel(
 export function statusLabel(status: 'pending' | 'partial' | 'validated' | 'manual_required'): string {
   if (status === 'validated') return 'Validado';
   if (status === 'partial') return 'Parcial';
-  if (status === 'manual_required') return 'Requiere prueba';
+  if (status === 'manual_required') return 'Pendiente de comprobar';
   return 'Pendiente';
 }
 

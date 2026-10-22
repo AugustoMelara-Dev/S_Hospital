@@ -106,7 +106,7 @@ export function OpenSessionForm({
               {cashRegisters.length > 1 ? <option value="">Seleccione una caja</option> : null}
               {cashRegisters.map((cashRegister) => (
                 <option key={cashRegister.id} value={cashRegister.id}>
-                  {cashRegister.name} · {cashRegister.code}
+                  {cashRegister.name}
                 </option>
               ))}
             </select>

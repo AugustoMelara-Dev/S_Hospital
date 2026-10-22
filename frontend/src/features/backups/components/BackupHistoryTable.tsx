@@ -98,9 +98,9 @@ function BackupVerificationSummary({ backup }: { backup: BackupLog }) {
 
   return (
     <span className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
-      {backup.verification_scope === 'encrypted_file_integrity' ? 'Integridad verificada' : 'Integridad no verificada'}
+      {backup.verification_scope === 'encrypted_file_integrity' ? 'Copia revisada' : 'Copia sin revisar'}
       {' · '}
-      {backup.restore_tested === true ? 'Restauración probada en este equipo' : 'Restauración no probada en este equipo'}
+      {backup.restore_tested === true ? 'Recuperación ensayada en este equipo' : 'Recuperación aún no ensayada en este equipo'}
     </span>
   );
 }

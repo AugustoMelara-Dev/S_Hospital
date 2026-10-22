@@ -460,7 +460,8 @@ describe('CashBoxView', () => {
 
     expect(await screen.findByRole('region', { name: /caja, usuario y sesión/i })).toBeInTheDocument();
     expect(getCurrentCashSession).toHaveBeenCalledWith({ scope: 'closable' });
-    expect(await screen.findByText(/cajero #77/i)).toBeVisible();
+    expect(await screen.findByText(/cajero sin nombre registrado/i)).toBeVisible();
+    expect(screen.queryByText(/#77/)).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /nueva factura/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/caja lista para facturar/i)).not.toBeInTheDocument();
     expect(screen.getByText(/supervisión habilitada/i)).toBeVisible();
@@ -709,7 +710,8 @@ describe('CashBoxView', () => {
     fireEvent.click(within(closeDialog).getByRole('button', { name: /^cerrar caja$/i }));
 
     const confirmedSummary = await screen.findByRole('region', { name: /resumen de cierre confirmado/i });
-    expect(confirmedSummary).toHaveTextContent(/sesión de caja\s*#12/i);
+    expect(confirmedSummary).toHaveTextContent(/turno abierto\s*\d{2}\/\d{2}\/\d{4}/i);
+    expect(confirmedSummary).not.toHaveTextContent(/#12|sesión de caja/i);
     expect(confirmedSummary).toHaveTextContent(/cerrada\s*06\/07\/2026/i);
     expect(confirmedSummary).toHaveTextContent(/monto contado\s*L\.\s*101\.00/i);
     // La diferencia va con signo explícito ("+ L. 1.00" sobrante): el color

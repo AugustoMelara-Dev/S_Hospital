@@ -105,7 +105,7 @@ describe('useBroadcastSync', () => {
       channels.cash.listeners.get('cash-session.changed')?.({ id: 7, change: 'opened', status: 'open' });
     });
 
-    expect(feedback.info).toHaveBeenCalledWith('Caja abierta #7.');
+    expect(feedback.info).toHaveBeenCalledWith('Se abrió un turno de caja.');
     expect(feedback.warning).not.toHaveBeenCalled();
     expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.cashSessions.all });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.reports.dashboard() });

@@ -4,7 +4,7 @@ import { formatCashCents } from './cashMoney';
 import type { CashClosingBreakdown } from '@/lib/api/types';
 
 export type CashCloseSummaryPayload = {
-  cashSessionId?: number;
+  openedAt?: string | null;
   closedAt?: string | null;
   openingAmountCents: number | null;
   expectedAmountCents: number | null;
@@ -18,7 +18,7 @@ export type CashCloseSummaryPayload = {
 };
 
 export function buildCloseSummaryCsv({
-  cashSessionId,
+  openedAt,
   closedAt,
   openingAmountCents,
   expectedAmountCents,
@@ -32,7 +32,7 @@ export function buildCloseSummaryCsv({
 }: CashCloseSummaryPayload): string {
   const rows = [
     ['Campo', 'Valor'],
-    ...(cashSessionId ? [['Sesión de caja', `#${cashSessionId}`]] : []),
+    ...(openedAt ? [['Turno abierto', formatDateTimeEs(openedAt)]] : []),
     ...(closedAt ? [['Cerrada', formatDateTimeEs(closedAt)]] : []),
     ['Monto apertura', formatCashCents(openingAmountCents)],
     ['Efectivo esperado', formatCashCents(expectedAmountCents)],

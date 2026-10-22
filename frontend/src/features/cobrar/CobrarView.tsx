@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { apiClient, type Payment, type Service } from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
+import { formatDateTimeEs } from '@/lib/format/formatDate';
 import { SERVICES_SEARCH_DEBOUNCE_MS, useServices } from '@/hooks/useServices';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
@@ -269,7 +270,11 @@ export function CobrarView() {
               <AdminChip tone="success">
                 <span className="size-1.5 rounded-full bg-[var(--ui-success)] animate-pulse" />
                 <span>Caja abierta</span>
-                <span className="text-[color:var(--ui-ink-soft)]">· Sesión #{cashSession.id}</span>
+                {cashSession.opened_at ? (
+                  <span className="tabular-nums text-[color:var(--ui-ink-soft)]">
+                    · desde {formatDateTimeEs(cashSession.opened_at)}
+                  </span>
+                ) : null}
               </AdminChip>
             ) : (
               <AdminChip tone="neutral">Sin caja abierta</AdminChip>

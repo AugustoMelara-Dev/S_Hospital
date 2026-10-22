@@ -180,7 +180,7 @@ describe('resumenModel', () => {
 
       expect(cohort.count).toBe(3);
       expect(cohort.amountCents).toBe(25000);
-      expect(cohort.scope).toMatch(/sesión de caja abierta/i);
+      expect(cohort.scope).toMatch(/turno de caja abierto/i);
     });
 
     it('cae a la cohorte del período cuando no hay sesión abierta', () => {
@@ -188,7 +188,7 @@ describe('resumenModel', () => {
 
       expect(cohort.count).toBe(today.pending_invoice_count);
       expect(cohort.amountCents).toBe(apiMoneyCents(today.pending_invoice_amount));
-      expect(cohort.scope).toMatch(/emisión de/i);
+      expect(cohort.scope).toBe('la emisión del 18/09/2026');
     });
 
     it('construye pendientes y recibos institucionales con sus accesos', () => {

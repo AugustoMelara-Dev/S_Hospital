@@ -16,7 +16,8 @@ import {
 } from '@/design-system/admin/components';
 import { computePresetRange, parseReportDate, type PresetKey } from '@/features/reports/components/reportDateRanges';
 import { SECONDARY_BUTTON } from './reportesUi';
-import { formatDias } from './formato';
+import { formatDias, formatPeriodo } from './formato';
+import { formatDateTimeEs } from '@/lib/format/formatDate';
 import {
   ReportesFiltrosPanel,
   METHOD_OPTIONS,
@@ -87,7 +88,7 @@ export function ReportesView() {
     const map = new Map<number, string>();
     for (const session of cashSessionsQuery.data?.data ?? []) {
       const id = session.user?.id ?? session.user_id;
-      map.set(id, session.user?.name ?? `Cajero #${id}`);
+      map.set(id, session.user?.name ?? session.user?.username ?? 'Cajero sin nombre registrado');
     }
     return [...map.entries()].map(([value, label]) => ({ value: String(value), label }));
   }, [cashSessionsQuery.data]);
@@ -96,7 +97,7 @@ export function ReportesView() {
     () =>
       (cashSessionsQuery.data?.data ?? []).map((session) => ({
         value: String(session.id),
-        label: `Sesión #${session.id} · ${session.user?.name ?? `Cajero #${session.user_id}`} · ${session.opened_at ? session.opened_at.slice(0, 10) : 'sin apertura'}`,
+        label: `${session.cash_register?.name ?? 'Caja'} · ${session.user?.name ?? session.user?.username ?? 'Cajero sin nombre registrado'} · ${session.opened_at ? `abierta ${formatDateTimeEs(session.opened_at)}` : 'sin apertura'}`,
       })),
     [cashSessionsQuery.data],
   );
@@ -140,17 +141,18 @@ export function ReportesView() {
     }
     if (appliedFilters.user_id !== undefined) {
       const label = optionLabel(cajeros, appliedFilters.user_id);
-      chips.push(<AdminChip key="user">Cajero: {label ?? `#${appliedFilters.user_id}`}</AdminChip>);
+      chips.push(<AdminChip key="user">Cajero: {label ?? 'seleccionado'}</AdminChip>);
     }
     if (appliedFilters.cash_session_id !== undefined) {
-      chips.push(<AdminChip key="session">Sesión #{appliedFilters.cash_session_id}</AdminChip>);
+      const label = optionLabel(cajas, appliedFilters.cash_session_id);
+      chips.push(<AdminChip key="session">Turno: {label ?? 'seleccionado'}</AdminChip>);
     }
     if (appliedFilters.category_id !== undefined) {
       const label = optionLabel(categorias, appliedFilters.category_id);
-      chips.push(<AdminChip key="category">Categoría: {label ?? `#${appliedFilters.category_id}`}</AdminChip>);
+      chips.push(<AdminChip key="category">Categoría: {label ?? 'seleccionada'}</AdminChip>);
     }
     return chips;
-  }, [appliedFilters, cajeros, categorias]);
+  }, [appliedFilters, cajas, cajeros, categorias]);
 
   function applyFilters() {
     if (rangeError) {
@@ -255,11 +257,11 @@ export function ReportesView() {
       meta={
         <div data-testid="reporte-scope" className="flex flex-wrap items-center gap-2">
           <AdminChip tone={canManagerial ? 'accent' : 'neutral'}>
-            {!canView ? 'Acceso no habilitado' : canManagerial ? 'Ámbito general' : 'Solo su caja'}
+            {!canView ? 'Acceso no habilitado' : canManagerial ? 'Todas las cajas' : 'Solo su caja'}
           </AdminChip>
           {canView ? (
             <AdminChip>
-              Período {appliedFilters.date_from} → {appliedFilters.date_to}
+              {formatPeriodo(appliedFilters.date_from, appliedFilters.date_to)}
             </AdminChip>
           ) : null}
           {report ? <AdminChip>{formatDias(report.period.days)}</AdminChip> : null}

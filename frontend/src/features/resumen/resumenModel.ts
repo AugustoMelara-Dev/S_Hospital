@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/format/formatDate';
 import { parseCents } from '@/lib/moneyCents';
 import type { CashSession, Invoice, TodayReport } from '@/lib/api';
 import type { AdminStatus } from '@/design-system/admin/components';
@@ -124,7 +125,7 @@ export function reportScopeLabel(isManagerial: boolean): string {
 export function buildResumenMetrics(
   today: TodayReport,
 ): ResumenMetric[] {
-  const day = today.date;
+  const day = formatDate(today.date);
   const sinCobroCount =
     typeof today.without_charge_count === 'number'
     && Number.isInteger(today.without_charge_count)
@@ -139,7 +140,7 @@ export function buildResumenMetrics(
       kind: 'money',
       valueCents: apiMoneyCents(today.billed),
       valueCount: null,
-      context: `Emisión de ${day}`,
+      context: `Emisión del ${day}`,
       detail:
         'Importe total de las facturas emitidas ese día que siguen vigentes. Las facturas anuladas no se cuentan.',
       tone: 'default',
@@ -150,7 +151,7 @@ export function buildResumenMetrics(
       kind: 'money',
       valueCents: apiMoneyCents(today.collected),
       valueCount: null,
-      context: `Cobros de ${day}`,
+      context: `Cobros del ${day}`,
       detail:
         'Pagos registrados ese día, en cualquier medio. El cobro de un día puede corresponder a operaciones emitidas antes, por eso no cuadra necesariamente con el emitido del mismo día.',
       tone: 'default',
@@ -217,14 +218,14 @@ export function pendingCollectionCohort(
     return {
       count: session.pending_invoice_count ?? null,
       amountCents: apiMoneyCents(session.pending_amount),
-      scope: 'la sesión de caja abierta',
+      scope: 'el turno de caja abierto',
     };
   }
 
   return {
     count: today.pending_invoice_count,
     amountCents: apiMoneyCents(today.pending_invoice_amount),
-    scope: `la emisión de ${today.date}`,
+    scope: `la emisión del ${formatDate(today.date)}`,
   };
 }
 

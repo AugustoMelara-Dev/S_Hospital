@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import './styles.css';
+import './lib/zodLocale';
 import './printing/styles/receipt-print.css';
 
 const DEVELOPMENT_CLEANUP_KEY = 's-hospital-development-cache-cleaned';

@@ -2,7 +2,7 @@ import { HardDrive, Server, ShieldAlert } from 'lucide-react';
 import { AdminPanel } from '@/design-system/admin/components';
 import type { SystemStatus } from '@/lib/api';
 import { SECONDARY_BUTTON } from '../backupsUi';
-import { automaticBackupHeartbeatLabel, formatBytes, formatDate, formatRelativeTime, friendlyProductionCheck, friendlyProductionDetail, localAccessIsReady, localAccessLabel, statusLabel, type OperationalStatus } from '../backupPresentation';
+import { automaticBackupHeartbeatLabel, formatBytes, formatDate, formatRelativeTime, friendlyProductionCheck, friendlyProductionDetail, localAccessIsReady, localAccessLabel, sanitizeTechnicalText, statusLabel, type OperationalStatus } from '../backupPresentation';
 
 type OperationalSummary = {
   level: OperationalStatus;
@@ -197,7 +197,7 @@ export function BackupSupportStatusPanel({
                         ? 'No se pudo verificar el estado de la base de datos.'
                         : systemStatus.runtime.pending_migration_count > 0
                           ? 'Haga respaldo y pida soporte para actualizar antes de revisar reportes.'
-                          : `Migraciones aplicadas: ${systemStatus.runtime.migration_count ?? 0}.`}
+                          : 'La base de datos está al día.'}
                     </p>
                   </div>
                   <div className="rounded-[var(--ui-radius)] border border-[var(--ui-line)] p-3">
@@ -244,7 +244,7 @@ export function BackupSupportStatusPanel({
                             <span className="block text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]">
                               {route.path === '/up' ? 'Servidor responde' : route.path === '/login' ? 'Pantalla de ingreso abre' : 'Pantalla de verificacion abre'}
                             </span>
-                            <span className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">{route.expected}</span>
+                            <span className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">{sanitizeTechnicalText(route.expected)}</span>
                           </span>
                           <span className={`shrink-0 rounded-[var(--ui-radius)] border px-2 py-0.5 text-[length:var(--ui-text-xs)] font-semibold ${adminStatusTag(route.status)}`}>{statusLabel(route.status)}</span>
                         </li>

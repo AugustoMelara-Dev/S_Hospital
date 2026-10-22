@@ -8,10 +8,10 @@ import type { SystemStatus } from '@/lib/api';
 export type BackupHealth = 'sin-verificar' | 'requiere-prueba' | 'verificado' | 'error';
 
 const HEALTH_LABEL: Record<BackupHealth, string> = {
-  'sin-verificar': 'Sin verificar',
-  'requiere-prueba': 'Requiere prueba',
-  verificado: 'Integridad verificada',
-  error: 'Error',
+  'sin-verificar': 'Copia sin revisar',
+  'requiere-prueba': 'Pendiente de comprobar',
+  verificado: 'Copia revisada',
+  error: 'Con problemas',
 };
 
 /**
@@ -53,12 +53,12 @@ export function BackupHealthPanel({ automaticLabel, health, kpis, lastIntegrityV
       </div>
       <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div>
-          <dt className="text-[length:var(--ui-text-xs)] font-medium uppercase tracking-wide text-[color:var(--ui-ink-soft)]">Última copia íntegra</dt>
+          <dt className="text-[length:var(--ui-text-xs)] font-medium uppercase tracking-wide text-[color:var(--ui-ink-soft)]">Última copia revisada</dt>
           <dd className="mt-1 text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">{lastIntegrityValue}</dd>
           <dd className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">{restoreStatusValue}</dd>
         </div>
         <div>
-          <dt className="text-[length:var(--ui-text-xs)] font-medium uppercase tracking-wide text-[color:var(--ui-ink-soft)]">Automatismo</dt>
+          <dt className="text-[length:var(--ui-text-xs)] font-medium uppercase tracking-wide text-[color:var(--ui-ink-soft)]">Respaldo automático</dt>
           <dd className="mt-1 text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">{automaticLabel}</dd>
         </div>
         <div>
@@ -144,7 +144,7 @@ export function BackupMaintenanceSection({
         <RecoveryReadinessCard readinessBlockers={readinessBlockers} />
 
         {latestBackupNotConfirmed ? (
-          <AdminCallout tone="warn" title="Integridad del respaldo no confirmada">El último respaldo exitoso no coincide con el archivo esperado en el servidor local. Cree uno nuevo antes de usarlo para una recuperación.</AdminCallout>
+          <AdminCallout tone="warn" title="No se pudo revisar la última copia">El último respaldo exitoso no coincide con el archivo esperado en el servidor local. Cree uno nuevo antes de usarlo para una recuperación.</AdminCallout>
         ) : null}
 
         {stalePendingCount > 0 ? (

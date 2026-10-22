@@ -17,10 +17,79 @@ const NETWORK_MESSAGE = 'No se pudo conectar con el sistema. Vuelva a abrir la a
 const READ_ERROR_MESSAGE = 'No se pudo cargar la información. Vuelva a intentarlo.';
 const READ_TIMEOUT_MESSAGE = 'La consulta está tardando más de lo esperado. Vuelva a intentarlo.';
 const READ_NETWORK_MESSAGE = 'No se pudo conectar con el sistema. Revise la conexión local y vuelva a intentarlo.';
+/**
+ * Nombres visibles de los campos que el servidor puede citar en una
+ * validación. El personal de caja nunca ve el nombre interno del campo
+ * (`tax_rate_id`, `special_rule_code`…): si un campo no está aquí, se muestra
+ * solo el mensaje, sin etiqueta.
+ */
 const VALIDATION_FIELD_LABELS: Record<string, string> = {
   cash_session: 'Caja',
   cash_session_id: 'Caja',
+  cash_register: 'Caja',
+  cash_register_id: 'Caja',
+  patient_name: 'Nombre del paciente',
+  patient: 'Paciente',
+  items: 'Concepto',
+  lines: 'Concepto',
+  quantity: 'cantidad',
+  service: 'servicio',
+  service_id: 'servicio',
+  unit_price: 'precio',
+  price: 'Precio',
+  amount: 'Monto',
+  payments: 'Pago',
+  method: 'Método de pago',
+  payment_method: 'Método de pago',
+  reference: 'Referencia',
+  tax_rate: 'Impuesto',
+  tax_rate_id: 'Impuesto',
+  special_rule_code: 'Regla especial',
+  category: 'Categoría',
+  category_id: 'Categoría',
+  name: 'Nombre',
+  code: 'Código',
+  description: 'Descripción',
+  reason: 'Motivo',
+  void_reason: 'Motivo',
+  notes: 'Nota',
+  opening_amount: 'Monto de apertura',
+  closing_amount: 'Monto contado',
+  closing_notes: 'Nota de cierre',
+  closing_breakdown: 'Conteo de efectivo',
+  username: 'Usuario',
+  password: 'Contraseña',
+  password_confirmation: 'Confirmación de contraseña',
+  email: 'Correo',
+  role: 'Rol',
+  roles: 'Rol',
+  date_from: 'Fecha inicial',
+  date_to: 'Fecha final',
+  from: 'Fecha inicial',
+  to: 'Fecha final',
 };
+
+const TECHNICAL_IDENTIFIER_RE = /\b[a-z][a-z0-9]*(?:[._][a-z0-9]+)+\b/g;
+
+/**
+ * Sustituye identificadores internos que un mensaje del servidor pudiera
+ * citar (`tax_rate_id`, `items.0.quantity`) por su nombre visible, o por
+ * «este dato» si no hay uno conocido.
+ */
+function humanizeServerText(message: string): string {
+  return message.replace(TECHNICAL_IDENTIFIER_RE, (token) => {
+    const segments = token.split(/[._]/).length > 1 ? token.split('.') : [token];
+    const known = VALIDATION_FIELD_LABELS[token] ?? VALIDATION_FIELD_LABELS[segments[segments.length - 1] ?? ''];
+    return known ? known.toLowerCase() : 'este dato';
+  });
+}
+
+/** Mensajes genéricos en inglés del framework que no ayudan al personal. */
+function isFrameworkDefaultMessage(message: string): boolean {
+  const trimmed = message.trim();
+  return /^(the given data was invalid|validation failed|unprocessable|server error|not found|forbidden|unauthorized)\b/i.test(trimmed)
+    || /^the\s.+\b(field|must|may not|is required|is invalid|has already been taken)\b/i.test(trimmed);
+}
 
 type ApiRequestInit = RequestInit & {
   timeout?: number;
@@ -150,6 +219,10 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
     return conflictSafeMessage(error.message);
   }
 
+  if (error instanceof ApiError && error.status === 404) {
+    return 'No se encontró el registro solicitado. Actualice la pantalla e intente de nuevo.';
+  }
+
   if (error instanceof ApiError && error.status >= 500) {
     return error.readOnlyRequest ? fallback : UNKNOWN_RESULT_MESSAGE;
   }
@@ -161,9 +234,10 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   if (
     error instanceof Error &&
     error.message.trim() !== '' &&
-    !containsInternalRequestDetails(error.message)
+    !containsInternalRequestDetails(error.message) &&
+    !isFrameworkDefaultMessage(error.message)
   ) {
-    return error.message;
+    return humanizeServerText(error.message);
   }
 
   return fallback;
@@ -174,18 +248,25 @@ function isRequestTimeoutMessage(message: string): boolean {
 }
 
 function containsInternalRequestDetails(message: string): boolean {
-  return /unauthenticated|sql|exception|stack|trace|laravel|\b(?:GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+\/?|\/api\/|\bqueue\b|[A-Z]:\\|\/var\/www\/|\.php(?::\d+)?\b/i.test(message);
+  return /unauthenticated|sql|exception|stack|trace|laravel|\bHTTP\s*\d{3}\b|no query results|App\\|\bundefined\b|\bnull\b|\bNaN\b|TypeError|ReferenceError|SyntaxError|cannot read propert|failed to fetch|networkerror|load failed|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|idempotency|\b(?:GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+\/?|\/api\/|\bqueue\b|[A-Z]:\\|\/var\/www\/|\.php(?::\d+)?\b/i.test(message);
 }
 
 function formatValidationMessage(error: ApiError): string {
+  const generic = 'Revise los datos del formulario.';
+  const safeTopMessage = error.message && !isFrameworkDefaultMessage(error.message) && !containsInternalRequestDetails(error.message)
+    ? humanizeServerText(error.message)
+    : generic;
+
   if (!error.validationErrors || Object.keys(error.validationErrors).length === 0) {
-    return error.message || 'Revise los datos del formulario.';
+    return safeTopMessage;
   }
 
   const entries: string[] = [];
 
   for (const [field, messages] of Object.entries(error.validationErrors)) {
-    const cleanMessages = (messages ?? []).filter((m): m is string => Boolean(m && m.trim()));
+    const cleanMessages = (messages ?? [])
+      .filter((m): m is string => Boolean(m && m.trim()))
+      .map((m) => (isFrameworkDefaultMessage(m) || containsInternalRequestDetails(m) ? generic : humanizeServerText(m)));
     if (cleanMessages.length === 0) {
       continue;
     }
@@ -194,7 +275,7 @@ function formatValidationMessage(error: ApiError): string {
   }
 
   if (entries.length === 0) {
-    return error.message || 'Revise los datos del formulario.';
+    return safeTopMessage;
   }
 
   return entries.join('\n');
@@ -202,33 +283,32 @@ function formatValidationMessage(error: ApiError): string {
 
 function fieldLabel(field: string): string {
   if (!field.includes('.')) {
-    return VALIDATION_FIELD_LABELS[field] ?? humanizeFieldName(field);
+    return VALIDATION_FIELD_LABELS[field] ?? '';
   }
 
   const [parent, child, ...rest] = field.split('.');
+  const parentLabel = parent ? VALIDATION_FIELD_LABELS[parent] ?? '' : '';
 
   if (child === undefined) {
-    return humanizeFieldName(parent ?? field);
+    return parentLabel;
   }
 
   if (/^\d+$/.test(child)) {
-    const detail = rest.map(humanizeFieldName).filter(Boolean).join(' ');
+    const detail = rest.map((segment) => VALIDATION_FIELD_LABELS[segment] ?? '').filter(Boolean).join(' ');
+    const base = parentLabel ? `${parentLabel} ${Number(child) + 1}` : '';
 
-    return detail
-      ? `${humanizeFieldName(parent ?? field)} #${Number(child) + 1} (${detail})`
-      : `${humanizeFieldName(parent ?? field)} #${Number(child) + 1}`;
+    if (!base) return detail ? capitalize(detail) : '';
+    return detail ? `${base} (${detail})` : base;
   }
 
-  const detail = [child, ...rest].map(humanizeFieldName).filter(Boolean).join(' ');
+  const detail = [child, ...rest].map((segment) => VALIDATION_FIELD_LABELS[segment] ?? '').filter(Boolean).join(' ');
 
-  return `${humanizeFieldName(parent ?? field)} (${detail})`;
+  if (!parentLabel) return detail ? capitalize(detail) : '';
+  return detail ? `${parentLabel} (${detail})` : parentLabel;
 }
 
-function humanizeFieldName(name: string): string {
-  return name
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function cookieValue(name: string): string | null {

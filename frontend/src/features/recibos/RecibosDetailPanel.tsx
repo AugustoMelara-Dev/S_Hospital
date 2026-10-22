@@ -345,7 +345,7 @@ export function RecibosDetailPanel({
                 <MetaRow label="Registrada por">{invoice.issuer?.name ?? 'Usuario no disponible'}</MetaRow>
                 <MetaRow label="Caja">
                   {invoice.cash_session
-                    ? `${invoice.cash_session.cash_register?.name ?? 'Caja del turno'}${invoice.cash_session.cash_register?.code ? ` · ${invoice.cash_session.cash_register.code}` : ''}${invoice.cash_session.user?.name ? ` · ${invoice.cash_session.user.name}` : ''}`
+                    ? `${invoice.cash_session.cash_register?.name ?? 'Caja del turno'}${invoice.cash_session.user?.name ? ` · ${invoice.cash_session.user.name}` : ''}`
                     : 'Sin caja asociada'}
                 </MetaRow>
                 {invoice.institutional_receipt ? (

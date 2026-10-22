@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/format/formatDate';
 import { parseCents } from '@/lib/moneyCents';
 import type { AdminStatus } from '@/design-system/admin/components';
 import type { ReporteCobro, ReporteOperacion } from './types';
@@ -12,6 +13,17 @@ export function reporteCents(value: string | number | null | undefined): number 
  * El literal «día(s)» es copy defectuoso en español (C4-VISUAL MEDIUM) y no
  * depende de patrones de búsqueda: la forma se decide por el número.
  */
+/**
+ * Período legible «Del 01/10/2026 al 22/10/2026» (o «Día 22/10/2026» si el
+ * rango es de un solo día). Las fechas ISO del filtro no se muestran tal cual.
+ */
+export function formatPeriodo(from: string, to: string): string {
+  const desde = formatDate(from);
+  const hasta = formatDate(to);
+  if (desde === hasta) return `Día ${desde}`;
+  return `Del ${desde} al ${hasta}`;
+}
+
 export function formatDias(days: number): string {
   return `${days} ${days === 1 ? 'día' : 'días'}`;
 }
@@ -62,13 +74,19 @@ export function reporteOperationKey(operation: ReporteOperacion, index: number):
   return `${operation.invoice_number}-${index}`;
 }
 
-export function formatCajaLabel(
-  name: string | null | undefined,
-  code: string | null | undefined,
-  sessionId: number,
-): string {
-  if (name && code) return `${name} (${code})`;
-  if (name) return name;
-  if (code) return code;
-  return `Sesión #${sessionId}`;
+/**
+ * Nombre visible de la caja física. El código interno de la caja y el número
+ * de sesión no se muestran al personal: solo el nombre configurado.
+ */
+export function formatCajaLabel(name: string | null | undefined): string {
+  const trimmed = name?.trim();
+  return trimmed ? trimmed : 'Caja sin nombre';
+}
+
+/** Estado legible de un turno de caja cuando el servidor no envía etiqueta. */
+export function cajaStatusLabel(statusLabel: string | null | undefined, status: string): string {
+  if (statusLabel) return statusLabel;
+  if (status === 'open') return 'Abierta';
+  if (status === 'closed') return 'Cerrada';
+  return 'Estado no disponible';
 }

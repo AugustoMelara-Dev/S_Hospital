@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildCloseSummaryCsv, downloadCloseSummaryCsv } from './cashCloseSummary';
 
 const closeSummary = {
-  cashSessionId: 12,
+  openedAt: '2026-07-06T08:00:00-06:00',
   closedAt: '2026-07-06T17:30:00-06:00',
   openingAmountCents: 10000,
   expectedAmountCents: 12500,
@@ -24,7 +24,8 @@ describe('cashCloseSummary', () => {
 
     expect([...new TextEncoder().encode(csv).slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
     expect(csv.startsWith('\uFEFF"Campo","Valor"')).toBe(true);
-    expect(csv).toContain('"Sesión de caja","#12"');
+    expect(csv).toContain('"Turno abierto","06/07/2026');
+    expect(csv).not.toMatch(/#\d+|Sesión de caja/);
     expect(csv).toContain('"Billetes L 100","1"');
     expect(csv).toContain('"Billetes L 2","2"');
     expect(csv).toContain('"Monedas y otros","L. 0.50"');

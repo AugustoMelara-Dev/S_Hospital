@@ -21,6 +21,7 @@ import {
 } from './backupPresentation';
 import { type AuthUser, type BackupLog, apiClient } from '../../lib/api';
 import { downloadBlob } from '../../lib/download';
+import { formatDateTimeEs } from '@/lib/format/formatDate';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
 type BackupsViewProps = {
@@ -128,32 +129,32 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             : 'sin-verificar';
   const lastIntegrityValue = latestIntegrityBackup
     ? formatDate(latestIntegrityBackup.completed_at ?? latestIntegrityBackup.created_at)
-    : 'Sin integridad confirmada';
+    : 'Ninguna copia revisada todavía';
   const restoreStatusValue = latestIntegrityBackup?.restore_tested === true
-    ? 'Restauración probada en este equipo'
-    : 'Restauración no probada en este equipo';
+    ? 'Recuperación ensayada en este equipo'
+    : 'Recuperación aún no ensayada en este equipo';
   const heartbeat = systemStatus
     ? automaticBackupHeartbeatLabel(systemStatus.backups.queue.scheduler_heartbeat)
     : null;
   const automaticLabel = !heartbeat
-    ? 'Sin verificar'
+    ? 'Sin revisar'
     : heartbeat.tone === 'success'
-      ? 'Verificado'
+      ? 'Funcionando'
       : heartbeat.tone === 'warning'
-        ? 'Requiere prueba'
-        : 'Sin verificar';
+        ? 'Pendiente de comprobar'
+        : 'Sin revisar';
   const pendingFailureValue = pendingCount === null || failedCount === null
     ? 'Sin verificar'
     : `${pendingCount} pendientes · ${failedCount} ${lastSuccessAt ? 'fallidos recientes' : 'fallidos'}`;
   const updatedAtLabel = backupsQuery.dataUpdatedAt > 0
-    ? new Date(backupsQuery.dataUpdatedAt).toLocaleString('es-HN')
+    ? formatDateTimeEs(new Date(backupsQuery.dataUpdatedAt))
     : 'Sin verificar';
   const kpis: BackupKpi[] = [
     {
       label: 'Ultimo exitoso',
       value: systemStatus ? (lastSuccessAt ? formatRelativeTime(lastSuccessAt) : 'Sin respaldo') : 'No disponible',
       helper: systemStatus
-        ? (lastSuccessAt ? 'Copia creada más reciente; revise su integridad' : 'Cree un respaldo local')
+        ? (lastSuccessAt ? 'Copia creada más reciente; confirme que quedó revisada' : 'Cree un respaldo local')
         : 'El historial visible puede estar incompleto: falta el estado del servidor',
     },
     {
@@ -238,8 +239,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         level: backup.status === 'success' ? 'success' : 'info',
         message: backup.status === 'success'
           ? backup.verification_scope === 'encrypted_file_integrity'
-            ? 'Respaldo creado con integridad verificada. La restauración se prueba por separado.'
-            : 'Respaldo creado. Confirme su integridad antes de usarlo.'
+            ? 'Respaldo creado y revisado. La recuperación se ensaya por separado.'
+            : 'Respaldo creado. Confirme que quedó revisado antes de usarlo.'
           : 'Respaldo registrado. Revise su estado en la lista.',
       });
     } catch (error) {
@@ -445,7 +446,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         open={confirmCreateOpen}
         onOpenChange={setConfirmCreateOpen}
         title="¿Crear respaldo local?"
-        description="Se creará una copia de seguridad local. Confirme que aparezca con integridad verificada antes de usarla. La restauración se prueba por separado."
+        description="Se creará una copia de seguridad local. Confirme que aparezca como «Copia revisada» antes de usarla. La recuperación se ensaya por separado."
         footer={(
           <>
             <button type="button" data-ui-press className={SECONDARY_BUTTON} disabled={creatingBackup} onClick={() => setConfirmCreateOpen(false)}>Cancelar</button>

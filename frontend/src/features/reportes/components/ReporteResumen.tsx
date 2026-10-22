@@ -8,7 +8,7 @@ import {
   MoneyText,
 } from '@/design-system/admin/components';
 import type { ReporteEjecutivo } from '../types';
-import { formatDias, reporteCents, summarizeCollectionMethods } from '../formato';
+import { formatDias, formatPeriodo, reporteCents, summarizeCollectionMethods } from '../formato';
 
 type Props = {
   report: ReporteEjecutivo;
@@ -38,7 +38,7 @@ export function ReporteResumen({ report, updatedAt }: Props) {
         headingLevel={2}
         id="reporte-resumen-title"
         title="Resumen del período"
-        description={`Del ${report.period.from} al ${report.period.to} · ${formatDias(report.period.days)}`}
+        description={`${formatPeriodo(report.period.from, report.period.to)} · ${formatDias(report.period.days)}`}
         actions={updated ? <AdminChip>{`Actualizado ${updated}`}</AdminChip> : null}
       />
 

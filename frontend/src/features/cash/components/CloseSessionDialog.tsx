@@ -21,6 +21,7 @@ interface CloseSessionDialogProps {
     pending_invoice_count?: number;
     pending_amount?: string | null;
     missing_institutional_receipt_count?: number;
+    opened_at?: string | null;
     closed_at?: string | null;
     closing_breakdown?: CashClosingBreakdown | null;
   };
@@ -79,7 +80,7 @@ export function CashCloseSummaryPanel({
 
   function exportCloseSummary() {
     downloadCloseSummaryCsv({
-      cashSessionId: session.id,
+      openedAt: session.opened_at,
       closedAt: session.closed_at,
       openingAmountCents: cents.opening,
       expectedAmountCents: cents.expected,
@@ -137,10 +138,10 @@ export function CashCloseSummaryPanel({
       </div>
 
       <dl className="mt-4 grid grid-cols-1 border-y border-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-[var(--ui-line)]">
-        {session.id ? (
+        {session.opened_at ? (
           <div className="flex justify-between gap-3 px-3 py-2.5">
-            <dt>Sesión de caja</dt>
-            <dd className="font-semibold tabular-nums">#{session.id}</dd>
+            <dt>Turno abierto</dt>
+            <dd className="font-semibold tabular-nums">{formatDateTimeEs(session.opened_at)}</dd>
           </div>
         ) : null}
         {closedAtLabel ? (
@@ -227,7 +228,7 @@ export function CloseSessionDialog({
 
   function exportCloseSummary() {
     downloadCloseSummaryCsv({
-      cashSessionId: session.id,
+      openedAt: session.opened_at,
       closedAt: session.closed_at,
       openingAmountCents: cents.opening,
       expectedAmountCents: cents.expected,

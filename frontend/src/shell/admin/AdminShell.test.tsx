@@ -146,8 +146,8 @@ describe('AdminShell: navegación lateral del panel administrativo', () => {
   it('identifica el turno sin inventar una caja física cuando no viene en la respuesta', () => {
     renderShell('/cobrar', { ...openCashSession, cash_register: undefined });
 
-    expect(screen.getByRole('link', { name: /turno #12/i })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /caja #12/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /caja abierta/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /#12/ })).not.toBeInTheDocument();
   });
 
   it('indica la ausencia de caja abierta', () => {

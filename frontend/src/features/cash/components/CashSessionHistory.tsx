@@ -24,12 +24,12 @@ type CashSessionHistoryProps = {
 const PAGE_SIZE = 10;
 
 function operatorName(session: CashSession): string {
-  return session.user?.name ?? session.user?.username ?? `Usuario #${session.user_id}`;
+  return session.user?.name ?? session.user?.username ?? 'Usuario sin nombre registrado';
 }
 
 function cashRegisterName(session: CashSession): string {
   if (!session.cash_register) return 'No disponible';
-  return `${session.cash_register.name} · ${session.cash_register.code}`;
+  return session.cash_register.name;
 }
 
 function SessionStatus({ session }: { session: CashSession }) {
@@ -66,19 +66,18 @@ export function CashSessionHistory({ visible, canViewInvoices }: CashSessionHist
   const columns: AdminColumn<CashSession>[] = [
     {
       key: 'session',
-      header: 'Sesión',
+      header: 'Turno abierto',
       mobilePrimary: true,
-      cell: (session) => <span className="font-semibold tabular-nums">#{session.id}</span>,
+      cell: (session) => (
+        <time dateTime={session.opened_at} className="font-semibold tabular-nums">
+          {formatDateTimeEs(session.opened_at)}
+        </time>
+      ),
     },
     {
       key: 'cash_register',
       header: 'Caja física',
       cell: (session) => <span className="break-words">{cashRegisterName(session)}</span>,
-    },
-    {
-      key: 'opened_at',
-      header: 'Apertura',
-      cell: (session) => <time dateTime={session.opened_at}>{formatDateTimeEs(session.opened_at)}</time>,
     },
     {
       key: 'operator',
