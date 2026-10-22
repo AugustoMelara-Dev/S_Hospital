@@ -68,6 +68,17 @@ Escribe un PDF vectorial por formato con una cuenta de 31 líneas (10 al 15 %,
 - Media carta: totales + firmas + «Gracias» van en un bloque
   `page-break-inside: avoid` (`.keep-together`), sin hoja de firmas huérfanas.
 
+### A-08 (residual 58 mm)
+
+- Espacios no separables (U+00A0) entre `L.` y la cifra, entre número y `%`
+  («Gravado 18 %» / «ISV 18 %»), en `Tel.` + número y en `Ajuste - L.`; ninguna
+  de esas etiquetas se parte.
+- En 58 mm, cuando `cant × precio` y el importe no caben en una fila, el
+  **importe baja a la fila siguiente alineado a la derecha**; en 80 mm siguen en
+  la misma fila.
+- Verificado por extracción de las líneas reales del PDF: `Tel. 2444-0000`,
+  `Gravado 18 %`, `ISV 18 %`, `L. 144,640.30` y `1 × L. 100.00` completos.
+
 Verificación textual del PDF (extracción de las líneas reales del content
 stream): nombres completos, CAI completo, rango partido solo en « a », importes
 de 6 cifras completos. Capturas HTML vía Edge headless en `recibos/*.png`.

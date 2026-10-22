@@ -289,6 +289,18 @@
             width: 38%;
         }
 
+        /* A-08: on a 58 mm roll a 6-digit amount and `cant x price` do not fit
+           on one row without wrapping; the amount moves to its own row,
+           right-aligned, and the left text keeps the full width. */
+        .item-line.narrow .left,
+        .item-line.narrow .right {
+            width: 100%;
+        }
+
+        .item-line.narrow .right {
+            text-align: right;
+        }
+
         .item-extra {
             font-size: {{ $basePt }}pt;
             line-height: 1.15;
@@ -459,13 +471,13 @@
     $moneyLabel = static function (mixed $value) use ($formatMoney): string {
         $formatted = $formatMoney($value);
 
-        return $formatted === null ? '—' : 'L. '.$formatted;
+        return $formatted === null ? '—' : 'L.'."\u{00A0}".$formatted;
     };
 
     $negativeMoneyLabel = static function (mixed $value) use ($formatMoney): string {
         $formatted = $formatMoney($value);
 
-        return $formatted === null ? '—' : '- L. '.$formatted;
+        return $formatted === null ? '—' : '- L.'."\u{00A0}".$formatted;
     };
 @endphp
 @foreach ($pages as $page)
@@ -564,7 +576,7 @@
                     <div class="contact">
                         @if (! empty($page['institution']['rtn']))RTN {{ $page['institution']['rtn'] }}@endif
                         @if (! empty($page['institution']['rtn']) && ! empty($page['institution']['phone'])) · @endif
-                        @if (! empty($page['institution']['phone']))Tel. {{ $page['institution']['phone'] }}@endif
+                        @if (! empty($page['institution']['phone'])){{ 'Tel.'."\u{00A0}".$page['institution']['phone'] }}@endif
                     </div>
                 @endif
             </header>
@@ -646,11 +658,20 @@
                     @endphp
                     <div class="item">
                         <span class="item-name">{{ $item['service_name'] ?: 'Servicio hospitalario' }}</span>
-                        <table class="item-line">
-                            <tr>
-                                <td class="left">{{ $quantityLabel }} × {{ $priceLabel }}</td>
-                                <td class="right">{{ $moneyLabel($item['line_subtotal'] ?? null) }}</td>
-                            </tr>
+                        <table class="item-line{{ $isNarrow ? ' narrow' : '' }}">
+                            @if ($isNarrow)
+                                <tr>
+                                    <td class="left">{{ $quantityLabel }} × {{ $priceLabel }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="right">{{ $moneyLabel($item['line_subtotal'] ?? null) }}</td>
+                                </tr>
+                            @else
+                                <tr>
+                                    <td class="left">{{ $quantityLabel }} × {{ $priceLabel }}</td>
+                                    <td class="right">{{ $moneyLabel($item['line_subtotal'] ?? null) }}</td>
+                                </tr>
+                            @endif
                         </table>
                         @if ($isFreeLine)
                             <div class="item-extra">
@@ -706,11 +727,11 @@
                 @foreach ($taxBreakdown as $group)
                     @continue(is_array($group) && ($group['rate'] ?? null) === '0.00')
                     <tr>
-                        <td>{{ $group['base_label'] }}</td>
+                        <td>{{ str_replace(' ', "\u{00A0}", (string) $group['base_label']) }}</td>
                         <td class="amount">{{ $moneyLabel($group['base']) }}</td>
                     </tr>
                     <tr>
-                        <td>{{ $group['tax_label'] }}</td>
+                        <td>{{ str_replace(' ', "\u{00A0}", (string) $group['tax_label']) }}</td>
                         <td class="amount">{{ $moneyLabel($group['tax']) }}</td>
                     </tr>
                 @endforeach

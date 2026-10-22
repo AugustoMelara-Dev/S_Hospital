@@ -458,8 +458,8 @@ class InstitutionalReceiptPaperCompositionTest extends TestCase
         $this->assertStringContainsString('class="item-name"', $html);
         $this->assertStringNotContainsString('<table class="items">', $html);
         $this->assertStringContainsString('class="item-line"', $html);
-        $this->assertMatchesRegularExpression('/<td class="left">1 × L\. 123,456\.78<\/td>/u', $html);
-        $this->assertStringContainsString('<td class="right">L. 123,456.78</td>', $html);
+        $this->assertMatchesRegularExpression('/<td class="left">1 × L\.\x{00A0}123,456\.78<\/td>/u', $html);
+        $this->assertMatchesRegularExpression('/<td class="right">L\.\x{00A0}123,456\.78<\/td>/u', $html);
 
         // The fiscal range breaks explicitly only at " a ".
         $this->assertMatchesRegularExpression('/000-001-01-00000001<br>a 000-001-01-00005000/u', $html);

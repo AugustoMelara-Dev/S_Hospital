@@ -143,6 +143,11 @@ class ReceiptFormatsEvidenceTest extends TestCase
             $target = rtrim($dir, '\\/').DIRECTORY_SEPARATOR.$label.'.pdf';
             file_put_contents($target, $pdf);
             $this->assertFileExists($target);
+
+            // Text twin for visual review (Edge headless screenshots at the
+            // thermal width); the PDF is the printed artifact.
+            $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt);
+            file_put_contents(rtrim($dir, '\\/').DIRECTORY_SEPARATOR.$label.'.html', $html);
         }
     }
 
