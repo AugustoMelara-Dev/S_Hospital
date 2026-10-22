@@ -1249,6 +1249,25 @@ try {
             Start-Sleep -Seconds 20
 
             # Migrations
+            Write-Host "[*] Verificando respaldo pre-migracion..." -ForegroundColor Yellow
+            $migrationBackupMaxAgeOption = ''
+            if ($existingRootEnv.ContainsKey('HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS') -and -not [string]::IsNullOrWhiteSpace([string] $existingRootEnv['HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS'])) {
+                $migrationBackupMaxAgeOption = "--max-age-hours=$([string] $existingRootEnv['HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS'])"
+            }
+            $verifyBackupArgs = @('compose', '-f', $composeProdPath, 'exec', '-T', 'backend', 'php', 'artisan', 'hospital:verify-migration-backup', '--no-interaction')
+            if ($migrationBackupMaxAgeOption -ne '') {
+                $verifyBackupArgs += $migrationBackupMaxAgeOption
+            }
+            & docker @verifyBackupArgs
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "[FAIL] Actualizacion bloqueada: no hay un respaldo cifrado, integro y recuperable." -ForegroundColor Red
+                Write-Host "Que hacer:" -ForegroundColor White
+                Write-Host "  1. Inicie el sistema y cree un respaldo manual desde el panel de respaldos." -ForegroundColor White
+                Write-Host "  2. Verifique que el respaldo quede en estado success y que HOSPITAL_BACKUP_ENCRYPTION_KEY sea la clave correcta." -ForegroundColor White
+                Write-Host "  3. Vuelva a intentar la actualizacion." -ForegroundColor White
+                throw "Las migraciones de produccion se bloquearon porque no existe un respaldo verificable. No se modifico el esquema."
+            }
+
             Write-Host "[*] Ejecutando migraciones y seeders..." -ForegroundColor Yellow
             & docker compose -f $composeProdPath exec -T backend php artisan migrate --force
             if ($LASTEXITCODE -ne 0) { throw "Las migraciones de produccion fallaron." }
@@ -1397,9 +1416,26 @@ try {
             $databaseReady = $true
 
             # Migrations
-            Write-Host "[*] Ejecutando migraciones..." -ForegroundColor Yellow
+            Write-Host "[*] Verificando respaldo pre-migracion..." -ForegroundColor Yellow
             Push-Location (Join-Path $projectRoot "backend")
             try {
+                $migrationBackupMaxAgeOption = ''
+                if ($existingEnv.ContainsKey('HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS') -and -not [string]::IsNullOrWhiteSpace([string] $existingEnv['HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS'])) {
+                    $migrationBackupMaxAgeOption = "--max-age-hours=$([string] $existingEnv['HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS'])"
+                }
+                $verifyBackupArgs = @('artisan', 'hospital:verify-migration-backup', '--no-interaction')
+                if ($migrationBackupMaxAgeOption -ne '') {
+                    $verifyBackupArgs += $migrationBackupMaxAgeOption
+                }
+                & $phpPath @verifyBackupArgs
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "[FAIL] Actualizacion bloqueada: no hay un respaldo cifrado, integro y recuperable." -ForegroundColor Red
+                    Write-Host "Que hacer:" -ForegroundColor White
+                    Write-Host "  1. Cree un respaldo manual: php artisan hospital:backup --type=manual --json" -ForegroundColor White
+                    Write-Host "  2. Verifique que quede en estado success y que HOSPITAL_BACKUP_ENCRYPTION_KEY sea la clave correcta." -ForegroundColor White
+                    Write-Host "  3. Vuelva a intentar la actualizacion." -ForegroundColor White
+                    throw "Las migraciones bare-metal se bloquearon porque no existe un respaldo verificable. No se modifico el esquema."
+                }
                 if ($currAppKey -eq "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" -or $currAppKey -eq "") {
                     & $phpPath artisan key:generate --force
                     if ($LASTEXITCODE -ne 0) { throw 'No se pudo generar APP_KEY.' }
@@ -1628,7 +1664,7 @@ try {
         if ($webHealthy) {
             try {
                 $shortcutScript = Join-Path $projectRoot 'scripts\install_hospital_startup_shortcut.ps1'
-                $maintenanceScript = Join-Path $projectRoot 'scripts\restore_hospital_windows.ps1'
+                $maintenanceScript = Join-Path $projectRoot 'scripts\maintenance_hospital_windows.ps1'
                 $shortcutResult = & $shortcutScript `
                     -ProjectRoot $projectRoot -Url $installMode.AppUrl `
                     -MaintenanceScript $maintenanceScript

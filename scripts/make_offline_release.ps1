@@ -174,6 +174,8 @@ $releaseDocs = @(
     "MAINTENANCE_ROUTINE.md",
     "OFFLINE_INSTALL.md",
     "OFFLINE_LAN_INSTALL.md",
+    "OFFLINE_RELEASE_INTEGRITY.md",
+    "OFFLINE_RUNTIME_LICENSE.md",
     "PHYSICAL_SECURITY.md",
     "print-profiles.md",
     "RELEASE_CHECKLIST.md",

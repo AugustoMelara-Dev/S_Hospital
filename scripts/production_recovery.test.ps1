@@ -35,6 +35,7 @@ function New-FakeOperations {
         [bool]$RestoreSucceeded = $true,
         [bool]$MigrationsSucceeded = $true,
         [bool]$HealthSucceeded = $true,
+        [bool]$SequenceBlockSucceeded = $true,
         [bool]$RollbackSucceeded = $true
     )
 
@@ -79,6 +80,10 @@ function New-FakeOperations {
             $global:RecoveryTestCalls += 'verify-health'
             return $HealthSucceeded
         }.GetNewClosure()
+        BlockSequenceEmission = {
+            $global:RecoveryTestCalls += 'start-restore-reconciliation'
+            return $SequenceBlockSucceeded
+        }.GetNewClosure()
         StartWriters = {
             $global:RecoveryTestCalls += 'resume-writers'
             return $true
@@ -121,6 +126,16 @@ Assert-Equal $true $healthFailure.RollbackAttempted 'Health fallido debe ejecuta
 Assert-Equal $true $healthFailure.MaintenanceActive 'Health fallido no debe levantar mantenimiento'
 Assert-Equal $false ($global:RecoveryTestCalls -contains 'leave-maintenance') 'No debe salir de mantenimiento'
 
+# HS-RESTORE-SEQUENCE: sin bloqueo de correlativos el sistema NO se reabre.
+$sequenceFailure = Invoke-ProductionRecovery -Operations (New-FakeOperations -SequenceBlockSucceeded $false)
+Assert-Equal $false $sequenceFailure.Success 'Sin bloqueo de correlativos la recuperacion debe fallar'
+Assert-Equal 'SEQUENCE_BLOCK_FAILED' $sequenceFailure.Blockers[0].Code 'Debe explicar el bloqueo de correlativos'
+Assert-Equal $true ($global:RecoveryTestCalls -contains 'start-restore-reconciliation') 'Debe intentar el bloqueo'
+Assert-Equal $false ($global:RecoveryTestCalls -contains 'resume-writers') 'No debe reabrir writers sin bloqueo'
+Assert-Equal $false ($global:RecoveryTestCalls -contains 'leave-maintenance') 'No debe salir de mantenimiento sin bloqueo'
+Assert-Equal $true $sequenceFailure.RollbackAttempted 'El fallo de bloqueo debe intentar rollback'
+Assert-Equal $true $sequenceFailure.MaintenanceActive 'El fallo de bloqueo debe mantener la app cerrada'
+
 $success = Invoke-ProductionRecovery -Operations (New-FakeOperations)
 Assert-Equal $true $success.Success 'El flujo seguro debe completar'
 Assert-Equal $false $success.MaintenanceActive 'El exito debe levantar mantenimiento'
@@ -135,6 +150,7 @@ Assert-Sequence @(
     'restore-production',
     'run-migrations',
     'verify-health',
+    'start-restore-reconciliation',
     'resume-writers',
     'leave-maintenance'
 ) $global:RecoveryTestCalls 'El flujo exitoso debe seguir el contrato exacto'

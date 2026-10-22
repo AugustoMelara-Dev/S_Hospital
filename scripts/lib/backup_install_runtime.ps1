@@ -2,22 +2,25 @@
 
 Set-StrictMode -Version Latest
 
-function Get-TaskEnabledForInstall {
-    param($Task)
+function Get-BackupWindowsTaskProbeState {
+    # Bare-metal automation probe for the WindowsTasks mechanism (F027).
+    # ConvertTo-BackupTaskState lives in backup_install_readiness.ps1 and both
+    # libraries are dot-sourced together by the installer and the tests.
+    $workerTask = Get-ScheduledTask `
+        -TaskName 'HospitalBillingOS-BackupWorker' `
+        -ErrorAction SilentlyContinue
+    $schedulerTask = Get-ScheduledTask `
+        -TaskName 'HospitalBillingOS-Scheduler' `
+        -ErrorAction SilentlyContinue
+    $legacyDailyTask = Get-ScheduledTask `
+        -TaskName 'HospitalBillingOS-DailyBackup' `
+        -ErrorAction SilentlyContinue
 
-    if ($null -eq $Task) {
-        return $false
+    return @{
+        Worker = ConvertTo-BackupTaskState -Task $workerTask
+        Scheduler = ConvertTo-BackupTaskState -Task $schedulerTask
+        LegacyDaily = ConvertTo-BackupTaskState -Task $legacyDailyTask
     }
-    try {
-        if ($null -ne $Task.Settings -and $null -ne $Task.Settings.Enabled) {
-            return [bool] $Task.Settings.Enabled
-        }
-    }
-    catch {
-        return $true
-    }
-
-    return $true
 }
 
 function Invoke-HospitalBackupInstallVerification {
@@ -69,27 +72,7 @@ function Invoke-HospitalBackupInstallVerification {
 
     return Invoke-BackupInstallVerification `
         -Mode BareMetal `
-        -AutomationProbe {
-            $workerTask = Get-ScheduledTask `
-                -TaskName 'HospitalBillingOS-BackupWorker' `
-                -ErrorAction SilentlyContinue
-            $dailyTask = Get-ScheduledTask `
-                -TaskName 'HospitalBillingOS-DailyBackup' `
-                -ErrorAction SilentlyContinue
-
-            return @{
-                Worker = @{
-                    Installed = ($null -ne $workerTask)
-                    Enabled = Get-TaskEnabledForInstall -Task $workerTask
-                    State = if ($null -ne $workerTask) { [string] $workerTask.State } else { 'Missing' }
-                }
-                Daily = @{
-                    Installed = ($null -ne $dailyTask)
-                    Enabled = Get-TaskEnabledForInstall -Task $dailyTask
-                    State = if ($null -ne $dailyTask) { [string] $dailyTask.State } else { 'Missing' }
-                }
-            }
-        } `
+        -AutomationProbe { Get-BackupWindowsTaskProbeState } `
         -BackupRunner {
             Push-Location (Join-Path $ProjectRoot 'backend')
             try {

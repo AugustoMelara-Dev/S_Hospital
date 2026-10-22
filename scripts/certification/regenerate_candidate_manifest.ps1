@@ -47,16 +47,52 @@ $PhpVersion = try { (php --version | Select-Object -First 1) -join ' ' } catch {
 $NodeVersion = try { (node --version | Select-Object -First 1) -join ' ' } catch {} 'no detectado'
 $PnpmVersion = try { (pnpm --version | Select-Object -First 1) -join ' ' } catch {} 'no detectado'
 
-# ISCC detection
-$ISCCPaths = @(
-    (Get-Command 'ISCC.exe' -ErrorAction SilentlyContinue).Source,
-    (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
-    (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe'),
-    (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe')
-) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+# ISCC detection.
+# S_HOSPITAL_CERT_ISCC_DIR es un override exclusivo para las pruebas de
+# certificacion: cuando esta definido, el script NO inspecciona instalaciones
+# reales ni el PATH; solo busca ISCC.exe dentro de esa ruta sandbox. Si la ruta
+# no contiene ISCC.exe, el estado queda bloqueado. En produccion la variable no
+# se define y el orden de deteccion (PATH, instalaciones por usuario/sistema)
+# permanece igual que antes.
+if (Test-Path Env:S_HOSPITAL_CERT_ISCC_DIR) {
+    $IsccOverrideDir = $env:S_HOSPITAL_CERT_ISCC_DIR
+    $IsccOverrideCandidate = if ([string]::IsNullOrWhiteSpace($IsccOverrideDir)) {
+        $null
+    } else {
+        Join-Path $IsccOverrideDir 'ISCC.exe'
+    }
+    $ISCCPaths = if ($IsccOverrideCandidate -and (Test-Path -LiteralPath $IsccOverrideCandidate)) {
+        (Resolve-Path -LiteralPath $IsccOverrideCandidate).Path
+    } else {
+        $null
+    }
+} else {
+    $IsccCandidates = New-Object System.Collections.Generic.List[string]
+    $IsccCommand = Get-Command 'ISCC.exe' -ErrorAction SilentlyContinue
+    if ($IsccCommand -and -not [string]::IsNullOrWhiteSpace($IsccCommand.Source)) {
+        $IsccCandidates.Add($IsccCommand.Source) | Out-Null
+    }
+    $ProgramFilesX86 = ${env:ProgramFiles(x86)}
+    if (-not [string]::IsNullOrWhiteSpace($ProgramFilesX86)) {
+        $IsccCandidates.Add((Join-Path $ProgramFilesX86 'Inno Setup 6\ISCC.exe')) | Out-Null
+    }
+    $ProgramFilesDir = $env:ProgramFiles
+    if (-not [string]::IsNullOrWhiteSpace($ProgramFilesDir)) {
+        $IsccCandidates.Add((Join-Path $ProgramFilesDir 'Inno Setup 6\ISCC.exe')) | Out-Null
+    }
+    $LocalAppDataDir = $env:LOCALAPPDATA
+    if (-not [string]::IsNullOrWhiteSpace($LocalAppDataDir)) {
+        $IsccCandidates.Add((Join-Path $LocalAppDataDir 'Programs\Inno Setup 6\ISCC.exe')) | Out-Null
+    }
+    $ISCCPaths = @($IsccCandidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1)
+    if ($ISCCPaths.Count -eq 0) {
+        $ISCCPaths = $null
+    }
+}
 $ISCCInstalled = $null -ne $ISCCPaths
 
-# Installer detection. El candidato vive en installer-output/CANDIDATO-CERTIFICACION/.
+# Installer detection. El candidato vive en
+# installer-output/STAGING-PENDING-CERTIFICACION/ (nomenclatura canonica).
 # El binario esta en installer-output/build/ o installer-output/ENTREGA-USB/,
 # que son hermanos del directorio del candidato. Esto permite que el script
 # funcione tanto desde el staging como desde el candidato versionado.
@@ -113,7 +149,7 @@ if (-not $Installer) {
     $NextSteps += 'Regenerar el offline-release desde el SOURCE_COMMIT actual con make_offline_release.ps1'
     $NextSteps += 'Reejecutar scripts/build_windows_installer.ps1 -ProjectRoot .'
 }
-$NextSteps += 'Copiar el .exe certificado a installer-output/CANDIDATO-CERTIFICACION/ con su SHA-256'
+$NextSteps += 'Copiar el .exe certificado a installer-output/STAGING-PENDING-CERTIFICACION/ con su SHA-256'
 $NextSteps += 'Llevar el candidato a una VM Windows 10/11 x64 limpia con Docker Desktop y sin checkout del repositorio'
 $NextSteps += 'Ejecutar la lista 8 de la auditoria original. Capturar evidencia en qa/pre-installation-final/windows-clean/'
 $NextSteps += 'Si todo pasa sin cambios de codigo, el mismo binario (sin recompilar) se promueve a installer-output/ENTREGA-USB/'
@@ -212,7 +248,7 @@ Product version:     $ProductVersion
 Build timestamp:     $InstallerBuiltAt
 Authenticode:        $AuthenticodeStatus
 
-El binario en installer-output/CANDIDATO-CERTIFICACION/ y el
+El binario en installer-output/STAGING-PENDING-CERTIFICACION/ y el
 binario en installer-output/ENTREGA-USB/ son el mismo archivo
 (verificado por SHA-256) porque el build_windows_installer.ps1
 copia del build a ENTREGA-USB al final.
@@ -261,7 +297,7 @@ Que hizo el agente
 Que falta ejecutar
 -------------------
 1. Verificar el SHA-256 de la copia candidata:
-   Get-FileHash installer-output\CANDIDATO-CERTIFICACION\S_Hospital-Instalador.exe -Algorithm SHA256
+   Get-FileHash installer-output\STAGING-PENDING-CERTIFICACION\S_Hospital-Instalador.exe -Algorithm SHA256
 2. Llevar el candidato a una VM Windows 10/11 x64 limpia con
    Docker Desktop y sin checkout del repositorio. Sin MySQL
    instalado en el host. Solo el paquete candidato y Docker.

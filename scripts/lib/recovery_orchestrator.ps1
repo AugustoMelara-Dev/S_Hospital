@@ -117,6 +117,14 @@ function Invoke-ProductionRecovery {
             throw $failureMessage
         }
 
+        # HS-RESTORE-SEQUENCE: el bloqueo de correlativos se activa antes de
+        # reabrir writers; si no puede activarse, la recuperacion falla cerrada.
+        if ((Invoke-RecoveryOperation -Operations $Operations -Name 'BlockSequenceEmission') -ne $true) {
+            $failureCode = 'SEQUENCE_BLOCK_FAILED'
+            $failureMessage = 'No se pudo bloquear la emision de correlativos; el sistema no se reabre sin reconciliacion pendiente.'
+            throw $failureMessage
+        }
+
         if ((Invoke-RecoveryOperation -Operations $Operations -Name 'StartWriters') -ne $true) {
             return New-ProductionRecoveryResult `
                 -Success $false `

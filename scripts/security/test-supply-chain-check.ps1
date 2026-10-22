@@ -50,6 +50,11 @@ snapshots:
   plain-crypto-js@2.7.0-safe: {}
 "@
 
+    # Regression: a Windows checkout can carry CRLF lockfiles; the guard must
+    # still detect denied package keys when lines end in \r\n (see T2-030).
+    $crlfLockContent = "lockfileVersion: '9.0'`npackages:`n  plain-crypto-js@2.7.0-safe:`n    resolution: {integrity: sha512-fixture}`n" -replace "`n", "`r`n"
+    Assert-GuardFixture -Name "denied-package-crlf" -ExpectedExitCode 1 -ExpectedOutput @("Denied package 'plain-crypto-js@2.7.0-safe'", "failed with 1 finding(s)") -LockContent $crlfLockContent
+
     Assert-GuardFixture -Name "denied-version-with-peers" -ExpectedExitCode 1 -ExpectedOutput "Denied package 'axios@1.14.1'" -LockContent @"
 lockfileVersion: '9.0'
 packages:
@@ -66,7 +71,7 @@ packages:
     resolution: {integrity: sha512-fixture}
 "@
 
-    Write-Host "Supply-chain guard self-test passed (3 fixtures)." -ForegroundColor Green
+    Write-Host "Supply-chain guard self-test passed (4 fixtures)." -ForegroundColor Green
 } finally {
     if (Test-Path -LiteralPath $testRoot) {
         $resolvedTestRoot = [IO.Path]::GetFullPath($testRoot)

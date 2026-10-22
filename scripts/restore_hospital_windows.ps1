@@ -95,6 +95,8 @@ $script:ExitCode = 0
 $script:DecryptedSqlPath = ""
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $backendEnvPath = Join-Path $projectRoot "backend\.env"
+$dockerCommandAvailable = $null -ne (Get-Command docker -ErrorAction SilentlyContinue)
+$runtimeResolution = Resolve-RecoveryRuntime -ProjectRoot $projectRoot -DockerComposeAvailable $dockerCommandAvailable
 
 function Write-Step {
     param([string]$Message)
@@ -359,6 +361,7 @@ function Invoke-SelfTest {
         'restore-production',
         'run-migrations',
         'verify-health',
+        'start-restore-reconciliation',
         'resume-writers',
         'leave-maintenance'
     )
@@ -384,6 +387,32 @@ function Invoke-SelfTest {
         Write-Error 'Self-test fallo: la recuperacion Docker no esta disponible.'
         exit 1
     }
+    if (-not (Get-Command Invoke-DockerDisposableRestore -ErrorAction SilentlyContinue) -or
+        -not (Get-Command Test-DockerDisposableRestoreInput -ErrorAction SilentlyContinue)) {
+        Write-Error 'Self-test fallo: la validacion descartable Docker no esta disponible.'
+        exit 1
+    }
+    if ((Get-RecoveryActionConfirmation) -cne 'RESTAURAR') {
+        Write-Error 'Self-test fallo: la frase canonica de confirmacion no es RESTAURAR.'
+        exit 1
+    }
+    if (-not (Test-RecoveryActionConfirmation -Value 'RESTAURAR') -or
+        (Test-RecoveryActionConfirmation -Value 'RESTAURAR PRODUCCION') -or
+        (Test-RecoveryActionConfirmation -Value 'restaurar')) {
+        Write-Error 'Self-test fallo: la validacion de la frase de confirmacion es incorrecta.'
+        exit 1
+    }
+    if (-not (Test-RecoveryDisposableTargetDatabase -Database 'hospital_billing_test') -or
+        -not (Test-RecoveryDisposableTargetDatabase -Database 'hospital_billing_test_1700000000')) {
+        Write-Error 'Self-test fallo: la base descartable prefijada fue rechazada.'
+        exit 1
+    }
+    foreach ($forbiddenTarget in @('hospital_billing', 'mysql', 'hospital_billing_prod', 'hospital_billing_testx')) {
+        if (Test-RecoveryDisposableTargetDatabase -Database $forbiddenTarget) {
+            Write-Error "Self-test fallo: base descartable insegura aceptada: $forbiddenTarget"
+            exit 1
+        }
+    }
 
 
 
@@ -392,6 +421,30 @@ function Invoke-SelfTest {
     if ($blockedRecovery.Allowed -or $blockedRecovery.Blockers.Count -ne 4) {
         Write-Error 'Self-test fallo: la recuperacion sin preflight no fue bloqueada.'
         exit 1
+    }
+
+    if ((Get-RestoreReconciliationCommandName) -ne 'hospital:restore-reconciliation') {
+        Write-Error 'Self-test fallo: el comando de reconciliacion no coincide con el contrato del backend.'
+        exit 1
+    }
+    if ((Get-RecoveryReconciliationConfirmPhrase) -cne 'RECONCILIAR') {
+        Write-Error 'Self-test fallo: la frase de reconciliacion no coincide con la del backend.'
+        exit 1
+    }
+    if (-not (Test-RecoveryReconciliationConfirmPhrase -Value 'RECONCILIAR') -or
+        (Test-RecoveryReconciliationConfirmPhrase -Value 'reconciliar')) {
+        Write-Error 'Self-test fallo: la validacion de la frase de reconciliacion es incorrecta.'
+        exit 1
+    }
+    if ((Get-RecoveryResumeConfirmation) -cne 'REANUDAR') {
+        Write-Error 'Self-test fallo: la frase de reanudacion de servicio no es REANUDAR.'
+        exit 1
+    }
+    foreach ($reconciliationFunction in @('Start-RestoreReconciliation', 'Get-RestoreReconciliationState', 'Confirm-RestoreReconciliation', 'Resume-HospitalOperations')) {
+        if (-not (Get-Command $reconciliationFunction -ErrorAction SilentlyContinue)) {
+            Write-Error "Self-test fallo: falta la funcion de reconciliacion $reconciliationFunction."
+            exit 1
+        }
     }
 
     Write-Success "Self-test completado. No se tocaron bases ni backups."
@@ -423,6 +476,36 @@ if ($ProductionRecovery) {
         exit 1
     }
 
+    if (-not $runtimeResolution.DockerReady) {
+        Write-Error 'La recuperacion productiva requiere un runtime Docker completo (docker-compose.prod.yml + .env + comando docker).'
+        exit 1
+    }
+
+    if ($WhatIf) {
+        if (-not (Test-Path -LiteralPath $BackupFile)) {
+            Write-Error "Archivo de backup no encontrado: $BackupFile"
+            exit 1
+        }
+        $planHash = (Get-FileHash -LiteralPath $BackupFile -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($planHash -ne $ExpectedSha256.ToLowerInvariant()) {
+            Write-Error "SHA256 del backup no coincide. Restore bloqueado."
+            exit 1
+        }
+        $productionPlanDatabase = Get-RecoveryEnvValue -EnvPath (Join-Path $projectRoot '.env') -Name 'DB_DATABASE' -Default 'hospital_billing'
+        $plan = [pscustomobject]@{
+            Mode = 'Docker'
+            BackupFile = [System.IO.Path]::GetFullPath($BackupFile)
+            ExpectedSha256 = $ExpectedSha256.ToLowerInvariant()
+            ProductionDatabase = $productionPlanDatabase
+            ValidationDatabase = $TargetDatabase
+            Steps = @(Get-RecoverySteps -Mode Production)
+            WritesPerformed = $false
+        }
+        Write-Host "[RECOVERY_PLAN] $($plan | ConvertTo-Json -Depth 5 -Compress)"
+        Write-Warning 'WhatIf activo: no se copio, descifro ni modifico ninguna base.'
+        exit 0
+    }
+
     try {
         $recoveryResult = Invoke-DockerGuardedProductionRecovery `
             -ProjectRoot $projectRoot `
@@ -449,6 +532,16 @@ if ($ProductionRecovery) {
 
     Write-Success 'RECUPERACION PRODUCTIVA COMPLETADA'
     Write-Host "[RECOVERY_RESULT] $($recoveryResult | ConvertTo-Json -Depth 6 -Compress)"
+    if ($recoveryResult.SequenceEmissionBlocked) {
+        $reconciliationCommand = Get-RestoreReconciliationCommandName
+        $reconciliationPhrase = Get-RecoveryReconciliationConfirmPhrase
+        Write-Warning 'BLOQUEO DE CORRELATIVOS ACTIVO: el sistema no emitira facturas ni recibos hasta reconciliar.'
+        Write-Warning 'La reconciliacion requiere un manifiesto externo verificado (custodia hs-backups) y doble control.'
+        Write-Host '  Comando de estado:' -ForegroundColor Yellow
+        Write-Host ("    {0} status --json" -f $reconciliationCommand) -ForegroundColor Cyan
+        Write-Host '  Comando de confirmacion (tras obtener el manifiesto):' -ForegroundColor Yellow
+        Write-Host ("    {0} confirm --manifest=<ruta> --phrase={1} --reason=<motivo> --authorized-by=<responsable>" -f $reconciliationCommand, $reconciliationPhrase) -ForegroundColor Cyan
+    }
     exit 0
 }
 
@@ -456,6 +549,82 @@ if (-not (Test-DisposableDatabaseName -Database $TargetDatabase -ForceProduction
     Write-Error "No se puede restaurar a '$TargetDatabase'."
     Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation'. El helper no restaura sobre produccion."
     exit 1
+}
+
+if ($WhatIf) {
+    # Plan unico para TODOS los caminos: con o sin BackupFile, Docker o bare metal.
+    # No promete, no descifra, no recrea y no importa ninguna base.
+    if (-not ($runtimeResolution.DockerReady -or $runtimeResolution.BareReady)) {
+        Write-Error 'WhatIf: runtime de recuperacion no resuelto.'
+        foreach ($runtimeBlocker in @($runtimeResolution.Blockers)) {
+            Write-Error ("  - {0}: {1}" -f $runtimeBlocker.Code, $runtimeBlocker.Message)
+        }
+        exit 1
+    }
+
+    $planMode = if ($runtimeResolution.DockerReady) { 'Docker' } else { 'BareMetal' }
+    $planBackupFile = $null
+    $planSha256 = $null
+
+    if ($BackupFile) {
+        $planBackupFile = [System.IO.Path]::GetFullPath($BackupFile)
+        if (-not (Test-Path -LiteralPath $planBackupFile)) {
+            Write-Error "Archivo de backup no encontrado: $planBackupFile"
+            exit 1
+        }
+        if (-not (Test-AllowedBackupFileFormat $planBackupFile)) {
+            Write-Error "Formato de backup no permitido. Use .sql.gz.enc, .sql.enc, .sql o .tar.gz."
+            exit 1
+        }
+        if ([string]::IsNullOrWhiteSpace($ExpectedSha256)) {
+            Write-Error "Debe proporcionar -ExpectedSha256 con el hash SHA256 esperado del archivo de backup antes de restaurar."
+            exit 1
+        }
+        if ($ExpectedSha256 -notmatch '^[a-fA-F0-9]{64}$') {
+            Write-Error "ExpectedSha256 no tiene formato SHA256 valido."
+            exit 1
+        }
+        $planSha256 = (Get-FileHash -LiteralPath $planBackupFile -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($planSha256 -ne $ExpectedSha256.ToLowerInvariant()) {
+            Write-Error "SHA256 del backup no coincide. Restore bloqueado."
+            exit 1
+        }
+        if ($runtimeResolution.DockerReady) {
+            try {
+                $null = Invoke-DockerDisposableRestore `
+                    -ProjectRoot $projectRoot `
+                    -BackupFile $planBackupFile `
+                    -ExpectedSha256 $ExpectedSha256 `
+                    -TargetDatabase $TargetDatabase `
+                    -WhatIf
+            } catch {
+                Write-Error "WhatIf Docker invalido: $($_.Exception.Message)"
+                exit 1
+            }
+        }
+    }
+
+    if ($UseExistingEnv -and $runtimeResolution.BareReady) {
+        $planConfig = Get-DatabaseConfig
+        if (-not $planConfig) {
+            Write-Error "No se pudo leer backend\.env"
+            exit 1
+        }
+        $planConfig.Database = $TargetDatabase
+        Assert-SafeConnectionConfig -Config $planConfig -ForceProduction:$ForceProductionRestore
+    }
+
+    $plan = [pscustomobject]@{
+        Mode = $planMode
+        Database = $TargetDatabase
+        BackupFile = $planBackupFile
+        ExpectedSha256 = $planSha256
+        Steps = @(Get-RecoverySteps -Mode Validation)
+        WritesPerformed = $false
+    }
+    Write-Host "[RECOVERY_PLAN] $($plan | ConvertTo-Json -Depth 5 -Compress)"
+    Write-Warning 'WhatIf activo: validacion completada; no se creo, descifro ni modifico ninguna base.'
+    exit 0
 }
 
 if (-not $UseExistingEnv -and -not $BackupFile) {
@@ -491,6 +660,47 @@ if ($BackupFile) {
         exit 1
     }
     Write-Success "SHA256 verificado antes del restore"
+}
+
+if ($runtimeResolution.DockerReady) {
+    if (-not $BackupFile) {
+        Write-Error "La validacion descartable en Docker requiere -BackupFile y -ExpectedSha256."
+        exit 1
+    }
+    if ($runtimeResolution.BareReady) {
+        Write-Warning 'Se detectaron runtimes Docker y bare metal; la validacion descartable usara Docker.'
+    }
+
+    try {
+        $dockerValidation = Invoke-DockerDisposableRestore `
+            -ProjectRoot $projectRoot `
+            -BackupFile ([System.IO.Path]::GetFullPath($BackupFile)) `
+            -ExpectedSha256 $ExpectedSha256 `
+            -TargetDatabase $TargetDatabase `
+            -WhatIf:$WhatIf
+    } catch {
+        Write-Error "Validacion descartable en Docker fallida: $($_.Exception.Message)"
+        exit 1
+    }
+
+    if ($WhatIf) {
+        Write-Warning 'WhatIf activo: SHA256 verificado y plan Docker validado; no se creo ni importo ninguna base.'
+        exit 0
+    }
+
+    Write-Host "[RECOVERY_VALIDATION] $($dockerValidation.Validation | ConvertTo-Json -Depth 5 -Compress)"
+    Write-Success "VALIDACION DESCARTABLE COMPLETADA (Docker)"
+    Write-Host "Base de datos: $($dockerValidation.Database)" -ForegroundColor Green
+    Write-Host "Backup: $($dockerValidation.BackupFile)" -ForegroundColor Green
+    exit 0
+}
+
+if (-not $runtimeResolution.BareReady) {
+    Write-Error 'Runtime de recuperacion no resuelto: no se detecto Docker completo ni php/mysql/artisan del host.'
+    foreach ($runtimeBlocker in @($runtimeResolution.Blockers)) {
+        Write-Error ("  - {0}: {1}" -f $runtimeBlocker.Code, $runtimeBlocker.Message)
+    }
+    exit 1
 }
 
 Write-Step "Buscando cliente MySQL/MariaDB..."
@@ -535,11 +745,6 @@ if ($UseExistingEnv) {
 
 Write-Step "Verificando que '$($dbConfig.Database)' sea base permitida..."
 Assert-SafeConnectionConfig -Config $dbConfig -ForceProduction:$ForceProductionRestore
-
-if ($BackupFile -and $WhatIf) {
-    Write-Warning "WhatIf activo: SHA256 verificado, cliente/config validada y restore omitido antes de crear, descifrar o modificar la base."
-    exit 0
-}
 
 if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
     Write-Step "Expandiendo archivo tar.gz..."

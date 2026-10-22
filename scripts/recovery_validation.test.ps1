@@ -84,5 +84,69 @@ foreach ($database in @(
     Assert-Equal $false (Test-RecoveryDisposableDatabaseName -Database $database) "Debe rechazar $database"
 }
 
+# Contrato de integridad post-restore (relaciones, dinero, metadatos).
+$integrityChecks = @(Get-RecoveryIntegrityChecks)
+Assert-Equal $true ($integrityChecks.Count -ge 10) 'El contrato de integridad debe cubrir relaciones, dinero y metadatos'
+$integrityNames = @($integrityChecks | ForEach-Object { $_.Name })
+Assert-Equal $integrityChecks.Count @($integrityNames | Select-Object -Unique).Count 'Cada chequeo de integridad debe tener nombre unico'
+foreach ($group in @('relations', 'financial', 'metadata')) {
+    Assert-Equal $true (@($integrityChecks | Where-Object { $_.Group -eq $group }).Count -ge 1) "Debe existir al menos un chequeo del grupo $group"
+}
+foreach ($check in $integrityChecks) {
+    Assert-Equal $true ($check.Sql -match '\{db\}') "El chequeo $($check.Name) debe parametrizar la base"
+}
+Assert-Equal $true (@($integrityChecks | Where-Object { $_.Severity -eq 'blocking' }).Count -ge 5) 'Debe haber chequeos bloqueantes'
+
+$formatted = Format-RecoveryIntegritySql -Template 'SELECT COUNT(*) FROM {db}.invoices;' -Database 'hospital_restore_validation'
+Assert-Equal 'SELECT COUNT(*) FROM hospital_restore_validation.invoices;' $formatted 'El SQL de integridad debe apuntar a la base descartable'
+$unsafeFormatRejected = $false
+try {
+    Format-RecoveryIntegritySql -Template 'SELECT COUNT(*) FROM {db}.invoices;' -Database 'hospital_billing' | Out-Null
+} catch {
+    $unsafeFormatRejected = $true
+}
+Assert-Equal $true $unsafeFormatRejected 'No se debe formatear SQL de integridad contra produccion'
+
+$cleanMeasurements = @{}
+foreach ($check in $integrityChecks) { $cleanMeasurements[$check.Name] = 0 }
+$cleanIntegrity = New-RecoveryIntegrityResult -Database 'hospital_restore_validation' -Measurements $cleanMeasurements
+Assert-Equal $true $cleanIntegrity.Valid 'Una base integra debe validar'
+Assert-Equal 0 $cleanIntegrity.BlockingFailures.Count 'Una base integra no debe tener fallos bloqueantes'
+Assert-Equal $true (@($cleanIntegrity.Checks | Where-Object { $_.Group -eq 'metadata' -and $_.Count -eq 0 }).Count -ge 1) 'Los metadatos deben registrarse aunque su conteo sea 0'
+
+$brokenMeasurements = @{}
+foreach ($check in $integrityChecks) { $brokenMeasurements[$check.Name] = 0 }
+$brokenMeasurements['orphan_payments_invoice'] = 3
+$brokenIntegrity = New-RecoveryIntegrityResult -Database 'hospital_restore_validation' -Measurements $brokenMeasurements
+Assert-Equal $false $brokenIntegrity.Valid 'Una relacion rota debe bloquear la validacion'
+Assert-Sequence @('orphan_payments_invoice') $brokenIntegrity.BlockingFailures 'Debe reportar exactamente la relacion rota'
+
+$metadataMeasurement = @{}
+foreach ($check in $integrityChecks) { $metadataMeasurement[$check.Name] = 0 }
+$metadataMeasurement['applied_migrations'] = 120
+$metadataResult = New-RecoveryIntegrityResult -Database 'hospital_restore_validation' -Measurements $metadataMeasurement
+Assert-Equal $true $metadataResult.Valid 'Los metadatos no deben bloquear por si solos'
+
+# Huella de la base original: prueba de no-escritura durante el drill.
+$fingerprintCounts = @{}
+foreach ($table in (Get-RecoveryCriticalTables)) { $fingerprintCounts[$table] = 7 }
+$before = New-RecoveryDatabaseFingerprint -TableCounts $fingerprintCounts
+$after = New-RecoveryDatabaseFingerprint -TableCounts $fingerprintCounts
+Assert-Equal $true ($before.Sha256 -match '^[a-f0-9]{64}$') 'La huella debe ser un SHA-256 hexadecimal'
+$same = Test-RecoveryFingerprintUnchanged -Before $before -After $after
+Assert-Equal $true $same.Verified 'Con ambas huellas la comparacion debe verificarse'
+Assert-Equal $true $same.Unchanged 'La misma huella debe reportarse sin cambios'
+
+$changedCounts = @{}
+foreach ($table in (Get-RecoveryCriticalTables)) { $changedCounts[$table] = 7 }
+$changedCounts.invoices = 8
+$changed = Test-RecoveryFingerprintUnchanged -Before $before -After (New-RecoveryDatabaseFingerprint -TableCounts $changedCounts)
+Assert-Equal $false $changed.Unchanged 'Un cambio de conteo debe detectarse'
+Assert-Sequence @('invoices') $changed.ChangedTables 'Debe identificar la tabla alterada'
+
+$unverified = Test-RecoveryFingerprintUnchanged -Before $null -After $after
+Assert-Equal $false $unverified.Verified 'Sin huella previa no se puede afirmar no-escritura'
+Assert-Equal $false $unverified.Unchanged 'Una comparacion no verificada no es un exito'
+
 Write-Host "Recovery validation self-test passed: $script:Checks checks."
 exit 0

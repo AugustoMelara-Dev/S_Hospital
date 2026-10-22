@@ -11,7 +11,11 @@ param(
 
     [string] $DockerProject = "",
 
-    [switch] $AllowMissingPhysicalProof
+    [switch] $AllowMissingPhysicalProof,
+
+    # Solo para pruebas automatizadas: define funciones y retorna antes de
+    # ejecutar comprobaciones para poder inyectar un runner sin Docker real.
+    [switch] $DefinitionsOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -109,7 +113,47 @@ function Test-IsWindowsHost {
     return $env:OS -eq "Windows_NT" -or $PSVersionTable.Platform -eq "Win32NT" -or $null -ne (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)
 }
 
-function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates) {
+function Get-BackupTaskCadenceEvidence($task) {
+    $evidence = @{
+        RepeatInterval = ""
+        MultipleInstances = ""
+    }
+
+    if ($null -eq $task) {
+        return $evidence
+    }
+
+    try {
+        foreach ($trigger in @($task.Triggers)) {
+            if ($null -eq $trigger) { continue }
+            $repetitionProperty = $trigger.PSObject.Properties['Repetition']
+            if ($null -eq $repetitionProperty -or $null -eq $repetitionProperty.Value) { continue }
+            $intervalProperty = $repetitionProperty.Value.PSObject.Properties['Interval']
+            if ($null -ne $intervalProperty -and -not [string]::IsNullOrWhiteSpace([string] $intervalProperty.Value)) {
+                $evidence.RepeatInterval = [string] $intervalProperty.Value
+                break
+            }
+        }
+    } catch {
+        $evidence.RepeatInterval = ""
+    }
+
+    try {
+        $settingsProperty = $task.PSObject.Properties['Settings']
+        if ($null -ne $settingsProperty -and $null -ne $settingsProperty.Value) {
+            $multipleInstancesProperty = $settingsProperty.Value.PSObject.Properties['MultipleInstances']
+            if ($null -ne $multipleInstancesProperty -and $null -ne $multipleInstancesProperty.Value) {
+                $evidence.MultipleInstances = [string] $multipleInstancesProperty.Value
+            }
+        }
+    } catch {
+        $evidence.MultipleInstances = ""
+    }
+
+    return $evidence
+}
+
+function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates, [switch] $RequireMinuteRepetition) {
     if ($null -eq (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)) {
         Add-Failure "Get-ScheduledTask is not available; cannot validate Windows backup task $taskName"
         return
@@ -126,8 +170,46 @@ function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates)
         return
     }
 
+    $cadenceSuffix = ""
+    if ($RequireMinuteRepetition) {
+        $cadence = Get-BackupTaskCadenceEvidence $task
+        if ($cadence.RepeatInterval -ne "PT1M") {
+            Add-Failure "Windows scheduled task '$taskName' must repeat every 1 minute (RepetitionInterval 'PT1M'), current value is '$($cadence.RepeatInterval)'."
+            return
+        }
+        if ($cadence.MultipleInstances -ne "IgnoreNew") {
+            Add-Failure "Windows scheduled task '$taskName' must use MultipleInstances 'IgnoreNew' to avoid overlapping runs, current value is '$($cadence.MultipleInstances)'."
+            return
+        }
+        $cadenceSuffix = ", repeatInterval=$($cadence.RepeatInterval), multipleInstances=$($cadence.MultipleInstances)"
+    }
+
     $info = Get-ScheduledTaskInfo -TaskName $taskName
-    Add-Pass "Windows scheduled task '$taskName' state=$($task.State), lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
+    Add-Pass "Windows scheduled task '$taskName' state=$($task.State)$cadenceSuffix, lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
+}
+
+function Test-BackupWindowsTaskAutomation {
+    # F027 / T3-011: HospitalBillingOS-Scheduler (schedule:run every minute) is
+    # the backup automation signal; HospitalBillingOS-BackupWorker must stay
+    # active for UI backups. The legacy direct HospitalBillingOS-DailyBackup
+    # task is not a valid signal and, if present, duplicates the Laravel
+    # schedule, so it is reported as a warning.
+    # H1 (RV-T3-016): BackupWorker must be strictly Running, aligned with
+    # Get-BackupAutomationReadiness and the runtime probe. State 'Ready' means
+    # the always-on consumer of the UI backup queue is not executing, so a host
+    # with a valid Scheduler but a stopped Worker must fail the release gate
+    # (the failure message shows the task name and the real current state).
+    # The Scheduler stays Ready/Running because a periodic task is normally
+    # Ready between runs.
+    Test-BackupScheduledTask "HospitalBillingOS-BackupWorker" @("Running")
+    Test-BackupScheduledTask "HospitalBillingOS-Scheduler" @("Ready", "Running") -RequireMinuteRepetition
+
+    if ($null -ne (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)) {
+        $legacyTask = Get-ScheduledTask -TaskName "HospitalBillingOS-DailyBackup" -ErrorAction SilentlyContinue
+        if ($null -ne $legacyTask) {
+            Add-Warning "Legacy scheduled task 'HospitalBillingOS-DailyBackup' is still installed and duplicates the Laravel schedule. Retire it with scripts\install_backup_tasks_windows.ps1 -UpdateExisting."
+        }
+    }
 }
 
 function Get-DockerServiceContainerId([string] $project, [string] $service) {
@@ -216,6 +298,127 @@ function Test-DockerRuntimeServices([string] $project) {
         } else {
             Add-Failure "Docker runtime service '$requiredService' is not running"
         }
+    }
+}
+
+function Invoke-PreflightCommand {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $FilePath,
+
+        [Parameter(Mandatory = $true)]
+        [string[]] $Arguments
+    )
+
+    try {
+        $output = @(& $FilePath @Arguments 2>&1 | ForEach-Object { [string] $_ })
+        $exitCode = if ($null -eq $LASTEXITCODE) { 0 } else { [int] $LASTEXITCODE }
+    } catch {
+        $output = @([string] $_.Exception.Message)
+        $exitCode = 127
+    }
+
+    return [pscustomobject]@{
+        ExitCode = $exitCode
+        Output = $output
+    }
+}
+
+function Test-DockerContainerTool {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $ComposeFile,
+
+        [Parameter(Mandatory = $true)]
+        [string] $EnvFile,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Service,
+
+        [Parameter(Mandatory = $true)]
+        [string[]] $CommandNames,
+
+        [Parameter(Mandatory = $true)]
+        [string] $DisplayName,
+
+        [scriptblock] $Runner = ${function:Invoke-PreflightCommand}
+    )
+
+    $attempts = New-Object System.Collections.Generic.List[string]
+
+    foreach ($commandName in $CommandNames) {
+        $arguments = @(
+            "compose",
+            "-f", $ComposeFile,
+            "--env-file", $EnvFile,
+            "exec", "-T", $Service,
+            $commandName, "--version"
+        )
+
+        $result = & $Runner "docker" $arguments
+        $attempts.Add($commandName)
+        if ([int] $result.ExitCode -eq 0) {
+            Add-Pass "$DisplayName is available inside the Docker '$Service' container ($commandName)"
+            return
+        }
+    }
+
+    Add-Failure "$DisplayName is not available inside the Docker '$Service' container (tried: $($attempts -join ', '))"
+}
+
+function Test-DockerDatabaseTooling {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $ComposeFile,
+
+        [Parameter(Mandatory = $true)]
+        [string] $EnvFile,
+
+        [scriptblock] $Runner = ${function:Invoke-PreflightCommand}
+    )
+
+    Test-DockerContainerTool -ComposeFile $ComposeFile -EnvFile $EnvFile -Service "backend" -CommandNames @("php") -DisplayName "php" -Runner $Runner
+    Test-DockerContainerTool -ComposeFile $ComposeFile -EnvFile $EnvFile -Service "mysql" -CommandNames @("mariadb", "mysql") -DisplayName "mysql or mariadb client" -Runner $Runner
+    Test-DockerContainerTool -ComposeFile $ComposeFile -EnvFile $EnvFile -Service "mysql" -CommandNames @("mariadb-dump", "mysqldump") -DisplayName "database dump tool" -Runner $Runner
+    Test-DockerContainerTool -ComposeFile $ComposeFile -EnvFile $EnvFile -Service "backend" -CommandNames @("mariadb-dump", "mysqldump") -DisplayName "database dump tool for scheduled backups" -Runner $Runner
+}
+
+function Test-HostDatabaseTooling {
+    param(
+        [string] $ConfiguredDumpBinary = ""
+    )
+
+    if (Test-CommandExists "php") { Add-Pass "php is available in PATH" } else { Add-Failure "php is not available in PATH" }
+
+    $mysqlClient = Find-FirstExecutableCandidate @(
+        "mysql",
+        "mariadb",
+        "C:\xampp\mysql\bin\mysql.exe",
+        "C:\xampp\mysql\bin\mariadb.exe",
+        "C:\laragon\bin\mysql\mysql-8.0\bin\mysql.exe",
+        "/usr/bin/mysql",
+        "/usr/bin/mariadb",
+        "/usr/local/bin/mysql",
+        "/usr/local/bin/mariadb"
+    )
+    if ($null -ne $mysqlClient) { Add-Pass "mysql client is available: $mysqlClient" } else { Add-Failure "mysql or mariadb client is not available" }
+
+    $dumpTool = Find-FirstExecutableCandidate @(
+        $ConfiguredDumpBinary,
+        "mariadb-dump",
+        "mysqldump",
+        "C:\xampp\mysql\bin\mariadb-dump.exe",
+        "C:\xampp\mysql\bin\mysqldump.exe",
+        "C:\laragon\bin\mysql\mysql-8.0\bin\mysqldump.exe",
+        "/usr/bin/mariadb-dump",
+        "/usr/bin/mysqldump",
+        "/usr/local/bin/mariadb-dump",
+        "/usr/local/bin/mysqldump"
+    )
+    if ($null -ne $dumpTool) {
+        Add-Pass "database dump tool is available: $dumpTool"
+    } else {
+        Add-Failure "mariadb-dump or mysqldump must be available for backups"
     }
 }
 
@@ -401,6 +604,10 @@ function Invoke-WebSocketHandshake([string] $ClientHost, [int] $ClientPort, [str
     }
 }
 
+if ($DefinitionsOnly) {
+    return
+}
+
 $backendDir = Join-Path $ProjectRoot "backend"
 $frontendDist = Join-Path $ProjectRoot "frontend\dist"
 $envPath = if ($EnvFile.Trim() -ne "") {
@@ -535,8 +742,7 @@ if ([string]::IsNullOrWhiteSpace($backupEncryptionKey)) {
 if ($resolvedRuntimeMode -eq "Docker") {
     Test-DockerRuntimeServices $resolvedDockerProject
 } elseif (Test-IsWindowsHost) {
-    Test-BackupScheduledTask "HospitalBillingOS-BackupWorker" @("Ready", "Running")
-    Test-BackupScheduledTask "HospitalBillingOS-DailyBackup" @("Ready", "Running")
+    Test-BackupWindowsTaskAutomation
 } else {
     Add-Warning "Non-Windows host detected. Validate an equivalent continuous backup worker/service before production handoff."
 }
@@ -559,37 +765,12 @@ if ($resolvedRuntimeMode -eq "Docker") {
     }
 }
 
-if (Test-CommandExists "php") { Add-Pass "php is available in PATH" } else { Add-Failure "php is not available in PATH" }
-
-$mysqlClient = Find-FirstExecutableCandidate @(
-    "mysql",
-    "mariadb",
-    "C:\xampp\mysql\bin\mysql.exe",
-    "C:\xampp\mysql\bin\mariadb.exe",
-    "C:\laragon\bin\mysql\mysql-8.0\bin\mysql.exe",
-    "/usr/bin/mysql",
-    "/usr/bin/mariadb",
-    "/usr/local/bin/mysql",
-    "/usr/local/bin/mariadb"
-)
-if ($null -ne $mysqlClient) { Add-Pass "mysql client is available: $mysqlClient" } else { Add-Failure "mysql or mariadb client is not available" }
-
-$dumpTool = Find-FirstExecutableCandidate @(
-    $configuredDumpBinary,
-    "mariadb-dump",
-    "mysqldump",
-    "C:\xampp\mysql\bin\mariadb-dump.exe",
-    "C:\xampp\mysql\bin\mysqldump.exe",
-    "C:\laragon\bin\mysql\mysql-8.0\bin\mysqldump.exe",
-    "/usr/bin/mariadb-dump",
-    "/usr/bin/mysqldump",
-    "/usr/local/bin/mariadb-dump",
-    "/usr/local/bin/mysqldump"
-)
-if ($null -ne $dumpTool) {
-    Add-Pass "database dump tool is available: $dumpTool"
+if ($resolvedRuntimeMode -eq "Docker") {
+    Test-DockerDatabaseTooling `
+        -ComposeFile (Join-Path $ProjectRoot "docker-compose.prod.yml") `
+        -EnvFile $envPath
 } else {
-    Add-Failure "mariadb-dump or mysqldump must be available for backups"
+    Test-HostDatabaseTooling -ConfiguredDumpBinary $configuredDumpBinary
 }
 
 $backupDir = Join-Path $backendDir "storage\app\private\backups"

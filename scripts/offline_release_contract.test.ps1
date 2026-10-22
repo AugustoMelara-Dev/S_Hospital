@@ -22,6 +22,12 @@ function Assert-NotContains([string] $content, [string] $needle, [string] $label
 
 Assert-Contains $setup "scripts\deploy_hospital_lan.ps1" "setup.bat"
 Assert-NotContains $setup "docker compose exec backend" "setup.bat"
+Assert-Contains $installer 'hospital:verify-migration-backup' "LAN installer"
+Assert-Contains $installer 'scripts\maintenance_hospital_windows.ps1' "LAN installer"
+Assert-NotContains $installer 'scripts\restore_hospital_windows.ps1' "LAN installer"
+Assert-Contains $imageLoader 'checksums.sha256' "offline image loader"
+Assert-Contains $imageLoader 'Get-FileHash' "offline image loader"
+Assert-Contains $imageLoader 'Se aborta la carga' "offline image loader"
 
 foreach ($requiredSecret in @(
     'PUSHER_APP_ID',
@@ -64,6 +70,9 @@ Assert-Contains $releaseValidator '@sha256:' "offline release validator"
 Assert-Contains $releaseValidator 'Missing versioned source file required by offline release contract' "offline release validator"
 Assert-Contains $releaseValidator 'Missing release file required by offline release contract' "offline release validator"
 Assert-Contains $releaseValidator 'scripts\lib\lan_asset_discovery.ps1' "offline release validator"
+Assert-Contains $releaseValidator 'Test-RequiredPath "scripts\maintenance_hospital_windows.ps1"' "offline release validator"
+Assert-Contains $releaseValidator 'HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS' "offline release validator"
+Assert-NotContains $releaseValidator 'HOSPITAL_MIGRATION_BACKUP_CONFIRMED' "offline release validator"
 
 $singlePcReleasePaths = @(
     'setup.bat',
@@ -72,6 +81,10 @@ $singlePcReleasePaths = @(
     'frontend\public\icons\s-hospital-installer.ico',
     'frontend\public\icons\s-hospital-maintenance.ico',
     'scripts\restore_hospital_windows.ps1',
+    'scripts\maintenance_hospital_windows.ps1',
+    'scripts\lib\recovery_validation.ps1',
+    'scripts\lib\recovery_docker.ps1',
+    'scripts\lib\recovery_orchestrator.ps1',
     'scripts\install_hospital_startup_shortcut.ps1',
     'scripts\install_hospital_autostart.ps1',
     'scripts\start_hospital_windows.ps1',

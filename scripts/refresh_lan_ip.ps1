@@ -25,6 +25,13 @@
 
   Use -WhatIf to preview all changes without applying them.
 
+  MODO TLS (overlay docker-compose.tls.yml): si HOSPITAL_TLS_ORIGIN
+  esta definido en el .env raiz, el certificado del servidor lleva
+  la IP de la LAN como SAN IP y HOSPITAL_TLS_ORIGIN embebe el
+  origen anterior. Cambiar la IP exige re-emitir el certificado
+  (generate_local_ca.ps1 -Force) y actualizar HOSPITAL_TLS_ORIGIN.
+  Este script es HTTP-only: lo advierte pero no lo ejecuta.
+
 .PARAMETER ProjectRoot
   Absolute path to the project root. Defaults to the parent of
   the scripts folder.
@@ -86,6 +93,34 @@ if (-not $ServerIp) {
 }
 
 Write-Host "Refreshing LAN IP to $ServerIp (port $AppPort)..."
+
+# TLS overlay detection: docker-compose.tls.yml is opt-in through a non-empty
+# HOSPITAL_TLS_ORIGIN in the root .env. In that mode the server certificate
+# carries the LAN IP as an IP SAN and HOSPITAL_TLS_ORIGIN embeds the previous
+# origin, so rotating the IP requires re-issuing the certificate and updating
+# the origin. This script only refreshes the HTTP wiring and must not rotate
+# TLS material silently.
+. "$PSScriptRoot/lib/env_helpers.ps1"
+$rootEnvData = Read-EnvFile -path $rootEnv
+$tlsOrigin = ''
+if ($rootEnvData.ContainsKey('HOSPITAL_TLS_ORIGIN')) {
+    $tlsOrigin = ([string] $rootEnvData.HOSPITAL_TLS_ORIGIN).Trim()
+}
+$tlsActive = $tlsOrigin -ne ''
+
+if ($tlsActive) {
+    Write-Host ""
+    Write-Host "[WARN] Modo TLS activo (HOSPITAL_TLS_ORIGIN=$tlsOrigin)." -ForegroundColor Yellow
+    Write-Host "       Este script solo actualiza el modo HTTP; NO re-emite el certificado." -ForegroundColor Yellow
+    Write-Host "       Con TLS activo, cambiar la IP exige ademas:" -ForegroundColor Yellow
+    Write-Host "         1) Re-emitir el certificado con el nuevo SAN IP (misma CA; los clientes no reinstalan):" -ForegroundColor Yellow
+    Write-Host "            powershell -File scripts\generate_local_ca.ps1 -ServerIp $ServerIp [-ServerNames <los mismos>] -Force" -ForegroundColor Yellow
+    Write-Host "         2) Actualizar HOSPITAL_TLS_ORIGIN en .env al origen exacto del navegador (IP nueva o el DNS de -ServerNames)." -ForegroundColor Yellow
+    Write-Host "         3) Recrear el stack con el overlay:" -ForegroundColor Yellow
+    Write-Host "            docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml up -d" -ForegroundColor Yellow
+    Write-Host "       Sin esos pasos el navegador rechazara el certificado (SAN viejo) en https://." -ForegroundColor Yellow
+    Write-Host ""
+}
 
 # Helper: replace-or-append a key in a .env file (ASCII, no BOM).
 function Update-EnvKey {
@@ -170,6 +205,15 @@ if ($PSCmdlet.ShouldProcess("docker compose", "Restart stack so env changes appl
 
 Write-Host ""
 Write-Host "Done. Verify with:"
+Write-Host "  curl http://${ServerIp}:$AppPort/up"
 Write-Host "  curl http://${ServerIp}:$AppPort/api/system/health"
-Write-Host "  curl http://${ServerIp}:$AppPort/api/system/echo-config"
+Write-Host "  Nota: /api/system/echo-config y /api/system/setup-status exigen sesion"
+Write-Host "  autenticada (sin sesion responden 401)."
+
+if ($tlsActive) {
+    Write-Host ""
+    Write-Host "  [TLS] Recuerde: re-emitir el certificado (generate_local_ca.ps1 -Force), actualizar" -ForegroundColor Yellow
+    Write-Host "        HOSPITAL_TLS_ORIGIN y recrear el stack con docker-compose.tls.yml (ver advertencia arriba)." -ForegroundColor Yellow
+}
+
 exit 0

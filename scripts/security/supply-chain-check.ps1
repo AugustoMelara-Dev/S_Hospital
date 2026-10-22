@@ -148,7 +148,7 @@ function Test-NpmLock([string] $Path) {
 function Test-PnpmLock([string] $Path) {
     $content = Get-Content -LiteralPath $Path -Raw
     $seenPackages = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-    $packageKeyPattern = "(?m)^[ ]{2}(?:'(?<quoted>[^']+)'|(?<plain>[^:\r\n]+)):[ ]*$"
+    $packageKeyPattern = "(?m)^[ ]{2}(?:'(?<quoted>[^']+)'|(?<plain>[^:\r\n]+)):[ ]*\r?$"
 
     foreach ($match in [regex]::Matches($content, $packageKeyPattern)) {
         $key = if ($match.Groups["quoted"].Success) {

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "architecture": "x64",
+  "artifacts": [
+    {
+      "id": "vcredist",
+      "version": "14.51.36247.0",
+      "url": "https://aka.ms/vs/18/release/14.51.36247/VC_redist.x64.exe",
+      "file": "vc_redist.x64.exe",
+      "algorithm": "SHA256",
+      "hash": "843068991daaa1f73ad9f6239bce4d0f6a07a51f18c37ea2a867e9beca71295c",
+      "checksum_source": "Microsoft-signed versioned release asset; SHA-256 recorded after Authenticode validation"
+    },
+    {
+      "id": "php",
+      "version": "8.3.35",
+      "url": "https://windows.php.net/downloads/releases/php-8.3.35-nts-Win32-vs16-x64.zip",
+      "file": "php-8.3.35-nts-Win32-vs16-x64.zip",
+      "algorithm": "SHA256",
+      "hash": "25a8e2ac9ff30f1d768d1447c09a600617fa6e6082729f6e95f008b59c91fe45",
+      "checksum_source": "https://windows.php.net/downloads/releases/releases.json"
+    },
+    {
+      "id": "mariadb",
+      "version": "11.4.13",
+      "url": "https://archive.mariadb.org/mariadb-11.4.13/winx64-packages/mariadb-11.4.13-winx64.zip",
+      "file": "mariadb-11.4.13-winx64.zip",
+      "algorithm": "SHA256",
+      "hash": "d62986d433eeebfde218560b276103831604a61e929e87f1a17f5aebd80257e2",
+      "checksum_source": "https://archive.mariadb.org/mariadb-11.4.13/winx64-packages/sha256sums.txt"
+    },
+    {
+      "id": "caddy",
+      "version": "2.11.4",
+      "url": "https://github.com/caddyserver/caddy/releases/download/v2.11.4/caddy_2.11.4_windows_amd64.zip",
+      "file": "caddy_2.11.4_windows_amd64.zip",
+      "algorithm": "SHA512",
+      "hash": "cd5ccfd86a4b40732cf715890d0dca5bf3f63adefec5a7914de85adf240c60ce7e5d2791631b88ef9758e46b23bb1730e020b9c5d696889740b284ffd4788e35",
+      "checksum_source": "https://github.com/caddyserver/caddy/releases/download/v2.11.4/caddy_2.11.4_checksums.txt"
+    },
+    {
+      "id": "winsw",
+      "version": "2.12.0",
+      "url": "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe",
+      "file": "WinSW-x64-2.12.0.exe",
+      "algorithm": "SHA256",
+      "hash": "05b82d46ad331cc16bdc00de5c6332c1ef818df8ceefcd49c726553209b3a0da",
+      "checksum_source": "independently-recorded-release-asset-hash"
+    }
+  ]
+}

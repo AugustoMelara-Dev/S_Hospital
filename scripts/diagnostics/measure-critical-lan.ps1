@@ -75,14 +75,6 @@ $results = [Collections.Generic.List[object]]::new()
 $authenticatedSession = $null
 
 foreach ($iteration in 1..$Iterations) {
-    $setupResult = Invoke-TimedRequest `
-        -Name 'setup-status' `
-        -Method 'GET' `
-        -Path '/api/system/setup-status' `
-        -Headers @{ Accept = 'application/json' }
-    $setupResult | Add-Member -NotePropertyName iteration -NotePropertyValue $iteration
-    $results.Add($setupResult)
-
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     Invoke-WebRequest `
         -UseBasicParsing `
@@ -121,6 +113,18 @@ if ($null -eq $authenticatedSession) {
 }
 
 foreach ($iteration in 1..$Iterations) {
+    # setup-status requires an authenticated session (public-surface
+    # hardening); measure it with the session that login already produced
+    # instead of expecting a 200 anonymous response.
+    $setupResult = Invoke-TimedRequest `
+        -Name 'setup-status' `
+        -Method 'GET' `
+        -Path '/api/system/setup-status' `
+        -Session $authenticatedSession `
+        -Headers @{ Accept = 'application/json' }
+    $setupResult | Add-Member -NotePropertyName iteration -NotePropertyValue $iteration
+    $results.Add($setupResult)
+
     $serviceResult = Invoke-TimedRequest `
         -Name 'billing-service-search' `
         -Method 'GET' `

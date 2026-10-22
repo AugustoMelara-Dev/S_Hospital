@@ -28,6 +28,81 @@ function Get-InstallMapValue {
     return $DefaultValue
 }
 
+function ConvertTo-BackupTaskState {
+    # Converts a Get-ScheduledTask/Get-CimInstance object (or $null) into the
+    # flat evidence hashtable consumed by Get-BackupAutomationReadiness.
+    # RepeatInterval/MultipleInstances stay empty when the task object does not
+    # expose them; readiness treats empty evidence as a failed verification.
+    param($Task)
+
+    $state = @{
+        Installed = $false
+        Enabled = $false
+        State = 'Missing'
+        RepeatInterval = ''
+        MultipleInstances = ''
+    }
+
+    if ($null -eq $Task) {
+        return $state
+    }
+
+    $state.Installed = $true
+    $state.Enabled = $true
+    $state.State = ''
+
+    $stateValue = Get-InstallMapValue -Map $Task -Name 'State'
+    if ($null -ne $stateValue) {
+        $state.State = [string] $stateValue
+    }
+
+    try {
+        $settings = Get-InstallMapValue -Map $Task -Name 'Settings'
+        if ($null -ne $settings) {
+            $enabled = Get-InstallMapValue -Map $settings -Name 'Enabled'
+            if ($null -ne $enabled) {
+                $state.Enabled = [bool] $enabled
+            }
+
+            $multipleInstances = Get-InstallMapValue -Map $settings -Name 'MultipleInstances'
+            if ($null -ne $multipleInstances) {
+                $state.MultipleInstances = [string] $multipleInstances
+            }
+        }
+    }
+    catch {
+        $state.Enabled = $true
+        $state.MultipleInstances = ''
+    }
+
+    try {
+        $triggers = Get-InstallMapValue -Map $Task -Name 'Triggers'
+        if ($null -ne $triggers) {
+            foreach ($trigger in @($triggers)) {
+                if ($null -eq $trigger) {
+                    continue
+                }
+
+                $repetition = Get-InstallMapValue -Map $trigger -Name 'Repetition'
+                if ($null -eq $repetition) {
+                    continue
+                }
+
+                $interval = Get-InstallMapValue -Map $repetition -Name 'Interval'
+                if ($null -ne $interval -and -not [string]::IsNullOrWhiteSpace([string] $interval)) {
+                    $state.RepeatInterval = [string] $interval
+                    break
+                }
+            }
+        }
+    }
+    catch {
+        $state.RepeatInterval = ''
+    }
+
+    return $state
+}
+
 function Get-BackupAutomationReadiness {
     param(
         [Parameter(Mandatory = $true)]
@@ -48,25 +123,46 @@ function Get-BackupAutomationReadiness {
         }
     }
     else {
+        # Single source of truth (F027 / T3-011): the Laravel schedule run by
+        # HospitalBillingOS-Scheduler owns backup automation; the legacy direct
+        # HospitalBillingOS-DailyBackup task is not accepted as that signal.
+        # The queue BackupWorker requirement is kept unchanged.
         $worker = Get-InstallMapValue -Map $TaskStates -Name 'Worker'
-        $daily = Get-InstallMapValue -Map $TaskStates -Name 'Daily'
+        $scheduler = Get-InstallMapValue -Map $TaskStates -Name 'Scheduler'
+        $legacyDaily = Get-InstallMapValue -Map $TaskStates -Name 'LegacyDaily'
+        if ($null -eq $legacyDaily) {
+            $legacyDaily = Get-InstallMapValue -Map $TaskStates -Name 'Daily'
+        }
 
         $workerInstalled = [bool] (Get-InstallMapValue -Map $worker -Name 'Installed' -DefaultValue $false)
         $workerEnabled = [bool] (Get-InstallMapValue -Map $worker -Name 'Enabled' -DefaultValue $false)
         $workerState = [string] (Get-InstallMapValue -Map $worker -Name 'State' -DefaultValue '')
         if (-not $workerInstalled -or -not $workerEnabled -or $workerState -ne 'Running') {
-            [void] $reasons.Add('La tarea continua de respaldos no esta activa.')
+            [void] $reasons.Add('La tarea continua de respaldos (HospitalBillingOS-BackupWorker) no esta activa.')
         }
 
-        $dailyInstalled = [bool] (Get-InstallMapValue -Map $daily -Name 'Installed' -DefaultValue $false)
-        $dailyEnabled = [bool] (Get-InstallMapValue -Map $daily -Name 'Enabled' -DefaultValue $false)
-        $dailyState = [string] (Get-InstallMapValue -Map $daily -Name 'State' -DefaultValue '')
-        if (
-            -not $dailyInstalled -or
-            -not $dailyEnabled -or
-            $dailyState -notin @('Ready', 'Running')
-        ) {
-            [void] $reasons.Add('La tarea diaria de respaldos no esta habilitada.')
+        $schedulerInstalled = [bool] (Get-InstallMapValue -Map $scheduler -Name 'Installed' -DefaultValue $false)
+        $schedulerEnabled = [bool] (Get-InstallMapValue -Map $scheduler -Name 'Enabled' -DefaultValue $false)
+        $schedulerState = [string] (Get-InstallMapValue -Map $scheduler -Name 'State' -DefaultValue '')
+        $schedulerInterval = [string] (Get-InstallMapValue -Map $scheduler -Name 'RepeatInterval' -DefaultValue '')
+        $schedulerInstances = [string] (Get-InstallMapValue -Map $scheduler -Name 'MultipleInstances' -DefaultValue '')
+        $legacyDailyInstalled = [bool] (Get-InstallMapValue -Map $legacyDaily -Name 'Installed' -DefaultValue $false)
+
+        if (-not $schedulerInstalled) {
+            $schedulerReason = 'La tarea de automatizacion de respaldos (HospitalBillingOS-Scheduler) no esta instalada.'
+            if ($legacyDailyInstalled) {
+                $schedulerReason += ' Se detecto la tarea legacy HospitalBillingOS-DailyBackup; ejecute scripts\install_backup_tasks_windows.ps1 -UpdateExisting para reemplazarla.'
+            }
+            [void] $reasons.Add($schedulerReason)
+        }
+        elseif (-not $schedulerEnabled -or $schedulerState -notin @('Ready', 'Running')) {
+            [void] $reasons.Add("La tarea de automatizacion de respaldos (HospitalBillingOS-Scheduler) no esta activa (enabled=$schedulerEnabled, state='$schedulerState').")
+        }
+        elseif ($schedulerInterval -ne 'PT1M') {
+            [void] $reasons.Add("La tarea HospitalBillingOS-Scheduler no repite cada 1 minuto (RepeatInterval actual: '$schedulerInterval').")
+        }
+        elseif ($schedulerInstances -ne 'IgnoreNew') {
+            [void] $reasons.Add("La tarea HospitalBillingOS-Scheduler debe usar MultipleInstances IgnoreNew (valor actual: '$schedulerInstances').")
         }
     }
 

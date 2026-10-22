@@ -129,7 +129,7 @@ function Invoke-ComposeImages([string] $composePath) {
         PUSHER_APP_SECRET = $env:PUSHER_APP_SECRET
         HOSPITAL_ALLOW_INSECURE_HTTP = $env:HOSPITAL_ALLOW_INSECURE_HTTP
         HOSPITAL_BACKUP_ENCRYPTION_KEY = $env:HOSPITAL_BACKUP_ENCRYPTION_KEY
-        HOSPITAL_MIGRATION_BACKUP_CONFIRMED = $env:HOSPITAL_MIGRATION_BACKUP_CONFIRMED
+        HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS = $env:HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS
     }
 
     try {
@@ -142,7 +142,7 @@ function Invoke-ComposeImages([string] $composePath) {
         $env:PUSHER_APP_SECRET = "guard-secret"
         $env:HOSPITAL_ALLOW_INSECURE_HTTP = "1"
         $env:HOSPITAL_BACKUP_ENCRYPTION_KEY = "guard-backup-key"
-        $env:HOSPITAL_MIGRATION_BACKUP_CONFIRMED = "false"
+        $env:HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS = "72"
 
         $quotedComposePath = '"' + ($composePath -replace '"', '\"') + '"'
         $rawOutput = @(& cmd.exe /d /c "docker compose -f $quotedComposePath config --images 2>NUL" | ForEach-Object { $_.ToString() })
@@ -193,6 +193,7 @@ Test-RequiredPath "scripts\install_hospital_autostart.ps1" "file"
 Test-RequiredPath "scripts\start_hospital_windows.ps1" "file"
 Test-RequiredPath "scripts\lib\unattended_admin.ps1" "file"
 Test-RequiredPath "scripts\restore_hospital_windows.ps1" "file"
+Test-RequiredPath "scripts\maintenance_hospital_windows.ps1" "file"
 Test-RequiredPath "frontend\public\icons\s-hospital-app.ico" "file"
 Test-RequiredPath "frontend\public\icons\s-hospital-installer.ico" "file"
 Test-RequiredPath "frontend\public\icons\s-hospital-maintenance.ico" "file"
@@ -213,6 +214,10 @@ Test-ReleaseFileMatchesSource "scripts\install_hospital_autostart.ps1"
 Test-ReleaseFileMatchesSource "scripts\start_hospital_windows.ps1"
 Test-ReleaseFileMatchesSource "scripts\lib\unattended_admin.ps1"
 Test-ReleaseFileMatchesSource "scripts\restore_hospital_windows.ps1"
+Test-ReleaseFileMatchesSource "scripts\maintenance_hospital_windows.ps1"
+Test-ReleaseFileMatchesSource "scripts\lib\recovery_validation.ps1"
+Test-ReleaseFileMatchesSource "scripts\lib\recovery_docker.ps1"
+Test-ReleaseFileMatchesSource "scripts\lib\recovery_orchestrator.ps1"
 Test-ReleaseFileMatchesSource "scripts\lib\install_mode.ps1"
 Test-ReleaseFileMatchesSource "scripts\lib\install_result.ps1"
 Test-ReleaseFileMatchesSource "scripts\lib\recovery_contract.ps1"

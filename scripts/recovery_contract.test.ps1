@@ -48,6 +48,7 @@ Assert-Sequence @(
     'restore-production',
     'run-migrations',
     'verify-health',
+    'start-restore-reconciliation',
     'resume-writers',
     'leave-maintenance'
 ) $productionSteps 'El orden productivo debe ser determinista'
@@ -110,6 +111,11 @@ foreach ($case in $cases) {
     Assert-Equal $false $result.Allowed "El bloqueo $($case.Code) debe impedir recuperacion"
     Assert-Sequence @($case.Code) @($result.Blockers.Code) "Debe reportar el bloqueo $($case.Code)"
 }
+
+$blockIndex = [array]::IndexOf($productionSteps, 'start-restore-reconciliation')
+$resumeIndex = [array]::IndexOf($productionSteps, 'resume-writers')
+Assert-Equal $true ($blockIndex -ge 0) 'El contrato productivo debe bloquear correlativos'
+Assert-Equal $true ($blockIndex -lt $resumeIndex) 'El bloqueo de correlativos debe ocurrir antes de reanudar writers'
 
 Write-Host "Recovery contract self-test passed: $script:Checks checks."
 exit 0

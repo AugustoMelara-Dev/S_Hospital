@@ -25,6 +25,7 @@ function Get-RecoverySteps {
         'restore-production',
         'run-migrations',
         'verify-health',
+        'start-restore-reconciliation',
         'resume-writers',
         'leave-maintenance'
     )

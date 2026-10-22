@@ -62,6 +62,16 @@ try {
 
     Assert-ShortcutAuditTest (Test-Path -LiteralPath $installerIconPath) 'Debe existir frontend\public\icons\s-hospital-installer.ico multirresolucion.'
 
+    # Call site real del deploy: el acceso de mantenimiento no debe salir del helper de restore.
+    $deployPath = Join-Path $PSScriptRoot 'deploy_hospital_lan.ps1'
+    $deployContent = Get-Content -LiteralPath $deployPath -Raw
+    $maintenanceAssignment = [regex]::Match($deployContent, '(?m)^\s*\$maintenanceScript\s*=\s*Join-Path\s+\$projectRoot\s+''(?<script>[^'']+)''\s*$')
+    Assert-ShortcutAuditTest ($maintenanceAssignment.Success) 'deploy_hospital_lan.ps1 debe asignar $maintenanceScript con Join-Path.'
+    $deployMaintenanceRelative = if ($maintenanceAssignment.Success) { $maintenanceAssignment.Groups['script'].Value } else { '' }
+    Assert-ShortcutAuditTest ($deployMaintenanceRelative -eq 'scripts\maintenance_hospital_windows.ps1') "El deploy debe apuntar el acceso de mantenimiento a scripts\maintenance_hospital_windows.ps1; actual: '$deployMaintenanceRelative'."
+    Assert-ShortcutAuditTest ($deployMaintenanceRelative -notlike '*restore_hospital_windows.ps1*') 'El deploy no debe apuntar el acceso de mantenimiento al helper de restore.'
+    Assert-ShortcutAuditTest ($deployContent -match '(?s)\$shortcutResult\s*=\s*&\s*\$shortcutScript.{0,400}-MaintenanceScript\s+\$maintenanceScript') 'El deploy debe pasar la variable $maintenanceScript al instalador de accesos directos.'
+
     if ($script:Errors.Count -gt 0) {
         Write-Host ('Shortcut audit found {0} failing assertions:' -f $script:Errors.Count) -ForegroundColor Red
         foreach ($err in $script:Errors) {
