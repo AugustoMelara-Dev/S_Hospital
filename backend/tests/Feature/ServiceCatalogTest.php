@@ -6,11 +6,13 @@ use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\FiscalSequence;
+use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Service;
 use App\Models\ServiceArea;
 use App\Models\ServicePriceHistory;
+use App\Models\TaxRate;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
@@ -136,6 +138,7 @@ class ServiceCatalogTest extends TestCase
             ->firstOrFail();
         $service->update([
             'price' => '99.00',
+            'tax_rate_id' => null,
             'taxable' => false,
             'active' => false,
             'visible_in_billing' => false,
@@ -294,6 +297,7 @@ class ServiceCatalogTest extends TestCase
             'name' => 'Estancia administrativa',
             'slug' => 'estancia-administrativa',
             'price' => '999.00',
+            'tax_rate_id' => null,
             'taxable' => false,
         ])->save();
 
@@ -1530,5 +1534,51 @@ class ServiceCatalogTest extends TestCase
         ]);
 
         return $invoice;
+    }
+
+    public function test_production_catalog_seed_is_exempt_and_offers_an_exempt_rate(): void
+    {
+        $seeder = new ServiceCatalogSeeder(true);
+        $seeder->setContainer($this->app);
+        $seeder->run();
+
+        $this->assertSame(151, Service::query()->count());
+        $this->assertSame(0, Service::query()->whereNotNull('tax_rate_id')->count());
+        $this->assertSame(0, Service::query()->where('taxable', true)->count());
+
+        $exemptRate = TaxRate::query()->sole();
+        $this->assertSame('Exento 0 %', $exemptRate->name);
+        $this->assertSame('0.00', $exemptRate->percentage);
+        $this->assertFalse($exemptRate->is_default);
+
+        // Rerun keeps the exact same catalog (no duplicate rates, no rewrites).
+        $this->seed(ServiceCatalogSeeder::class);
+        $this->assertSame(151, Service::query()->count());
+        $this->assertSame(1, TaxRate::query()->count());
+        $this->assertSame(0, Service::query()->whereNotNull('tax_rate_id')->count());
+    }
+
+    public function test_seeder_materializes_the_configured_default_tax_rate(): void
+    {
+        FiscalSetting::query()->create([
+            'hospital_name' => 'Hospital Sintetico',
+            'rtn' => '08011999000001',
+            'default_tax_rate' => '15.00',
+        ]);
+
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $default = TaxRate::query()->where('is_default', true)->sole();
+        $this->assertSame('ISV 15 %', $default->name);
+        $this->assertSame('15.00', $default->percentage);
+        $this->assertTrue($default->active);
+        $this->assertSame(1, TaxRate::query()->where('percentage', '0.00')->count());
+
+        // A-03 single source: in dev/test the seeded catalog is materialised
+        // with the configured rate (no `taxable`-only rows), so the billing
+        // engine and the catalog UI read the same `tax_rate_id`. The production
+        // path (seed_exempt, asserted above) installs the catalog exempt.
+        $this->assertSame(151, Service::query()->whereNotNull('tax_rate_id')->count());
+        $this->assertSame(151, Service::query()->where('taxable', true)->count());
     }
 }

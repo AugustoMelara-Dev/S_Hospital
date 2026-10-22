@@ -35,9 +35,10 @@ class CalculateInvoiceTotalsAction
      *     tax_breakdown: list<array{rate: string, base_cents: int, tax_cents: int, base_label: string, tax_label: string}>
      * }
      */
-    public function execute(array $items, string $taxRate, bool $patientDialysisPrescription = false): array
+    public function execute(array $items, string $legacyDefaultTaxRate, bool $patientDialysisPrescription = false): array
     {
-        $defaultBasisPoints = $this->parseRateBasisPoints($taxRate);
+        // `$legacyDefaultTaxRate` is kept only for call-site compatibility. The
+        // effective rate is resolved per line from `services.tax_rate_id` (A-03).
         $subtotal = Money::zero();
         $calculatedItems = [];
 
@@ -47,7 +48,7 @@ class CalculateInvoiceTotalsAction
             $specialRuleApplied = $this->appliesErythropoietinRule($service, $patientDialysisPrescription);
             // La regla de gratuidad solo cambia el importe efectivo de la línea.
             // El tratamiento fiscal siempre proviene del catálogo autorizado.
-            $lineBasisPoints = $this->lineRateBasisPoints($service, $defaultBasisPoints);
+            $lineBasisPoints = $this->lineRateBasisPoints($service);
             $lineTaxable = $lineBasisPoints > 0;
             $registeredUnitPriceCents = $this->parseMoneyCents((string) $service->price);
             $unitPriceCents = $specialRuleApplied ? 0 : $registeredUnitPriceCents;
@@ -226,10 +227,16 @@ class CalculateInvoiceTotalsAction
         ];
     }
 
-    private function lineRateBasisPoints(Service $service, int $defaultBasisPoints): int
+    /**
+     * The single source of truth (A-03): a service is charged exactly according
+     * to its `tax_rate_id`. `NULL` always means exempt; there is no implicit
+     * fallback to a global default. Existing installations are backfilled on
+     * upgrade, so the UI and the backend can never disagree.
+     */
+    private function lineRateBasisPoints(Service $service): int
     {
         if ($service->tax_rate_id === null) {
-            return $service->taxable ? $defaultBasisPoints : 0;
+            return 0;
         }
 
         $service->loadMissing('taxRate');

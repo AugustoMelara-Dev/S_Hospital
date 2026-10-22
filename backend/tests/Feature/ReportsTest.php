@@ -1964,7 +1964,7 @@ class ReportsTest extends TestCase
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         // Financial scenarios use a synthetic tariff and must not inherit production catalog prices.
         Service::query()->where('name', 'Hemograma Completo')->update(['price' => '10.00']);
-        Service::query()->where('name', 'Eritropoyetina')->update(['price' => '25.00', 'taxable' => false]);
+        Service::query()->where('name', 'Eritropoyetina')->update(['price' => '25.00', 'taxable' => false, 'tax_rate_id' => null]);
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         FiscalSetting::query()->create([

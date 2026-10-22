@@ -485,7 +485,7 @@ class ExecutiveReportTest extends TestCase
         $session = $this->openSession($cashier);
 
         $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
-        $glucose->update(['price' => '0.00', 'taxable' => false]);
+        $glucose->update(['price' => '0.00', 'taxable' => false, 'tax_rate_id' => null]);
         $hemogram = Service::query()->where('name', 'Hemograma Completo')->firstOrFail();
         $epo = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
 

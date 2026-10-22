@@ -84,6 +84,34 @@ class Service extends Model
 
     protected static function booted(): void
     {
+        // A-03 single source of truth: a persisted service is taxable if and
+        // only if it has a tax rate. A legacy `taxable=true` without a rate
+        // (un-migrated data or a factory) is assigned the configured default;
+        // `taxable=false` stays exempt. The UI and the billing engine then read
+        // the same `tax_rate_id`.
+        static::saving(function (Service $service): void {
+            if ($service->tax_rate_id !== null) {
+                $service->taxable = true;
+
+                return;
+            }
+
+            if (! $service->taxable) {
+                return;
+            }
+
+            $rate = TaxRate::query()
+                ->where('active', true)
+                ->where('is_default', true)
+                ->first()
+                ?? TaxRate::query()->firstOrCreate(
+                    ['percentage' => '15.00'],
+                    ['name' => 'ISV 15 %', 'active' => true, 'is_default' => true],
+                );
+
+            $service->tax_rate_id = $rate->id;
+        });
+
         static::deleting(function (Service $service): void {
             if ($service->invoiceItems()->exists()) {
                 throw new LogicException('Los servicios facturados no se eliminan; deben desactivarse para conservar el historico.');

@@ -23,6 +23,7 @@ class MixedDialysisBasketTest extends TestCase
         $product = Service::query()->where('name', 'Glucosa')->firstOrFail();
         $product->forceFill([
             'price' => '900.00',
+            'tax_rate_id' => null,
             'taxable' => false,
             'special_rule_code' => null,
         ])->save();

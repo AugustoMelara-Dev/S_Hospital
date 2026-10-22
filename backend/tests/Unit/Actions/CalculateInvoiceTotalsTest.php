@@ -4,6 +4,7 @@ namespace Tests\Unit\Actions;
 
 use App\Actions\Billing\CalculateInvoiceTotalsAction;
 use App\Models\Service;
+use App\Models\TaxRate;
 use Tests\TestCase;
 
 class CalculateInvoiceTotalsTest extends TestCase
@@ -18,14 +19,14 @@ class CalculateInvoiceTotalsTest extends TestCase
 
     public function test_it_calculates_totals_correctly_for_taxable_services(): void
     {
-        $service1 = new Service([
+        $service1 = $this->service([
             'id' => 1,
             'price' => '100.00',
             'taxable' => true,
             'special_rule_code' => null,
         ]);
 
-        $service2 = new Service([
+        $service2 = $this->service([
             'id' => 2,
             'price' => '50.50',
             'taxable' => true,
@@ -61,7 +62,7 @@ class CalculateInvoiceTotalsTest extends TestCase
 
     public function test_it_applies_erythropoietin_free_prescription_rule(): void
     {
-        $epoService = new Service([
+        $epoService = $this->service([
             'id' => 3,
             'price' => '25.00',
             'taxable' => false,
@@ -102,7 +103,7 @@ class CalculateInvoiceTotalsTest extends TestCase
 
     public function test_it_handles_non_taxable_services_correctly(): void
     {
-        $nonTaxable = new Service([
+        $nonTaxable = $this->service([
             'id' => 4,
             'price' => '120.00',
             'taxable' => false,
@@ -124,5 +125,24 @@ class CalculateInvoiceTotalsTest extends TestCase
         // Tax: non-taxable = 0.00
         $this->assertSame('0.00', $result['tax_amount']);
         $this->assertSame('180.00', $result['total']);
+    }
+
+    /**
+     * A-03: a taxable service is charged by its `tax_rate_id`, never by an
+     * implicit global fallback. These unsaved models carry an explicit 15 %
+     * rate relation so the totals keep their documented expectations.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function service(array $attributes): Service
+    {
+        $service = new Service($attributes);
+
+        if (($attributes['taxable'] ?? false) === true) {
+            $service->tax_rate_id = 1;
+            $service->setRelation('taxRate', new TaxRate(['percentage' => '15.00']));
+        }
+
+        return $service;
     }
 }
