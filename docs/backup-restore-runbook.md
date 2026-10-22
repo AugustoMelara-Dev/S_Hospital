@@ -219,3 +219,172 @@ cifrado ni rutas absolutas del servidor.
 | Correlativo fiscal duplicado | Validar ultima factura y correlativos en base descartable antes de tocar produccion. |
 | Disco lleno | Verificar espacio libre antes de descifrar y restaurar. |
 | SQL temporal expuesto | Crear con permisos restrictivos, usar ruta temporal local y eliminarlo al terminar. |
+
+## 11. Copia externa cifrada (F019 / HS-BK-EXT)
+
+Estado: **implementada y probada localmente; NO desplegada**. Sin un destino real
+(USB/NAS/montaje/remoto) configurado y probado por el operador, el resultado
+siempre declara `external_deployed=false` y no se anota ninguna copia como
+protegida. Mientras siga desactivada, el respaldo y su copia viven en el mismo
+servidor: sigue siendo un unico dominio de fallo.
+
+Configuracion (`.env` del servidor; default `false`):
+
+```env
+HOSPITAL_BACKUP_EXTERNAL_ENABLED=false
+HOSPITAL_BACKUP_EXTERNAL_DISK=backup_external
+HOSPITAL_BACKUP_EXTERNAL_ROOT=
+HOSPITAL_BACKUP_EXTERNAL_PATH=hospital-backups
+HOSPITAL_BACKUP_EXTERNAL_LABEL=externo
+HOSPITAL_BACKUP_EXTERNAL_VERIFY=true
+```
+
+Reglas del adaptador:
+
+- Se copia el `.sql.gz.enc` local y se **relee el destino** calculando SHA-256 y
+  tamano; la fila del ledger `backup_external_copies` pasa a `verified` solo si el
+  hash del destino coincide con el del origen.
+- Guard fail-closed: para driver `local` solo cuenta un root **absoluto, explicito
+  y fuera** del storage y del arbol del proyecto. Root vacio, relativo, interno o
+  que resuelva dentro por `..` (canonicalizado) falla sin escribir archivos ni
+  filas y declara `external_configured=false`.
+- Si el destino se degrada despues de verificar (root vaciado/roto), una
+  re-verificacion pasa la fila a `failed` conservando `verified_at`/`sha256` como
+  evidencia historica; no se finge una verificacion nueva.
+- La activacion es explicita: deshabilitada no hay copia, ni filas, ni schedule.
+
+Operacion:
+
+```bash
+php artisan hospital:backup-copy-external --latest --json
+php artisan backup-copy-external <backup_logs.id> --json
+```
+
+Prueba de recuperacion (evidencia `hospital-ai/evidencia/M-W1-BK-01/`): un
+respaldo sintetico se copia a un destino de laboratorio real en `%TEMP%`, se
+borra el archivo local, se repone desde el destino externo, se re-verifica
+(descifrado completo) y el dump se importa en una base limpia validando los
+datos sinteticos.
+
+## 12. Custodia de llaves (HS-BK-KEY)
+
+Dos llaves distintas; no confundirlas:
+
+| Llave | Uso | Consecuencia de perderla |
+|---|---|---|
+| `APP_KEY` | Tokens/sesiones/firmas; solo respaldos legacy | Backups legacy pueden quedar ilegibles |
+| `HOSPITAL_BACKUP_ENCRYPTION_KEY` | Cifrado AES-256-GCM de los `.sql.gz.enc` nuevos | Los respaldos nuevos no se pueden descifrar |
+
+Procedimiento de custodia:
+
+1. Al instalar, registrar el **fingerprint** (nunca la llave) y custodiarlo fuera
+   del servidor:
+
+   ```bash
+   php artisan hospital:backup-key-status --json
+   ```
+
+   El JSON reporta `fingerprint`, `latest_creation_key_matches` y
+   `backups_with_other_key`; sirve para detectar una rotacion o perdida sin
+   exponer material de la llave.
+2. Guardar `HOSPITAL_BACKUP_ENCRYPTION_KEY` en un sobre/medio administrativo
+   separado del servidor. Sin esa llave el `.sql.gz.enc` es irrecuperable.
+3. **Actualizar/reinstalar no regenera las llaves existentes.** El instalador
+   conserva `APP_KEY` y `HOSPITAL_BACKUP_ENCRYPTION_KEY` del `.env` existente y
+   solo genera valor cuando la variable falta (`scripts/deploy_hospital_lan.ps1`,
+   self-test "preserva HOSPITAL_BACKUP_ENCRYPTION_KEY existente").
+4. Antes de cualquier actualizacion, crear y **verificar** un respaldo, anotar su
+   fingerprint y confirmar que la llave custodiada corresponde.
+5. Rotacion: respaldar la llave vigente y un respaldo verificado, generar la
+   nueva llave, actualizar `.env`, `php artisan config:cache`, crear un respaldo
+   nuevo con la llave nueva y repetir `hospital:backup-key-status`. Los respaldos
+   antiguos requieren la llave con la que se crearon; no borrarlos hasta
+   sustituirlos por copias verificadas con la llave nueva.
+6. Si se pierde la llave, los respaldos afectados quedan `key_mismatch`: se
+   detectan y no se declaran recuperables.
+
+Escenarios probados (pruebas de backup): llave correcta, llave ausente, llave
+equivocada (`key_mismatch` sin pisar `verified_at`), byte alterado, archivo
+ausente, formato legacy y recuperacion desde copia externa.
+
+## 13. Alertas locales y salud (HS-BK-ALERT)
+
+```bash
+php artisan hospital:check-backup-health --json
+php artisan hospital:check-backup-health --fail-on-alert
+```
+
+Detecta respaldo atrasado **por creacion** (`stale_after_hours`, default 12),
+fallos consecutivos (default 3), pendientes vencidos, ausencia de copia
+recuperable (`recovery_unverified`), **atraso de la ultima copia verificada**
+(`recovery_stale`, default `recoverable_stale_after_hours` = 26 h) y estado de la
+copia externa. La alerta se registra de forma idempotente en `audit_logs`
+(`backup.alert_raised`/`backup.alert_resolved`) y en la cache de alertas activas.
+
+`recovery_stale` es una senal distinta de `backup_stale`: la verificacion de
+recuperabilidad (`hospital:verify-backup --latest`) solo corre una vez al dia, asi
+que la ultima copia **verificada** puede tener ~24 h aunque el ultimo respaldo se
+haya creado hace minutos. El umbral se ajusta con
+`HOSPITAL_BACKUP_ALERT_RECOVERABLE_STALE_HOURS` (default 26 h, por encima de la
+cadencia diaria).
+
+La **fuente de la senal es el estado persistente `backup_logs`**, no la cache:
+tras un `cache:clear`, una nueva evaluacion vuelve a detectar el atraso y
+`--fail-on-alert` sigue devolviendo exit 1 (regresion incluida). El canal externo
+(email/webhook) es un contrato (`AlertChannel`) con `NullAlertChannel` por
+defecto: **no hay canal externo desplegado ni verificado**.
+
+## 14. RPO / RTO (HS-BK-RPO)
+
+Se separan objetivo y observacion:
+
+- **RPO planificado de creacion** (calculado de `backend/routes/console.php` y
+  `backend/config/hospital.php`, no copiado de cifras historicas): respaldo diario
+  a `HOSPITAL_DAILY_BACKUP_TIME` (02:00) + respaldo cada 15 min durante
+  `HOSPITAL_OPERATION_START`-`HOSPITAL_OPERATION_END` (06:00-18:00). Peor hueco
+  planificado: **8 h** (18:00 -> 02:00) con el scheduler activo; dentro de la
+  ventana operativa, 15 min. La alerta `backup_stale` (12 h) supera este RPO.
+- **RPO de recuperabilidad verificada**: un respaldo recien creado no es
+  recuperable hasta que `hospital:verify-backup --latest` lo verifica
+  (configurado **1 vez al dia**, 02:30). Por tanto la ultima copia *verificada*
+  puede alcanzar estructuralmente **~24 h** de antiguedad. Este es el RPO que
+  realmente limita el punto de recuperacion y **no** son las 8 h de creacion; la
+  brecha se vigila con la alerta `recovery_stale` (default 26 h). Acortar el RPO
+  de recuperabilidad exige aumentar la frecuencia de `verify-backup` (cambio de
+  scheduler, fuera de esta entrega).
+- **RPO observado**: edad de la ultima copia recuperable verificada. Ya se expone
+  (`last_recoverable_at`, `age_seconds` en estado/health) y es el valor a vigilar
+  en operacion; requiere que el sistema lleve tiempo operando, por lo que no se
+  puede medir en una sesion de laboratorio.
+- **RTO observado (laboratorio)**: ciclo respaldo -> verificacion -> descifrado ->
+  importacion a base limpia con datos sinteticos. Medicion 2026-09-17 (SQLite en
+  memoria, dataset sintetico de 1 factura/pago/caja): respaldo ~0.09 s,
+  verificacion ~0.002 s, descifrado ~0.03 s, restauracion ~0.01 s, total ~0.15 s.
+  **No se extrapola a produccion**: en el servidor real pesan el tamano de la
+  base, el disco y el motor MariaDB; el ensayo debe repetirse en el servidor final.
+
+Ambas rutas bare-metal ejecutan el mismo `schedule:run` (paridad con el sidecar
+Docker), por lo que el RPO planificado no depende del runtime; si el scheduler
+esta caido, el atraso es ilimitado y lo senala la alerta.
+
+## 15. Reconciliacion de correlativos post-restore (HS-BK-SEQ)
+
+Restaurar un respaldo antiguo puede perder documentos ya impresos. Regla
+fail-closed:
+
+1. Tras reemplazar la base, el procedimiento de restore ejecuta
+   `php artisan hospital:restore-reconciliation start --reason="..."`. La emision
+   de facturas y la reserva de recibos institucionales quedan **bloqueadas**.
+2. Para reanudar hace falta un **manifiesto externo verificado** con los ultimos
+   numeros usados/impresos y una copia externa `verified` del ledger
+   `backup_external_copies` que coincida en `backup_log_id`, `sha256`,
+   `destination_label` y `bytes`.
+3. `php artisan hospital:restore-reconciliation confirm --manifest=... --phrase=RECONCILIAR
+   --reason="..." --authorized-by="..."` valida el manifiesto, aplica solo avance
+   de correlativos (nunca retrocede) y limpia el bloqueo con auditoria. Doble
+   control: frase literal + responsable.
+4. Si la copia externa del manifiesto se degrado (`failed`), el `confirm` se
+   rechaza y el bloqueo permanece aunque el manifiesto tenga hash valido
+   (regresion `BackupSequenceReconciliationBoundaryTest`).
+5. `php artisan hospital:restore-reconciliation status --json` reporta pendiente,
+   maximos actuales y ultimo manifiesto.

@@ -1,0 +1,367 @@
+{
+  "document_type": "semilla_de_seguimiento_no_evidencia_de_ejecucion",
+  "source": "AUDITORIA_ORIGINAL.txt",
+  "created": "2026-09-13",
+  "notes": [
+    "Las prioridades son propuestas para la campaña, no una política hospitalaria aprobada.",
+    "Todos los hallazgos se revalidan en el código actual.",
+    "F002 conserva el significado de UI; custodia de clave se separa como HS-BK-KEY."
+  ],
+  "findings": [
+    {
+      "id": "FINDING-001",
+      "title": "Recuperación Docker-only rota",
+      "proposed_priority": "P0",
+      "owner": "hs-recovery",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-002",
+      "title": "Configuración de recibos inaccesible y copias",
+      "proposed_priority": "P0",
+      "owner": "hs-receipts",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-003",
+      "title": "Guard de backup pre-migración inexistente",
+      "proposed_priority": "P0",
+      "owner": "hs-install",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-004",
+      "title": "Preflight exige herramientas del host",
+      "proposed_priority": "P1",
+      "owner": "hs-install",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-005",
+      "title": "Shortcut apunta al restore incorrecto",
+      "proposed_priority": "P1",
+      "owner": "hs-install",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-006",
+      "title": "CI MariaDB utiliza SQLite en tests",
+      "proposed_priority": "P1",
+      "owner": "hs-qa",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-007",
+      "title": "Concurrencia real sin gate efectivo",
+      "proposed_priority": "P1",
+      "owner": "hs-qa",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-008",
+      "title": "Política EPO y permiso de cajero contradictorios",
+      "proposed_priority": "POR_VALIDAR",
+      "owner": "hs-finance",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-009",
+      "title": "Windows limpio y entrega sin certificar",
+      "proposed_priority": "P0_EXTERNO",
+      "owner": "hs-release",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-010",
+      "title": "HTTP y cookies de sesión LAN",
+      "proposed_priority": "P1",
+      "owner": "hs-security",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-011",
+      "title": "Caja única global y alcance multicaja",
+      "proposed_priority": "DECISION_NEGOCIO",
+      "owner": "hs-finance",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-012",
+      "title": "Reimpresión: etiqueta, motivo y contador",
+      "proposed_priority": "P1",
+      "owner": "hs-receipts",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-013",
+      "title": "Cents/decimal sin constraint de coherencia",
+      "proposed_priority": "P2",
+      "owner": "hs-db",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-014",
+      "title": "Idempotencia legacy y migraciones redundantes",
+      "proposed_priority": "P2",
+      "owner": "hs-db",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-015",
+      "title": "Autoría de auditoría y columnas IP",
+      "proposed_priority": "P2",
+      "owner": "hs-db",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-016",
+      "title": "Taxonomías de área duplicadas",
+      "proposed_priority": "P2",
+      "owner": "hs-db",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-017",
+      "title": "Constraints de dominio incompletos",
+      "proposed_priority": "P2",
+      "owner": "hs-db",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-018",
+      "title": "Columnas PDF e inmutabilidad documental",
+      "proposed_priority": "POR_VALIDAR",
+      "owner": "hs-db",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-019",
+      "title": "Copia externa, alertas, RPO/RTO",
+      "proposed_priority": "P1",
+      "owner": "hs-backups",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-020",
+      "title": "Zona horaria de conexión y fechas",
+      "proposed_priority": "P2",
+      "owner": "hs-db",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-021",
+      "title": "Componentes y servicios con demasiadas responsabilidades",
+      "proposed_priority": "P2",
+      "owner": "hs-frontend",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-022",
+      "title": "Código muerto y vista desconectada",
+      "proposed_priority": "P2",
+      "owner": "hs-frontend",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-023",
+      "title": "Normalización de acentos frontend",
+      "proposed_priority": "P2",
+      "owner": "hs-frontend",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-024",
+      "title": "E2E desalineado con rutas y plan",
+      "proposed_priority": "P1",
+      "owner": "hs-qa",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-025",
+      "title": "Documentación duplicada y referencias muertas",
+      "proposed_priority": "P2",
+      "owner": "hs-release",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-026",
+      "title": "Artefactos y lockfiles/higiene",
+      "proposed_priority": "P2",
+      "owner": "hs-release",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-027",
+      "title": "Caminos bare-metal y supervisión Windows",
+      "proposed_priority": "POR_VALIDAR",
+      "owner": "hs-install",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-028",
+      "title": "Checksum previo a carga de imágenes offline",
+      "proposed_priority": "P1",
+      "owner": "hs-install",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-029",
+      "title": "Detalle operativo en endpoints públicos",
+      "proposed_priority": "P2",
+      "owner": "hs-security",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-030",
+      "title": "Permiso receipts.void sin operación clara",
+      "proposed_priority": "POR_VALIDAR",
+      "owner": "hs-security",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-031",
+      "title": "MFA y recuperación self-service no implementados",
+      "proposed_priority": "OPCIONAL",
+      "owner": "hs-security",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-032",
+      "title": "Changelog y estado canónico envejecidos",
+      "proposed_priority": "P2",
+      "owner": "hs-release",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-033",
+      "title": "Rutas informativas con sesión, sin gate específico",
+      "proposed_priority": "POR_VALIDAR",
+      "owner": "hs-security",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-034",
+      "title": "Sin ejecución actual por entorno no listo",
+      "proposed_priority": "BASELINE",
+      "owner": "hs-qa",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "FINDING-035",
+      "title": "Fortalezas financieras que se preservan",
+      "proposed_priority": "PRESERVAR",
+      "owner": "hs-finance",
+      "status": "PENDIENTE_VERIFICAR",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "HS-BK-KEY",
+      "title": "Custodia y recuperación de claves de backup/APP_KEY",
+      "proposed_priority": "POR_VALIDAR",
+      "owner": "hs-backups",
+      "status": "PENDIENTE_VERIFICAR",
+      "basis": "Riesgo/requisito adicional para investigar; no nuevo bug confirmado aquí.",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "HS-RESTORE-SEQUENCE",
+      "title": "Reconciliar numeración ya usada después de restaurar backup antiguo",
+      "proposed_priority": "POR_VALIDAR",
+      "owner": "hs-finance",
+      "status": "PENDIENTE_VERIFICAR",
+      "basis": "Riesgo/requisito adicional para investigar; no nuevo bug confirmado aquí.",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "HS-PRINT-DELIVERY",
+      "title": "Distinguir solicitud/entrega de PDF de impresión física comprobada",
+      "proposed_priority": "POR_VALIDAR",
+      "owner": "hs-receipts",
+      "status": "PENDIENTE_VERIFICAR",
+      "basis": "Riesgo/requisito adicional para investigar; no nuevo bug confirmado aquí.",
+      "current_evidence": [],
+      "closure_evidence": []
+    },
+    {
+      "id": "HS-VISUAL",
+      "title": "Rediseño y verificación visual completa por medios autorizados",
+      "proposed_priority": "POR_VALIDAR",
+      "owner": "hs-ux",
+      "status": "PENDIENTE_VERIFICAR",
+      "basis": "Riesgo/requisito adicional para investigar; no nuevo bug confirmado aquí.",
+      "current_evidence": [],
+      "closure_evidence": []
+    }
+  ]
+}

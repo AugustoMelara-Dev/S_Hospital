@@ -18,6 +18,20 @@ API, imágenes de MariaDB, Nginx y Soketi, automatización de arranque, accesos
 directos, respaldos y restauración. Inno Setup solo se necesita en la PC de
 desarrollo; no se instala en el hospital.
 
+## Nomenclatura de staging (canónica)
+
+La auditoría original detectó dos variantes duplicadas. Para evitar la
+confusión, la nomenclatura vigente es única:
+
+- `installer-output\STAGING-PENDING-CERTIFICACION\` - **canónica**. Es la
+  carpeta del candidato pendiente de certificación en Windows limpio; la leen
+  `scripts\certification\promote_to_usb.ps1` y
+  `scripts\certification\validate_windows_clean_result.ps1`.
+- `installer-output\ENTREGA-USB\` - entrega final promovida después de pasar la
+  certificación; es lo único que se copia a la memoria USB.
+- `STAGING-PENDING-CERTIFICATION` (en inglés) - nombre histórico retirado. No
+  crear ni usar esa variante; ningún script la lee.
+
 ## Generar el instalador
 
 Requisitos en la PC de desarrollo:

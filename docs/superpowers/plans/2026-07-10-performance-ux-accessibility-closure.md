@@ -4,6 +4,8 @@
 > enfoque conservador y aprobó un rediseño visual total. La especificación
 > vigente es
 > [`../specs/2026-07-10-clinical-operations-console-total-redesign-design.md`](../specs/2026-07-10-clinical-operations-console-total-redesign-design.md).
+> Los comandos `scripts/verify_changed.ps1` citados en las tareas tampoco
+> existen en el arbol actual.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

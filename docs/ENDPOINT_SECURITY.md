@@ -84,3 +84,40 @@ El sistema NO depende de que todos los usuarios tengan acceso administrativo a l
 - [ ] Prohibicion explicita de instalar software desconocido.
 - [ ] Politica de USB documentada y respetada.
 - [ ] Procedimiento de revision de equipo antes de instalar activo.
+
+## Exposicion de endpoints verificada (M-W1-SEC-01)
+
+Revalidacion con roles reales (`admin`, `supervisor`, `auditor`, `soporte_tecnico`,
+`cajero`) y fixtures sinteticos. Evidencia ejecutable:
+`backend/tests/Feature/Security/LanEndpointAccessTest.php`; matriz completa en
+`hospital-ai/evidencia/M-W1-SEC-01/INFORME.md`.
+
+- Publico minimo: `GET /api/health` (`status`, `service`) y
+  `GET /api/system/health` (`status`, `service`, `version`). Sin colas, backups,
+  storage, checksums, rutas ni version de PHP.
+- `GET /api/settings/branding` es publico a proposito (login/branding) y devuelve
+  solo `hospital_name`, `primary_color`, `slogan`, `government_line`,
+  `secretariat_line`, `receipt_location`. No expone RTN, direccion, telefono,
+  pie de recibo ni tasa de impuesto. `GET /api/settings/logo` devuelve solo
+  `logo_url`.
+- Detalle operativo autenticado: `/api/system/status` y
+  `/api/system/health/detail` exigen `system.status.view` (403 para cajero).
+  `/api/system/status-summary` es un resumen sanitizado disponible para
+  cualquier sesion autenticada; no incluye `app_url`, `app_debug`, `php_version`,
+  rutas ni comandos.
+- Permisos verticales: cajero no alcanza usuarios/roles, backups, auditoria,
+  `settings/fiscal` ni exportaciones; `soporte_tecnico` tiene estado tecnico pero
+  no facturas; `auditor` lee historial/backups/auditoria pero no administra
+  catalogo ni usuarios. `GET /api/settings/operational` (GET) si es accesible a
+  cualquier sesion autenticada por diseno (solo `default_tax_rate`,
+  `scanner_enabled`, `partial_payments_enabled`); su `PUT` exige
+  `settings.operational.update` y devuelve 403 al cajero.
+- Permisos horizontales: un cajero no puede ver, anular, revertir, reimprimir,
+  listar pagos ni pagar facturas de otro cajero, y no puede usar el
+  `cash_session_id` de otra caja (el servidor valida propiedad, no confia en el
+  ID enviado por el navegador). Admin/supervisor si operan cualquier factura.
+- CSRF y CORS no estan desactivados globalmente: `bootstrap/app.php` solo excluye
+  `api/system/csp-report`; `config/cors.php` falla cerrado en produccion ante
+  origen `*`, y por defecto no habilita un origen Vite LAN para peticiones
+  credenciales.
+

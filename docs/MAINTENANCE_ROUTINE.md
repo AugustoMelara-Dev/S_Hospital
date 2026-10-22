@@ -73,9 +73,25 @@ Si algun item falla, escalar al responsable tecnico antes de continuar facturand
 
 ## Indicadores de salud del sistema
 
-- `GET /api/system/health` (publico) retorna estado del sistema, conexiones DB, profundidad de cola, estado del backup worker.
-- La UI de Backups muestra badge "Worker activo/inactivo" basado en el heartbeat del backup worker.
-- `GET /api/system/openapi` (publico) documenta la API para integraciones futuras.
+- `GET /api/health` (publico, liveness): `status: ok` y nombre del servicio.
+- `GET /api/system/health` (publico, liveness): agrega `version`. Ya no expone
+  base de datos, colas, respaldos ni metricas operativas.
+- `GET /api/system/health/detail` (autenticado, permiso `system.status.view`):
+  snapshot operativo + score (colas, respaldos, almacenamiento, errores de
+  auditoria). Es el que consume el tablero del cajero y el preflight.
+- `GET /api/system/status` (autenticado, `system.status.view`): estado
+  operativo completo. `GET /api/system/status-summary` (autenticado): resumen
+  sanitizado para superficies no tecnicas.
+- `GET /api/system/echo-config` y `GET /api/system/setup-status` (autenticados):
+  configuracion de tiempo real sin secretos y flags de configuracion inicial;
+  sin sesion responden 401.
+- `GET /api/settings/branding`, `GET /api/settings/logo` y
+  `GET /api/settings/logo/file` (publicos): branding minimo para la pantalla de
+  login.
+- `GET /api/system/openapi` (autenticado, requiere cambio de contrasena):
+  documento OpenAPI para integraciones.
+- La UI de Backups muestra badge "Worker activo/inactivo" basado en el heartbeat
+  del backup worker (visible con sesion autenticada).
 
 ## Criterio de listo
 

@@ -1,4 +1,12 @@
+# Archivos de entorno REALES: nunca se versionan. Los *.example (plantillas) SI.
+# `*.env` se conserva por compatibilidad con nombres tipo `x.env`.
+# `.env*` cubre cualquier nivel y cualquier sufijo (p. ej. `.env.rcp01`), que
+# antes NO estaba cubierto y dejaba un entorno real visible para `git add -A`
+# (hallazgo R2-REL-01, 2026-09-18).
 *.env
+.env*
+!.env.example
+!.env.*.example
 .env.local
 .env.production
 .env.*.local
@@ -6,6 +14,10 @@ install-logs/
 offline-release/
 offline-release.rar
 installer-output/
+/artifacts/
+# Directorio placeholder del bind externo por defecto de docker-compose.prod.yml;
+# un destino real (USB/NAS) no vive dentro del repositorio.
+backup-external/
 node_modules/
 Sistema-Caja-Hospitalaria-RC*.zip
 nginx/ssl/
@@ -40,3 +52,53 @@ frontend/playwright-report/
 frontend/debug.log
 
 .worktrees/
+
+# Build/QA artifacts produced locally; not part of the deliverable.
+/output/
+/tmp/
+backend/artifacts/
+frontend/test-results-c4b2/
+frontend/probe-hs-admin-c4/
+frontend/qa-e2e/
+
+# Local agent tooling / session-specific artifacts (never committed).
+.serena/
+.superpowers/
+.opencode/node_modules/
+.opencode/package.json
+.opencode/package-lock.json
+.opencode/bun.lock
+
+# Historical campaign evidence: bulky media & logs are traces, not source of truth.
+# Curated release evidence (e.g. ENTREGA-20261021 PDFs/capturas) is force-added
+# with `git add -f` when it is the explicit deliverable of a phase.
+hospital-ai/**/*.log
+hospital-ai/**/*.png
+hospital-ai/**/*.jpeg
+hospital-ai/**/*.jpg
+hospital-ai/**/*.pdf
+hospital-ai/**/*.xlsx
+hospital-ai/**/*.zip
+hospital-ai/**/*.ndjson
+hospital-ai/**/*.trace
+hospital-ai/**/*.stacks
+hospital-ai/**/*.stdout
+hospital-ai/**/*.stderr
+hospital-ai/**/*.pyc
+hospital-ai/archivo-retirado/
+evidencia/**/*.log
+evidencia/**/*.png
+evidencia/**/*.jpeg
+evidencia/**/*.jpg
+evidencia/**/*.pdf
+evidencia/**/*.xlsx
+evidencia/**/*.zip
+
+# Historical campaign evidence dumps (bulky traces, not source of truth).
+# Curated release evidence (e.g. ENTREGA-20261021) is force-added with `git add -f`.
+hospital-ai/evidencia/
+evidencia/
+
+# Instaladores compilados (nunca en git)
+installer/native/output/
+installer/native/tests/output/

@@ -2,8 +2,8 @@
 
 Estado actual documentado: `LOCAL_RELEASE_CANDIDATE` para instalacion local en
 una sola PC. No declarar `PRODUCTION_READY` hasta cerrar configuracion final del
-servidor real, backup worker, restore, impresion institucional y, si aplica,
-validacion fisica de clientes LAN.
+servidor real, automatizacion de respaldos (worker + scheduler), restore,
+impresion institucional y, si aplica, validacion fisica de clientes LAN.
 
 Certificacion integrada vigente: `docs/INTEGRATED_RELEASE_CERTIFICATION_2026-07-19.md`.
 Procedimiento de actualizacion/rollback: `docs/SAFE_UPDATE_ROLLBACK.md`.
@@ -148,8 +148,12 @@ no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
 documentadas de impresion institucional, restore final, concurrencia final y
 navegador local cuando `BaseUrl` sea loopback, o cliente LAN cuando el despliegue sea multi-PC.
 
-En Windows tambien falla si no existen `HospitalBillingOS-BackupWorker` y
-`HospitalBillingOS-DailyBackup`, o si el worker continuo no esta `Running`.
+En Windows tambien falla si no existen `HospitalBillingOS-BackupWorker` en
+`Running` y `HospitalBillingOS-Scheduler` con repeticion de 1 minuto
+(`RepetitionInterval='PT1M'` y `MultipleInstances='IgnoreNew'`), o si no puede
+leerse esa evidencia. La tarea legacy `HospitalBillingOS-DailyBackup` no
+certifica automatizacion: si sigue instalada el preflight emite un warning y
+pide retirarla con `scripts\install_backup_tasks_windows.ps1 -UpdateExisting`.
 
 La evidencia fisica de impresion institucional es obligatoria por defecto. La
 evidencia local aplica a monocomputadora; evidencia LAN externa aplica a despliegues multi-PC. El flag
@@ -237,20 +241,35 @@ En Windows, asegurar que la tarea/servicio del worker herede la ruta de `mysqldu
 El worker debe quedar como servicio o tarea continua, no como comando manual
 temporal. Validar que un backup manual cambie de `pending` a `success`.
 
-Helper para crear tareas Windows en el servidor final:
+Helper para crear tareas Windows en el servidor final (bare-metal):
 
 ```powershell
 cd C:\Projects\S_Hospital
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
-Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
+Get-ScheduledTaskInfo -TaskName HospitalBillingOS-Scheduler
+Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
 ```
 
-Usar `-WhatIfOnly` primero para revisar rutas. Despues de registrar las tareas,
-crear un backup desde la UI y confirmar que pasa de `pending` a `success`.
-Si las tareas ya existen, el script falla salvo que se use `-UpdateExisting`.
-Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall`.
+Usar `-WhatIfOnly` primero para revisar rutas y el plan. El registrador crea
+`HospitalBillingOS-BackupWorker` (cola `backups`) y `HospitalBillingOS-Scheduler`
+(`schedule:run` cada minuto + heartbeat `hospital:scheduler-tick`); no registra
+una tarea directa de respaldo porque el schedule de Laravel es el unico dueno.
+Si las tareas ya existen (incluida la legacy `HospitalBillingOS-DailyBackup`),
+el script falla salvo que se use `-UpdateExisting`, que reemplaza las tareas
+vigentes y retira la legacy. Para removerlas:
+`powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall`.
+Despues de registrar, crear un backup desde la UI y confirmar que pasa de
+`pending` a `success`. La hora efectiva del respaldo diario es
+`HOSPITAL_DAILY_BACKUP_TIME` en `backend\.env`; el parametro legado
+`-DailyBackupTime` no gobierna el trigger.
+
+> Nota 2026-09-14 (T3-011/T3-016/T3-017): este checklist quedo alineado al
+> modelo real Worker + Scheduler. Evidencia:
+> `hospital-ai/evidencia/T3-011/INFORME.md`,
+> `hospital-ai/evidencia/T3-016/INFORME.md`,
+> `hospital-ai/evidencia/T3-017/INFORME.md`.
 
 ## Antes de produccion final
 
@@ -260,8 +279,9 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 - Para monocomputadora, crear `qa/LOCAL_SERVER_VALIDATION_PROOF.md` usando `qa/LOCAL_SERVER_VALIDATION_PROOF.example.md`.
 - Para despliegue multi-PC, crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
 - Crear evidencia de impresion institucional en `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con media carta, carta y A5.
-- Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
-- Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
+- Crear `qa/FINAL_RESTORE_PROOF.md` (nombre exacto que exige el preflight; no existe `qa/FINAL_RESTORE_PROOF.example.md` en este arbol). Usar `qa/RECOVERY_CERTIFICATION.example.md` solo como referencia de formato y completar los campos `Date/time`, `Responsible person`, `Source database`, `Disposable restore database`, `Backup file`, `Backup SHA256`, `Backup size bytes`, `Evidence/capture reference` y `Final conclusion`, con los checks `Disposable restore database`, `Backup file`, `Restore imports`, `Migration table`, `Services table` y `Core counts`.
+- Crear `qa/FINAL_CONCURRENCY_PROOF.md` (nombre exacto que exige el preflight; no hay plantilla dedicada en este arbol) con los campos `Date/time`, `Responsible person`, `Server LAN URL`, `Target environment`, `Run ID`, `Evidence/capture reference` y `Final conclusion`, y los checks `Double cash-session open`, `Concurrent invoice emission` y `Double payment`.
+- En ambos `qa/FINAL_*.md`, el preflight exige datos reales: rechaza `TODO`, `PENDING_*`, `N/A`, `[ ]` sin marcar e instrucciones de plantilla copiadas del archivo de ejemplo.
 - Para multi-PC, generar evidencia inicial de rutas desde la segunda PC cliente LAN:
 
 ```powershell

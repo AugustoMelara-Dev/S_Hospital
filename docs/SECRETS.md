@@ -102,8 +102,11 @@ Procedure:
 
 ## Pre-commit guard
 
-A `pre-commit` hook is installed by `scripts/install_dev_hooks.ps1` (or
-manually) at `.git/hooks/pre-commit`. It blocks:
+The guard lives in `scripts/pre-commit-guard.ps1`. This tree does **not** ship an
+automatic hook installer: `scripts/install_dev_hooks.ps1` is retired and no
+longer exists, and `.git/hooks/pre-commit` is not created by the repository. To
+enforce it locally, run the guard manually before committing or create a
+`.git/hooks/pre-commit` script that invokes it. It blocks:
 
 - Adding a tracked file that contains `APP_KEY=base64:` followed by
   more than 16 base64 characters (real key, not the placeholder).

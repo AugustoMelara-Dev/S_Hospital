@@ -1,5 +1,10 @@
 # Clinical Operations Console Total Redesign Implementation Plan
 
+> **Nota 2026-09-13:** documento historico de planificacion. El comando
+> `scripts/verify-docs.ps1` citado en las tareas no existe en el arbol actual;
+> verifique los comandos vigentes en `AGENTS.md`. El estado actual vive en
+> `reports/CURRENT_RELEASE_TRUTH.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Reemplazar completamente la presentación y experiencia de S_Hospital por Clinical Operations Console sin alterar los contratos transaccionales de facturación, caja, fiscalidad, permisos, auditoría e impresión.

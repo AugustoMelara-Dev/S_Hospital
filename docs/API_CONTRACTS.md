@@ -73,8 +73,17 @@ Error de validacion:
 | `/api/settings/institutional-receipts/print-profiles/{id}` | PATCH | `receipt_settings.update` (+ `receipt_settings.advanced` para campos manuales) | Actualiza perfil. |
 | `/api/backups` | GET / POST | `backups.view` / `backups.create` | Listado y creacion (audita sha256, filesize). |
 | `/api/system/audit-logs` | GET | `audit.view` | Bitacora paginada y filtrable. |
-| `/api/system/status` | GET | publico | Estado del sistema. |
-| `/api/system/health` | GET | publico | Health check. |
+| `/api/health` | GET | publico | Liveness minimo (`status`, `service`). |
+| `/api/system/health` | GET | publico | Liveness minimo (`status`, `service`, `version`). Sin detalle operativo. |
+| `/api/system/health/detail` | GET | autenticado + `system.status.view` | Snapshot operativo + score (colas, respaldos, almacenamiento, auditoria). |
+| `/api/system/echo-config` | GET | autenticado | Configuracion de tiempo real sin secretos (`host`, `port`, `scheme`, `useTLS`). |
+| `/api/system/setup-status` | GET | autenticado | Flags de configuracion inicial (`needs_setup` y pasos). |
+| `/api/system/status` | GET | autenticado + `system.status.view` | Estado operativo completo. |
+| `/api/system/status-summary` | GET | autenticado | Resumen sanitizado del estado. |
+| `/api/system/openapi` | GET | autenticado + `password.changed` | Documento OpenAPI. |
+| `/api/settings/branding` | GET | publico | Branding minimo para login. |
+| `/api/settings/logo` | GET | publico | Metadatos del logo institucional. |
+| `/api/settings/logo/file` | GET | publico | Archivo de logo. |
 
 ## Permisos
 
@@ -87,6 +96,7 @@ Permisos en `RolesAndPermissionsSeeder`. Principales:
 - `receipt_settings.view`, `receipt_settings.update`, `receipt_settings.advanced`
 - `backups.view`, `backups.create`, `backups.download`
 - `audit.view`
+- `system.status.view` (snapshot de salud y estado operativo)
 - `users.view`, `users.create`, `users.update`, `users.disable`, `users.assign_admin_role`
 - `reports.view`, `reports.managerial.view`, `reports.cash_session.view`, `reports.export`
 

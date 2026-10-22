@@ -1,0 +1,20 @@
+{
+  "prepared_at_utc": "2026-09-13T20:32:45.481142+00:00",
+  "type": "isolated_detached_worktree",
+  "source_repo": "C:\\Projects\\S_Hospital",
+  "writable_root": "C:\\Projects\\S_Hospital_AI",
+  "source_snapshot": {
+    "head": "baa41f97310a578f8fd417a1e9b4b5d06c380670",
+    "status_sha256": "65a6975bfd99f66f772c0025b5a532b586c5cd93a1d0e9483f5f0ef30cf515ce",
+    "working_diff_sha256": "d16d7dc3b6d7b6366fd76ab489abfe69d557a87f092ae72aba8b03f344ec3725",
+    "index_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "imported_tracked_diff_sha256": "d16d7dc3b6d7b6366fd76ab489abfe69d557a87f092ae72aba8b03f344ec3725",
+  "imported_tracked_diff_bytes": 1891,
+  "untracked_original_not_copied": [],
+  "ignored_files_copied": false,
+  "warning": "No se copiaron .env, ignorados o no rastreados. Revisar código/config necesarios sin trasladar datos reales ni secretos.",
+  "commits_created": 0,
+  "original_worktree_unchanged": true,
+  "product_status": "NOT_EXECUTED; solo preparación de agentes y workspace"
+}

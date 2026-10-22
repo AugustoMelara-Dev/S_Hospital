@@ -8,6 +8,7 @@ Run from the repository root:
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\security\test-supply-chain-check.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\security\test-run-security-checks.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-checks.ps1
 ```
 
@@ -40,6 +41,83 @@ In CI, the central `supply-chain` job must pass before any backend or frontend
 dependency installation starts. Composer then audits `composer.lock` with
 `--locked` before each backend install; frontend scans installed artifacts again
 after pnpm completes.
+
+## Dependency Audit Gate
+
+`scripts/security/run-security-checks.ps1` chains the supply-chain guard and
+then audits the canonical pnpm lockfile with `corepack pnpm audit --json` for
+each project root that has a `pnpm-lock.yaml` (today `frontend/`); the residual
+`package-lock.json` is never queried. This gate and its threshold were
+documented 2026-09-14 (T3-019) from the T3-007 change and the RV-BATCH-2 review:
+
+- **Default threshold `info`:** `-FailOnSeverity` defaults to `info`, the
+  lowest pnpm severity. The gate sums the advisories at or above the threshold
+  and fails when that sum is greater than zero, so the default blocks **any**
+  advisory (`info`, `low`, `moderate`, `high` or `critical`).
+- **Override:** `-FailOnSeverity <info|low|moderate|high|critical>` moves the
+  level explicitly, for example
+  `powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-checks.ps1 -FailOnSeverity high`.
+  Relaxing the default is a reviewed decision, not a convenience flag: record
+  package, version, reason and reviewer in [`docs/DECISIONS.md`](DECISIONS.md).
+- **Result output:** a failure names the project path, the number of blocking
+  advisories, the active threshold, the per-severity `breakdown`
+  (`info=N low=N moderate=N high=N critical=N`) and the total advisories. A pass
+  prints the same `threshold` / `total advisories` / `breakdown` line, so release
+  evidence states the exact level that was enforced.
+- **Offline fallback:** when `corepack` is present but `corepack pnpm audit`
+  exits non-zero without an evaluable report (typically no network in
+  offline/LAN work), the script prints
+  `[WARN] pnpm audit could not complete ... rerun with internet before release`
+  and exits 0. This is not a pass: treat it as "audit not performed" and rerun
+  the gate with network before freezing a release candidate. A missing
+  `corepack` command is a different case: the script throws
+  (`corepack is required to audit the canonical pnpm lockfile ...`) and aborts
+  before running any audit; it never degrades to `[WARN]`.
+- **Fail-closed shapes:** a parsed report that includes a
+  `metadata.vulnerabilities` object is always evaluated against the threshold,
+  whatever the `pnpm` exit status. When no evaluable report is available and
+  `pnpm audit` exits 0, parseable JSON without that object fails with
+  `unexpected JSON shape ... refusing to evaluate the dependency gate`, and
+  non-JSON output also fails. When no evaluable report is available and
+  `pnpm audit` exits non-zero, the `[WARN]` path above wins instead and exits
+  0 — also not a pass. Only a report with zero blocking advisories passes.
+
+Policy accepted 2026-09-14: fail closed at `info` by default; the override
+exists but requires a reviewed decision. Evidence: `scripts/security/run-security-checks.ps1`,
+its synthetic self-test `scripts/security/test-run-security-checks.ps1` (covers
+moderate/low at the default threshold, the `high` override, the missing
+`metadata` fail-closed case and the offline `[WARN]`) and
+[`hospital-ai/evidencia/T3-007/`](../hospital-ai/evidencia/T3-007/). The review
+that raised this documentation debt is
+[`hospital-ai/evidencia/revisiones/RV-BATCH-2.md`](../hospital-ai/evidencia/revisiones/RV-BATCH-2.md).
+
+### CI threshold reconciliation (2026-09-14, T3-020)
+
+The frontend CI job no longer uses `--audit-level`. As of **T3-020** (hs-qa),
+the `Audit frontend dependencies` step in `.github/workflows/ci.yml` runs
+`pnpm audit --json` and post-processes the report: it fails on **any** advisory
+(`info`, `low`, `moderate`, `high`, `critical`, a non-zero severity `total`, or
+entries in the `advisories` / `vulnerabilities` maps), matching this gate's
+default `-FailOnSeverity info`. The blocking policy for real reports is
+therefore identical; the deliberate divergences live in the error path, where
+the online CI step is stricter than this local gate:
+
+- Unevaluable audit (no network, unparseable JSON, unexpected shapes): CI fails
+  closed; this local gate prints the offline `[WARN]` and exits 0 (LAN
+  workstations). The `[WARN]` is not a pass.
+- Non-zero `pnpm` exit with a zero-advisory report: CI fails closed (it refuses
+  to certify an audit that did not complete cleanly); this local gate still
+  passes a report it can evaluate.
+- Malformed `metadata.vulnerabilities.total` or non-object `advisories` /
+  `vulnerabilities` shapes: CI fails closed; this local gate does not consult
+  those fields.
+
+No fallback accepts a real advisory. T3-019 documented this reconciliation as
+pending; T3-020 landed it, with evidence in
+[`hospital-ai/evidencia/T3-020/`](../hospital-ai/evidencia/T3-020/) and its
+independent review
+[`RV-T3-020.md`](../hospital-ai/evidencia/revisiones/RV-T3-020.md); the step's
+own comments state the full fail-closed rules.
 
 ## If The Guard Fails
 

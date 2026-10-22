@@ -1,5 +1,10 @@
 # Technical Decisions - Hospital Billing OS Offline
 
+> **Campana 2026-09-13:** las decisiones tecnicas y la deuda diferida de la
+> campana vigente se consolidan en
+> [`CAMPANA_2026-09-13_DECISIONES_Y_DEUDA.md`](CAMPANA_2026-09-13_DECISIONES_Y_DEUDA.md).
+> Este documento conserva el registro historico.
+
 ## Registro de decisiones
 
 ### 2026-05-16 - Backend Laravel API
@@ -268,10 +273,18 @@ Consecuencia:
 Decision:
 
 - Fase 10 separa el estado `DEMO_READY`, `PRODUCTION_CANDIDATE` y `PRODUCTION_READY`.
-- Playwright E2E queda como gate separado en `scripts/e2e_gate.sh`, no mezclado dentro del quality gate seguro.
-- Restore MySQL/MariaDB real y concurrencia MySQL/MariaDB real quedan como scripts verificables (`scripts/validate_restore_mysql.sh` y `scripts/validate_mysql_concurrency.sh`) que requieren banderas explicitas antes de tocar entornos reales.
+- Playwright E2E queda como gate separado en `scripts/e2e_gate.sh` (script retirado), no mezclado dentro del quality gate seguro.
+- Restore MySQL/MariaDB real y concurrencia MySQL/MariaDB real quedan como scripts verificables (`scripts/validate_restore_mysql.sh` y `scripts/validate_mysql_concurrency.sh`; **retirados del arbol actual**) que requieren banderas explicitas antes de tocar entornos reales.
 - Produccion same-origin desde Laravel sirve `/`, `/login`, `/verify-email` y `/assets/*` desde `frontend/dist` para que los clientes LAN puedan entrar por IP o nombre del servidor.
 - Impresora termica fisica no se marca validada sin hardware; queda checklist operativo en `docs/THERMAL_PRINTER_VALIDATION.md`.
+
+> Nota 2026-09-13: los scripts de esta entrada (`scripts/e2e_gate.sh`,
+> `scripts/validate_restore_mysql.sh`, `scripts/validate_mysql_concurrency.sh`)
+> no existen en el arbol actual. La verificacion vigente usa
+> `scripts\restore_hospital_windows.ps1` (restore en base descartable),
+> `scripts\run_release_e2e_mariadb.ps1` (E2E con MariaDB real),
+> `scripts\production_readiness_preflight.ps1` (preflight de entrega) y
+> `scripts\validate_lan_client.ps1` (segunda PC LAN, pendiente de hardware).
 
 Motivo:
 
@@ -404,7 +417,7 @@ Decision:
 
 - `PRODUCTION_READY` queda ligado a evidencia ejecutable del servidor final, no solo a docs.
 - `scripts/production_readiness_preflight.ps1` valida entorno production, build frontend, rutas `/up`, `/login`, `/verify-email`, herramientas MySQL/dump, carpeta de backups y pruebas fisicas documentadas.
-- `scripts/install_backup_tasks_windows.ps1` registra tareas Windows para worker continuo de backups y backup diario programado.
+- `scripts/install_backup_tasks_windows.ps1` registra tareas Windows para worker continuo de backups y backup diario programado (modelo superseded; ver Nota 2026-09-14 despues de esta entrada).
 - La evidencia de segunda PC LAN e impresora fisica se documenta en archivos separados bajo `qa/` y el preflight la exige por defecto.
 - La evidencia fisica queda obligatoria por defecto; solo puede omitirse con `-AllowMissingPhysicalProof`, y esa salida no puede llamarse `PRODUCTION_READY`.
 - Las tareas Windows no se sobrescriben silenciosamente; `-UpdateExisting` debe usarse de forma explicita.
@@ -416,6 +429,18 @@ Motivo:
 Consecuencia:
 
 - El codigo puede avanzar como paquete operativo listo para servidor final, pero la etiqueta `PRODUCTION_READY` solo se usa despues del preflight completo y evidencia de campo.
+
+> Nota 2026-09-14 (T3-011/T3-016/T3-017): el modelo de tareas Windows descrito
+> en esta entrada quedo superseded. El registrador vigente crea
+> `HospitalBillingOS-BackupWorker` (cola `backups`) y
+> `HospitalBillingOS-Scheduler` (`schedule:run` cada minuto, trigger
+> `PT1M`/`MultipleInstances=IgnoreNew`); la tarea directa
+> `HospitalBillingOS-DailyBackup` quedo retirada y `-UpdateExisting` la
+> desregistra. El preflight y las librerias de readiness exigen Worker +
+> Scheduler y no aceptan la tarea legacy. Evidencia:
+> `hospital-ai/evidencia/T3-011/INFORME.md`,
+> `hospital-ai/evidencia/T3-016/INFORME.md` y
+> `hospital-ai/evidencia/T3-017/INFORME.md`.
 
 ### 2026-05-19 - Backups automaticos diarios y permisos manuales
 
@@ -434,3 +459,12 @@ Consecuencia:
 
 - Produccion puede usar `php artisan schedule:run` via Programador de tareas o el helper Windows directo.
 - La UI muestra backups programados como creados por `Sistema`; la seguridad real permanece en backend por permisos.
+
+> Nota 2026-09-14 (T3-011/T3-016/T3-017): el "helper Windows directo" ya no
+> registra un respaldo diario directo. La automatizacion vigente ejecuta
+> `schedule:run` (sidecar Docker, loop de usuario T3-003 o tarea
+> `HospitalBillingOS-Scheduler`). La hora efectiva sigue siendo
+> `HOSPITAL_DAILY_BACKUP_TIME`; `-DailyBackupTime` es un parametro legado sin
+> efecto en el trigger. Ver la nota de la entrada 2026-05-18 y evidencia en
+> `hospital-ai/evidencia/T3-011/INFORME.md` y
+> `hospital-ai/evidencia/T3-016/INFORME.md`.

@@ -9,8 +9,12 @@ cajero).
 - Confirme que existe un respaldo reciente en la UI de Respaldos del sistema.
   Si el ultimo respaldo tiene mas de 24 horas, **primero** cree un respaldo
   manual antes de seguir.
-- Confirme que la tarea `SistemaCajaHospitalaria-BackupWorker` esta
-  `Running`. Si no lo esta, no hay worker procesando respaldos en cola.
+- Confirme que la automatizacion esta activa: tarea
+  `HospitalBillingOS-BackupWorker` en `Running` y tarea
+  `HospitalBillingOS-Scheduler` `Ready/Running` con repeticion de 1 minuto. Si
+  falta el scheduler, los respaldos programados no corren; si falta el worker,
+  no se procesan los respaldos en cola. En Docker, los servicios `queue-worker`
+  y `scheduler` deben estar arriba.
 - Tenga a mano: contrasena del admin inicial, ruta al paquete `offline-release`
   y la IP LAN del servidor.
 
@@ -21,8 +25,9 @@ cajero).
    disco. Lleve el disco a un equipo con MariaDB 10.6+ o MySQL 8.0+ y
    siga el escenario 5 (restore desde backup externo).
 3. Si el disco esta bien, arranque el servidor y espere a que Docker
-   levante los 4 servicios (backend, nginx, mysql, queue-worker). Use
-   `docker compose ps` en la carpeta del proyecto.
+   levante los servicios del stack (backend, nginx, mysql, queue-worker,
+   realtime-worker, scheduler y soketi). Use
+   `docker compose -f docker-compose.prod.yml ps` en la carpeta del despliegue.
 4. Cuando `mysql` este `healthy`, los demas arrancan solos. Espere 60-90
    segundos y valide desde otra PC: `http://IP-SERVIDOR:8000/up` debe
    devolver 200 con `status: ok`.
@@ -116,21 +121,48 @@ cajero).
 3. Despues, cree un respaldo manual desde la UI para verificar que la
    cola vuelve a procesar.
 
-## Escenario 7 - La tarea Windows de backup no corre
+## Escenario 7 - La automatizacion de backup no corre
 
-1. `Get-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker`. Si
-   el estado no es `Running`, reejecute el instalador:
+La automatizacion bare-metal son dos tareas: `HospitalBillingOS-BackupWorker`
+(cola `backups`) y `HospitalBillingOS-Scheduler` (`schedule:run` cada minuto).
+La tarea legacy `HospitalBillingOS-DailyBackup` esta retirada y no certifica
+automatizacion.
+
+1. Revise el estado de las dos tareas:
 
    ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
-   Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
+   powershell -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
+   Get-ScheduledTaskInfo -TaskName HospitalBillingOS-Scheduler
    ```
+
+   El worker debe estar `Running`; el scheduler debe repetir cada minuto y
+   tener una corrida reciente (`LastRunTime` dentro del ultimo minuto). Si
+   falta cualquiera de las dos, o la legacy sigue instalada, reejecute el
+   registrador y arranque el worker:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting
+   Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+   ```
+
+   El registrador arranca el scheduler por si mismo y retira la legacy con
+   `-UpdateExisting`. Solo aplica a instalaciones bare-metal con PHP local
+   (use `-PhpPath C:\xampp\php\php.exe` si PHP no esta en PATH); en Docker
+   revise los servicios `queue-worker` y `scheduler` del stack. La hora
+   efectiva del respaldo diario es `HOSPITAL_DAILY_BACKUP_TIME` en
+   `backend\.env`; `-DailyBackupTime` es legado sin efecto en el trigger.
 
 2. Si la tarea se inicia y se detiene a los pocos segundos, revise
    `install-logs/` para ver el error. Casi siempre es PATH: el PHP
    no encuentra `mariadb-dump` o `mysqldump`.
 3. Anada `C:\xampp\mysql\bin` (o la ruta de su MariaDB) al PATH del
    usuario que ejecuta la tarea.
+
+> Nota 2026-09-14 (T3-011/T3-016/T3-017): escenario actualizado al modelo
+> Worker + Scheduler; `HospitalBillingOS-DailyBackup` quedo retirada
+> (`-UpdateExisting` la desregistra) y ya no certifica automatizacion.
+> Evidencia: `hospital-ai/evidencia/T3-011/INFORME.md` y
+> `hospital-ai/evidencia/T3-016/INFORME.md`.
 
 ## Escenario 8 - Disco del servidor lleno
 
@@ -154,8 +186,9 @@ cajero).
 
 ## Escenario 10 - Restaurar paquete offline desde USB
 
-1. Copie la carpeta `offline-release/` a la PC servidor. La carpeta
-   pesa ~250MB e incluye 4 imagenes Docker precargadas.
+1. Copie la carpeta `offline-release/` a la PC servidor. Incluye las 6
+   imagenes Docker precargadas (backend, queue-worker, scheduler, nginx,
+   mariadb y soketi).
 2. Ejecute `setup.bat` como Administrador.
 3. El instalador detecta las imagenes locales y no intenta descargarlas
    de internet. Si ve errores de pull, valide que los archivos `.tar`

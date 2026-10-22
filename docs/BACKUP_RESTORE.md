@@ -46,7 +46,7 @@ Desde paquete offline con Docker:
 docker compose -f docker-compose.prod.yml --env-file .env exec -T backend php artisan hospital:backup --type=scheduled
 ```
 
-El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tareas programadas fuera del horario de caja. La UI registra el backup y lo deja a la cola `backups` para evitar que el navegador espere el dump completo.
+El comando crea y ejecuta el backup en el mismo proceso; se recomienda para ejecuciones puntuales fuera del horario de caja. La UI registra el backup y lo deja a la cola `backups` para evitar que el navegador espere el dump completo.
 
 Los archivos quedan bajo `storage/app/private/backups`. El API solo descarga archivos registrados en `backup_logs`, existentes y dentro de esa carpeta. Desde la correccion de hardening F8, el formato esperado es `.sql.gz.enc`: SQL comprimido con gzip y cifrado localmente antes de publicarse.
 
@@ -80,14 +80,30 @@ La retencion nunca elimina backups `pending` o `failed`; esos registros quedan c
 
 ## Antes de migraciones productivas
 
-El contenedor backend bloquea migraciones pendientes sobre una base ya inicializada si `APP_ENV=production` y no se confirma un backup cifrado reciente. Para un upgrade:
+El entrypoint del backend ejecuta `php artisan hospital:verify-migration-backup`
+antes de migrar. El guard bloquea la migracion si la instalacion tiene datos y
+no existe un respaldo cifrado, integro y recuperable dentro de la ventana
+configurada. No existe una variable booleana de confirmacion manual: la unica
+forma de habilitar el upgrade es tener un `backup_logs` con estado `success`
+verificado. Para un upgrade:
 
 1. Crear un backup manual y esperar estado `success`.
-2. Registrar `checksum_sha256`, fecha/hora y responsable.
+2. El guard comprueba `encrypted`, disco local, ruta segura, archivo presente,
+   tamano, `checksum_sha256`, `encryption_key_id` vigente y que el primer bloque
+   se descifre con la clave configurada. Registrar fecha/hora y responsable.
 3. Conservar `HOSPITAL_BACKUP_ENCRYPTION_KEY` fuera del repositorio.
-4. Ejecutar el upgrade con `HOSPITAL_MIGRATION_BACKUP_CONFIRMED=1` solo para esa ventana de mantenimiento.
+4. Ejecutar el upgrade: el guard corre dentro del entrypoint (Docker) o antes de
+   migrar en el despliegue; si bloquea, cree el respaldo y reintente.
 
-No usar esta variable para saltarse backups rutinarios; es una confirmacion operativa de que existe un restore point antes de modificar el esquema.
+La ventana de antiguedad se ajusta con `HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS`
+(horas; default 72). Una instalacion genuinamente vacia (sin tablas, o sin
+migraciones aplicadas y sin datos de dominio) puede migrar sin respaldo previo.
+
+Para diagnosticar antes de una ventana de mantenimiento:
+
+```powershell
+docker compose -f docker-compose.prod.yml --env-file .env exec -T backend php artisan hospital:verify-migration-backup --json
+```
 
 El backend busca `mariadb-dump` o `mysqldump` en el `PATH` y en rutas locales comunes como `C:\xampp\mysql\bin\mysqldump.exe`. Si el servidor usa otra ruta, definir:
 
@@ -105,34 +121,34 @@ php artisan schedule:list
 php artisan schedule:run
 ```
 
-Por defecto corre `hospital:backup --type=scheduled` a las `02:00`. La hora se puede ajustar con `HOSPITAL_DAILY_BACKUP_TIME=HH:MM` en `.env` antes de ejecutar `php artisan config:cache`.
+Por defecto el schedule ejecuta `hospital:backup --type=scheduled` a las `02:00`. La hora se puede ajustar con `HOSPITAL_DAILY_BACKUP_TIME=HH:MM` en `.env` antes de ejecutar `php artisan config:cache`.
 
-En Windows de produccion se recomienda usar el helper de abajo. El helper detecta
-si la instalacion tiene `backend\artisan` y registra tareas PHP local; si el
-paquete es offline Docker y no trae `backend\artisan`, registra wrappers que
-llaman `docker compose` contra `docker-compose.prod.yml`. El backup automatico
-queda registrado como usuario `Sistema` en la UI porque no depende de un usuario
-web. La creacion y descarga manual desde navegador siguen permitidas solo para
-usuarios con permisos `backups.create` y `backups.download`.
+En produccion debe existir exactamente UN mecanismo de scheduler por host
+(nunca dos), y todos ejecutan el mismo `schedule:run` de Laravel:
 
-## Programar backup diario en Windows
+- Docker (`docker-compose.prod.yml`): sidecar `scheduler`, cada 60 segundos.
+- Bare-metal con loop de usuario (T3-003): `scripts\run_backup_scheduler_loop.ps1`,
+  instalado con `scripts\install_backup_startup_current_user.ps1`, cada 60 segundos.
+- Bare-metal con tareas Windows: `scripts\install_backup_tasks_windows.ps1`
+  registra `HospitalBillingOS-BackupWorker` (cola `backups`, al iniciar Windows)
+  y `HospitalBillingOS-Scheduler` (cada 1 minuto), que ejecuta
+  `schedule:run --no-interaction` y registra `hospital:scheduler-tick`.
 
-Crear una tarea del Programador de tareas:
+La tarea legacy `HospitalBillingOS-DailyBackup` (respaldo directo) esta retirada:
+registrarla de nuevo duplicaria el schedule de Laravel y `schedule:run` es el
+unico dueno de los respaldos programados. `-UpdateExisting` la desregistra de
+instalaciones antiguas. El backup automatico aparece en la UI como creado por
+`Sistema` porque no depende de un usuario web. La creacion y descarga manual
+desde navegador siguen permitidas solo para usuarios con permisos
+`backups.create` y `backups.download`.
 
-- Programa: `php`
-- Argumentos: `artisan hospital:backup --type=scheduled`
-- Iniciar en: `C:\HospitalBilling\backend`
-- Frecuencia: diario, fuera del horario de caja.
-- Usuario: cuenta local con permisos sobre la carpeta del sistema y destino USB si aplica.
+## Programar la automatizacion en Windows (bare-metal)
 
-Crear otra tarea o servicio local para el worker:
-
-- Programa: `php`
-- Argumentos: `artisan queue:work --queue=backups --tries=1 --timeout=600`
-- Iniciar en: `C:\HospitalBilling\backend`
-- Frecuencia: al iniciar Windows o como servicio supervisado.
-
-Helper para registrar las tareas de Windows:
+No cree una tarea directa `php artisan hospital:backup --type=scheduled`: el
+schedule de Laravel (`backend/routes/console.php`) es el unico dueno de los
+respaldos programados y la hora efectiva es `HOSPITAL_DAILY_BACKUP_TIME` en
+`backend\.env` (regenerar `php artisan config:cache` al cambiarla). Para
+instalaciones bare-metal use el registrador incluido:
 
 ```powershell
 cd C:\Projects\S_Hospital
@@ -141,66 +157,84 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_window
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 ```
 
-El helper crea una tarea de worker al iniciar Windows y una tarea diaria de
-backup programado. Primero ejecutar `-WhatIfOnly` para confirmar rutas y el
-runtime real: `PHP local` o `Docker Compose`.
-La salida de `-WhatIfOnly` oculta rutas locales como `%PROJECT_ROOT%` y
-`[php-configurado]`; esto es intencional para que la captura se pueda enviar a
-soporte sin exponer carpetas del servidor. Las tareas reales conservan las rutas
-necesarias internamente para poder ejecutarse.
-Si `-PhpPath` apunta a una ruta inexistente en modo PHP local, el helper se
-detiene antes de registrar tareas para evitar respaldos automaticos rotos. En
-modo Docker, el helper exige `docker`, `docker compose`, `.env` y compose
-productivo validos antes de registrar tareas.
-Si las tareas ya existen, el helper falla sin sobrescribirlas; usar
-`-UpdateExisting` para reemplazarlas explicitamente. Para desinstalarlas, usar
-`-Uninstall`. La instalacion, actualizacion y desinstalacion requieren abrir
-PowerShell como administrador.
+El registrador crea dos tareas:
 
-Tambien se incluyen wrappers directos. Detectan automaticamente modo PHP local o
-modo Docker offline:
+- `HospitalBillingOS-BackupWorker`: worker de la cola `backups` (respaldos de
+  UI), al iniciar Windows.
+- `HospitalBillingOS-Scheduler`: cada minuto ejecuta
+  `schedule:run --no-interaction` y registra el heartbeat
+  `hospital:scheduler-tick`; de ahi corren el respaldo diario, los operativos
+  06:00-18:00, salud, verificacion y podas.
 
-```powershell
-scripts\run_scheduled_backup.cmd
-scripts\run_backup_worker.cmd
-scripts\start_backup_automation.cmd
-```
+Notas de uso:
 
-En modo PHP local, por defecto usan `C:\xampp\php\php.exe`. Si PHP esta en otra
-ruta, definir `HOSPITAL_PHP_PATH` antes de ejecutarlos o al crear la tarea
-programada. En modo Docker offline no requieren PHP host; usan
-`docker-compose.prod.yml` y `.env`.
-Antes de dejarlos activos, soporte puede validarlos sin iniciar workers ni crear
-respaldos:
+- `-WhatIfOnly` no registra nada y muestra el plan; revise la salida antes de
+  compartirla, porque incluye rutas locales del servidor.
+- El registrador es solo para instalaciones bare-metal con `backend\artisan` y
+  PHP local. En Docker el scheduler es el sidecar `scheduler` de
+  `docker-compose.prod.yml`; no registre tareas Windows en ese modo.
+- Si las tareas ya existen (incluida la legacy `HospitalBillingOS-DailyBackup`),
+  el script falla sin sobrescribir; use `-UpdateExisting` para reemplazarlas y
+  retirar la legacy. Para desinstalar: `-Uninstall`.
+- Registrar, actualizar y desinstalar requiere PowerShell como administrador.
+- Despues de registrar, cree un backup desde la UI y confirme que pasa de
+  `pending` a `success`; confirme la corrida del scheduler con
+  `Get-ScheduledTaskInfo -TaskName HospitalBillingOS-Scheduler`.
+
+Tambien hay wrappers directos para uso manual o por los mecanismos anteriores:
 
 ```powershell
-scripts\run_backup_worker.cmd --check
-scripts\run_scheduled_backup.cmd --check
-scripts\start_backup_automation.cmd --check
+scripts\run_backup_worker.cmd        # worker de la cola backups
+scripts\start_backup_automation.cmd  # arranca el loop de usuario (T3-003)
+scripts\run_scheduled_backup.cmd     # respaldo scheduled directo (legacy)
 ```
 
-Si la validacion falla, el mensaje debe indicar una accion simple: revisar PHP o
-Docker segun el modo, permisos, espacio en disco, `.env` o instalacion completa.
-Los detalles tecnicos quedan en `backend/storage/logs/*` para modo PHP local o
-en `install-logs\backup_worker_task.log`,
-`install-logs\backup_scheduled_task.log` y
-`install-logs\backup-automation.log` para modo Docker offline.
+`run_backup_worker.cmd` y `run_scheduled_backup.cmd` aceptan la ruta de PHP como
+primer argumento (con prioridad sobre `HOSPITAL_PHP_PATH`); sin argumento usan
+`HOSPITAL_PHP_PATH` y, si no esta definido, `C:\xampp\php\php.exe`. En ambos
+wrappers, si la ruta resultante no existe, usan `php` del PATH.
+`start_backup_automation.cmd` no acepta ese argumento: solo usa
+`HOSPITAL_PHP_PATH` (por defecto `C:\xampp\php\php.exe`) y el fallback a `php`
+del PATH ocurre en `run_backup_scheduler_loop.ps1` cuando la ruta no existe.
+
+`run_scheduled_backup.cmd` y el flujo directo `hospital:backup --type=scheduled`
+quedan como compatibilidad heredada: no se registran como tarea porque
+duplicarian el schedule de Laravel. La automatizacion vigente es la de la
+seccion anterior. El log operativo del loop de usuario queda en
+`backend/storage/logs/backup-automation.log`.
 
 Si el Programador de tareas esta bloqueado por permisos/UAC, existe una alternativa por usuario actual:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -PhpPath C:\xampp\php\php.exe -DailyBackupTime 02:00
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -PhpPath C:\xampp\php\php.exe
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
 scripts\start_backup_automation.cmd
 ```
 
-Esta alternativa arranca el worker y un scheduler local al iniciar sesion del usuario Windows. No sustituye una tarea de sistema para produccion final, pero deja backup diario automatico sin permisos de administrador mientras ese usuario permanezca iniciado.
+Esta alternativa arranca el worker y ejecuta `schedule:run` cada 60 segundos al
+iniciar sesion del usuario Windows. No sustituye una tarea de sistema para
+produccion final, pero deja la automatizacion de respaldos activa sin permisos
+de administrador mientras ese usuario permanezca iniciado.
 El instalador registra tanto un archivo en la carpeta Startup como una entrada `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` para tolerar politicas locales donde uno de los dos mecanismos este restringido.
-Primero use `-WhatIfOnly`: valida hora y PHP sin crear archivo Startup, sin
-cambiar registro y sin iniciar el worker. El modo `-Status` no imprime el
-contenido crudo del archivo Startup; muestra solo estado y rutas protegidas para
-evitar exponer carpetas locales en capturas de soporte.
+El parametro `-DailyBackupTime` se acepta solo por compatibilidad en el
+registrador y en el loop, y ninguno lo usa para programar el respaldo: la hora
+efectiva es `HOSPITAL_DAILY_BACKUP_TIME` en `backend\.env`. Matiz de esta ruta
+por usuario actual: `install_backup_startup_current_user.ps1` escribe
+`HOSPITAL_DAILY_BACKUP_TIME=<parametro>` (default `02:00`) en el `.cmd` de
+inicio y `start_backup_automation.cmd` conserva ese valor (o aplica el mismo
+default) en el entorno del loop, que no lo usa para programar pero lo hereda
+hacia `php artisan schedule:run`. Como Dotenv no sobreescribe variables ya
+presentes en el entorno, sin `config:cache` ese valor exportado puede prevalecer
+sobre `backend\.env`; ejecute `php artisan config:cache` despues de ajustar la
+hora. Use `-Status` para confirmar si la automatizacion ya esta instalada para
+el usuario actual; `-StartNow` arranca el loop de inmediato.
 El log operativo queda en `backend/storage/logs/backup-automation.log`.
+
+> Nota 2026-09-14 (T3-011/T3-016/T3-017): la automatizacion vigente es Worker +
+> Scheduler (`hospital:backup` solo via `schedule:run`); la tarea directa
+> `HospitalBillingOS-DailyBackup` quedo retirada y `-UpdateExisting` la
+> desregistra. Evidencia: `hospital-ai/evidencia/T3-011/INFORME.md` y
+> `hospital-ai/evidencia/T3-016/INFORME.md` (T3-017 agrega esta nota).
 
 Despues de cada backup diario, copiar el archivo mas reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
 
@@ -332,24 +366,18 @@ No se debe forzar la salida de mantenimiento hasta revisar el resultado.
 - Estado final de mantenimiento y de los procesos escritores.
 - Firma o nombre del responsable local.
 
-## Script Fase 10
+## Script Fase 10 (historico; script retirado)
 
-Para validar restore real en una base descartable MySQL/MariaDB:
+> Nota 2026-09-13: `scripts/validate_restore_mysql.sh` no existe en el arbol
+> actual ni viaja en el paquete offline. La validacion vigente de restore en base
+> descartable se ejecuta con `scripts\restore_hospital_windows.ps1` (con
+> `-UseExistingEnv -TargetDatabase ... -ExpectedSha256 ...`) o desde la consola
+> `scripts\maintenance_hospital_windows.ps1`; ambas exigen sufijos seguros en el
+> nombre de la base y nunca restauran sobre la base activa. La evidencia debe
+> registrarse bajo `qa/`, por ejemplo `qa/RECOVERY_CERTIFICATION.md` a partir de
+> `qa/RECOVERY_CERTIFICATION.example.md`.
 
-```bash
-HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test bash scripts/validate_restore_mysql.sh
-```
-
-El script no restaura sobre la base activa. Requiere cliente `mysql` y una herramienta de dump local (`mariadb-dump` o `mysqldump`). Si falta cualquiera de esas herramientas, el estado sigue `PENDING_ENVIRONMENT_VALIDATION`.
-Cuando genera evidencia con `HOSPITAL_RESTORE_EVIDENCE_PATH`, el archivo de
-backup queda identificado por nombre/ruta relativa bajo backups, SHA256 y
-tamano. No debe escribirse una ruta absoluta del servidor en la evidencia que se
-comparta con soporte. La ruta de evidencia debe ser un archivo `.md` bajo `qa/`,
-por ejemplo `qa/FINAL_RESTORE_PROOF.md`; el script falla antes de crear backup o
-tocar la base descartable si recibe una ruta absoluta, con `..` o con
-backslashes.
-
-## Evidencia Fase 11
+## Evidencia Fase 11 (historica)
 
 Restore real validado el 2026-05-17 en MariaDB XAMPP local:
 
@@ -357,7 +385,7 @@ Restore real validado el 2026-05-17 en MariaDB XAMPP local:
 - Base descartable restaurada: `hospital_restore_validation_test`.
 - Backup: `hospital-backup-20260517-204322-lcsexyiz.sql`.
 - SHA256: `5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362`.
-- Resultado: `scripts/validate_restore_mysql.sh` completo sin restaurar sobre la base activa.
+- Resultado: `scripts/validate_restore_mysql.sh` (script retirado) completo sin restaurar sobre la base activa.
 - Conteos en base restaurada: users 3, roles 3, permissions 27, services 122, invoices 1, payments 1, cash_register_sessions 1, backup_logs 5.
 
 Esta evidencia no sustituye repetir la prueba en el servidor final si cambian equipo, ruta de dump, credenciales locales o base de datos de produccion.

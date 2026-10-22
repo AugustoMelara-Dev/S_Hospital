@@ -4,6 +4,32 @@ Este manual detalla cómo preparar y desplegar el sistema **Hospital Billing OS*
 
 ---
 
+## Runtime y licencia (leer antes de comprar o instalar)
+
+El camino empaquetado en Windows usa **Docker Desktop**, que para una entidad
+gubernamental (un hospital público) exige una **suscripción pagada**; la exención
+de "pequeña empresa" no aplica. **Docker Engine** es Apache-2.0 y no requiere
+suscripción, pero exige un host Linux. La decisión es institucional y está
+separada del trabajo técnico: ver `docs/OFFLINE_RUNTIME_LICENSE.md`. No se debe
+declarar producción hasta resolverla y registrarla.
+
+## Integridad del paquete (checksums no son firma)
+
+Las imágenes se verifican por SHA-256 antes de `docker load` y el paquete tiene
+manifiestos. Eso detecta alteración accidental, pero **no demuestra procedencia**:
+un hash en la misma USB no es una firma. Ver `docs/OFFLINE_RELEASE_INTEGRITY.md`.
+
+## Dirección LAN sin recompilar
+
+El frontend se compila una sola vez y usa rutas same-origin (`/api`,
+`/sanctum`); la IP o el nombre del servidor se resuelven en tiempo de ejecución
+desde `.env` (`SERVER_IP`, `APP_PORT`, `SANCTUM_STATEFUL_DOMAINS`,
+`CORS_ALLOWED_ORIGINS`, `PUSHER_CLIENT_*`). Cambiar la IP del servidor no exige
+recompilar el frontend: se actualiza `.env` y se recrean los contenedores
+(opción 4 del instalador o `scripts/refresh_lan_ip.ps1`).
+
+---
+
 ## Ruta recomendada: una sola computadora
 
 Para la instalacion habitual en una sola PC, copie el paquete completo al disco local y haga doble clic en `setup.bat`. Windows solicitara permiso de administrador y el resto del flujo sera automatico.
@@ -25,7 +51,7 @@ Si cualquier comprobacion obligatoria falla, el asistente muestra **Instalacion 
 ## Estructura del Despliegue
 
 1. **PC Servidor Central**:
-   * Ejecuta los contenedores Docker (Base de Datos MariaDB, Backend Laravel, Servidor Web Nginx y Worker de Backups).
+   * Ejecuta los contenedores Docker del stack de produccion: backend, nginx, mysql, queue-worker, realtime-worker, scheduler y soketi.
    * Requiere Docker Desktop preinstalado.
    * Debe configurarse con una **IP Estática** y perfil de red **Privado**.
 2. **Estaciones Cliente (Cajeros, Admisión)**:
@@ -41,7 +67,7 @@ Para preparar el paquete de instalación, realice los siguientes pasos en una m�
 1. Abra una terminal de PowerShell como Administrador.
 2. Navegue al directorio raíz del proyecto:
    ```powershell
-   cd c:\Projects\S_Hospital
+   cd RUTA_DEL_REPOSITORIO
    ```
 3. Ejecute el script generador:
    ```powershell
@@ -50,12 +76,13 @@ Para preparar el paquete de instalación, realice los siguientes pasos en una m�
 
 ### ¿Qué hace este script?
 * Compila las imágenes de producción locales utilizando Docker Compose.
-* Exporta en formato `.tar` las imágenes de:
-  * `s_hospital-prod-backend` -> `backend.tar`
-  * `s_hospital-prod-queue-worker` -> `queue-worker.tar`
-  * `s_hospital-prod-scheduler` -> `scheduler.tar`
-  * `nginx:1.25-alpine` -> `nginx.tar`
-  * `mariadb:11` -> `mariadb.tar`
+* Exporta en formato `.tar` las 6 imágenes de producción:
+  * `s_hospital-prod-backend:latest` -> `backend.tar`
+  * `s_hospital-prod-queue-worker:latest` -> `queue-worker.tar`
+  * `s_hospital-prod-scheduler:latest` -> `scheduler.tar`
+  * `nginx:1.25.4-alpine` -> `nginx.tar`
+  * `mariadb:11.4.3` -> `mariadb.tar`
+  * `quay.io/soketi/soketi:1.6-16-alpine` -> `soketi.tar`
 * Copia únicamente los archivos de configuración y scripts indispensables para correr en producción en la carpeta `offline-release/`.
 * Calcula los hashes SHA256 de verificación.
 * Genera un reporte `MANIFEST.txt` con la información del build.
@@ -76,7 +103,7 @@ Una vez en el hospital, realice los siguientes pasos en la computadora que actua
 ### Pasos de Despliegue:
 
 1. Conecte la memoria USB y copie la carpeta `offline-release` en el disco local del servidor (ej. en `C:\S_Hospital`).
-2. Abra la carpeta y asegúrese de que contenga el subdirectorio `offline-images` con los 4 archivos `.tar`.
+2. Abra la carpeta y asegúrese de que contenga el subdirectorio `offline-images` con los 6 archivos `.tar` (backend, queue-worker, scheduler, nginx, mariadb y soketi).
 3. Haga clic derecho sobre `setup.bat` y seleccione **Ejecutar como Administrador**.
 4. En el menú, elija la opción **[1] Despliegue en Contenedores Docker**.
 5. Confirme la dirección IP estática del servidor (el script intentará autodetectarla).

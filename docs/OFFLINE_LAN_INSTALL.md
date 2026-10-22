@@ -160,7 +160,10 @@ Cada estación de caja puede tener su propia impresora térmica conectada localm
 - Backup manual queda `pending` y luego `success` cuando el worker corre; si falta herramienta de dump en servidor, queda `failed` con causa operativa sin credenciales.
 - Restore de prueba documentado antes de operar datos reales.
 
-## Evidencia Fase 11 local
+## Evidencia Fase 11 local (historica)
+
+> Nota 2026-09-13: esta evidencia pertenece a la fase 11 y no acredita el estado
+> actual del paquete. Se conserva como trazabilidad.
 
 - Restore real MySQL/MariaDB fue validado en MariaDB XAMPP local contra `hospital_restore_validation_test`.
 - Concurrencia real fue validada contra `http://192.168.1.7:8000` con `RUN_ID=concurrency-validation-20260517T20435`.
@@ -170,17 +173,23 @@ Cada estación de caja puede tener su propia impresora térmica conectada localm
 
 ## Scripts de validacion real
 
-Restore:
+> Nota 2026-09-13: `scripts/validate_restore_mysql.sh` y
+> `scripts/validate_mysql_concurrency.sh` **no existen** en el arbol actual ni
+> viajan en el paquete offline. Los comandos `bash` de abajo eran de la fase 11
+> y quedan retirados.
 
-```bash
-HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test bash scripts/validate_restore_mysql.sh
-```
+La validacion vigente usa:
 
-Concurrencia:
-
-```bash
-HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://IP_DEL_SERVIDOR bash scripts/validate_mysql_concurrency.sh
-```
+- Restore en base descartable:
+  `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -SelfTest`
+  y luego el flujo `-UseExistingEnv -TargetDatabase hospital_restore_validation -ExpectedSha256 ...`
+  documentado en `docs\BACKUP_RESTORE.md`.
+- Consola de mantenimiento: `scripts\maintenance_hospital_windows.ps1`.
+- E2E de release con MariaDB real: `scripts\run_release_e2e_mariadb.ps1`
+  (requiere `-SeedPassword` o `E2E_RELEASE_PASSWORD`).
+- Preflight de entrega: `scripts\production_readiness_preflight.ps1 -BaseUrl <URL>`.
+- Segunda PC LAN (pendiente de hardware real):
+  `scripts\validate_lan_client.ps1 -BaseUrl <URL> -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md`.
 
 No ejecutar `php artisan migrate:fresh --seed` en el servidor real. Ese comando borra la base activa y solo pertenece a entornos descartables de desarrollo/testing.
 

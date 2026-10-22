@@ -1,6 +1,12 @@
 # Install summary - offline LAN
 
-## Runbook corto de instalacion en servidor
+## Runbook corto de instalacion bare-metal (opcion 2 del instalador)
+
+> La ruta recomendada para el hospital es el instalador Docker (`setup.bat` o
+> `S_Hospital-Instalador.exe`, seccion siguiente). Use esta lista solo si eligio
+> explicitamente la opcion 2 del instalador y dispone del repositorio completo;
+> el paquete offline Docker no contiene fuentes ni dependencias para instalar
+> en el host.
 
 Objetivo: dejar una PC local lista para operar como monocomputadora, o como servidor LAN si el despliegue multi-PC se habilita despues, sin internet obligatorio.
 No ejecutar `migrate:fresh` en el servidor real.
@@ -13,10 +19,10 @@ No ejecutar `migrate:fresh` en el servidor real.
 6. Ejecutar `php artisan migrate --force`.
 7. Crear admin real con `php artisan auth:create-initial-admin`.
 8. Ejecutar `php artisan config:cache --no-ansi`.
-9. Registrar tareas Windows para backup worker y scheduler con `scripts\install_backup_tasks_windows.ps1`.
+9. Registrar las tareas Windows con `scripts\install_backup_tasks_windows.ps1`: `HospitalBillingOS-BackupWorker` (cola de respaldos) y `HospitalBillingOS-Scheduler` (`schedule:run` cada minuto). La hora del respaldo diario se define con `HOSPITAL_DAILY_BACKUP_TIME` en `backend\.env`.
 10. Abrir la app como admin, entrar a Backups y revisar el checklist operativo: `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas `/up`, `/login`, `/verify-email` y evidencias local/impresora.
 11. Crear un backup manual y confirmar que cambia de `pending` a `success`.
-12. Preparar archivos de evidencia copiando las plantillas `qa\LOCAL_SERVER_VALIDATION_PROOF.example.md`, `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md` si existe, `qa\FINAL_RESTORE_PROOF.example.md` y `qa\FINAL_CONCURRENCY_PROOF.example.md` al nombre `.md` final que corresponda.
+12. Preparar archivos de evidencia copiando las plantillas disponibles: `qa\LOCAL_SERVER_VALIDATION_PROOF.example.md`, `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md` y `qa\RECOVERY_CERTIFICATION.example.md` al nombre `.md` final que corresponda. Las pruebas de impresion fisica y de concurrencia en servidor real siguen pendientes de plantilla y de ejecucion.
 13. Para monocomputadora, copiar `qa\LOCAL_SERVER_VALIDATION_PROOF.example.md` a `qa\LOCAL_SERVER_VALIDATION_PROOF.md` y completarlo desde el navegador local del servidor. Para multi-PC, ejecutar desde una segunda PC cliente `scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales.
 14. Completar `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con la impresora fisica principal en media carta, carta y A5.
 15. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:PUERTO` para monocomputadora o `-BaseUrl http://IP_DEL_SERVIDOR` para multi-PC, sin `-AllowMissingPhysicalProof`, solo cuando ya existan las evidencias fisicas requeridas de navegador local/LAN, recibo institucional y restore/concurrencia.
@@ -35,12 +41,25 @@ El flujo recomendado para una sola PC es hacer doble clic en `setup.bat` y acept
 
 RTN, CAI y el nombre legal deben capturarse una vez dentro de Configuracion porque el instalador no puede inventar datos fiscales.
 
+## Runtime, licencia e integridad (vigente 2026-09-17)
+
+- **Licencia del runtime:** Docker Desktop requiere suscripcion pagada para
+  entidades gubernamentales; Docker Engine (Apache-2.0) no, pero exige host
+  Linux. Decision institucional separada, documentada en
+  `docs/OFFLINE_RUNTIME_LICENSE.md`.
+- **Integridad del paquete:** SHA-256 y manifiestos antes de `docker load`;
+  un hash en el mismo USB no es firma. Ver
+  `docs/OFFLINE_RELEASE_INTEGRITY.md`.
+- **Direccion LAN:** el frontend se compila una sola vez con rutas
+  same-origin; la IP/puerto se resuelven en runtime desde `.env`. Cambiar la
+  IP no exige recompilar (`scripts/offline_lan_mode.test.ps1`).
+
 El despliegue está completamente automatizado a través de un asistente inteligente. Ya no es necesario ejecutar comandos manuales en producción:
 
 1. **Copiar el proyecto** a la carpeta final del Servidor.
 2. Hacer clic derecho en **`setup.bat`** y seleccionar **"Ejecutar como administrador"** (esencial para configurar el firewall del puerto 8000 y el programador de tareas en Windows).
 3. Seleccionar el modo de despliegue:
-    - **Opción 1 (Contenedores Docker):** Levantará Nginx, MariaDB, PHP-FPM y el queue worker en contenedores aislados y de alto rendimiento. Soporta dos modalidades:
+    - **Opción 1 (Contenedores Docker):** Levantará backend, nginx, MariaDB, queue-worker, realtime-worker, scheduler y soketi en contenedores aislados y de alto rendimiento. Soporta dos modalidades:
       - **Modo Online:** Si no existe la carpeta `offline-images/`, el instalador descarga y construye automáticamente todo desde internet.
       - **Modo Offline:** Si se incluye la carpeta `offline-images/` (generada previamente mediante `make_offline_release.ps1`), el instalador importará automáticamente las imágenes precargadas `.tar` usando `docker load` sin requerir conexión a internet.
     - **Opción 2 (Bare-Metal Windows):** Usará PHP local, pedirá credenciales de base de datos MySQL de forma interactiva (sin sobreescribir valores preexistentes en el `.env`) y registrará automáticamente las tareas en el **Windows Task Scheduler**.
@@ -60,16 +79,21 @@ El despliegue está completamente automatizado a través de un asistente intelig
 Ejecutar como tarea al iniciar Windows o servicio supervisado:
 
 ```powershell
-cd C:\HospitalBilling\backend
+cd RUTA_DEL_PROYECTO\backend
 php artisan queue:work --queue=backups --tries=1 --timeout=600
 ```
 
 ## Backup y restore
 
-- Programar `php artisan hospital:backup --type=scheduled` fuera del horario de caja.
+- El respaldo diario ya esta programado en `backend/routes/console.php` (hora `HOSPITAL_DAILY_BACKUP_TIME`, default 02:00) y lo ejecuta el scheduler: sidecar Docker `scheduler`, loop de usuario T3-003 o tarea `HospitalBillingOS-Scheduler`. No registre una tarea directa `hospital:backup --type=scheduled`: duplicaria el schedule (la tarea legacy `HospitalBillingOS-DailyBackup` quedo retirada).
 - Copiar backups a USB o disco externo protegido.
 - Probar restore primero en base limpia de prueba.
 - No ejecutar restore en produccion sin parada operativa.
+
+> Nota 2026-09-14 (T3-011/T3-016/T3-017): automatizacion vigente = Worker +
+> Scheduler (`hospital:backup` solo via `schedule:run`); evidencia en
+> `hospital-ai/evidencia/T3-011/INFORME.md` y
+> `hospital-ai/evidencia/T3-016/INFORME.md`.
 
 ## Validacion post-instalacion
 
@@ -81,9 +105,14 @@ php artisan queue:work --queue=backups --tries=1 --timeout=600
 - Supervisor/admin puede ver reportes.
 - Admin puede crear backup local.
 
-## Validacion Fase 10 antes de produccion
+## Validacion antes de produccion
 
-- Ejecutar `scripts/e2e_gate.sh` en la maquina de build.
-- Ejecutar `scripts/validate_restore_mysql.sh` en entorno MySQL/MariaDB con herramienta dump.
-- Ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel conectado a MySQL/MariaDB.
-- Completar checklist de impresion institucional en media carta, carta y A5 en la PC de caja. 80mm/58mm queda como compatibilidad secundaria si se habilita.
+> Nota 2026-09-13: las referencias a `scripts/e2e_gate.sh`,
+> `scripts/validate_restore_mysql.sh` y `scripts/validate_mysql_concurrency.sh`
+> eran de la fase 10 y esos scripts no existen en el arbol actual ni en el
+> paquete offline. La validacion vigente usa:
+
+- Restore en base descartable: `scripts\restore_hospital_windows.ps1 -SelfTest` y luego el flujo `-UseExistingEnv -TargetDatabase ... -ExpectedSha256 ...` documentado en `docs\BACKUP_RESTORE.md`; tambien la consola `scripts\maintenance_hospital_windows.ps1`.
+- E2E de release con MariaDB real: `scripts\run_release_e2e_mariadb.ps1` (requiere `-SeedPassword` o `E2E_RELEASE_PASSWORD`).
+- Preflight de entrega: `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR:8000`.
+- Checklist de impresion institucional en media carta, carta y A5 en la PC de caja (pendiente de hardware real). 80mm/58mm queda como compatibilidad secundaria si se habilita.

@@ -1,5 +1,15 @@
 # Plan OFFLINE MODE - S_Hospital
 
+> **Nota 2026-09-13: documento historico del plan v1.0.0.** Varios scripts que
+> cita no existen en el arbol actual: `scripts/ping_lan_clients.ps1`,
+> `scripts/validate_restore_mysql.sh`, `scripts/validate_mysql_concurrency.sh`,
+> `scripts/rollback_update.ps1` y `scripts/rollback_update.sh`. La validacion
+> vigente usa `scripts/restore_hospital_windows.ps1`,
+> `scripts/run_release_e2e_mariadb.ps1`,
+> `scripts/production_readiness_preflight.ps1` y
+> `scripts/validate_lan_client.ps1`. No es fuente de comandos vigentes; el
+> estado actual vive en `reports/CURRENT_RELEASE_TRUTH.md`.
+
 ## Contexto
 
 El sistema S_Hospital está en v1.0.0 (READY FOR PILOT, ver `CHANGELOG.md`). La mayoría de la infraestructura OFFLINE ya está implementada y probada: backups cifrados con SHA256, restore con `-ExpectedSha256`, scripts de validación MySQL/MariaDB, manuales por rol, runbook de desastre, validación de impresión institucional, manual de actualización segura, 432 tests backend y 239 tests frontend pasando.
@@ -11,9 +21,9 @@ Este plan cierra las brechas detectadas contra el `CHECKLIST FINAL ESPECIAL OFFL
 | # | Subagente | Estado | Evidencia |
 |---|-----------|--------|-----------|
 | 16 | Infraestructura Local / Hardware | PARCIAL | `SYSTEM_REQUIREMENTS.md` existe pero minimal (52 líneas, sin requisitos CPU/RAM/disco) |
-| 17 | Red Local / LAN | CUBIERTO | `docs/OFFLINE_LAN_INSTALL.md`, `docs/PHASE_G_LAN_OFFLINE_VALIDATION_GUIDE.md`, `scripts/ping_lan_clients.ps1` |
+| 17 | Red Local / LAN | CUBIERTO | `docs/OFFLINE_LAN_INSTALL.md`, `docs/PHASE_G_LAN_OFFLINE_VALIDATION_GUIDE.md`, `scripts/ping_lan_clients.ps1` (no existe en el arbol actual) |
 | 18 | Continuidad Operativa | CUBIERTO | `docs/DISASTER_RECOVERY.md` (10 escenarios) |
-| 19 | Backups / Restauración | CUBIERTO | `docs/BACKUP_RESTORE.md`, `scripts/restore_hospital_windows.ps1`, `scripts/validate_restore_mysql.sh`, cifrado `.sql.enc` con SHA256 |
+| 19 | Backups / Restauración | CUBIERTO | `docs/BACKUP_RESTORE.md`, `scripts/restore_hospital_windows.ps1`, `scripts/validate_restore_mysql.sh` (retirado), cifrado `.sql.enc` con SHA256 |
 | 20 | Seguridad Física | BRECHA | No existe documento dedicado |
 | 21 | Seguridad de Endpoints | BRECHA | No existe documento dedicado |
 | 22 | Instalador / Paquete Offline | CUBIERTO | `setup.bat`, `scripts/deploy_hospital_lan.ps1`, `scripts/make_offline_release.ps1`, `scripts/assert_offline_release_clean.ps1` |
@@ -84,8 +94,8 @@ Commit sugerido: `test(offline): add no-internet scenario validation and depende
 **Alcance**: asegurar que el flujo de actualización tenga rollback ejecutable y probado en base descartable.
 
 Archivos esperados:
-- `scripts/rollback_update.ps1` (nuevo, restaura backup pre-update + artefactos previos)
-- `scripts/rollback_update.sh` (equivalente bash)
+- `scripts/rollback_update.ps1` (nuevo, restaura backup pre-update + artefactos previos; no incluido en el arbol actual)
+- `scripts/rollback_update.sh` (equivalente bash; no incluido en el arbol actual)
 - `docs/manuales/CHECKLIST_ACTUALIZACION_SEGURA.md` (actualizado con paso de rollback obligatorio)
 - Test PHPUnit que verifica flujo de preflight + rollback
 

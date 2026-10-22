@@ -58,6 +58,21 @@ docker compose exec frontend npm run build
 docker compose exec frontend npm run budget:bundle
 ```
 
+**Dependency-audit threshold (2026-09-14; CI aligned by T3-020):** the canonical
+release audit gate is `scripts/security/run-security-checks.ps1`, whose default
+`-FailOnSeverity info` fails on any advisory (see
+[SECURITY_SUPPLY_CHAIN_RUNBOOK.md](SECURITY_SUPPLY_CHAIN_RUNBOOK.md)). Since
+T3-020, the CI frontend job applies the same blocking policy: its
+`Audit frontend dependencies` step post-processes `pnpm audit --json` and fails
+on any advisory at any severity (a non-zero severity `total` or entries in
+`advisories` / `vulnerabilities` also block). The CI step is deliberately
+stricter in the error path: it fails closed on an unevaluable or unexpected
+report and on a non-zero `pnpm` exit even with a zero-advisory report, while
+the local gate prints `[WARN]` for an unevaluable offline audit (LAN
+workstation) and keeps its other tolerances; neither fallback is a pass. The
+`npm audit --audit-level=high` line above remains a distinct high/critical-only
+check inside the local Docker workflow and is not the release gate.
+
 For Playwright, prefer the divided critical specs documented in
 `docs/testing-report.md` when the full historical matrix times out in Docker.
 
@@ -77,8 +92,10 @@ The CI workflow does not hardcode production-like secrets:
   again before consulting advisories.
 - pnpm may execute dependency builds only for `esbuild`; unreviewed lifecycle
   scripts fail the frozen install instead of being accepted globally.
-- `pnpm audit --audit-level high` runs after the frozen frontend install and
-  blocks known high or critical advisories before typecheck and tests.
+- `pnpm audit --json` runs after the frozen frontend install and its report is
+  post-processed: any advisory at any severity (`info` through `critical`)
+  blocks before typecheck and tests; an unevaluable report or a non-zero `pnpm`
+  exit status fails closed.
 - `pnpm run budget:bundle` checks the already-built production assets and
   blocks growth beyond the versioned startup and total gzip limits.
 
