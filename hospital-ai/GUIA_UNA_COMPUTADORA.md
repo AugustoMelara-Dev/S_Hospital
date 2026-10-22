@@ -1,49 +1,69 @@
 # S_Hospital en una computadora
 
-> El candidato `.7` está construido y verificado; Windows canceló su lanzamiento elevado y su reparación real sigue pendiente. `.6` superó SQL y arranque de servicios, pero falló al preparar el administrador. No usar `.2`–`.6` para entregar el sistema. Consulte el resultado más reciente en la entrega actual antes de instalar.
+Actualizado el 22 de octubre de 2026. Consulte [la entrega actual](ENTREGA_ACTUAL_20260928.md) para identificar el instalador y sus comprobaciones pendientes. [Instrucciones breves del instalador](../installer/native/LEEME.txt).
+
+## Una instalación por hospital
+
+Los dos hospitales usan el mismo producto, con una computadora y datos independientes en cada institución. Configure nombre, logo, identificación fiscal, catálogo, impuestos, usuarios y papel en cada instalación. No copie la base de datos del primer hospital para iniciar el segundo.
+
+Abra **S_Hospital** desde el escritorio o Inicio. El modo habitual usa Microsoft Edge en una ventana propia, en `http://127.0.0.1:8000`. No necesita XAMPP, PHP o MariaDB por separado ni internet para atender. Esta guía describe una computadora; el acceso por LAN requiere preparación y comprobación específica.
 
 ## Instalar
 
-1. Use la versión indicada en [la entrega actual](ENTREGA_ACTUAL_20260928.md) y cópiela a la computadora del hospital. Puede llevarla en una memoria USB; la instalación no necesita descargar componentes. No use el candidato anterior `.2` para cargar las tarifas: las fotografías recibidas después revelaron errores en ese catálogo inicial.
-2. Abra el instalador y autorice la solicitud de Windows con una cuenta administradora del equipo.
-3. Complete la creación del administrador de S_Hospital. Guarde su acceso bajo custodia del hospital.
-4. Entre al sistema y complete los datos reales de la institución y la numeración autorizada en **Administración → Ajustes**. No se debe cobrar antes de completar esa configuración.
-5. Revise los conceptos, tarifas e impuestos en **Administración → Catálogo y precios** antes del primer cobro. La revisión de las fotos incorpora 151 entradas, con 149 disponibles y dos variantes de K.D.H. inactivas porque la fuente repite la misma sigla con tarifas distintas. Sólo active estas últimas cuando el hospital identifique el examen correspondiente. Los precios de los carteles no establecen por sí solos si se debe agregar impuesto.
+1. Copie del kit el instalador indicado y `SHA256SUMS.txt`. Compare su SHA-256 con el publicado antes de ejecutarlo. Puede transportarlo en USB.
+2. Abra el instalador y autorice UAC con una cuenta administradora de Windows.
+3. Esta entrega no tiene firma Authenticode. Si aparece SmartScreen, confirme procedencia y hash; para el archivo confirmado, use **Más información → Ejecutar de todas formas**, si Windows lo ofrece. Si el hash no coincide o Windows impide continuar, contacte al responsable. No desactive la protección de Windows.
+4. Cree el administrador de S_Hospital y custodie su acceso.
+5. Complete la configuración descrita abajo antes de atender pacientes.
 
-No necesita instalar XAMPP, PHP, MariaDB ni otras herramientas por separado. Al terminar, abra **S_Hospital** desde el escritorio o Inicio; la dirección local es `http://127.0.0.1:8000`. Si Windows solicita reiniciar, guarde su trabajo antes de hacerlo. Después de iniciar sesión nuevamente en Windows, compruebe que S_Hospital se abra y que pueda entrar con la cuenta creada.
+Si Windows solicita reiniciar, guarde su trabajo. Después de iniciar sesión compruebe que S_Hospital abra y permita entrar. La instalación y el reinicio comprobados para esta versión figuran en la entrega actual.
 
-El recibo ya viene preparado para **hoja carta, dos ejemplares y línea de corte**. No hace falta elegir un tamaño de papel para cada cobro. Al encender la computadora e iniciar sesión en Windows, la configuración del instalador abre S_Hospital; cada persona sigue entrando con su propia cuenta.
+## Preparar cada hospital antes del primer cobro
 
-## Actualizar
+- **Administración → Ajustes → Identidad:** nombre real, identificación fiscal, dirección, teléfono y logo. Mientras falte configuración, el nombre del producto es **S_Hospital**.
+- **Ajustes → Numeración:** CAI, rango y fechas autorizados para esa institución, revisados por la persona responsable.
+- **Ajustes → Impuestos:** cree o revise las tasas del hospital; registre el motivo que solicita la aplicación al cambiarlas.
+- **Administración → Catálogo (Productos y servicios):** abra **Importar / Exportar** para cargar el catálogo propio (CSV/XLSX), revise la vista previa y corrija errores antes de confirmar. También puede administrarlo en pantalla y exportarlo. Revise precios, disponibilidad e impuesto por concepto; puede asignar tasas en lote por categoría. **Sin tasa asignada significa exento**. El catálogo de ejemplo parte exento: no presuponga que esa es la clasificación fiscal definitiva.
+- **Ajustes → Impresión:** seleccione formato y ejemplares. Instale la impresora en Windows y selecciónela en el diálogo al imprimir; su papel debe coincidir con el formato.
+- Prepare cajas físicas, usuarios y permisos.
 
-1. Termine el cobro en curso y cierre S_Hospital antes de comenzar.
-2. Copie a esa misma computadora el nuevo instalador entregado para S_Hospital.
-3. Ábralo. Si reconoce la instalación existente, mostrará **Actualizar S_Hospital**. **No desinstale la versión anterior.**
-4. Espere el resultado. La actualización conserva la información, prepara una copia de seguridad y comprueba que la aplicación pueda abrirse.
-5. Abra S_Hospital y compruebe sus datos habituales antes de continuar la atención.
+La persona responsable debe aprobar catálogo y tasas antes de cobrar. Las facturas emitidas conservan sus precios e impuestos históricos aunque cambie el catálogo.
 
-No hay búsqueda de versiones por internet ni suscripción obligatoria. Cada actualización llega como un instalador nuevo, que también puede transportarse por USB.
+## Imprimir
 
-## Respaldos y recuperación
+El recibo institucional es el documento principal en carta, media carta o A5, según la configuración disponible. Las térmicas de 80 mm y 58 mm usan un ticket específico.
 
-- En **Administración → Respaldos** puede revisar el estado de las copias y crear una manual según sus permisos.
-- Conserve periódicamente una copia y el kit de recuperación **fuera de la computadora**, en una unidad bajo custodia del hospital. Una copia guardada únicamente en el mismo disco no permite recuperar un disco averiado.
-- Desde Inicio de Windows, **Respaldos y recuperación de S_Hospital** guía la validación y recuperación. Mantenga la frase del kit separada de la copia.
-- Si pierde el acceso del administrador único, use **Recuperar acceso a S_Hospital** desde Inicio de Windows. Se requiere autorización de un administrador de Windows en esa computadora.
+1. Abra el PDF y elija la impresora correcta.
+2. Seleccione el tamaño correspondiente, **escala 100 % / tamaño real** y desactive **encabezados y pies de página**. No use “ajustar a página” para corregir un papel mal configurado.
+3. Para térmica seleccione también 80 o 58 mm en el controlador de Windows.
+4. Pruebe en papel: nombre completo, importes legibles, totales y firmas sin cortes. Con dos ejemplares revise ambos y la línea de corte.
+
+Revisar PDFs no sustituye la prueba física del hospital. Si falla imprimir después de cobrar, vaya a **Recibos** y reimprima la operación existente; no cree otra factura.
 
 ## Uso diario
 
-Abra caja, escriba el nombre del paciente, agregue conceptos del catálogo y revise el total antes de confirmar. Una receta elegible sólo libera de cobro el medicamento correspondiente; los demás conceptos mantienen su importe.
+Abra caja, escriba el nombre del paciente, agregue conceptos y revise el total del servidor antes de confirmar. Seleccione el método de pago correcto. La receta/diálisis solo libera de cobro la línea elegible de eritropoyetina; los demás conceptos mantienen su importe. Una cuenta íntegramente gratuita se emite sin pago ficticio.
 
-Si falla la impresión o descarga después de cobrar, busque la operación en **Recibos** y vuelva a descargar o imprimir su comprobante. No cree otra operación para imprimirla.
+Revise operaciones en **Recibos**. Anular requiere permiso y motivo. Al terminar, revise movimientos y arqueo, concilie la diferencia y cierre caja. **Ayuda** muestra instrucciones según el rol.
 
-La sección **Ayuda** contiene las instrucciones disponibles para su rol.
+## Actualizar
 
-## Alcance de esta guía
+1. Termine el cobro en curso y cierre S_Hospital.
+2. Verifique y copie el nuevo instalador a la misma computadora.
+3. Ábralo y use **Actualizar S_Hospital** cuando reconozca la instalación. **No desinstale la versión anterior.**
+4. Espere el resultado: conserva datos y configuración y prepara un respaldo previo.
+5. Compruebe acceso, datos y una reimpresión antes de reanudar atención.
 
-Describe el comportamiento implementado. Las comprobaciones realizadas y las pendientes del equipo de destino —instalación elevada, reinicio e impresora física— figuran en [el estado de entrega](ENTREGA_ACTUAL_20260928.md).
+No hay búsqueda de versiones por internet ni suscripción obligatoria. La actualización puede llegar por USB.
 
+## Respaldos y recuperación
 
+- En **Administración → Mantenimiento → Respaldos** revise las copias y cree una manual según sus permisos. Compruebe integridad y descarga.
+- Conserve copia y kit de recuperación fuera de la computadora, bajo custodia del hospital. Mantenga separada la frase del kit.
+- En Inicio, **Respaldos y recuperación de S_Hospital** guía la recuperación.
+- **Recuperar acceso a S_Hospital**, desde Inicio, requiere autorización de un administrador de Windows.
+- Integridad y restauración comprobada son resultados diferentes. Antes de puesta en servicio valide una restauración en un entorno separado.
 
+## Alcance
 
-
+El [estado de entrega](ENTREGA_ACTUAL_20260928.md) enumera evidencia y límites. Esta guía describe uso; no certifica por sí sola instalación elevada, reinicio, Windows limpio ni impresora física.

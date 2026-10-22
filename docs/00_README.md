@@ -1,5 +1,12 @@
 # S_Hospital documentation index
 
+> **Entrega Windows local — 2026-10-22.** Para la entrega actual use el
+> [estado y límites verificados](../hospital-ai/ENTREGA_ACTUAL_20260928.md) y la
+> [guía de una computadora por hospital](../hospital-ai/GUIA_UNA_COMPUTADORA.md).
+> El [plan de cierre](../hospital-ai/PLAN_CODEX_GPT61_20261022.md) define la
+> integración en `release/entrega-20261021`. Las referencias de campañas
+> anteriores que siguen no certifican el candidato actual.
+
 > **Nota 2026-09-17 (M-W1-REL-02).** La fuente canonica vigente de estado es
 > [`../reports/CURRENT_RELEASE_TRUTH.md`](../reports/CURRENT_RELEASE_TRUTH.md)
 > (refrescada con los hechos verificados de wave 2; su estado T2 anterior queda
