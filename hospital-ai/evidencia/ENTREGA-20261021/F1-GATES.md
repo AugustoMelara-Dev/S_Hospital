@@ -49,11 +49,13 @@ Argon2id eran **del entorno** (XAMPP 8.2), no del producto.
 
 ## Cifras de cierre
 
-- **PHPStan: `[OK] No errors`** con PHP 8.3 del payload (45 errores
-  preexistentes corregidos por causa, sin baseline ni supresiones).
-- **Pint: `result: passed`** (confirmado).
-- **PHPUnit (PHP 8.3): 1468 tests · 10.752 aserciones · 0 fallos · 69 omitidos · OK**
-  (14:56).
+- **PHPStan: `[OK] No errors`** con PHP 8.3 del payload.
+- **Pint: `result: passed`**.
+- **PHPUnit (SQLite, PHP 8.3): 1491 tests · 11.225 aserciones · 0 fallos ·
+  70 omitidos · OK** (A-03 incluido). Los omitidos son pruebas que requieren
+  MariaDB/entorno (ver A-04).
+- **Frontend: tsc 0 · eslint 0 · 157 archivos / 1283 tests · build OK**.
+- **A-04 (MariaDB desechable)**: ver `A-04-MARIADB.md` (resultado y omitidos).
 
 ## No verificado en esta fase
 
