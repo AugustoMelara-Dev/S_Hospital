@@ -6,6 +6,7 @@ use App\Actions\Backups\BackupFileCipher;
 use App\Actions\Backups\EncryptBackupFileAction;
 use App\Models\BackupLog;
 use Carbon\CarbonInterface;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -19,6 +20,33 @@ class VerifyMigrationBackupCommandTest extends TestCase
         'database/migrations/2026_05_17_000018_create_backup_logs_table.php',
         'database/migrations/2026_06_14_000001_add_backup_protection_metadata_to_backup_logs.php',
     ];
+
+    /**
+     * This suite simulates an empty/partial install by creating the ledgers by
+     * hand. SQLite :memory: starts clean, but the MariaDB lab persists the
+     * schema across classes, so the disposable schema is emptied once and the
+     * helpers recreate only the tables each case needs.
+     */
+    private static bool $schemaCleared = false;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (DB::connection()->getDriverName() !== 'sqlite' && ! self::$schemaCleared) {
+            self::$schemaCleared = true;
+            Schema::disableForeignKeyConstraints();
+            Schema::dropAllTables();
+            Schema::enableForeignKeyConstraints();
+        }
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        parent::tearDownAfterClass();
+
+        RefreshDatabaseState::$migrated = false;
+    }
 
     public function test_empty_database_allows_migration_without_backup(): void
     {
@@ -42,6 +70,7 @@ class VerifyMigrationBackupCommandTest extends TestCase
     public function test_partial_install_with_empty_domain_tables_allows_migration(): void
     {
         $this->createEmptyMigrationsLedger();
+        Schema::dropIfExists('users');
         Schema::create('users', function ($table): void {
             $table->increments('id');
         });
@@ -57,6 +86,7 @@ class VerifyMigrationBackupCommandTest extends TestCase
     public function test_migrations_empty_but_domain_data_present_blocks_migration(): void
     {
         $this->createEmptyMigrationsLedger();
+        Schema::dropIfExists('users');
         Schema::create('users', function ($table): void {
             $table->increments('id');
         });
@@ -252,6 +282,7 @@ class VerifyMigrationBackupCommandTest extends TestCase
 
     private function createEmptyMigrationsLedger(): void
     {
+        Schema::dropIfExists('migrations');
         Schema::create('migrations', function ($table): void {
             $table->increments('id');
             $table->string('migration');
@@ -271,6 +302,7 @@ class VerifyMigrationBackupCommandTest extends TestCase
 
     private function runBackupMigrations(): void
     {
+        Schema::dropIfExists('backup_logs');
         $paths = array_map(
             static fn (string $relative): string => base_path($relative),
             self::BACKUP_MIGRATIONS,

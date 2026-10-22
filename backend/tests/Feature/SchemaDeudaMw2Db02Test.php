@@ -7,6 +7,7 @@ use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptSeries;
 use App\Models\User;
 use App\Support\PaperSize;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -17,11 +18,9 @@ use Tests\TestCase;
  *  TAREA 2: enum `receipt_print_profiles.paper_kind` con portraits nativos y
  *           repunte idempotente de los perfiles sembrados.
  *
- * Corre sobre SQLite (:memory:, phpunit.xml). En SQLite no existe
- * `ON UPDATE CURRENT_TIMESTAMP`, por lo que la TAREA 1 es un no-op declarado y
- * el comportamiento correcto ya esta presente; la cobertura real de esa deuda
- * esta en MariaDB (evidencia M-W2-DB-02). SQLite si aplica el CHECK del enum,
- * por lo que la TAREA 2 se verifica aqui de extremo a extremo.
+ * Corre sobre SQLite y MariaDB. Consulta sqlite_master o information_schema
+ * segun el motor, y verifica las mismas migraciones y snapshots en ambos.
+ * En SQLite la TAREA 1 es un no-op declarado: no existe ON UPDATE implicito.
  *
  * Las migraciones se invocan directamente (include) para probar idempotencia,
  * `down()` y re-aplicacion sin depender del estado del batch de artisan.
@@ -33,6 +32,10 @@ class SchemaDeudaMw2Db02Test extends TestCase
     private const SESSION_MIGRATION = '2026_09_17_000004_stabilize_cash_session_opened_at_timestamp.php';
 
     private const PAPER_MIGRATION = '2026_09_17_000005_extend_receipt_print_profiles_paper_kind_enum.php';
+
+    // ALTER TABLE commits implicitly on MariaDB. RefreshDatabase detects that
+    // at teardown and rebuilds before the next case; also reset after the class.
+    protected static bool $resetSchemaAfterDdl = true;
 
     // ------------------------------------------------------------------
     // TAREA 2 — enum paper_kind
@@ -136,7 +139,7 @@ class SchemaDeudaMw2Db02Test extends TestCase
     // TAREA 1 — opened_at (limite SQLite declarado)
     // ------------------------------------------------------------------
 
-    public function test_opened_at_migration_is_declared_noop_on_sqlite_and_updates_preserve_opened_at(): void
+    public function test_opened_at_migration_preserves_opening_time_after_updates(): void
     {
         $user = User::factory()->create();
         $sessionId = (int) DB::table('cash_register_sessions')->insertGetId([
@@ -154,13 +157,21 @@ class SchemaDeudaMw2Db02Test extends TestCase
         $this->migration(self::SESSION_MIGRATION)->down();
         $this->migration(self::SESSION_MIGRATION)->up();
 
-        // SQLite no aplica ON UPDATE CURRENT_TIMESTAMP: se declara el limite.
-        $createSql = (string) DB::selectOne(
-            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'cash_register_sessions'"
-        )->sql;
-        preg_match('/"opened_at"\s+[^,]*/i', $createSql, $openedAtDefinition);
-        $this->assertNotEmpty($openedAtDefinition, 'No se encontro la definicion de opened_at en sqlite_master.');
-        $this->assertStringNotContainsString('ON UPDATE', strtoupper($openedAtDefinition[0]));
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            $createSql = (string) DB::selectOne(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'cash_register_sessions'"
+            )->sql;
+            preg_match('/"opened_at"\s+[^,]*/i', $createSql, $openedAtDefinition);
+            $this->assertNotEmpty($openedAtDefinition, 'No se encontro la definicion de opened_at en sqlite_master.');
+            $this->assertStringNotContainsString('ON UPDATE', strtoupper($openedAtDefinition[0]));
+        } else {
+            $extra = (string) DB::table('information_schema.COLUMNS')
+                ->where('TABLE_SCHEMA', DB::connection()->getDatabaseName())
+                ->where('TABLE_NAME', 'cash_register_sessions')
+                ->where('COLUMN_NAME', 'opened_at')
+                ->value('EXTRA');
+            $this->assertStringNotContainsString('ON UPDATE', strtoupper($extra));
+        }
 
         DB::table('cash_register_sessions')->where('id', $sessionId)->update(['status' => CashRegisterSession::STATUS_CLOSED]);
         $this->assertSame(
@@ -180,6 +191,16 @@ class SchemaDeudaMw2Db02Test extends TestCase
 
     private function paperEnumAllowsNativePortraits(): bool
     {
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            $sql = (string) DB::table('information_schema.COLUMNS')
+                ->where('TABLE_SCHEMA', DB::connection()->getDatabaseName())
+                ->where('TABLE_NAME', 'receipt_print_profiles')
+                ->where('COLUMN_NAME', 'paper_kind')
+                ->value('COLUMN_TYPE');
+
+            return str_contains($sql, "'letter_portrait'") && str_contains($sql, "'a4_portrait'");
+        }
+
         $sql = (string) DB::selectOne(
             "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'receipt_print_profiles'"
         )->sql;
@@ -293,9 +314,12 @@ class SchemaDeudaMw2Db02Test extends TestCase
     {
         try {
             $callback();
-            $this->fail('La base de datos acepto un valor que debia rechazar.');
-        } catch (\Throwable) {
+        } catch (QueryException) {
             $this->addToAssertionCount(1);
+
+            return;
         }
+
+        $this->fail('La base de datos acepto un valor que debia rechazar.');
     }
 }

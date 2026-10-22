@@ -38,7 +38,6 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
             'must_change_password' => false,
         ]);
         $this->assertDatabaseHas('fiscal_settings', [
-            'id' => 1,
             'hospital_name' => 'S_Hospital',
             'default_tax_rate' => '15.00',
             'receipt_paper_size' => 'half_letter',

@@ -16,6 +16,21 @@ class InitialAdminSecureCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected static bool $resetSchemaAfterDdl = true;
+
+    private bool $auditFailureTriggerCreated = false;
+
+    protected function tearDown(): void
+    {
+        // Even DROP TRIGGER IF EXISTS implicitly commits on MariaDB. Running
+        // it for unrelated cases would commit their administrator fixtures.
+        if ($this->auditFailureTriggerCreated) {
+            DB::unprepared('DROP TRIGGER IF EXISTS fail_initial_admin_audit');
+        }
+
+        parent::tearDown();
+    }
+
     public function test_elevated_setup_creates_one_audited_admin_with_forced_password_change(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -84,7 +99,9 @@ class InitialAdminSecureCommandTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $this->authorizeWindowsOperation();
-        DB::unprepared(<<<'SQL'
+
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            DB::unprepared(<<<'SQL'
 CREATE TRIGGER fail_initial_admin_audit
 BEFORE INSERT ON audit_logs
 WHEN NEW.action = 'user.initial_admin_created_locally'
@@ -92,6 +109,24 @@ BEGIN
     SELECT RAISE(ABORT, 'synthetic audit failure');
 END
 SQL);
+        } else {
+            // CREATE TRIGGER commits implicitly. End RefreshDatabase's outer
+            // transaction explicitly so the command starts a real transaction,
+            // rather than a savepoint whose underlying transaction is gone.
+            DB::commit();
+            DB::unprepared(<<<'SQL'
+CREATE TRIGGER fail_initial_admin_audit
+BEFORE INSERT ON audit_logs
+FOR EACH ROW
+BEGIN
+    IF NEW.action = 'user.initial_admin_created_locally' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'synthetic audit failure';
+    END IF;
+END
+SQL);
+        }
+
+        $this->auditFailureTriggerCreated = true;
 
         $this->validCommand()
             ->expectsOutput('No se pudo completar la configuración inicial.')

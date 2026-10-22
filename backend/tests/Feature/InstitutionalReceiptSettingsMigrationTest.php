@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
+use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\InstitutionalReceiptSeries;
@@ -27,6 +28,9 @@ class InstitutionalReceiptSettingsMigrationTest extends TestCase
 
     public function test_database_seeding_creates_required_print_profiles_without_thermal_global_default(): void
     {
+        // The DDL of the migration tests above commits on MariaDB; clear the
+        // singleton so the seeder can install it again deterministically.
+        FiscalSetting::query()->delete();
         $this->seed();
 
         $this->assertTrue(Schema::hasColumns('receipt_print_profiles', [
