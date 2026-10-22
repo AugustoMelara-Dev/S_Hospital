@@ -100,4 +100,55 @@ $dumpResult = Invoke-Guard -RepoRoot $dumpRepo
 Assert-True ($dumpResult.ExitCode -eq 0) "HOSPITAL_DUMP_BINARY path is warning-only"
 Assert-True ($dumpResult.Output -match "WARNING") "HOSPITAL_DUMP_BINARY warning is emitted"
 
+function New-StagedRepo {
+    param(
+        [string]$FileName,
+        [string[]]$Lines
+    )
+
+    $repo = New-TestRepo
+    $target = Join-Path $repo $FileName
+    New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
+    Set-Content -LiteralPath $target -Value $Lines -Encoding UTF8
+    git -C $repo add -- $FileName
+    return $repo
+}
+
+$dbPassword = "DB_" + "PASSWORD"
+
+# Runtime expressions must not be mistaken for literals.
+$variableRepo = New-StagedRepo "installer.ps1" @(('$env:' + $dbPassword + ' = $dbPassword'))
+$variableResult = Invoke-Guard -RepoRoot $variableRepo
+Assert-True ($variableResult.ExitCode -eq 0) "variable DB_PASSWORD assignment passes"
+
+$interpolatedRepo = New-StagedRepo "installer.ps1" @(('"' + $dbPassword + '=$DbPassword",'))
+$interpolatedResult = Invoke-Guard -RepoRoot $interpolatedRepo
+Assert-True ($interpolatedResult.ExitCode -eq 0) "interpolated DB_PASSWORD assignment passes"
+
+$formatRepo = New-StagedRepo "config.ps1" @(('("' + $dbPassword + '={0}" -f $secret)'))
+$formatResult = Invoke-Guard -RepoRoot $formatRepo
+Assert-True ($formatResult.ExitCode -eq 0) "format string DB_PASSWORD assignment passes"
+
+$sedRepo = New-StagedRepo "ci.yml" @(('sed -i "s|' + $dbPassword + '=.*|' + $dbPassword + '=${CI_MARIADB_PASSWORD}|" .env'))
+$sedResult = Invoke-Guard -RepoRoot $sedRepo
+Assert-True ($sedResult.ExitCode -eq 0) "sed substitution with env var passes"
+
+$sentinelRepo = New-StagedRepo "runner.test.ps1" @(($dbPassword + '="DO_NOT_PRINT_THIS_SECRET"'))
+$sentinelResult = Invoke-Guard -RepoRoot $sentinelRepo
+Assert-True ($sentinelResult.ExitCode -eq 0) "documented sentinel value passes"
+
+$docRepo = New-StagedRepo "docs/SECRETS.md" @(('`' + $dbPassword + '=hospital_dev` default was removed in v1.0.0.'))
+$docResult = Invoke-Guard -RepoRoot $docRepo
+Assert-True ($docResult.ExitCode -eq 0) "documentation example of legacy default passes"
+
+# Literals must still be blocked, including inside allowlisted example files.
+$literalRepo = New-StagedRepo "leak.ps1" @(($dbPassword + '=Sup3rS3cret!'))
+$literalResult = Invoke-Guard -RepoRoot $literalRepo
+Assert-True ($literalResult.ExitCode -ne 0) "literal DB_PASSWORD is still blocked"
+Assert-True ($literalResult.Output -match "non-placeholder") "literal DB_PASSWORD failure is explained"
+
+$exampleLiteralRepo = New-StagedRepo ".env.example" @(($dbPassword + '=Sup3rS3cret!'))
+$exampleLiteralResult = Invoke-Guard -RepoRoot $exampleLiteralRepo
+Assert-True ($exampleLiteralResult.ExitCode -ne 0) "literal DB_PASSWORD in .env.example is still blocked"
+
 Write-Host "pre-commit guard tests passed"

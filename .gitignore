@@ -62,6 +62,7 @@ frontend/probe-hs-admin-c4/
 frontend/qa-e2e/
 
 # Local agent tooling / session-specific artifacts (never committed).
+.claude/
 .serena/
 .superpowers/
 .opencode/node_modules/

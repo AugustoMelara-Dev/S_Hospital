@@ -15,12 +15,26 @@ function Get-StagedAddedLines {
 
     $diff = git -C $Root diff --cached --unified=0 --no-ext-diff --no-color
 
+    $currentPath = ""
+
     foreach ($line in $diff) {
-        if ($line.StartsWith("+++") -or -not $line.StartsWith("+")) {
+        if ($line.StartsWith("+++ b/")) {
+            $currentPath = Normalize-GitPath -Path $line.Substring(6)
             continue
         }
 
-        $line.Substring(1)
+        if ($line.StartsWith("+++")) {
+            continue
+        }
+
+        if (-not $line.StartsWith("+")) {
+            continue
+        }
+
+        [pscustomobject]@{
+            Path = $currentPath
+            Text = $line.Substring(1)
+        }
     }
 }
 
@@ -54,7 +68,36 @@ function Is-PlaceholderValue {
 
     return $normalized -eq "" -or
         $normalized -match "^(placeholder|change-me|changeme|example|dummy|null|none)$" -or
-        $normalized -match "^\$\{[A-Z0-9_]+\}$"
+        $normalized -match "^\$\{[A-Z0-9_]+\}$" -or
+        $normalized -match "^(DO_NOT_PRINT|TEST_|FAKE_|SENTINEL|NOT_REAL)"
+}
+
+function Is-ExpressionValue {
+    param([string]$Value)
+
+    $normalized = $Value.Trim().Trim('"').Trim("'")
+
+    # Runtime expressions are not literals: $var, $env:VAR, ${VAR}, {0} format
+    # slots, -f formatting, sed regex (.*) and shell interpolation.
+    return $normalized -match '^\$[A-Za-z_]' -or
+        $normalized -match '^\{[0-9]' -or
+        $normalized -match '^-f\b' -or
+        $normalized -match '^\.\*' -or
+        $normalized -match '\$\{[A-Za-z_]'
+}
+
+function Test-DocumentationExample {
+    param([string]$Path, [string]$Value)
+
+    if ($Path -notmatch '\.(md|txt)$') {
+        return $false
+    }
+
+    # Documentation may quote historical defaults or describe the policy; the
+    # example may be wrapped in backticks and followed by prose.
+    $normalized = (($Value.Trim().Trim('"').Trim("'")) -replace '`', '')
+
+    return $normalized -match '^(hospital_dev|root_dev|anything-but-empty-or-placeholder)\b'
 }
 
 if (-not (Test-Path -LiteralPath $RepoRoot)) {
@@ -107,7 +150,10 @@ foreach ($file in $stagedFiles) {
     }
 }
 
-foreach ($line in Get-StagedAddedLines -Root $resolvedRoot) {
+foreach ($entry in Get-StagedAddedLines -Root $resolvedRoot) {
+    $line = $entry.Text
+    $entryPath = $entry.Path
+
     if ($line -match "(?i)\bAPP_KEY\s*=\s*base64:[A-Za-z0-9+/=]{17,}") {
         $errors.Add("Staged diff contains a real-looking APP_KEY.")
     }
@@ -116,9 +162,19 @@ foreach ($line in Get-StagedAddedLines -Root $resolvedRoot) {
         if ($line -match "(?i)\b$name\s*=\s*(.+)$") {
             $value = $Matches[1].Trim()
 
-            if (-not (Is-PlaceholderValue -Value $value) -or $value -match "^(hospital_dev|root_dev)$") {
-                $errors.Add("Staged diff contains $name with a non-placeholder value.")
+            if (Is-ExpressionValue -Value $value) {
+                continue
             }
+
+            if (Is-PlaceholderValue -Value $value) {
+                continue
+            }
+
+            if (Test-DocumentationExample -Path $entryPath -Value $value) {
+                continue
+            }
+
+            $errors.Add("Staged diff contains $name with a non-placeholder value.")
         }
     }
 
