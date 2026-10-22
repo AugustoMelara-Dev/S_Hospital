@@ -7,13 +7,13 @@ use Illuminate\Database\Seeder;
 
 class HondurasDistributionSeeder extends Seeder
 {
-    public const HOSPITAL_NAME = 'Hospital General San Isidro';
+    public const HOSPITAL_NAME = 'S_Hospital';
 
     public const GOVERNMENT_LINE = 'Gobierno de Honduras';
 
     public const SECRETARIAT_LINE = 'Secretaria de Salud Publica';
 
-    public const RECEIPT_LOCATION = 'Tocoa, Colon, Honduras';
+    public const RECEIPT_LOCATION = '';
 
     public const LOCALE = 'es-HN';
 

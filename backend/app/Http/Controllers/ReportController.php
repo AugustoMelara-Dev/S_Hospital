@@ -173,7 +173,7 @@ class ReportController extends Controller
         PdfExportService $pdfService
     ): Response {
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
-            'hospital_name' => 'Hospital Local',
+            'hospital_name' => 'S_Hospital',
             'rtn' => 'N/A',
         ]);
 
@@ -239,7 +239,7 @@ class ReportController extends Controller
         $report = $reports->report($request->authorizedFilters(), $request->user(), completeExport: true);
 
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
-            'hospital_name' => 'Hospital San Isidro',
+            'hospital_name' => 'S_Hospital',
             'rtn' => 'N/A',
             'address' => '',
         ]);
@@ -271,7 +271,7 @@ class ReportController extends Controller
         $report = $reports->report($request->authorizedFilters(), $request->user(), completeExport: true);
 
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
-            'hospital_name' => 'Hospital San Isidro',
+            'hospital_name' => 'S_Hospital',
             'rtn' => 'N/A',
             'address' => '',
         ]);

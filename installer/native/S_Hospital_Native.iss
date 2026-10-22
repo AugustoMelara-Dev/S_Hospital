@@ -10,7 +10,7 @@
 AppId={{D304D4C4-8B5D-4E18-BC28-551C0CF3CDB0}
 AppName={#ProductName}
 AppVersion={#ProductVersion}
-AppPublisher=Hospital San Isidro
+AppPublisher=S_Hospital
 DefaultDirName={autopf}\S_Hospital
 DefaultGroupName=S_Hospital
 ArchitecturesAllowed=x64compatible

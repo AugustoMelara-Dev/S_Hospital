@@ -159,10 +159,10 @@ class PreInstallationAuditTest extends TestCase
             'Debe existir HondurasDistributionSeeder::run().',
         );
 
-        $this->assertSame('Hospital General San Isidro', HondurasDistributionSeeder::HOSPITAL_NAME);
+        $this->assertSame('S_Hospital', HondurasDistributionSeeder::HOSPITAL_NAME);
         $this->assertSame('Gobierno de Honduras', HondurasDistributionSeeder::GOVERNMENT_LINE);
         $this->assertSame('Secretaria de Salud Publica', HondurasDistributionSeeder::SECRETARIAT_LINE);
-        $this->assertStringContainsString('Tocoa', HondurasDistributionSeeder::RECEIPT_LOCATION);
+        $this->assertSame('', HondurasDistributionSeeder::RECEIPT_LOCATION);
     }
 
     public function test_honduras_distribution_seeder_populates_only_when_empty(): void
@@ -179,10 +179,10 @@ class PreInstallationAuditTest extends TestCase
         (new HondurasDistributionSeeder)->run();
 
         $settings = FiscalSetting::query()->first();
-        $this->assertSame('Hospital General San Isidro', $settings->hospital_name);
+        $this->assertSame('S_Hospital', $settings->hospital_name);
         $this->assertSame('Gobierno de Honduras', $settings->government_line);
         $this->assertSame('Secretaria de Salud Publica', $settings->secretariat_line);
-        $this->assertStringContainsString('Tocoa', (string) $settings->receipt_location);
+        $this->assertSame('', (string) $settings->receipt_location);
         $this->assertSame('', (string) $settings->rtn);
         $this->assertSame('', (string) $settings->address);
         $this->assertSame('', (string) $settings->phone);
@@ -232,7 +232,7 @@ class PreInstallationAuditTest extends TestCase
         $this->assertSame('', (string) $settings->address);
         $this->assertSame('', (string) $settings->phone);
         $this->assertSame('', (string) $settings->slogan);
-        $this->assertSame('Hospital General San Isidro', $settings->hospital_name);
+        $this->assertSame('S_Hospital', $settings->hospital_name);
         $this->assertSame(1, FiscalSetting::query()->count(), 'El seeder no debe duplicar filas.');
     }
 

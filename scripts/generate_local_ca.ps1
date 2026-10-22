@@ -52,7 +52,7 @@ param(
 
     [string] $CaCommonName = "S_Hospital Local CA",
 
-    [string] $Organization = "Hospital General San Isidro",
+    [string] $Organization = "S_Hospital",
 
     [ValidateRange(1, 36500)]
     [int] $CaValidDays = 3650,
