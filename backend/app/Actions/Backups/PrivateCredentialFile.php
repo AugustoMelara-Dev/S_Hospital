@@ -75,6 +75,7 @@ class PrivateCredentialFile
             if (! @chmod($path, $mode) || ((fileperms($path) & 0777) !== $mode)) {
                 throw new RuntimeException('No se pudieron restringir las credenciales temporales.');
             }
+
             return;
         }
 

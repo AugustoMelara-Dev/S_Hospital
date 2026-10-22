@@ -119,7 +119,7 @@ class ProductionDockerfileTest extends TestCase
             '!frontend/vitest.shims.d.ts',
         ] as $runtimePath) {
             $this->assertMatchesRegularExpression(
-                '/^'.preg_quote($runtimePath, '/').'$/m',
+                '/^'.preg_quote($runtimePath, '/').'\r?$/m',
                 $dockerignore,
                 "Production Docker context must include {$runtimePath}.",
             );

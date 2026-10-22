@@ -119,6 +119,7 @@ class DatabaseDumpWriter
     private function createMysqlDefaultsFile(string $password): string
     {
         $escapedPassword = addcslashes($password, "\\\"\n\r");
+
         return ($this->privateCredentialFile ??= new PrivateCredentialFile)
             ->create("[client]\npassword=\"{$escapedPassword}\"\n");
     }

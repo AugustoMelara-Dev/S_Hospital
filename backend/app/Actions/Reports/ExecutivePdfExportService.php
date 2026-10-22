@@ -94,7 +94,7 @@ class ExecutivePdfExportService
 
         // Numeracion de paginas explicita: no depende de la UI ni de una sola hoja.
         $canvas = $dompdf->getCanvas();
-        $font = $dompdf->getFontMetrics()->getFont('Helvetica', 'normal');
+        $font = $dompdf->getFontMetrics()->getFont('Helvetica', 'normal') ?? 'Helvetica';
         $canvas->page_text(
             $canvas->get_width() - 150,
             $canvas->get_height() - 26,
@@ -208,7 +208,10 @@ class ExecutivePdfExportService
         return '<div class="keep-together">'.$html.'</div>';
     }
 
-    /** @param ReportSection $period */
+    /**
+     * @param  ReportSection  $period
+     * @param  array<string, mixed>  $filters
+     */
     private function renderHeader(
         string $hospitalName,
         string $rtn,
@@ -1059,7 +1062,7 @@ HTML;
         }
 
         $html = '';
-        foreach (array_chunk($rows, $maxBodyRows) as $chunk) {
+        foreach (array_chunk($rows, max(1, $maxBodyRows)) as $chunk) {
             $html .= $this->keepTogether($this->renderTableBlock($header, $chunk, $alignments));
         }
 

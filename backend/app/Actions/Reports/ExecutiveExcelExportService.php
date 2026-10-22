@@ -40,8 +40,6 @@ class ExecutiveExcelExportService
 
     private const SUMMARY_MONEY_FORMAT = '"L." #,##0.00';
 
-    private const PERCENT_FORMAT = '0.00%';
-
     private const SIGNED_PERCENT_FORMAT = '+0.00%;-0.00%;0.00%';
 
     private const TEXT_FORMAT = '@';
@@ -117,7 +115,7 @@ class ExecutiveExcelExportService
             Carbon::now(self::HOSPITAL_TIMEZONE)->format('Y-m-d H:i')));
         $sheet->mergeCells("A{$row}:C{$row}");
         $row++;
-        $sheet->setCellValue("A{$row}", ExcelSafe::value('Zona horaria: '.$this->plainText($period['timezone'] ?? null) ?? self::HOSPITAL_TIMEZONE));
+        $sheet->setCellValue("A{$row}", ExcelSafe::value('Zona horaria: '.($this->plainText($period['timezone'] ?? null) ?: self::HOSPITAL_TIMEZONE)));
         $sheet->mergeCells("A{$row}:C{$row}");
         $row += 2;
 
@@ -529,7 +527,8 @@ class ExecutiveExcelExportService
 
             foreach ($columns as $column) {
                 $cell = $sheet->getCell("{$column}{$row}");
-                $text = (string) ($cell->getValue() ?? '');
+                $rawValue = $cell->getValue();
+                $text = is_scalar($rawValue) ? (string) $rawValue : '';
 
                 if ($cell->getDataType() === DataType::TYPE_STRING) {
                     $sheet->getStyle("{$column}{$row}")
@@ -583,7 +582,9 @@ class ExecutiveExcelExportService
                 $date->setTime(0, 0);
             }
 
-            return ExcelDate::PHPToExcel($date);
+            $excelValue = ExcelDate::PHPToExcel($date);
+
+            return is_float($excelValue) ? $excelValue : '';
         } catch (\Throwable) {
             return '';
         }

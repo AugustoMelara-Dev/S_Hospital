@@ -136,8 +136,8 @@ class InstitutionalReceiptHtmlBuilder
             'composition' => $composition,
             'density' => $this->zoneDensityFor($profile, $composition),
             'destinationLabel' => $this->sheetComposition->destinationLabelFor(...),
-            'cutLineLabel' => (string) config('institutional_receipts.cut_line_label', 'Línea de corte'),
-            'unknownAdjustmentLabel' => (string) config('institutional_receipts.unknown_adjustment_label', 'No registrado'),
+            'cutLineLabel' => $this->configString('institutional_receipts.cut_line_label', 'Línea de corte'),
+            'unknownAdjustmentLabel' => $this->configString('institutional_receipts.unknown_adjustment_label', 'No registrado'),
         ])->render();
     }
 
@@ -147,6 +147,8 @@ class InstitutionalReceiptHtmlBuilder
      * composition, which is a native half-sheet design: it condenses the
      * institutional masthead, the meta band and the closing/signature block, but
      * keeps the same 14 px (~10.5 pt) detail type so the paper stays readable.
+     *
+     * @param  array<string, mixed>  $profile
      */
     private function densityFor(array $profile): string
     {
@@ -232,7 +234,7 @@ class InstitutionalReceiptHtmlBuilder
             return self::COMPOSITION_SINGLE;
         }
 
-        $minimumHeightMm = (float) config('institutional_receipts.two_zone_sheet.min_paper_height_mm', 250.0);
+        $minimumHeightMm = $this->configFloat('institutional_receipts.two_zone_sheet.min_paper_height_mm', 250.0);
         $heightPt = $this->paperHeightPt($profile);
 
         if ($heightPt <= 0.0 || ($heightPt * 25.4 / 72.0) < $minimumHeightMm) {
@@ -261,8 +263,8 @@ class InstitutionalReceiptHtmlBuilder
                 'composition' => self::COMPOSITION_PAIRED,
                 'density' => $this->zoneDensityFor($profile, self::COMPOSITION_PAIRED),
                 'destinationLabel' => $this->sheetComposition->destinationLabelFor(...),
-                'cutLineLabel' => (string) config('institutional_receipts.cut_line_label', 'Línea de corte'),
-                'unknownAdjustmentLabel' => (string) config('institutional_receipts.unknown_adjustment_label', 'No registrado'),
+                'cutLineLabel' => $this->configString('institutional_receipts.cut_line_label', 'Línea de corte'),
+                'unknownAdjustmentLabel' => $this->configString('institutional_receipts.unknown_adjustment_label', 'No registrado'),
             ])->render();
 
             $wrapper = Pdf::loadHTML($html);
@@ -783,7 +785,7 @@ class InstitutionalReceiptHtmlBuilder
         $legalText = trim($this->stringValue($receipt->series_snapshot['legal_text'] ?? null));
 
         if ($paidCents <= 0) {
-            $withoutCharge = trim((string) config(
+            $withoutCharge = trim($this->configString(
                 'institutional_receipts.without_charge_notice',
                 'Documento sin cobro: no se recibió efectivo.',
             ));
@@ -1138,8 +1140,8 @@ class InstitutionalReceiptHtmlBuilder
      */
     private function nonFiscalNotice(InstitutionalReceipt $receipt): ?string
     {
-        $series = is_array($receipt->series_snapshot) ? $receipt->series_snapshot : [];
-        $invoice = is_array($receipt->invoice_snapshot) ? $receipt->invoice_snapshot : [];
+        $series = $receipt->series_snapshot;
+        $invoice = $receipt->invoice_snapshot;
 
         $candidates = array_values(array_filter(
             [$series['range_authorization'] ?? null, $invoice['fiscal_cai'] ?? null],
@@ -1251,5 +1253,23 @@ class InstitutionalReceiptHtmlBuilder
         return preg_match('/^data:image\/(?:png|jpe?g);base64,[A-Za-z0-9+\/=]+$/', $value) === 1
             ? $value
             : null;
+    }
+
+    private function configString(string $key, string $default): string
+    {
+        $value = config($key);
+
+        return is_string($value) ? $value : $default;
+    }
+
+    private function configFloat(string $key, float $default): float
+    {
+        $value = config($key);
+
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        return is_string($value) && is_numeric($value) ? (float) $value : $default;
     }
 }

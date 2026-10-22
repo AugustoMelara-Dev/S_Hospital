@@ -141,9 +141,11 @@ class BackupRecoveryKitService
         }
     }
 
-    private function wipe(string &$value): void
+    private function wipe(mixed &$value): void
     {
-        sodium_memzero($value);
+        if (is_string($value)) {
+            sodium_memzero($value);
+        }
     }
 
     private function assertPassphrase(string $passphrase): void
@@ -173,6 +175,14 @@ class BackupRecoveryKitService
         return $value;
     }
 
+    /**
+     * Runs one cipher operation with the derived key temporarily installed.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $operation
+     * @return T
+     */
     private function withCipherKey(string $derived, callable $operation): mixed
     {
         $original = Config::get('backups.encryption.key');

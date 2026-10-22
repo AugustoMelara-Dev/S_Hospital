@@ -15,6 +15,7 @@ use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
@@ -55,7 +56,7 @@ class AdversarialContractAttackTest extends TestCase
             'active' => true,
         ]);
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('fiscal_settings', 'partial_payments_enabled')) {
+        if (Schema::hasColumn('fiscal_settings', 'partial_payments_enabled')) {
             FiscalSetting::query()->update(['partial_payments_enabled' => false]);
         }
     }

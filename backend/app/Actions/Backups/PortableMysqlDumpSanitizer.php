@@ -89,17 +89,20 @@ class PortableMysqlDumpSanitizer
                 if ($character === '\\' && $index + 1 < $length) {
                     $result .= $line[$index + 1];
                     $index += 2;
+
                     continue;
                 }
                 if ($character === $quote) {
                     if ($index + 1 < $length && $line[$index + 1] === $quote) {
                         $result .= $line[$index + 1];
                         $index += 2;
+
                         continue;
                     }
                     $quote = null;
                 }
                 $index++;
+
                 continue;
             }
 
@@ -107,12 +110,14 @@ class PortableMysqlDumpSanitizer
                 $quote = $character;
                 $result .= $character;
                 $index++;
+
                 continue;
             }
 
             if (substr($line, $index, 3) !== '/*!') {
                 $result .= $character;
                 $index++;
+
                 continue;
             }
 

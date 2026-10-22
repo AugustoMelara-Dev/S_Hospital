@@ -890,7 +890,11 @@ class ExecutiveReportService
         $total = 0;
         foreach ($gratuities as $row) {
             if (($row['adjustment_persisted'] ?? false) === true) {
-                $total += $this->moneyToCents($row['adjustment_value'] ?? '0.00');
+                $adjustment = $row['adjustment_value'] ?? '0.00';
+
+                if (is_int($adjustment) || is_string($adjustment)) {
+                    $total += $this->moneyToCents($adjustment);
+                }
             }
         }
 
@@ -909,7 +913,11 @@ class ExecutiveReportService
             return $label;
         }
 
-        return $sessionId !== null ? 'Sesion #'.(int) $sessionId : null;
+        if ($sessionId === null) {
+            return null;
+        }
+
+        return 'Sesion #'.(is_scalar($sessionId) ? (string) $sessionId : '');
     }
 
     private function invoiceStatusLabel(mixed $status, mixed $settlement): string
@@ -956,7 +964,7 @@ class ExecutiveReportService
         return match ($ruleCode) {
             Service::ERYTHROPOIETIN_RULE => 'Receta de dialisis (EPO por linea)',
             null, '' => 'Gratuidad por regla',
-            default => (string) $ruleCode,
+            default => is_scalar($ruleCode) ? (string) $ruleCode : 'Gratuidad por regla',
         };
     }
 

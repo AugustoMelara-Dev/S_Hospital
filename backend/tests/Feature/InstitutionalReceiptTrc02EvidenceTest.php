@@ -166,7 +166,7 @@ class InstitutionalReceiptTrc02EvidenceTest extends TestCase
         $unit = $free ? 0 : $unitPriceCents;
         $money = number_format($unit / 100, 2, '.', '');
 
-        return [
+        $item = [
             'service_name' => $name,
             'category_name' => 'Consulta',
             'area_name' => 'Caja',
@@ -182,6 +182,19 @@ class InstitutionalReceiptTrc02EvidenceTest extends TestCase
             'line_total_cents' => $unit,
             'notes' => null,
         ];
+
+        if ($free) {
+            $registeredCents = $unitPriceCents > 0 ? $unitPriceCents : 2500;
+            $registeredMoney = number_format($registeredCents / 100, 2, '.', '');
+
+            $item['unit_price_registered'] = $registeredMoney;
+            $item['unit_price_registered_cents'] = $registeredCents;
+            $item['rule_adjustment'] = $registeredMoney;
+            $item['rule_adjustment_cents'] = $registeredCents;
+            $item['special_rule_applied'] = true;
+        }
+
+        return $item;
     }
 
     /**

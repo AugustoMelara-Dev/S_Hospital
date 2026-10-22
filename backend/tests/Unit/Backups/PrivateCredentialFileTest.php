@@ -64,7 +64,7 @@ class PrivateCredentialFileTest extends TestCase
                 .'if($bad.Count -ne 0){exit 9}';
             $audit = new Process([$powershell, '-NoProfile', '-NonInteractive', '-Command', $script]);
             $audit->run();
-            $this->assertSame(0, $audit->getExitCode(), 'La DACL privada conservo una entrada Everyone.') ;
+            $this->assertSame(0, $audit->getExitCode(), 'La DACL privada conservo una entrada Everyone.');
         } finally {
             $credential->remove($path);
             @rmdir($root);

@@ -44,7 +44,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             'Hospital General San Isidro',
             'RTN 08011999123456',
             'Tel. 2444-0000',
-            'Tocoa, Colón, Honduras',
+            'La Esperanza',
             'Recibo No.',
             'Serie',
             'Factura',

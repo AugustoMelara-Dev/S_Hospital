@@ -23,6 +23,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $completed_at
+ * @property Carbon|null $verified_at
+ * @property string|null $verify_status
+ * @property string|null $key_identifier
  * @property string|null $error_message
  * @property-read User|null $creator
  */
@@ -53,6 +56,9 @@ class BackupLog extends Model
         'created_by',
         'completed_at',
         'error_message',
+        'verified_at',
+        'verify_status',
+        'key_identifier',
     ];
 
     protected $hidden = [
@@ -67,6 +73,7 @@ class BackupLog extends Model
             'size_bytes' => 'integer',
             'encrypted' => 'boolean',
             'completed_at' => 'datetime',
+            'verified_at' => 'datetime',
         ];
     }
 

@@ -1040,6 +1040,7 @@ class InstitutionalReceiptC4PaperMatrixTest extends TestCase
 
         if ($directory === null) {
             self::$writeLog[] = ['target' => dirname($relativeName), 'motivo' => 'evidenceRoot nulo'];
+
             return;
         }
 

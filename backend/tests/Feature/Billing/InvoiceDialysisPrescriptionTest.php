@@ -74,8 +74,10 @@ class InvoiceDialysisPrescriptionTest extends TestCase
             ->assertJsonPath('data.items.0.special_rule_applied', true)
             ->assertJsonPath('data.total', '0.00')
             ->assertJsonPath('data.status', Invoice::STATUS_PAID)
-            ->assertJsonPath('data.payments.0.method', 'other')
-            ->assertJsonPath('data.payments.0.status', 'posted');
+            // AGENTS.md: a rule-free account is emitted without a fictitious
+            // payment; the invoice is settled at zero, not "paid" by an
+            // invented `other` payment.
+            ->assertJsonCount(0, 'data.payments');
     }
 
     public function test_erythropoietin_is_charged_when_dialysis_flag_absent(): void

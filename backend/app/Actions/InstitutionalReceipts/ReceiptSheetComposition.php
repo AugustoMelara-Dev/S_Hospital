@@ -55,25 +55,25 @@ final class ReceiptSheetComposition
     public function sheetsFor(array $pages, string $composition): array
     {
         if ($composition !== self::PAIRED) {
-            return array_values(array_map(
+            return array_map(
                 static fn (array $page): array => [
                     'destinations' => [null],
                     'pages' => [$page],
                 ],
                 $pages,
-            ));
+            );
         }
 
         $destinations = $this->pairDestinations();
         $sheets = [];
 
-        foreach (array_chunk(array_values($pages), 2) as $chunk) {
+        foreach (array_chunk($pages, 2) as $chunk) {
             $sheets[] = [
                 'destinations' => array_map(
                     static fn (int $index): ?string => $destinations[$index] ?? null,
                     array_keys($chunk),
                 ),
-                'pages' => array_values($chunk),
+                'pages' => $chunk,
             ];
         }
 
@@ -83,10 +83,18 @@ final class ReceiptSheetComposition
     /**
      * A destination label only exists for a stacked zone; a single-destination
      * sheet keeps the copy legend the profile already declares.
+     *
+     * @param  array<string, mixed>  $sheet
      */
     public function destinationLabelFor(array $sheet, int $pageIndex): ?string
     {
-        $label = $sheet['destinations'][$pageIndex] ?? null;
+        $destinations = $sheet['destinations'] ?? null;
+
+        if (! is_array($destinations)) {
+            return null;
+        }
+
+        $label = $destinations[$pageIndex] ?? null;
 
         return is_string($label) && trim($label) !== '' ? $label : null;
     }

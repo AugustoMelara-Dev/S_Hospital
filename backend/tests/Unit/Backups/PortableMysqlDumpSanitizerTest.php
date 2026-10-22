@@ -58,8 +58,8 @@ class PortableMysqlDumpSanitizerTest extends TestCase
         self::assertIsString($target);
 
         $sql = "/*!50017 DEFINER=`legacy`@`localhost`*/\n"
-            . "/*!50003 TRIGGER `guard` BEFORE UPDATE ON `audit_logs` FOR EACH ROW SET NEW.id = OLD.id */;;\n"
-            . "INSERT INTO `notes` VALUES (1,'DEFINER=`literal`@`localhost`');\n";
+            ."/*!50003 TRIGGER `guard` BEFORE UPDATE ON `audit_logs` FOR EACH ROW SET NEW.id = OLD.id */;;\n"
+            ."INSERT INTO `notes` VALUES (1,'DEFINER=`literal`@`localhost`');\n";
 
         try {
             file_put_contents($source, $sql);
@@ -67,7 +67,7 @@ class PortableMysqlDumpSanitizerTest extends TestCase
 
             self::assertSame(
                 "\n/*!50003 TRIGGER `guard` BEFORE UPDATE ON `audit_logs` FOR EACH ROW SET NEW.id = OLD.id */;;\n"
-                . "INSERT INTO `notes` VALUES (1,'DEFINER=`literal`@`localhost`');\n",
+                ."INSERT INTO `notes` VALUES (1,'DEFINER=`literal`@`localhost`');\n",
                 file_get_contents($target),
             );
         } finally {

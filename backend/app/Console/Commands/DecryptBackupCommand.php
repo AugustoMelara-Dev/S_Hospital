@@ -17,8 +17,7 @@ class DecryptBackupCommand extends Command
     public function __construct(
         private readonly BackupFileCipher $cipher,
         private readonly BackupRecoveryKitService $recoveryKit,
-    )
-    {
+    ) {
         parent::__construct();
     }
 

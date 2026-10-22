@@ -75,8 +75,8 @@ class BuildInstitutionalReceiptSnapshotAction
                 // `L. 0.00` como si fuera un cero medido.
                 'rule_adjustment_persisted' => LineRuleProvenance::adjustmentRecorded(
                     (bool) $item->special_rule_applied,
-                    $item->unit_price_registered_cents === null ? null : (int) $item->unit_price_registered_cents,
-                    $item->unit_price_cents === null ? null : (int) $item->unit_price_cents,
+                    (int) $item->unit_price_registered_cents,
+                    (int) $item->unit_price_cents,
                 ),
                 'tax_rate' => (string) $item->tax_rate,
                 'tax_amount' => $this->moneyFromCents($item->tax_amount_cents, $item->tax_amount),

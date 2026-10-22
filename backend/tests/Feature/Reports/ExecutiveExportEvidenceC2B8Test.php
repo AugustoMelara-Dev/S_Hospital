@@ -84,7 +84,7 @@ class ExecutiveExportEvidenceC2B8Test extends TestCase
         $summary = $spreadsheet->getSheetByName('Resumen');
         $this->assertSame(25, $summary->getCell('B15')->getValue());
         $this->assertSame('#,##0', $summary->getStyle('B15')->getNumberFormat()->getFormatCode());
-        $this->assertSame('#,##0.00', $summary->getStyle('B10')->getNumberFormat()->getFormatCode());
+        $this->assertSame('"L." #,##0.00', $summary->getStyle('B10')->getNumberFormat()->getFormatCode());
 
         $xlsxPath = $this->evidenceDir.DIRECTORY_SEPARATOR.'reporte-ejecutivo-c2b8.xlsx';
         (new Xlsx($spreadsheet))->save($xlsxPath);

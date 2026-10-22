@@ -62,7 +62,7 @@ class ExecutiveExportOutputTest extends TestCase
         $this->assertNotNull($sheet);
 
         $this->assertSame(1234.56, $sheet->getCell('B10')->getValue());
-        $this->assertSame('#,##0.00', $sheet->getStyle('B10')->getNumberFormat()->getFormatCode());
+        $this->assertSame('"L." #,##0.00', $sheet->getStyle('B10')->getNumberFormat()->getFormatCode());
         $this->assertSame(5, $sheet->getCell('B15')->getValue());
         $this->assertSame('#,##0', $sheet->getStyle('B15')->getNumberFormat()->getFormatCode());
         $this->assertSame(2, $sheet->getCell('B21')->getValue());
@@ -89,7 +89,7 @@ class ExecutiveExportOutputTest extends TestCase
         $this->assertSame(10500.75, $summary->getCell('B10')->getValue());
         $this->assertSame(0.0, $summary->getCell('C10')->getValue());
         $this->assertSame(0.005, $summary->getCell('C11')->getValue());
-        $this->assertSame('#,##0.00', $summary->getStyle('B10')->getNumberFormat()->getFormatCode());
+        $this->assertSame('"L." #,##0.00', $summary->getStyle('B10')->getNumberFormat()->getFormatCode());
         $this->assertSame(2147483647, $summary->getCell('B26')->getValue());
     }
 

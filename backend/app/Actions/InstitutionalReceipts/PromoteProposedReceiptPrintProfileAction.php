@@ -38,15 +38,6 @@ class PromoteProposedReceiptPrintProfileAction
     public const REASON = 'R2-RCP-01: adopta carta vertical (612 x 792 pt) como diseno principal propuesto para recibos nuevos; no reescribe documentos emitidos.';
 
     /**
-     * Paper kinds of the proposed principal designs. A default already using one
-     * of these is an explicit choice and is never repointed.
-     */
-    private const PORTRAIT_PAPER_KINDS = [
-        'letter_portrait',
-        'a4_portrait',
-    ];
-
-    /**
      * Legacy landscape compatibility defaults. Only these are repointed by the
      * upgrade from the previous landscape-first delivery.
      */

@@ -66,9 +66,11 @@ class ApplyBackupRecoveryKitCommand extends Command
             fclose($handle);
         } catch (\Throwable) {
             $this->error('No se pudo aplicar el kit institucional.');
+
             return self::FAILURE;
         }
         $this->info('Candidato de configuracion institucional preparado.');
+
         return self::SUCCESS;
     }
 
@@ -80,6 +82,7 @@ class ApplyBackupRecoveryKitCommand extends Command
         if (! is_string($updated) || $count !== 1) {
             throw new \RuntimeException;
         }
+
         return $updated;
     }
 }

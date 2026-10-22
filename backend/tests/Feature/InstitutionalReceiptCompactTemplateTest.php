@@ -164,7 +164,7 @@ class InstitutionalReceiptCompactTemplateTest extends TestCase
         // The free line is explicit and unmistakable...
         $this->assertStringContainsString('Eritropoyetina', $html);
         $this->assertSame(1, substr_count($html, 'Sin cobro'), 'Exactly the free line is marked as free');
-        $this->assertSame(1, preg_match_all('/>\s*Sin cobro\s*</u', $html), 'The free tag belongs to one line');
+        $this->assertSame(1, preg_match_all('/>\s*Sin cobro por receta\s*</u', $html), 'The free tag belongs to one line');
 
         // ...and the other eleven lines keep their own price and import untouched.
         foreach ($this->ordinaryItems(10) as $item) {
@@ -487,7 +487,7 @@ class InstitutionalReceiptCompactTemplateTest extends TestCase
         $unit = $free ? 0 : $unitPriceCents;
         $money = number_format($unit / 100, 2, '.', '');
 
-        return [
+        $item = [
             'service_name' => $name,
             'category_name' => 'Consulta',
             'area_name' => 'Caja',
@@ -503,6 +503,23 @@ class InstitutionalReceiptCompactTemplateTest extends TestCase
             'line_total_cents' => $unit,
             'notes' => null,
         ];
+
+        if ($free) {
+            // The emission snapshot of a rule-adjusted line carries the
+            // registered catalogue price and the authorized adjustment; that
+            // provenance is what the compact receipt turns into the
+            // "Sin cobro por receta" tag (reference price - adjustment = importe).
+            $registeredCents = $unitPriceCents > 0 ? $unitPriceCents : 2500;
+            $registeredMoney = number_format($registeredCents / 100, 2, '.', '');
+
+            $item['unit_price_registered'] = $registeredMoney;
+            $item['unit_price_registered_cents'] = $registeredCents;
+            $item['rule_adjustment'] = $registeredMoney;
+            $item['rule_adjustment_cents'] = $registeredCents;
+            $item['special_rule_applied'] = true;
+        }
+
+        return $item;
     }
 
     /**

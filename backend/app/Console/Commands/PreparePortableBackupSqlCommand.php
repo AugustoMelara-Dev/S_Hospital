@@ -17,6 +17,7 @@ class PreparePortableBackupSqlCommand extends Command
         $output = (string) $this->argument('output');
         if (! is_file($input) || $input === $output) {
             $this->error('No se pudo preparar el SQL de restauracion.');
+
             return self::FAILURE;
         }
         try {
@@ -25,9 +26,11 @@ class PreparePortableBackupSqlCommand extends Command
         } catch (\Throwable) {
             @unlink($output);
             $this->error('No se pudo preparar el SQL de restauracion.');
+
             return self::FAILURE;
         }
         $this->info('SQL preparado para restauracion controlada.');
+
         return self::SUCCESS;
     }
 }

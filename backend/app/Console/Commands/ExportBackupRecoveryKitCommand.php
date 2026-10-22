@@ -51,6 +51,7 @@ class ExportBackupRecoveryKitCommand extends Command
             @chmod($output, 0600);
         } catch (\Throwable) {
             $this->error('No se pudo exportar el kit institucional.');
+
             return self::FAILURE;
         }
 
@@ -62,6 +63,7 @@ class ExportBackupRecoveryKitCommand extends Command
         } else {
             $this->info('Kit institucional cifrado exportado.');
         }
+
         return self::SUCCESS;
     }
 
@@ -75,6 +77,7 @@ class ExportBackupRecoveryKitCommand extends Command
         if (! is_array($payload) || ! is_string($payload['passphrase'] ?? null)) {
             throw new \RuntimeException;
         }
+
         return $payload['passphrase'];
     }
 }
