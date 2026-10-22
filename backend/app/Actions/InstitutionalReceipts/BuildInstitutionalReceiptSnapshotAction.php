@@ -89,6 +89,7 @@ class BuildInstitutionalReceiptSnapshotAction
             ])
             ->all());
         $exemptAmountCents = $this->exemptAmountCents($items);
+        $taxBreakdown = $this->taxBreakdownFromItems($items);
 
         return [
             'payer_name' => $invoice->patient_name,
@@ -106,6 +107,9 @@ class BuildInstitutionalReceiptSnapshotAction
                 'secretariat_line' => $invoice->receipt_secretariat_line ?: $settings->secretariat_line,
                 'receipt_location' => $invoice->receipt_location ?: $settings->receipt_location,
                 'receipt_footer_text' => $invoice->receipt_footer_text ?: $settings->receipt_footer_text,
+                // H-15: per-rate breakdown frozen at issue time. Both snapshots
+                // expose it so a renderer can read whichever block it owns.
+                'tax_breakdown' => $taxBreakdown,
                 ...$this->logoSnapshot($profile),
             ],
             'series_snapshot' => [
@@ -152,6 +156,7 @@ class BuildInstitutionalReceiptSnapshotAction
                 'exempt_amount_cents' => $exemptAmountCents,
                 'tax_amount' => $this->moneyFromCents($invoice->tax_amount_cents, $invoice->tax_amount),
                 'tax_amount_cents' => (int) $invoice->tax_amount_cents,
+                'tax_breakdown' => $taxBreakdown,
                 'discount_amount' => $this->moneyFromCents($invoice->discount_amount_cents, $invoice->discount_amount),
                 'discount_amount_cents' => (int) $invoice->discount_amount_cents,
                 'total' => $this->moneyFromCents($invoice->total_cents, $invoice->total),
@@ -284,5 +289,67 @@ class BuildInstitutionalReceiptSnapshotAction
         }
 
         return $total;
+    }
+
+    /**
+     * Rebuilds the per-rate breakdown from the historical line snapshots
+     * (`invoice_items.tax_rate` / `tax_amount_cents`), never from the current
+     * catalog. Shape consumed by the receipt renderer:
+     * list<{rate, base_cents, tax_cents, base_label, tax_label}>.
+     *
+     * @param  list<array{tax_rate: string, line_subtotal_cents: int, tax_amount_cents: int}>  $items
+     * @return list<array{rate: string, base_cents: int, tax_cents: int, base_label: string, tax_label: string}>
+     */
+    private function taxBreakdownFromItems(array $items): array
+    {
+        $groups = [];
+
+        foreach ($items as $item) {
+            $rate = $this->normalizeSnapshotRate($item['tax_rate']);
+
+            if (! isset($groups[$rate])) {
+                $groups[$rate] = ['base_cents' => 0, 'tax_cents' => 0];
+            }
+
+            $groups[$rate]['base_cents'] += (int) $item['line_subtotal_cents'];
+            $groups[$rate]['tax_cents'] += (int) $item['tax_amount_cents'];
+        }
+
+        uksort($groups, static fn (int|string $a, int|string $b): int => (float) $b <=> (float) $a);
+
+        $breakdown = [];
+
+        foreach ($groups as $rate => $group) {
+            $normalizedRate = $this->normalizeSnapshotRate($rate);
+            $isExempt = (float) $normalizedRate === 0.0;
+
+            if ($isExempt && $group['base_cents'] === 0) {
+                continue;
+            }
+
+            $compactRate = rtrim(rtrim($normalizedRate, '0'), '.');
+            $breakdown[] = [
+                'rate' => $normalizedRate,
+                'base_cents' => $group['base_cents'],
+                'tax_cents' => $group['tax_cents'],
+                'base_label' => $isExempt ? 'Exento' : 'Gravado '.$compactRate.' %',
+                'tax_label' => $isExempt ? 'Exento' : 'ISV '.$compactRate.' %',
+            ];
+        }
+
+        return $breakdown;
+    }
+
+    private function normalizeSnapshotRate(string $rate): string
+    {
+        $trimmed = trim($rate);
+
+        if (! preg_match('/^\d+(\.\d{1,2})?$/', $trimmed)) {
+            return '0.00';
+        }
+
+        [$integer, $decimal] = array_pad(explode('.', $trimmed, 2), 2, '00');
+
+        return $integer.'.'.str_pad(substr($decimal, 0, 2), 2, '0');
     }
 }

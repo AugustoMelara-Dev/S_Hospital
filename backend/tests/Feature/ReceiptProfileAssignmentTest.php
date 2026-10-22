@@ -227,7 +227,7 @@ class ReceiptProfileAssignmentTest extends TestCase
         $user->givePermissionTo('receipt_settings.update');
 
         $profile = ReceiptPrintProfile::query()
-            ->where('code', ReceiptPrintProfile::CODE_THERMAL_80)
+            ->where('code', ReceiptPrintProfile::CODE_CUSTOM_SMALL)
             ->firstOrFail();
         $profile->update(['active' => true]);
 

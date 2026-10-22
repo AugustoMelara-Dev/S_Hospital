@@ -65,8 +65,6 @@ class ReceiptPrintProfile extends Model
 
     public const SUPPORT_ONLY_CODES = [
         self::CODE_CUSTOM_SMALL,
-        self::CODE_THERMAL_80,
-        self::CODE_THERMAL_58,
     ];
 
     protected $fillable = [

@@ -46,10 +46,12 @@
 
     body {
         background: #fff;
-        color: #111827;
+        color: #000;
         font-family: {{ $profile['font_family'] }};
         font-size: {{ 14 * $profile['font_scale'] }}px;
-        line-height: {{ $isHalf ? '1.2' : '1.35' }};
+        /* 1.16 (antes 1.2) recupera el aire que consume subir las etiquetas a
+           8 pt sin tocar el detalle de 14 px ni el área de firma/sello. */
+        line-height: {{ $isHalf ? '1.16' : '1.35' }};
         margin: 0;
     }
 
@@ -68,7 +70,7 @@
 
     .receipt-layout {
         background: transparent;
-        color: #111827;
+        color: #000;
     }
 
     /*
@@ -95,13 +97,13 @@
         font-size: 8px;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #6b7280;
+        color: #000;
     }
 
     /* Etiqueta en versalitas usada en toda la banda. */
     .label {
-        color: #4b5563;
-        font-size: 0.72em;
+        color: #000;
+        font-size: 0.78em;
         font-weight: 700;
         letter-spacing: 0.07em;
         text-transform: uppercase;
@@ -129,9 +131,9 @@
     }
 
     .masthead-line {
-        color: #4b5563;
+        color: #000;
         display: block;
-        font-size: 0.74em;
+        font-size: 0.78em;
         letter-spacing: 0.08em;
         line-height: {{ $isHalf ? '1.25' : '1.45' }};
         text-transform: uppercase;
@@ -147,7 +149,7 @@
     }
 
     .masthead-contact {
-        color: #4b5563;
+        color: #000;
         display: block;
         font-size: 0.78em;
         line-height: {{ $isHalf ? '1.25' : '1.4' }};
@@ -187,9 +189,9 @@
 
     .chip {
         border: 1px solid #6b7280;
-        color: #374151;
+        color: #000;
         display: inline-block;
-        font-size: 0.72em;
+        font-size: 0.78em;
         font-weight: 700;
         letter-spacing: 0.06em;
         padding: 1px 5px;
@@ -201,15 +203,15 @@
     }
 
     .chip-void {
-        border-color: #111827;
-        color: #111827;
+        border-color: #000;
+        color: #000;
     }
 
     /* Destino del ejemplar (paciente / archivo). Solo aparece cuando la hoja
        lleva dos ejemplares distintos; una copia suelta conserva su leyenda. */
     .chip-destination {
-        border-color: #111827;
-        color: #111827;
+        border-color: #000;
+        color: #000;
     }
 
     .doc-number {
@@ -221,13 +223,13 @@
     }
 
     .doc-issued {
-        color: #374151;
+        color: #000;
         font-size: 0.82em;
         margin-top: 2px;
     }
 
     .doc-series {
-        color: #4b5563;
+        color: #000;
         font-size: 0.82em;
     }
 
@@ -308,8 +310,8 @@
 
     .items-table th {
         border-bottom: 1px solid #111827;
-        color: #111827;
-        font-size: 0.74em;
+        color: #000;
+        font-size: 0.78em;
         font-weight: 700;
         letter-spacing: 0.05em;
         padding: {{ $isHalf ? '3px 5px' : '4px 5px' }};
@@ -349,12 +351,12 @@
        línea por fila es lo que antes empujaba un recibo de 11 líneas a otra
        página. */
     .item-meta {
-        color: #6b7280;
+        color: #000;
         font-size: 0.78em;
     }
 
     .item-notes {
-        color: #6b7280;
+        color: #000;
         display: block;
         font-size: 0.78em;
     }
@@ -362,7 +364,7 @@
     .tag-free {
         border: 1px solid #111827;
         display: inline-block;
-        font-size: 0.7em;
+        font-size: 0.78em;
         font-weight: 700;
         letter-spacing: 0.06em;
         margin-left: 5px;
@@ -377,7 +379,7 @@
     /* Dato ausente: se DECLARA que no está registrado en vez de imprimir un
        0 que el expediente nunca midió. */
     .cell-unknown {
-        color: #4b5563;
+        color: #000;
         font-size: 0.82em;
         font-style: italic;
     }
@@ -392,8 +394,8 @@
 
     .payments-table th {
         border-bottom: 1px solid #9ca3af;
-        color: #374151;
-        font-size: 0.74em;
+        color: #000;
+        font-size: 0.78em;
         font-weight: 700;
         padding: 3px 5px;
         text-align: left;
@@ -447,21 +449,21 @@
     }
 
     .method-line {
-        color: #374151;
+        color: #000;
         font-size: 0.86em;
         margin-top: {{ $isHalf ? '3px' : '6px' }};
     }
 
     .amount-words {
         border-top: 1px solid #e5e7eb;
-        color: #374151;
+        color: #000;
         font-size: 0.8em;
         margin-top: {{ $isHalf ? '3px' : '6px' }};
         padding-top: 4px;
     }
 
     .amount-scope {
-        color: #6b7280;
+        color: #000;
         display: block;
         font-size: 0.92em;
     }
@@ -516,8 +518,8 @@
     }
 
     .signature-caption {
-        color: #4b5563;
-        font-size: 0.74em;
+        color: #000;
+        font-size: 0.78em;
         letter-spacing: 0.04em;
         padding-top: 3px;
         text-transform: uppercase;
@@ -525,8 +527,8 @@
 
     .copy-legend {
         border-top: 1px solid #d1d5db;
-        color: #6b7280;
-        font-size: 0.72em;
+        color: #000;
+        font-size: 0.78em;
         margin-top: {{ $isHalf ? '6px' : '12px' }};
         padding-top: 4px;
         text-align: center;
@@ -555,8 +557,8 @@
 
     .cut-line {
         border-top: 1px dashed #9ca3af;
-        color: #6b7280;
-        font-size: 0.7em;
+        color: #000;
+        font-size: 0.78em;
         letter-spacing: 0.1em;
         margin: 6px 0 4px;
         padding-top: 2px;
@@ -598,7 +600,7 @@
 
     .masthead-line {
         display: inline;
-        font-size: 0.64em;
+        font-size: 0.78em;
         line-height: 1;
     }
 
@@ -616,7 +618,7 @@
     }
 
     .masthead-contact {
-        font-size: 0.68em;
+        font-size: 0.78em;
         line-height: 1.05;
         display: inline;
     }

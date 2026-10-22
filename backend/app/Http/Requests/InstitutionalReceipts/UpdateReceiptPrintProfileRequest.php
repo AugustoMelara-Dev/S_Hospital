@@ -106,10 +106,11 @@ class UpdateReceiptPrintProfileRequest extends FormRequest
 
     private function isSupportOnlyProfile(ReceiptPrintProfile $profile): bool
     {
+        // Thermal 80/58 mm are first-class delivery formats (F2C) and no longer
+        // require the advanced/support permission. Only the custom-size support
+        // profile remains gated.
         return in_array($profile->code, [
             ReceiptPrintProfile::CODE_CUSTOM_SMALL,
-            ReceiptPrintProfile::CODE_THERMAL_80,
-            ReceiptPrintProfile::CODE_THERMAL_58,
         ], true);
     }
 

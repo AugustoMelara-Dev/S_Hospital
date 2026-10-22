@@ -107,8 +107,6 @@ class InstitutionalReceiptSettingsTest extends TestCase
             'font_family',
             'font_scale',
             'show_technical_fields',
-            ReceiptPrintProfile::CODE_THERMAL_80,
-            ReceiptPrintProfile::CODE_THERMAL_58,
             ReceiptPrintProfile::CODE_CUSTOM_SMALL,
         ] as $hiddenValue) {
             $this->assertStringNotContainsString($hiddenValue, $encoded);

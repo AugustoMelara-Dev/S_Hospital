@@ -52,8 +52,18 @@
             ? $paymentCount.' pagos de '.$paymentLabel($displayPayments->first()['method'] ?? null)
             : $paymentLabel($displayPayments->first()['method'] ?? null));
 
-    $taxLabel = trim(($invoice['tax_label'] ?? 'ISV').' '.($invoice['tax_rate_snapshot'] ? $invoice['tax_rate_snapshot'].'%' : ''));
     $discount = (float) ($invoice['discount_amount'] ?? 0);
+    $taxBreakdown = is_array($invoice['tax_breakdown'] ?? null) ? $invoice['tax_breakdown'] : [];
+    $exemptGroup = null;
+
+    foreach ($taxBreakdown as $group) {
+        if (is_array($group) && ($group['rate'] ?? null) === '0.00') {
+            $exemptGroup = $group;
+            break;
+        }
+    }
+
+    $exemptAmount = $invoice['exempt_amount'] ?? ($exemptGroup['base'] ?? null);
 
     $hasFiscal = ! empty($invoice['fiscal_cai'])
         || ! empty($invoice['fiscal_range_from'])
@@ -297,7 +307,12 @@
                         <span class="cell-unknown">{{ $unknownAdjustmentLabel }}</span>
                     @endif
                 </td>
-                <td class="money money-strong">{{ $moneyLabel($item['line_total']) }}</td>
+                {{--
+                    Importe de línea SIN impuesto (H-08): cantidad × precio −
+                    ajuste. El ISV se desglosa una sola vez en los totales por
+                    tasa, nunca dentro de la línea.
+                --}}
+                <td class="money money-strong">{{ $moneyLabel($item['line_subtotal'] ?? null) }}</td>
             </tr>
         @empty
             <tr>
@@ -374,18 +389,30 @@
                     </tr>
                     <tr>
                         <td>Exento</td>
-                        <td class="money">{{ $moneyLabel($invoice['exempt_amount']) }}</td>
+                        <td class="money">{{ $moneyLabel($exemptAmount) }}</td>
                     </tr>
+                    {{--
+                        Desglose por tasa (H-08/F2C): una fila de base gravada y
+                        una de impuesto por cada tasa. La tasa 0 % ya se muestra
+                        arriba como «Exento» y no se duplica.
+                    --}}
+                    @foreach ($taxBreakdown as $group)
+                        @continue(is_array($group) && ($group['rate'] ?? null) === '0.00')
+                        <tr>
+                            <td>{{ $group['base_label'] }}</td>
+                            <td class="money">{{ $moneyLabel($group['base']) }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ $group['tax_label'] }}</td>
+                            <td class="money">{{ $moneyLabel($group['tax']) }}</td>
+                        </tr>
+                    @endforeach
                     @if ($discount != 0.0)
                         <tr>
                             <td>Ajustes autorizados</td>
                             <td class="money">{{ $negativeMoneyLabel($invoice['discount_amount']) }}</td>
                         </tr>
                     @endif
-                    <tr>
-                        <td>{{ $taxLabel ?: 'Impuesto' }}</td>
-                        <td class="money">{{ $moneyLabel($invoice['tax_amount']) }}</td>
-                    </tr>
                     <tr class="grand-total">
                         <td>Total</td>
                         <td class="money">{{ $moneyLabel($invoice['total']) }}</td>

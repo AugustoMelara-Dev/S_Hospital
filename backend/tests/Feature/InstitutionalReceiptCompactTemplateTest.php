@@ -72,7 +72,6 @@ class InstitutionalReceiptCompactTemplateTest extends TestCase
             'Efectivo',
             'Subtotal',
             'Exento',
-            'ISV 15.00%',
             'Total',
             'Monto en letras',
             'Firma del enterante',

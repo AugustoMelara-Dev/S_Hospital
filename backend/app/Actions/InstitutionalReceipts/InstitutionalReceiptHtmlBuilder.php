@@ -43,6 +43,38 @@ class InstitutionalReceiptHtmlBuilder
      */
     public const TEMPLATE_COMPACT = 'institutional_compact';
 
+    /**
+     * Dedicated thermal (roll) layout for 80 mm / 58 mm paper.
+     *
+     * A thermal receipt is NOT a shrunk letter: the usable width is 72 mm on
+     * 80 mm paper and 48 mm on 58 mm paper, the margins are 0-2 mm, the type is
+     * mono/sans at least 8 pt (9 pt in totals), every stroke is pure black and
+     * the page height follows the content (continuous roll). Historical
+     * receipts never carry this code; only new thermal profiles do.
+     */
+    public const TEMPLATE_THERMAL = 'institutional_thermal';
+
+    /**
+     * Usable width in mm of the thermal rolls. The physical paper is 80/58 mm;
+     * these are the areas a thermal head can actually print, so the document
+     * never draws outside them.
+     */
+    private const THERMAL_USABLE_WIDTH_MM = [
+        'thermal_80mm' => 72.0,
+        'thermal_58mm' => 48.0,
+    ];
+
+    private const THERMAL_MIN_HEIGHT_MM = 30.0;
+
+    private const THERMAL_MAX_HEIGHT_MM = 1200.0;
+
+    private const THERMAL_HEIGHT_SAFETY_MM = 3.0;
+
+    /**
+     * @var array<string, array{0: int, 1: int, 2: float, 3: float}>
+     */
+    private array $thermalPaperCache = [];
+
     public function __construct(
         private readonly AmountToSpanishWords $amountToSpanishWords = new AmountToSpanishWords,
         private readonly ReceiptSheetComposition $sheetComposition = new ReceiptSheetComposition,
@@ -123,11 +155,13 @@ class InstitutionalReceiptHtmlBuilder
      */
     private function render(?string $templateCode, string $composition, array $pages, array $profile): string
     {
-        $view = $templateCode === self::TEMPLATE_COMPACT
-            ? ($composition === self::COMPOSITION_PAIRED
+        $view = match ($templateCode) {
+            self::TEMPLATE_THERMAL => 'pdf.institutional-receipts.thermal',
+            self::TEMPLATE_COMPACT => $composition === self::COMPOSITION_PAIRED
                 ? 'pdf.institutional-receipts.compact-pair'
-                : 'pdf.institutional-receipts.compact')
-            : 'pdf.institutional-receipts.classic';
+                : 'pdf.institutional-receipts.compact',
+            default => 'pdf.institutional-receipts.classic',
+        };
 
         return View::make($view, [
             'pages' => $pages,
@@ -293,6 +327,136 @@ class InstitutionalReceiptHtmlBuilder
     }
 
     /**
+     * Paper geometry of a thermal document: fixed roll width, content-driven
+     * height.
+     *
+     * A thermal printer cuts a continuous roll, so a 200 mm page with 40 mm of
+     * content produces a long blank tail. The height is measured on the real
+     * engine with a single copy (the copy set only adds forced page breaks) and
+     * the smallest height that keeps that copy on ONE page is used. A small
+     * safety margin absorbs the copy label/destination line.
+     *
+     * @return array{0: int, 1: int, 2: float, 3: float}
+     */
+    public function paperForReceipt(InstitutionalReceipt $receipt, bool $draft = false, ?string $reprintLabel = null): array
+    {
+        $profile = $this->normalizedProfile($receipt->profile_snapshot);
+
+        if ($receipt->template_code !== self::TEMPLATE_THERMAL) {
+            return PaperSize::fromProfileSnapshot($profile);
+        }
+
+        return $this->thermalPaperForPages(
+            $this->pagesForReceipt($receipt, $draft, $reprintLabel ?? $this->reprintLabelFor($receipt)),
+            $profile,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{0: int, 1: int, 2: float, 3: float}
+     */
+    public function paperForDraft(array $data, ReceiptPrintProfile $profile, ?InstitutionalReceiptSeries $series = null): array
+    {
+        $normalized = $this->profileFromModel($profile);
+
+        if ($profile->template_code !== self::TEMPLATE_THERMAL) {
+            return PaperSize::fromProfileSnapshot($normalized);
+        }
+
+        return $this->thermalPaperForPages($this->draftPages($data, $profile, $series), $normalized);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $pages
+     * @param  array<string, mixed>  $profile
+     * @return array{0: int, 1: int, 2: float, 3: float}
+     */
+    private function thermalPaperForPages(array $pages, array $profile): array
+    {
+        $paper = PaperSize::fromProfileSnapshot($profile);
+        $paperKind = $profile['paper_kind'] ?? null;
+
+        if (! is_string($paperKind) || ! array_key_exists($paperKind, self::THERMAL_USABLE_WIDTH_MM)) {
+            return $paper;
+        }
+
+        if ($pages === []) {
+            return $paper;
+        }
+
+        /*
+         * Measure ONE copy. Rendering the full copy set would count the forced
+         * `page-break-after` of each destination as content height and inflate
+         * every page of the roll; all copies share the same content, so the
+         * first one is the representative sample.
+         */
+        $sample = $this->render(self::TEMPLATE_THERMAL, self::COMPOSITION_SINGLE, [$pages[0]], $profile);
+        $widthPt = (float) $paper[2];
+        $cacheKey = md5($sample.'|'.$widthPt);
+
+        if (isset($this->thermalPaperCache[$cacheKey])) {
+            return $this->thermalPaperCache[$cacheKey];
+        }
+
+        $minPt = self::THERMAL_MIN_HEIGHT_MM * 72 / 25.4;
+        $maxPt = self::THERMAL_MAX_HEIGHT_MM * 72 / 25.4;
+        $low = $minPt;
+        $high = $maxPt;
+
+        if ($this->thermalPageCount($sample, $widthPt, $low) === 1) {
+            $best = $low;
+        } else {
+            $best = $maxPt;
+
+            /*
+             * The page count is monotonic in height (taller paper never needs
+             * more pages), so a binary search finds the shortest roll that keeps
+             * the copy on one page.
+             */
+            for ($iteration = 0; $iteration < 9; $iteration++) {
+                $mid = ($low + $high) / 2;
+
+                if ($this->thermalPageCount($sample, $widthPt, $mid) === 1) {
+                    $best = $mid;
+                    $high = $mid;
+                } else {
+                    $low = $mid;
+                }
+            }
+        }
+
+        $heightPt = min(
+            $maxPt,
+            $best + (self::THERMAL_HEIGHT_SAFETY_MM * 72 / 25.4),
+        );
+
+        $result = [0, 0, $widthPt, $heightPt];
+
+        if (count($this->thermalPaperCache) >= 64) {
+            $this->thermalPaperCache = [];
+        }
+
+        $this->thermalPaperCache[$cacheKey] = $result;
+
+        return $result;
+    }
+
+    private function thermalPageCount(string $html, float $widthPt, float $heightPt): int
+    {
+        try {
+            $wrapper = Pdf::loadHTML($html);
+            $wrapper->setPaper([0, 0, $widthPt, $heightPt]);
+            $dompdf = $wrapper->getDomPDF();
+            $dompdf->render();
+
+            return (int) $dompdf->getCanvas()->get_page_count();
+        } catch (\Throwable) {
+            return PHP_INT_MAX;
+        }
+    }
+
+    /**
      * Builds the canonical plan of one copy set.
      *
      * The page count is MEASURED on the generated document: a brand-new Dompdf
@@ -309,7 +473,9 @@ class InstitutionalReceiptHtmlBuilder
         $used = $forcedComposition ?? $this->compositionFor($templateCode, $copyMode, $pages, $profile);
 
         $html = $this->render($templateCode, $used, $pages, $profile);
-        $paper = PaperSize::fromProfileSnapshot($profile);
+        $paper = $templateCode === self::TEMPLATE_THERMAL
+            ? $this->thermalPaperForPages($pages, $profile)
+            : PaperSize::fromProfileSnapshot($profile);
         $copyLabels = $this->copyLabels($copyMode);
         $sheets = $this->sheetComposition->sheetsFor($pages, $used);
         $pageCount = $this->measuredPageCount($html, $paper);
@@ -472,9 +638,11 @@ class InstitutionalReceiptHtmlBuilder
      */
     public function templateView(?string $templateCode): string
     {
-        return $templateCode === self::TEMPLATE_COMPACT
-            ? 'pdf.institutional-receipts.compact'
-            : 'pdf.institutional-receipts.classic';
+        return match ($templateCode) {
+            self::TEMPLATE_THERMAL => 'pdf.institutional-receipts.thermal',
+            self::TEMPLATE_COMPACT => 'pdf.institutional-receipts.compact',
+            default => 'pdf.institutional-receipts.classic',
+        };
     }
 
     /**
@@ -585,6 +753,44 @@ class InstitutionalReceiptHtmlBuilder
         $invoiceDraft = is_array($data['invoice'] ?? null) ? $data['invoice'] : [];
         $items = $this->draftItems($data, $concept, $amount);
 
+        $logo = $this->logoDataUriForProfile($profile);
+
+        if ($profile->template_code === self::TEMPLATE_THERMAL) {
+            $logo = $this->monochromeLogoDataUri($logo);
+        }
+
+        $institution = [
+            'government_line' => $settings->government_line ?: '',
+            'secretariat_line' => $settings->secretariat_line ?: '',
+            'hospital_name' => HospitalName::display($settings->hospital_name),
+            'rtn' => $settings->rtn ?: '',
+            'address' => $settings->address ?: '',
+            'phone' => $settings->phone ?: '',
+            'receipt_location' => $settings->receipt_location ?: '',
+            'receipt_footer_text' => $settings->receipt_footer_text ?: '',
+            'logo_data_uri' => $logo,
+        ];
+
+        $invoice = [
+            'invoice_number' => 'PRUEBA-SIN-FACTURA',
+            'fiscal_cai' => null,
+            'fiscal_range_from' => null,
+            'fiscal_range_to' => null,
+            'fiscal_valid_until' => null,
+            'patient_name' => $payerName,
+            'issued_at' => now()->toIso8601String(),
+            'tax_label' => $this->stringValue($invoiceDraft['tax_label'] ?? null, 'ISV'),
+            'tax_rate_snapshot' => $invoiceDraft['tax_rate_snapshot'] ?? null,
+            'subtotal' => $this->moneyValue(null, $invoiceDraft['subtotal'] ?? $amount),
+            'exempt_amount' => $this->moneyValue(null, $invoiceDraft['exempt_amount'] ?? $amount),
+            'tax_amount' => $this->moneyValue(null, $invoiceDraft['tax_amount'] ?? '0.00'),
+            'discount_amount' => $this->moneyValue(null, $invoiceDraft['discount_amount'] ?? '0.00'),
+            'total' => $this->moneyValue(null, $invoiceDraft['total'] ?? $amount),
+            'paid_amount' => $this->moneyValue(null, $invoiceDraft['paid_amount'] ?? $amount),
+            'balance_due' => $this->moneyValue(null, $invoiceDraft['balance_due'] ?? '0.00'),
+            'tax_breakdown' => $this->taxBreakdownFor($invoiceDraft, $items),
+        ];
+
         $pages = [];
 
         foreach ($this->copyLabels($profile->copies_mode) as $index => $copyLabel) {
@@ -595,17 +801,7 @@ class InstitutionalReceiptHtmlBuilder
                 'reprint_label' => null,
                 'draft' => true,
                 'watermark' => $watermark,
-                'institution' => [
-                    'government_line' => $settings->government_line ?: '',
-                    'secretariat_line' => $settings->secretariat_line ?: '',
-                    'hospital_name' => HospitalName::display($settings->hospital_name),
-                    'rtn' => $settings->rtn ?: '',
-                    'address' => $settings->address ?: '',
-                    'phone' => $settings->phone ?: '',
-                    'receipt_location' => $settings->receipt_location ?: '',
-                    'receipt_footer_text' => $settings->receipt_footer_text ?: '',
-                    'logo_data_uri' => $this->logoDataUriForProfile($profile),
-                ],
+                'institution' => $institution,
                 'series' => [
                     'series' => $series?->series ?: 'PRUEBA',
                     'receipt_number_full' => $series ? $this->formatDraftNumber($series) : 'PRUEBA-SIN-NUMERO',
@@ -620,24 +816,7 @@ class InstitutionalReceiptHtmlBuilder
                 'amount_total_note' => $amountTotalNote !== '' ? $amountTotalNote : null,
                 'concept' => $concept,
                 'status' => 'issued',
-                'invoice' => [
-                    'invoice_number' => 'PRUEBA-SIN-FACTURA',
-                    'fiscal_cai' => null,
-                    'fiscal_range_from' => null,
-                    'fiscal_range_to' => null,
-                    'fiscal_valid_until' => null,
-                    'patient_name' => $payerName,
-                    'issued_at' => now()->toIso8601String(),
-                    'tax_label' => $this->stringValue($invoiceDraft['tax_label'] ?? null, 'ISV'),
-                    'tax_rate_snapshot' => $invoiceDraft['tax_rate_snapshot'] ?? null,
-                    'subtotal' => $this->moneyValue(null, $invoiceDraft['subtotal'] ?? $amount),
-                    'exempt_amount' => $this->moneyValue(null, $invoiceDraft['exempt_amount'] ?? $amount),
-                    'tax_amount' => $this->moneyValue(null, $invoiceDraft['tax_amount'] ?? '0.00'),
-                    'discount_amount' => $this->moneyValue(null, $invoiceDraft['discount_amount'] ?? '0.00'),
-                    'total' => $this->moneyValue(null, $invoiceDraft['total'] ?? $amount),
-                    'paid_amount' => $this->moneyValue(null, $invoiceDraft['paid_amount'] ?? $amount),
-                    'balance_due' => $this->moneyValue(null, $invoiceDraft['balance_due'] ?? '0.00'),
-                ],
+                'invoice' => $invoice,
                 'payment' => [
                     'selected_payment' => null,
                     'posted_payments' => [],
@@ -719,8 +898,15 @@ class InstitutionalReceiptHtmlBuilder
         // carries a placeholder fiscal authorization must show the same big test
         // notice the preview shows, so it cannot pass for a real fiscal receipt.
         $nonFiscalNotice = $this->nonFiscalNotice($receipt);
-        $invoice = $this->normalizedInvoice($receipt->invoice_snapshot ?? []);
+        $items = $this->normalizedItems($receipt->items_snapshot ?? []);
+        $invoice = $this->normalizedInvoice($receipt->invoice_snapshot ?? [], $items);
         $amounts = $this->amountReference($receipt, $invoice);
+        $institution = $this->normalizedInstitution($receipt->institution_snapshot);
+
+        if ($receipt->template_code === self::TEMPLATE_THERMAL) {
+            $logoDataUri = $institution['logo_data_uri'] ?? null;
+            $institution['logo_data_uri'] = $this->monochromeLogoDataUri(is_string($logoDataUri) ? $logoDataUri : null);
+        }
 
         return array_values(collect($copyLabels)
             ->map(fn (string $copyLabel, int $index): array => [
@@ -731,7 +917,7 @@ class InstitutionalReceiptHtmlBuilder
                 'draft' => $draft,
                 'watermark' => $draft ? 'PRUEBA - SIN VALIDEZ' : null,
                 'test_notice' => $nonFiscalNotice,
-                'institution' => $this->normalizedInstitution($receipt->institution_snapshot),
+                'institution' => $institution,
                 'series' => $this->normalizedSeries($receipt->series_snapshot, $receipt->receipt_number_full),
                 'amount' => Money::formatCents((int) $receipt->amount_cents),
                 'issued_at' => $receipt->issued_at,
@@ -743,7 +929,7 @@ class InstitutionalReceiptHtmlBuilder
                 'status' => $receipt->status,
                 'invoice' => $invoice,
                 'payment' => $this->normalizedPayment($receipt->payment_snapshot ?? []),
-                'items' => $this->normalizedItems($receipt->items_snapshot ?? []),
+                'items' => $items,
             ])
             ->all());
     }
@@ -891,9 +1077,10 @@ class InstitutionalReceiptHtmlBuilder
 
     /**
      * @param  array<string, mixed>  $snapshot
+     * @param  list<array<string, mixed>>  $items
      * @return array<string, mixed>
      */
-    private function normalizedInvoice(array $snapshot): array
+    private function normalizedInvoice(array $snapshot, array $items = []): array
     {
         return [
             'invoice_number' => $snapshot['invoice_number'] ?? '',
@@ -912,7 +1099,170 @@ class InstitutionalReceiptHtmlBuilder
             'total' => $this->moneyValue($snapshot['total_cents'] ?? null, $snapshot['total'] ?? null),
             'paid_amount' => $this->moneyValue($snapshot['paid_amount_cents'] ?? null, $snapshot['paid_amount'] ?? null),
             'balance_due' => $this->moneyValue($snapshot['balance_due_cents'] ?? null, $snapshot['balance_due'] ?? null),
+            // Per-rate breakdown (H-08/F2C). New snapshots carry it from
+            // CalculateInvoiceTotalsAction; historical snapshots are derived from
+            // the per-line snapshot without rewriting anything.
+            'tax_breakdown' => $this->taxBreakdownFor($snapshot, $items),
         ];
+    }
+
+    /**
+     * Tax breakdown of one invoice, as the receipt prints it.
+     *
+     * Contract (SPEC-F2B / F2C): `tax_breakdown` is a list ordered by rate
+     * descending, each row carrying `rate`, `base_cents`, `tax_cents`,
+     * `base_label` ("Gravado 15 %" / "Exento") and `tax_label` ("ISV 15 %" /
+     * "Exento"). When a snapshot already carries it, the row values are used
+     * verbatim; when it does not (historical documents or drafts), the same shape
+     * is derived from `items_snapshot` (`tax_rate`, `line_subtotal_cents`,
+     * `tax_amount_cents`). The invoice totals are a last resort for a historical
+     * snapshot that has no usable per-line tax data.
+     *
+     * @param  array<string, mixed>  $snapshot
+     * @param  list<array<string, mixed>>  $items
+     * @return list<array{rate: string, base_cents: int, tax_cents: int, base: string, tax: string, base_label: string, tax_label: string}>
+     */
+    private function taxBreakdownFor(array $snapshot, array $items): array
+    {
+        $provided = $snapshot['tax_breakdown'] ?? null;
+
+        if (is_array($provided) && $provided !== []) {
+            $rows = [];
+
+            foreach ($provided as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+
+                $rate = $this->normalizedRate($row['rate'] ?? null);
+
+                if ($rate === null) {
+                    continue;
+                }
+
+                $rows[] = $this->taxBreakdownRow(
+                    $rate,
+                    $this->centsOrNull($row['base_cents'] ?? null) ?? 0,
+                    $this->centsOrNull($row['tax_cents'] ?? null) ?? 0,
+                    $row['base_label'] ?? null,
+                    $row['tax_label'] ?? null,
+                );
+            }
+
+            if ($rows !== []) {
+                return $rows;
+            }
+        }
+
+        /** @var array<string, array{base: int, tax: int}> $groups */
+        $groups = [];
+
+        foreach ($items as $item) {
+            $rate = $this->normalizedRate($item['tax_rate'] ?? null) ?? '0.00';
+            $baseCents = $this->centsOrNull($item['line_subtotal_cents'] ?? null)
+                ?? $this->centsOrNull($item['line_subtotal'] ?? null)
+                ?? 0;
+            $taxCents = $this->centsOrNull($item['tax_amount_cents'] ?? null)
+                ?? $this->centsOrNull($item['tax_amount'] ?? null)
+                ?? 0;
+
+            $groups[$rate] ??= ['base' => 0, 'tax' => 0];
+            $groups[$rate]['base'] += $baseCents;
+            $groups[$rate]['tax'] += $taxCents;
+        }
+
+        $invoiceTaxCents = $this->centsOrNull($snapshot['tax_amount_cents'] ?? null)
+            ?? $this->centsOrNull($snapshot['tax_amount'] ?? null);
+
+        $hasTaxableGroup = false;
+
+        foreach (array_keys($groups) as $rate) {
+            if ((float) $rate > 0.0) {
+                $hasTaxableGroup = true;
+                break;
+            }
+        }
+
+        if (! $hasTaxableGroup && $invoiceTaxCents !== null && $invoiceTaxCents > 0) {
+            $rate = $this->normalizedRate($snapshot['tax_rate_snapshot'] ?? null) ?? '0.00';
+            $subtotalCents = $this->centsOrNull($snapshot['subtotal_cents'] ?? null)
+                ?? $this->centsOrNull($snapshot['subtotal'] ?? null)
+                ?? 0;
+            $exemptCents = $this->centsOrNull($snapshot['exempt_amount_cents'] ?? null)
+                ?? $this->centsOrNull($snapshot['exempt_amount'] ?? null)
+                ?? 0;
+
+            $groups[$rate] ??= ['base' => 0, 'tax' => 0];
+            $groups[$rate]['base'] += max(0, $subtotalCents - $exemptCents);
+            $groups[$rate]['tax'] = $invoiceTaxCents;
+        }
+
+        if ($groups === []) {
+            return [];
+        }
+
+        uksort($groups, static fn (string $a, string $b): int => (float) $b <=> (float) $a);
+
+        $rows = [];
+
+        foreach ($groups as $rate => $group) {
+            $rows[] = $this->taxBreakdownRow($rate, $group['base'], $group['tax'], null, null);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array{rate: string, base_cents: int, tax_cents: int, base: string, tax: string, base_label: string, tax_label: string}
+     */
+    private function taxBreakdownRow(string $rate, int $baseCents, int $taxCents, mixed $baseLabel, mixed $taxLabel): array
+    {
+        $isExempt = (float) $rate === 0.0;
+        $compactRate = $this->compactRate($rate);
+
+        return [
+            'rate' => $rate,
+            'base_cents' => $baseCents,
+            'tax_cents' => $taxCents,
+            'base' => Money::formatCents($baseCents),
+            'tax' => Money::formatCents($taxCents),
+            'base_label' => $this->stringValue($baseLabel, $isExempt ? 'Exento' : 'Gravado '.$compactRate.' %'),
+            'tax_label' => $this->stringValue($taxLabel, $isExempt ? 'Exento' : 'ISV '.$compactRate.' %'),
+        ];
+    }
+
+    private function normalizedRate(mixed $value): ?string
+    {
+        if (is_int($value)) {
+            $value = (string) $value;
+        }
+
+        if (is_float($value) && is_finite($value)) {
+            $value = (string) $value;
+        }
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        if ($trimmed === '' || preg_match('/^\d+(\.\d{1,2})?$/', $trimmed) !== 1) {
+            return null;
+        }
+
+        try {
+            return Money::formatCents(Money::parseCents($trimmed, 'tax_rate'));
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function compactRate(string $rate): string
+    {
+        $trimmed = rtrim(rtrim($rate, '0'), '.');
+
+        return $trimmed === '' ? '0' : $trimmed;
     }
 
     /**
@@ -1253,6 +1603,61 @@ class InstitutionalReceiptHtmlBuilder
         return preg_match('/^data:image\/(?:png|jpe?g);base64,[A-Za-z0-9+\/=]+$/', $value) === 1
             ? $value
             : null;
+    }
+
+    /**
+     * Monochrome logo for thermal paper.
+     *
+     * A thermal head only prints black/white; a colour logo is dithered into
+     * mud. When GD is available the source image is converted to grayscale at the
+     * same pixel size (never upscaled, so the effective resolution of the source
+     * is preserved) and re-encoded as PNG. If GD is unavailable or the data URI
+     * is not a readable raster, the original image is kept instead of inventing
+     * a logo.
+     */
+    private function monochromeLogoDataUri(?string $dataUri): ?string
+    {
+        if ($dataUri === null || ! function_exists('imagecreatefromstring')) {
+            return $dataUri;
+        }
+
+        $marker = 'base64,';
+
+        if (preg_match('/^data:image\/(?:png|jpe?g);'.$marker.'/', $dataUri) !== 1) {
+            return $dataUri;
+        }
+
+        $position = strpos($dataUri, $marker);
+
+        if ($position === false) {
+            return $dataUri;
+        }
+
+        $encoded = substr($dataUri, $position + strlen($marker));
+        $binary = base64_decode($encoded, true);
+
+        if (! is_string($binary) || $binary === '') {
+            return $dataUri;
+        }
+
+        $image = @imagecreatefromstring($binary);
+
+        if ($image === false) {
+            return $dataUri;
+        }
+
+        imagefilter($image, IMG_FILTER_GRAYSCALE);
+
+        ob_start();
+        imagepng($image);
+        $png = ob_get_clean();
+        imagedestroy($image);
+
+        if (! is_string($png) || $png === '') {
+            return $dataUri;
+        }
+
+        return 'data:image/png;base64,'.base64_encode($png);
     }
 
     private function configString(string $key, string $default): string

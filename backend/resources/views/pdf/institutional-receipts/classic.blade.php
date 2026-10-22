@@ -762,6 +762,19 @@
         $payment = $page['payment'];
         $items = $page['items'];
         $taxLabel = trim(($invoice['tax_label'] ?? 'ISV').' '.($invoice['tax_rate_snapshot'] ? $invoice['tax_rate_snapshot'].'%' : ''));
+        // H-08/F2C: the line Importe excludes tax; tax is only broken down in the
+        // totals block, per rate. Falls back to the invoice totals for historical
+        // snapshots that predate the per-rate breakdown.
+        $taxBreakdown = is_array($invoice['tax_breakdown'] ?? null)
+            ? array_values(array_filter($invoice['tax_breakdown'], static fn (mixed $group): bool => is_array($group)))
+            : [];
+        $exemptAmount = $invoice['exempt_amount'] ?? '0.00';
+        foreach ($taxBreakdown as $taxGroup) {
+            if (($taxGroup['rate'] ?? null) === '0.00') {
+                $exemptAmount = $taxGroup['base'] ?? $exemptAmount;
+                break;
+            }
+        }
         $cashier = $payment['selected_payment']['cashier_name'] ?? $payment['issued_by']['name'] ?? $payment['cash_context']['cashier_name'] ?? null;
         $postedPayments = collect($payment['posted_payments'] ?? [])->filter(fn (mixed $item): bool => is_array($item))->values();
         $displayPayments = $postedPayments->isNotEmpty()
@@ -1026,7 +1039,6 @@
                     <th style="width: 11%;" class="qty">Cantidad</th>
                     @if (! $isThermal)
                         <th style="width: 14%;" class="money">Precio</th>
-                        <th style="width: 13%;" class="money">{{ $taxLabel ?: 'Impuesto' }}</th>
                     @endif
                     <th style="width: 19%;" class="money">Importe</th>
                 </tr>
@@ -1055,13 +1067,12 @@
                         <td class="qty">{{ $item['quantity'] }}</td>
                         @if (! $isThermal)
                             <td class="money">{{ $moneyLabel($item['unit_price']) }}</td>
-                            <td class="money">{{ $moneyLabel($item['tax_amount']) }}</td>
                         @endif
-                        <td class="money">{{ $moneyLabel($item['line_total']) }}</td>
+                        <td class="money">{{ $moneyLabel($item['line_subtotal'] ?? $item['line_total']) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $isThermal ? 3 : 5 }}">Servicios hospitalarios</td>
+                        <td colspan="{{ $isThermal ? 3 : 4 }}">Servicios hospitalarios</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -1075,18 +1086,31 @@
                 </tr>
                 <tr>
                     <td>Exento</td>
-                    <td class="money">{{ $moneyLabel($invoice['exempt_amount']) }}</td>
+                    <td class="money">{{ $moneyLabel($exemptAmount) }}</td>
                 </tr>
+                @foreach ($taxBreakdown as $taxGroup)
+                    @continue(($taxGroup['rate'] ?? null) === '0.00')
+                    <tr>
+                        <td>{{ $taxGroup['base_label'] ?? ('Gravado '.($taxGroup['rate'] ?? '').' %') }}</td>
+                        <td class="money">{{ $moneyLabel($taxGroup['base'] ?? null) }}</td>
+                    </tr>
+                    <tr>
+                        <td>{{ $taxGroup['tax_label'] ?? ('ISV '.($taxGroup['rate'] ?? '').' %') }}</td>
+                        <td class="money">{{ $moneyLabel($taxGroup['tax'] ?? null) }}</td>
+                    </tr>
+                @endforeach
+                @if ($taxBreakdown === [])
+                    <tr>
+                        <td>{{ $taxLabel ?: 'Impuesto' }}</td>
+                        <td class="money">{{ $moneyLabel($invoice['tax_amount']) }}</td>
+                    </tr>
+                @endif
                 @if (($invoice['discount_amount'] ?? '0.00') !== '0.00')
                     <tr>
                         <td>Descuento</td>
                         <td class="money">{{ $negativeMoneyLabel($invoice['discount_amount']) }}</td>
                     </tr>
                 @endif
-                <tr>
-                    <td>{{ $taxLabel ?: 'Impuesto' }}</td>
-                    <td class="money">{{ $moneyLabel($invoice['tax_amount']) }}</td>
-                </tr>
                 <tr class="grand-total">
                     <td>Total</td>
                     <td class="money">{{ $moneyLabel($invoice['total']) }}</td>

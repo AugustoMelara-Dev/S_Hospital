@@ -282,11 +282,12 @@ class InstitutionalReceiptC4PaperMatrixTest extends TestCase
                 'perfil' => ReceiptPrintProfile::CODE_LETTER_PORTRAIT,
                 'conceptos' => 11,
                 'hoja_pt' => 792.0,
-                'c3_min_sheet_height_pt' => 790.6,
-                // Densidad `full`: su CSS no vive en el bloque `@if ($isHalf)`
-                // que se editó después de la sonda de C3, así que la cifra
-                // histórica debe reproducirse exacta.
-                'reproduccion_exacta' => true,
+                // F2C (2026-10-22) intentionally changed typography (pure black,
+                // minimum 8 pt, tightened line-height). The measured minimum
+                // height decreased from the C3 baseline 790.6 to 778.4, so the
+                // sheet still fits one page; the probe now guards "no empeora".
+                'c3_min_sheet_height_pt' => 778.4,
+                'reproduccion_exacta' => false,
             ],
             'media_carta_horizontal-5-conceptos-con-fiscal' => [
                 'perfil' => ReceiptPrintProfile::CODE_HALF_LETTER,

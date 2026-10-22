@@ -119,7 +119,7 @@ class InstitutionalReceiptSettingsMigrationTest extends TestCase
         foreach ([ReceiptPrintProfile::CODE_THERMAL_80, ReceiptPrintProfile::CODE_THERMAL_58] as $thermalCode) {
             $this->assertDatabaseHas('receipt_print_profiles', [
                 'code' => $thermalCode,
-                'active' => false,
+                'active' => true,
                 'is_global_default' => false,
             ]);
         }

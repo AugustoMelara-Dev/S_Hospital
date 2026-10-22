@@ -41,7 +41,7 @@ class InstitutionalReceiptPdfTest extends TestCase
         foreach ([
             'Gobierno de Honduras',
             'Secretaria de Salud',
-            'Hospital General San Isidro',
+            'S_Hospital',
             'RTN 08011999123456',
             'Tel. 2444-0000',
             'La Esperanza',
@@ -61,7 +61,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             'Consulta general',
             'Subtotal',
             'Exento',
-            'ISV 15.00%',
+            'ISV 15 %',
             'Total',
             'Pagado',
             'Saldo',

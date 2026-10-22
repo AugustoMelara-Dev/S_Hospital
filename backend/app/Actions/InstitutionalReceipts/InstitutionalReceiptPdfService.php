@@ -11,7 +11,6 @@ use App\Models\Invoice;
 use App\Models\ReceiptPrintProfile;
 use App\Models\User;
 use App\Support\InvoiceAccess;
-use App\Support\PaperSize;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -98,8 +97,11 @@ class InstitutionalReceiptPdfService
 
     public function pdfForReceipt(InstitutionalReceipt $receipt, ?string $reprintLabel = null): string
     {
-        return Pdf::loadHTML($this->htmlForReceipt($receipt, false, $reprintLabel))
-            ->setPaper(PaperSize::fromProfileSnapshot($receipt->profile_snapshot))
+        $html = $this->htmlForReceipt($receipt, false, $reprintLabel);
+        $paper = $this->htmlBuilder->paperForReceipt($receipt, false, $reprintLabel);
+
+        return Pdf::loadHTML($html)
+            ->setPaper($paper)
             ->output();
     }
 
@@ -176,8 +178,11 @@ class InstitutionalReceiptPdfService
      */
     public function pdfForDraft(array $data, ReceiptPrintProfile $profile, ?InstitutionalReceiptSeries $series = null): string
     {
-        return Pdf::loadHTML($this->htmlForDraft($data, $profile, $series))
-            ->setPaper(PaperSize::fromProfile($profile))
+        $html = $this->htmlForDraft($data, $profile, $series);
+        $paper = $this->htmlBuilder->paperForDraft($data, $profile, $series);
+
+        return Pdf::loadHTML($html)
+            ->setPaper($paper)
             ->output();
     }
 
