@@ -159,6 +159,17 @@ jobs:
           done
           exit 1
 
+      - name: Create disposable PHPUnit test database
+        run: |
+          # TestCase refuses external databases without the s_hospital_test_
+          # prefix, so the suite gets its own throwaway database instead of
+          # reusing the seeded hospital_billing service database.
+          mysql -h 127.0.0.1 -u root -p"${CI_MARIADB_ROOT_PASSWORD}" <<'SQL'
+          CREATE DATABASE IF NOT EXISTS s_hospital_test_ci CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          GRANT ALL PRIVILEGES ON s_hospital_test_ci.* TO 'hospital'@'%';
+          FLUSH PRIVILEGES;
+          SQL
+
       - name: Configure env
         working-directory: backend
         run: |
@@ -182,13 +193,20 @@ jobs:
       - name: Run PHPUnit (MariaDB)
         working-directory: backend
         env:
+          HOSPITAL_TEST_ALLOW_EXTERNAL_DB: '1'
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
-          DB_DATABASE: hospital_billing
+          DB_DATABASE: s_hospital_test_ci
           DB_USERNAME: hospital
           DB_PASSWORD: ${{ env.CI_MARIADB_PASSWORD }}
-        run: vendor/bin/phpunit --testdox
+          DB_URL: ''
+        run: |
+          # -c phpunit.mysql.xml is required: the default phpunit.xml forces
+          # DB_CONNECTION=sqlite / DB_DATABASE=:memory: with force="true" and
+          # would silently downgrade this job to SQLite. The driver guard
+          # test fails loudly if the active connection is not real MySQL.
+          vendor/bin/phpunit -c phpunit.mysql.xml --testdox
 
   frontend:
     name: Frontend (Vitest + lint + build)
@@ -222,7 +240,102 @@ jobs:
 
       - name: Audit frontend dependencies
         working-directory: frontend
-        run: pnpm audit --audit-level high
+        run: |
+          # Dependency-advisory gate: fail on ANY advisory, including info/low,
+          # matching the local release gate scripts/security/run-security-checks.ps1
+          # with its default -FailOnSeverity info. `pnpm audit --audit-level`
+          # cannot express that policy (its lowest level is 'low' and info
+          # advisories never block), so this step post-processes
+          # `pnpm audit --json` and fails when metadata.vulnerabilities,
+          # metadata.vulnerabilities.total, advisories or the package
+          # vulnerabilities list is non-empty. Divergence from the local gate:
+          # it tolerates an offline/unparsable audit with a WARN (LAN
+          # workstations) while this online CI step fails closed on JSON it
+          # cannot evaluate, on unexpected field shapes (non-numeric counts or
+          # 'total', non-object advisories/vulnerabilities) and on a non-zero
+          # pnpm exit status, even when the report claims 0 advisories.
+          audit_status=0
+          pnpm audit --json > pnpm-audit.json 2> pnpm-audit.stderr || audit_status=$?
+          echo "pnpm audit exit status: ${audit_status}"
+
+          AUDIT_STATUS="$audit_status" node --input-type=commonjs - <<'NODE'
+          const fs = require('node:fs');
+
+          const SEVERITIES = ['info', 'low', 'moderate', 'high', 'critical'];
+
+          const raw = fs.readFileSync('pnpm-audit.json', 'utf8');
+          const stderr = fs.existsSync('pnpm-audit.stderr') ? fs.readFileSync('pnpm-audit.stderr', 'utf8') : '';
+
+          function failClosed(reason) {
+            console.error(`::error::${reason}`);
+            if (stderr.trim() !== '') {
+              console.error(stderr);
+            }
+            console.error(raw);
+            process.exit(1);
+          }
+
+          const auditStatusRaw = process.env.AUDIT_STATUS ?? '';
+          if (!/^\d{1,3}$/.test(auditStatusRaw)) {
+            failClosed(`pnpm audit exit status '${auditStatusRaw}' is not a valid status; refusing to evaluate the dependency gate (fail closed).`);
+          }
+          const auditStatus = Number(auditStatusRaw);
+
+          let report;
+          try {
+            report = JSON.parse(raw);
+          } catch {
+            failClosed('pnpm audit did not return parseable JSON; refusing to evaluate the dependency gate (fail closed).');
+          }
+
+          const vulnerabilities = report && report.metadata ? report.metadata.vulnerabilities : null;
+          if (vulnerabilities === null || typeof vulnerabilities !== 'object' || Array.isArray(vulnerabilities)) {
+            failClosed('pnpm audit returned an unexpected JSON shape (expected metadata.vulnerabilities); refusing to evaluate the dependency gate (fail closed).');
+          }
+
+          let total = 0;
+          const breakdown = [];
+          for (const severity of SEVERITIES) {
+            const count = vulnerabilities[severity] === undefined ? 0 : Number(vulnerabilities[severity]);
+            if (!Number.isFinite(count) || count < 0) {
+              failClosed(`pnpm audit reported a non-numeric count for severity '${severity}'; refusing to evaluate the dependency gate (fail closed).`);
+            }
+            total += count;
+            breakdown.push(`${severity}=${count}`);
+          }
+
+          function countCollection(name, value) {
+            if (value === undefined) {
+              return 0;
+            }
+            if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+              failClosed(`pnpm audit returned an unexpected shape for '${name}' (expected an object); refusing to evaluate the dependency gate (fail closed).`);
+            }
+            return Object.keys(value).length;
+          }
+          const advisoryCount = countCollection('advisories', report.advisories);
+          const packageVulnerabilities = countCollection('vulnerabilities', report.vulnerabilities);
+
+          let claimedTotal = total;
+          if (vulnerabilities.total !== undefined) {
+            if (typeof vulnerabilities.total !== 'number' || !Number.isFinite(vulnerabilities.total) || vulnerabilities.total < 0) {
+              failClosed("pnpm audit reported a non-numeric 'total' in metadata.vulnerabilities; refusing to evaluate the dependency gate (fail closed).");
+            }
+            claimedTotal = vulnerabilities.total;
+          }
+          const blocking = Math.max(total, advisoryCount, packageVulnerabilities, claimedTotal);
+
+          console.log(`pnpm audit advisory gate: ${breakdown.join(' ')}; total=${total}; advisories=${advisoryCount}; packageVulnerabilities=${packageVulnerabilities}`);
+          if (blocking > 0) {
+            console.error(`::error::pnpm audit failed the dependency gate: ${blocking} advisory(ies) at any severity (policy: fail on ANY advisory, including info/low). Raw report: pnpm-audit.json.`);
+            process.exit(1);
+          }
+          if (auditStatus !== 0) {
+            console.error(`::error::pnpm audit reported 0 advisories but exited with status ${auditStatus}; refusing to certify a dependency audit that did not complete cleanly (fail closed). Raw report: pnpm-audit.json.`);
+            process.exit(1);
+          }
+          console.log('pnpm audit passed: 0 advisories at any severity (policy: fail on ANY advisory, including info/low).');
+          NODE
 
       - name: TypeScript typecheck
         working-directory: frontend
@@ -287,11 +400,172 @@ jobs:
 
       - name: Run mocked E2E
         working-directory: frontend
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ':memory:'
         run: |
-          # The production-readiness spec is fully mocked at the route level
-          # and does not require a live backend; we just need the SPA built
-          # and Playwright's route handlers in place.
-          pnpm run test:e2e -- --reporter=list
+          # pnpm run test:e2e -> scripts/run-mock-e2e.mjs, which executes the
+          # three mocked groups declared in scripts/mock-e2e-plan.mjs (cobrar;
+          # recibos-caja; reportes-rbac). Every spec stubs its API with
+          # Playwright route handlers, so this job needs neither a live backend
+          # nor a database.
+          pnpm run test:e2e
+
+  # R2: los recorridos de `frontend/qa-e2e/**` usan `@playwright/test` y no
+  # pueden recolectarse con Vitest (por eso viven fuera de `pnpm test`). Este
+  # job los ejecuta con su propio runner contra backend y MariaDB reales, para
+  # que no queden fuera de AMBOS runners. El spec EPO abre su propia sesion de
+  # caja; `run-release-e2e`/SQLite no sirve aqui porque el contrato exige un
+  # driver real.
+  e2e-real-r2:
+    name: E2E real (R2 money + EPO, MariaDB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [supply-chain]
+    env:
+      CI_MARIADB_ROOT_PASSWORD: ${{ secrets.CI_MARIADB_ROOT_PASSWORD || vars.CI_MARIADB_ROOT_PASSWORD || format('ci-root-db-{0}', github.run_id) }}
+      CI_MARIADB_PASSWORD: ${{ secrets.CI_MARIADB_PASSWORD || vars.CI_MARIADB_PASSWORD || format('ci-db-{0}', github.run_id) }}
+    services:
+      mariadb:
+        image: mariadb:11.4.3@sha256:e3432369d4d432ec2a3d777ff84ffca11ec8c2188cf1b6a0551a393ae5d833bb
+        env:
+          MARIADB_ROOT_PASSWORD: ${{ secrets.CI_MARIADB_ROOT_PASSWORD || vars.CI_MARIADB_ROOT_PASSWORD || format('ci-root-db-{0}', github.run_id) }}
+          MARIADB_DATABASE: hospital_billing
+          MARIADB_USER: hospital
+          MARIADB_PASSWORD: ${{ secrets.CI_MARIADB_PASSWORD || vars.CI_MARIADB_PASSWORD || format('ci-db-{0}', github.run_id) }}
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.2'
+          extensions: intl, mbstring, pdo_mysql, zip, gd, bcmath, opcache
+          ini-values: memory_limit=512M
+
+      - name: Cache Composer
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: backend/vendor
+          key: composer-mariadb-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Wait for MariaDB
+        run: |
+          for i in $(seq 1 30); do
+            if mysqladmin ping -h 127.0.0.1 -u hospital -p"${CI_MARIADB_PASSWORD}" --silent 2>/dev/null; then
+              echo "MariaDB ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Create disposable E2E database
+        run: |
+          mysql -h 127.0.0.1 -u root -p"${CI_MARIADB_ROOT_PASSWORD}" <<'SQL'
+          CREATE DATABASE IF NOT EXISTS s_hospital_test_ci CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          GRANT ALL PRIVILEGES ON s_hospital_test_ci.* TO 'hospital'@'%';
+          FLUSH PRIVILEGES;
+          SQL
+
+      - name: Configure backend env
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+          sed -i 's|DB_CONNECTION=.*|DB_CONNECTION=mysql|' .env
+          sed -i 's|DB_HOST=.*|DB_HOST=127.0.0.1|' .env
+          sed -i 's|DB_PORT=.*|DB_PORT=3306|' .env
+          sed -i 's|DB_DATABASE=.*|DB_DATABASE=s_hospital_test_ci|' .env
+          sed -i 's|DB_USERNAME=.*|DB_USERNAME=hospital|' .env
+          sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=${CI_MARIADB_PASSWORD}|" .env
+          # El SPA corre en 127.0.0.1:15173; sin esto Sanctum no lo trata como
+          # stateful y el login por cookie falla (419/401).
+          sed -i 's|APP_URL=.*|APP_URL=http://127.0.0.1:15173|' .env
+          sed -i 's|SANCTUM_STATEFUL_DOMAINS=.*|SANCTUM_STATEFUL_DOMAINS=localhost,localhost:15173,127.0.0.1,127.0.0.1:15173,::1|' .env
+          sed -i 's|CORS_ALLOWED_ORIGINS=.*|CORS_ALLOWED_ORIGINS=http://localhost:15173,http://127.0.0.1:15173|' .env
+          php artisan config:clear
+
+      - name: Migrate + seed (synthetic validation users)
+        working-directory: backend
+        env:
+          APP_ENV: local
+        run: |
+          php artisan migrate --force
+          php artisan db:seed --class=DatabaseSeeder --force
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 11.7.0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start backend
+        working-directory: backend
+        env:
+          APP_ENV: local
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: s_hospital_test_ci
+          DB_USERNAME: hospital
+          DB_PASSWORD: ${{ env.CI_MARIADB_PASSWORD }}
+        run: |
+          php artisan serve --host=127.0.0.1 --port=18080 > /tmp/backend-e2e.log 2>&1 &
+          echo $! > /tmp/backend-e2e.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18080/api/health >/dev/null 2>&1; then
+              echo "backend ready"; exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/backend-e2e.log; exit 1
+
+      - name: Start frontend
+        working-directory: frontend
+        env:
+          VITE_DEV_API_PROXY_TARGET: http://127.0.0.1:18080
+        run: |
+          pnpm exec vite --host 127.0.0.1 --port 15173 --strictPort > /tmp/frontend-e2e.log 2>&1 &
+          echo $! > /tmp/frontend-e2e.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:15173/ >/dev/null 2>&1; then
+              echo "frontend ready"; exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/frontend-e2e.log; exit 1
+
+      - name: Run R2 real E2E (money + EPO)
+        working-directory: frontend
+        run: pnpm run test:e2e:r2
+
+      - name: Show E2E logs on failure
+        if: failure()
+        run: |
+          cat /tmp/backend-e2e.log || true
+          cat /tmp/frontend-e2e.log || true
+

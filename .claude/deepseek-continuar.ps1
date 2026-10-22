@@ -1,0 +1,2 @@
+$prompt = 'Continua donde ibas con DeepSeek V4.1 Flash. Siguen vigentes las respuestas del mensaje anterior: Fase 0 autorizada sin push, Fases 2B y 2C del plan (2 hospitales, impuestos configurables por producto, recibo nitido carta y termica). No preguntes salvo bloqueo real. Revisa git status antes para no repetir trabajo.'
+opencode C:\Projects\S_Hospital_AI -s ses_e9e209631ffeMrOUy2A1hejeeg --prompt $prompt

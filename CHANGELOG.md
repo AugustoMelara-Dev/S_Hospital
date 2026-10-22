@@ -1,5 +1,30 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-09-13 - Campana de reparacion previa a certificacion (sin nuevas certificaciones)
+
+Cambios locales de la campana sobre el worktree aislado: sin commits, sin
+promocion USB, sin editar `RESULT.json`/`PASSED`. Detalle por tarea y evidencia
+en `hospital-ai/progreso/` y `hospital-ai/evidencia/`.
+
+- Seguridad de certificacion: el test de `regenerate_candidate_manifest.ps1` ya
+  no borra instalaciones reales de Inno Setup. Usa exclusivamente un sandbox
+  bajo `%TEMP%` inyectado con `S_HOSPITAL_CERT_ISCC_DIR` y audita su propio
+  codigo contra rutas reales de instalacion.
+- Gate de release: `assert_offline_release_clean.ps1` exige la consola
+  `maintenance_hospital_windows.ps1` y los helpers de recuperacion
+  (`recovery_validation`, `recovery_docker`, `recovery_orchestrator`), y valida
+  el contrato vigente del guard `hospital:verify-migration-backup`
+  (`HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS`) en lugar de la variable retirada
+  `HOSPITAL_MIGRATION_BACKUP_CONFIRMED`.
+- Documentacion canonica: README y runbooks alineados al guard real de
+  migracion, conteo de imagenes offline corregido a 6, nombres de tareas
+  `HospitalBillingOS-*`, nomenclatura unica de staging
+  `STAGING-PENDING-CERTIFICACION` y marcado de enlaces historicos en
+  `docs/00_README.md`.
+- Estado publicado en `reports/CURRENT_RELEASE_TRUTH.md`: `NOT_READY`. Windows
+  limpio, impresion fisica, segunda PC LAN y firma de codigo siguen pendientes
+  de ejecucion real; esta entrada no declara ninguna certificacion nueva.
+
 ## 2026-07-19 - Cierre integral shadcn, backend y entrega offline
 
 - Completa la migracion local a shadcn/Radix, TanStack Table y Recharts; los

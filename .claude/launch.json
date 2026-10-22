@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lab-backend",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-Command", "$env:APP_ENV='local'; Set-Location backend; php artisan serve --host=127.0.0.1 --port=18080"],
+      "port": 18080
+    },
+    {
+      "name": "lab-frontend",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["frontend/node_modules/vite/bin/vite.js", "frontend", "--host", "127.0.0.1", "--port", "18362", "--strictPort"],
+      "env": { "VITE_DEV_API_PROXY_TARGET": "http://127.0.0.1:18080" },
+      "port": 18362,
+      "autoPort": false
+    }
+  ]
+}

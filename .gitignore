@@ -99,6 +99,9 @@ evidencia/**/*.zip
 hospital-ai/evidencia/
 evidencia/
 
+# Generated patch artifacts; git is the source of truth.
+hospital-ai/release/PARCHE_TRACKED.patch
+
 # Instaladores compilados (nunca en git)
 installer/native/output/
 installer/native/tests/output/

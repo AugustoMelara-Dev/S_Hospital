@@ -1,0 +1,57 @@
+# docker-compose.lab.yml
+#
+# Proposito: laboratorio AISLADO y DESECHABLE para paridad de motor de base de datos.
+# Propietario: hs-install (TASK_ID C1-INST-01). Archivo nuevo; es mio.
+#
+# NO forma parte del stack hospitalario y NO reemplaza a:
+#   - docker-compose.yml            (base/dev, dueño hs-security)
+#   - docker-compose.prod.yml       (dueño hs-security)
+#   - docker-compose.tls.yml        (dueño hs-security)
+#
+# Aislamiento:
+#   - project name explicito .......... sh_lab
+#   - red propia ...................... sh_lab_net
+#   - volumenes nombrados ............. sh_lab_*
+#   - puerto host alternativo ......... 127.0.0.1:13306  (NUNCA 3306/80/443)
+#   - bind solo a loopback ............ no se expone a la LAN
+#   - restart "no" .................... no se autoarranca ni compite con el hospital
+#
+# Imagen: misma referencia pinneada por digest que docker-compose.prod.yml (paridad de motor).
+name: sh_lab
+
+services:
+  mariadb:
+    image: mariadb:11.4.3@sha256:e3432369d4d432ec2a3d777ff84ffca11ec8c2188cf1b6a0551a393ae5d833bb
+    container_name: sh_lab_mariadb
+    restart: "no"
+    environment:
+      MARIADB_ROOT_PASSWORD: ${SH_LAB_ROOT_PASSWORD:-sh_lab_synthetic_root}
+      MARIADB_DATABASE: ${SH_LAB_DATABASE:-sh_lab}
+      MARIADB_USER: ${SH_LAB_USER:-sh_lab}
+      MARIADB_PASSWORD: ${SH_LAB_PASSWORD:-sh_lab_synthetic}
+    ports:
+      - "127.0.0.1:13306:3306"
+    volumes:
+      - sh_lab_mariadb_data:/var/lib/mysql
+    networks:
+      - sh_lab_net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s
+    labels:
+      sh.lab: "true"
+      sh.lab.owner: "hs-install"
+      sh.lab.disposable: "true"
+      sh.lab.task: "C1-INST-01"
+
+networks:
+  sh_lab_net:
+    name: sh_lab_net
+    driver: bridge
+
+volumes:
+  sh_lab_mariadb_data:
+    name: sh_lab_mariadb_data

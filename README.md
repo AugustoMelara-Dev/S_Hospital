@@ -88,7 +88,7 @@ La plantilla raiz es [`.env.example`](.env.example). No contiene secretos. El in
 | Navegador | `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS`, `SESSION_LIFETIME`, `SESSION_SECURE_COOKIE` | Sesion y origen permitido. El instalador deriva IP y puerto. |
 | Tiempo real | `PUSHER_APP_ID`, `PUSHER_APP_KEY`, `PUSHER_APP_SECRET`, `SOKETI_PORT` | Eventos internos de la LAN; no usan un servicio cloud. |
 | Respaldos | `HOSPITAL_BACKUP_ENCRYPTION_KEY`, retenciones y horarios `HOSPITAL_*` | Cifrado, frecuencia y conservacion. La clave debe guardarse fuera del servidor. |
-| Actualizaciones | `HOSPITAL_MIGRATION_BACKUP_CONFIRMED` | Confirma que existe un backup reciente antes de migrar una instalacion existente. |
+| Actualizaciones | `HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS` | Ventana en horas (default 72) del respaldo cifrado verificado que exige `hospital:verify-migration-backup` antes de migrar una instalacion con datos. |
 
 En LAN HTTP controlada, `HOSPITAL_ALLOW_INSECURE_HTTP=1` documenta la excepcion y `SESSION_SECURE_COOKIE=false`. Con HTTPS, cambie `APP_SCHEME=https`, elimine la excepcion y use `SESSION_SECURE_COOKIE=true`.
 

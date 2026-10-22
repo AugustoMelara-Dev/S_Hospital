@@ -14,6 +14,28 @@ Stack objetivo: React + TypeScript + Laravel API + MySQL/MariaDB.
 No usar Supabase cloud, SQLite multiusuario, Firebase, servicios SaaS
 obligatorios ni dependencias que requieran internet para operar en produccion.
 
+## Campaña Vigente Y Coordinación
+
+- Encargo vigente: `hospital-ai/MANDATO_DEV.md` (reconstrucción integral 2026-09-18;
+  sustituye a `hospital-ai/MANDATO_DEFINITIVO.md` y `PROMPT_MAESTRO.md`, conservados
+  como históricos). Documentos vivos: `hospital-ai/MAPA_PRODUCTO.md` y
+  `hospital-ai/ESTADO_DEV.md`.
+- Raíz escribible de la campaña: `C:\Projects\S_Hospital_AI` (worktree aislado,
+  detached). `C:\Projects\S_Hospital` es el árbol original intocable.
+- Snapshot recuperable previo a sustituciones: `C:\Projects\_snapshots\`.
+- Coordinador de la sesión: el agente Dev de OpenCode. Especialistas `hs-*`
+  (`.opencode/agents/`) ejecutan tareas de implementación/revisión; no reclutan
+  agentes. La nueva identidad visual no hereda R2.
+- Skills obligatorias para todo autor/revisor visual: `better-ui` y
+  `emil-design-eng` (`.agents/skills/`), instaladas con el CLI y cargadas con la
+  herramienta nativa `skill`.
+- QA local con Playwright/E2E, Vitest y datos sintéticos está autorizado en la
+  base de laboratorio identificada (no-Docker: `sh_ai_lab_local`). Sigue prohibido:
+  producción, secretos, `git commit/push/reset/clean`, `docker compose down -v`,
+  `migrate:fresh`, `db:wipe`, destinos externos y gasto.
+- Un archivo tiene un único dueño de escritura a la vez; migraciones y suites que
+  mutan datos se serializan sobre bases desechables identificadas.
+
 ## Forma De Trabajo
 
 - Trabajar en fases pequenas, verificables y commiteables.
@@ -113,7 +135,11 @@ Tablas criticas:
 ## Reglas De Negocio No Negociables
 
 - Paciente: solo nombre obligatorio en factura; no expediente clinico completo.
-- Eritropoyetina: medicamento de L.25; gratis si se marca paciente con receta de dialisis.
+- Eritropoyetina: la gratuidad por receta/dialisis es exclusiva del medicamento
+  elegible (regla `ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION`) y se evalua por linea.
+  El resto de productos y servicios de la cuenta se cobra normalmente; nunca se
+  convierte el total de la factura en gratuito. L.25 historico es antecedente,
+  no una instruccion para sobrescribir el catalogo vigente.
 - Facturas deben salir con nombre del paciente.
 - El recibo principal debe ser institucional PDF/papel en carta, media carta o A5.
 - 80mm/58mm son compatibilidad secundaria.

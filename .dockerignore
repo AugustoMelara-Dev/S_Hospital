@@ -39,7 +39,14 @@ frontend/**
 !frontend/src/**
 !frontend/vite-plugins/
 !frontend/vite-plugins/**
-!frontend/.env.production
+!frontend/scripts/
+frontend/scripts/**
+!frontend/scripts/check-product-delivery.mjs
+# frontend/.env.production NO se incluye a propósito (SEC-01-F1, 2026-09-17):
+# el build es same-origin y base.ts:234 trata la variable ausente igual que vacía
+# (`?? ''`), así que excluirlo no cambia el comportamiento y evita hornear a la
+# imagen cualquier valor futuro de ese archivo. El archivo sigue en disco; debe
+# destrackearse con `git rm --cached frontend/.env.production` en el próximo commit.
 !frontend/index.html
 !frontend/package.json
 !frontend/pnpm-lock.yaml

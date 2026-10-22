@@ -26,6 +26,9 @@ services:
       DB_DATABASE: ${DB_DATABASE:-hospital_billing}
       DB_USERNAME: ${DB_USERNAME:-hospital}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      # Zona horaria de sesion de la conexion (offset fijo, default Honduras).
+      # Requiere recrear el servicio para abrir conexiones nuevas.
+      DB_TIMEZONE: ${DB_TIMEZONE:--06:00}
       CACHE_STORE: database
       DB_CACHE_TABLE: cache
       DB_CACHE_LOCK_TABLE: cache_locks
@@ -39,6 +42,15 @@ services:
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+      # Ventana del guard pre-migracion del entrypoint (--max-age-hours). Solo
+      # el servicio que migra necesita el valor; el resto mantiene su default.
+      HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS: ${HOSPITAL_MIGRATION_BACKUP_MAX_AGE_HOURS:-72}
+      # Copia externa cifrada (HS-BK-EXT): NO se mapea aqui a proposito
+      # (T3-006 / RV-T2-036b). Solo el scheduler monta /external-backups y
+      # ejecuta hospital:backup-copy-external; sin el bind, un `exec` manual
+      # en este servicio podria escribir en la capa efimera del contenedor y
+      # marcar la copia como verified/deployed en el ledger. Sin ENABLED/ROOT
+      # la copia queda desactivada (fail-closed) en este contenedor.
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
       CORS_ALLOWED_ORIGINS: ${APP_SCHEME:-http}://${SERVER_IP}:${APP_PORT:-8000}
@@ -144,6 +156,9 @@ services:
       DB_DATABASE: ${DB_DATABASE:-hospital_billing}
       DB_USERNAME: ${DB_USERNAME:-hospital}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      # Zona horaria de sesion de la conexion (offset fijo, default Honduras).
+      # Requiere recrear el servicio para abrir conexiones nuevas.
+      DB_TIMEZONE: ${DB_TIMEZONE:--06:00}
       CACHE_STORE: database
       DB_CACHE_TABLE: cache
       DB_CACHE_LOCK_TABLE: cache_locks
@@ -157,6 +172,11 @@ services:
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
       RUN_MIGRATIONS: "false"
+      # Copia externa cifrada (HS-BK-EXT): NO se mapea aqui a proposito
+      # (T3-006 / RV-T2-036b). Este worker solo ejecuta respaldos locales
+      # (RunBackupJob); la copia externa la ejecuta el scheduler, unico con el
+      # bind /external-backups. Sin estas variables un `exec` manual aqui no
+      # puede activar la copia ni marcar verified/deployed en la capa efimera.
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
       CORS_ALLOWED_ORIGINS: ${APP_SCHEME:-http}://${SERVER_IP}:${APP_PORT:-8000}
@@ -208,6 +228,9 @@ services:
       DB_DATABASE: ${DB_DATABASE:-hospital_billing}
       DB_USERNAME: ${DB_USERNAME:-hospital}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      # Zona horaria de sesion de la conexion (offset fijo, default Honduras).
+      # Requiere recrear el servicio para abrir conexiones nuevas.
+      DB_TIMEZONE: ${DB_TIMEZONE:--06:00}
       CACHE_STORE: database
       DB_CACHE_TABLE: cache
       DB_CACHE_LOCK_TABLE: cache_locks
@@ -286,6 +309,7 @@ services:
       DB_DATABASE: ${DB_DATABASE:-hospital_billing}
       DB_USERNAME: ${DB_USERNAME:-hospital}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_TIMEZONE: ${DB_TIMEZONE:--06:00}
       HOSPITAL_DAILY_BACKUP_TIME: ${HOSPITAL_DAILY_BACKUP_TIME:-02:00}
       HOSPITAL_OPERATION_START: ${HOSPITAL_OPERATION_START:-06:00}
       HOSPITAL_OPERATION_END: ${HOSPITAL_OPERATION_END:-18:00}
@@ -307,11 +331,27 @@ services:
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
       RUN_MIGRATIONS: "false"
+      # Copia externa cifrada (HS-BK-EXT): desactivada por defecto. Estas
+      # variables mapean backend/config/backups.php; sin un destino real
+      # montado y verificado, la copia externa NO esta desplegada.
+      # T3-006: este es el unico servicio con estas variables y con el bind;
+      # no agregarlas a backend/queue-worker (no montan /external-backups).
+      HOSPITAL_BACKUP_EXTERNAL_ENABLED: ${HOSPITAL_BACKUP_EXTERNAL_ENABLED:-false}
+      HOSPITAL_BACKUP_EXTERNAL_DISK: ${HOSPITAL_BACKUP_EXTERNAL_DISK:-backup_external}
+      HOSPITAL_BACKUP_EXTERNAL_ROOT: ${HOSPITAL_BACKUP_EXTERNAL_ROOT:-/external-backups}
+      HOSPITAL_BACKUP_EXTERNAL_PATH: ${HOSPITAL_BACKUP_EXTERNAL_PATH:-hospital-backups}
+      HOSPITAL_BACKUP_EXTERNAL_LABEL: ${HOSPITAL_BACKUP_EXTERNAL_LABEL:-externo}
+      HOSPITAL_BACKUP_EXTERNAL_VERIFY: ${HOSPITAL_BACKUP_EXTERNAL_VERIFY:-true}
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
       CORS_ALLOWED_ORIGINS: ${APP_SCHEME:-http}://${SERVER_IP}:${APP_PORT:-8000}
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
+      # Destino externo de la copia cifrada. El bind por defecto apunta a
+      # ./backup-external (MISMO host): eso NO es una copia externa real.
+      # Apunte HOSPITAL_BACKUP_EXTERNAL_HOST_PATH a una USB, disco externo
+      # o recurso de red montado en el servidor antes de activar la copia.
+      - ${HOSPITAL_BACKUP_EXTERNAL_HOST_PATH:-./backup-external}:/external-backups
     healthcheck:
       test: ["CMD-SHELL", "test -f /tmp/scheduler.last && find /tmp/scheduler.last -mmin -3 | grep -q . || exit 1"]
       interval: 60s
@@ -347,6 +387,9 @@ services:
       SOKETI_DEFAULT_APP_KEY: ${PUSHER_APP_KEY:?PUSHER_APP_KEY is required}
       SOKETI_DEFAULT_APP_SECRET: ${PUSHER_APP_SECRET:?PUSHER_APP_SECRET is required}
     ports:
+      # HTTP mode: clients reach Soketi directly. After every client uses the
+      # TLS overlay (WSS through nginx/tls.conf), bind this to 127.0.0.1 or
+      # remove the mapping; see hospital-ai/evidencia/T2-012/INFORME.md.
       - "${SOKETI_BIND_IP:-0.0.0.0}:${SOKETI_PORT:-6001}:6001"
     healthcheck:
       test: ["CMD-SHELL", "node -e \"const net=require('net'); const s=net.createConnection(6001,'127.0.0.1'); s.on('connect',()=>process.exit(0)); s.on('error',()=>process.exit(1)); setTimeout(()=>process.exit(1),2000);\""]

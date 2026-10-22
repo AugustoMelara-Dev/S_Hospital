@@ -51,6 +51,20 @@ Medicamento de L.25. Gratis solo si se marca receta de dialisis.
 
 Sin internet en produccion. Multiusuario por red local con una computadora servidor y clientes por navegador.
 
+## Runtime y licencia
+
+- Ruta empaquetada actual (Windows): **Docker Desktop** + imagenes Linux
+  (`setup.bat` / `S_Hospital-Instalador.exe`). Docker Desktop exige
+  **suscripcion pagada para entidades gubernamentales**; la exencion de pequena
+  empresa no aplica a un hospital publico.
+- Alternativa sin suscripcion: **Docker Engine (Apache-2.0)** en un servidor
+  Linux. Este repositorio no incluye empaquetado `.sh` de instalacion Linux; el
+  `docker-compose.prod.yml` es portable, pero el camino Linux no esta certificado
+  ni empaquetado.
+- La decision (suscripcion vs servidor Linux) es **institucional y externa**.
+  Ver `docs/OFFLINE_RUNTIME_LICENSE.md`. No hay compras ni cambios de SO
+  automaticos en este repositorio.
+
 ## Requisitos de hardware (subagente 16)
 
 ### Servidor (PC donde corre backend, frontend compilado, MySQL/MariaDB y backups)
@@ -111,8 +125,11 @@ Sin internet en produccion. Multiusuario por red local con una computadora servi
 ### Procedimiento de reinstalacion
 
 1. Copiar `offline-release/` a USB o carpeta temporal.
-2. Ejecutar `setup.bat` (Windows) o `bash scripts/deploy_hospital_lan.sh` (Linux) como administrador.
-3. El instalador detecta modo PHP local o Docker offline; restaura `.env` si existe backup del mismo.
+2. Ejecutar `setup.bat` como administrador (ruta Windows empaquetada). No existe
+   `scripts/deploy_hospital_lan.sh`: este repositorio no empaqueta un instalador
+   Linux. Para un servidor Linux habria que adoptar y validar Docker Engine por
+   separado (ver `docs/OFFLINE_RUNTIME_LICENSE.md`).
+3. El instalador detecta modo Docker offline; restaura `.env` si existe backup del mismo.
 4. Aplicar `php artisan migrate --force` (nunca `migrate:fresh`).
 5. Importar ultimo backup `.sql.enc` con `restore_hospital_windows.ps1` en base descartable primero, luego a produccion solo si la base activa esta danada.
 6. Validar `/up`, `/login`, `/verify-email`.
