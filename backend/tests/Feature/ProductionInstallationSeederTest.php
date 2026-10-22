@@ -11,7 +11,9 @@ use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceiptSeries;
 use App\Models\ReceiptPrintProfile;
 use App\Models\Service;
+use App\Models\TaxRate;
 use App\Models\User;
+use App\Support\HospitalName;
 use Database\Seeders\ProductionInstallationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -43,9 +45,19 @@ class ProductionInstallationSeederTest extends TestCase
         $this->assertDatabaseHas('services', [
             'source_key' => 'csv:service:medicamentos:eritropoyetina',
             'price' => '25.00',
-            'taxable' => true,
+            'taxable' => false,
+            'tax_rate_id' => null,
             'special_rule_code' => 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
         ]);
+
+        // H-02/H-15: the seed catalog is installed exempt and the fiscal rate
+        // catalog starts with the explicit "Exento 0 %" choice.
+        $this->assertSame(0, Service::query()->whereNotNull('tax_rate_id')->count());
+        $exemptRate = TaxRate::query()->sole();
+        $this->assertSame('Exento 0 %', $exemptRate->name);
+        $this->assertSame('0.00', $exemptRate->percentage);
+        $this->assertTrue($exemptRate->active);
+        $this->assertFalse($exemptRate->is_default);
 
         $profile = ReceiptPrintProfile::query()
             ->where('code', ReceiptPrintProfile::CODE_LETTER_PORTRAIT)
@@ -100,6 +112,40 @@ class ProductionInstallationSeederTest extends TestCase
         }
     }
 
+    public function test_it_installs_no_qa_users_probe_categories_fake_cai_or_concrete_hospital_identity(): void
+    {
+        $this->seed(ProductionInstallationSeeder::class);
+
+        // H-03: nothing from the laboratory validation fixtures may ship.
+        $this->assertSame(0, User::query()->count());
+        $this->assertSame(0, User::query()->where('username', 'like', '%.validacion')->count());
+        $this->assertSame(0, User::query()->where('username', 'like', 'azb.qa.%')->count());
+        $this->assertSame(0, User::query()->where('email', 'like', '%@hospital-san-isidro.local')->count());
+        $this->assertSame(0, FiscalSetting::query()->count());
+        $this->assertSame(0, FiscalSequence::query()->count());
+        $this->assertSame(
+            0,
+            Category::query()
+                ->where('name', 'like', 'EUPC-%')
+                ->orWhere('name', 'like', 'AZB-%')
+                ->count(),
+        );
+
+        // H-14: the neutral fallback replaces any legacy hospital identity.
+        $legacyDefaultHospital = 'Hospital '.'General '.('San '.'Isidro');
+        $legacyFirstHospital = 'Hospital '.('San '.'Isidro');
+        $this->assertSame('S_Hospital', HospitalName::display(null));
+        $this->assertSame('S_Hospital', HospitalName::display($legacyDefaultHospital));
+        $this->assertSame('S_Hospital', HospitalName::display($legacyFirstHospital));
+
+        foreach (['categories', 'services'] as $table) {
+            foreach (DB::table($table)->pluck('name') as $name) {
+                $this->assertStringNotContainsStringIgnoringCase('san isidro', (string) $name);
+                $this->assertStringNotContainsStringIgnoringCase('tocoa', (string) $name);
+            }
+        }
+    }
+
     public function test_rerun_preserves_operational_catalog_paper_cash_and_numbering_values(): void
     {
         $this->seed(ProductionInstallationSeeder::class);
@@ -122,7 +168,18 @@ class ProductionInstallationSeederTest extends TestCase
         $service = Service::query()
             ->where('source_key', 'csv:service:medicamentos:eritropoyetina')
             ->firstOrFail();
-        $service->update(['price' => '177.35', 'taxable' => false, 'active' => false]);
+        $configuredRate = TaxRate::query()->create([
+            'name' => 'ISV 15 %',
+            'percentage' => '15.00',
+            'active' => true,
+            'is_default' => true,
+        ]);
+        $service->update([
+            'price' => '177.35',
+            'taxable' => true,
+            'tax_rate_id' => $configuredRate->id,
+            'active' => false,
+        ]);
 
         $countsBefore = [
             'cash_registers' => CashRegister::query()->count(),
@@ -158,7 +215,8 @@ class ProductionInstallationSeederTest extends TestCase
         $this->assertDatabaseHas('services', [
             'id' => $service->id,
             'price' => '177.35',
-            'taxable' => false,
+            'taxable' => true,
+            'tax_rate_id' => $configuredRate->id,
             'active' => false,
         ]);
     }

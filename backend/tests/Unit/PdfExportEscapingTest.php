@@ -184,10 +184,10 @@ class PdfExportEscapingTest extends TestCase
             'filters' => ['cash_session_id' => ['invalid'], 'method' => ['invalid']],
         ], $fiscal);
 
-        $this->assertStringContainsString('Hospital General San Isidro', $dailyHtml);
+        $this->assertStringContainsString('S_Hospital', $dailyHtml);
         $this->assertStringContainsString('RTN: N/A', $dailyHtml);
         $this->assertStringNotContainsString('Array', $dailyHtml);
-        $this->assertStringContainsString('Hospital General San Isidro', $rangeHtml);
+        $this->assertStringContainsString('S_Hospital', $rangeHtml);
         $this->assertStringContainsString('RTN: N/A', $rangeHtml);
         $this->assertStringNotContainsString('Array', $rangeHtml);
     }

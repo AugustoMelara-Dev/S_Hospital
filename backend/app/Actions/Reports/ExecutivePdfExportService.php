@@ -9,7 +9,7 @@ use Carbon\Carbon;
 
 /**
  * Builds the executive report PDF. Designed to look like a formal
- * accounting document for Hospital San Isidro. All amounts are
+ * accounting document for the configured hospital. All amounts are
  * shown in L. 1,234.50 (lempiras with period) format, the only
  * place where that variant is allowed.
  *

@@ -75,7 +75,7 @@ test('release readiness: health, real database driver, prepared data and new sec
     return { branding, services, cash };
   });
 
-  expect(prepared.branding.data?.hospital_name).toBe('Hospital General San Isidro');
+  expect(prepared.branding.data?.hospital_name).toBe('S_Hospital');
   expect(prepared.services.data?.some((service: { name?: string }) => /glucosa/i.test(service.name ?? ''))).toBe(true);
   expect(prepared.cash.data?.status).toBe('open');
 

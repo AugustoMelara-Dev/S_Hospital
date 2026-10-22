@@ -202,6 +202,6 @@ describe('LoginView', () => {
   it('expone una sola identidad hospitalaria por composición', () => {
     render(<LoginView {...defaultProps} />, { wrapper: Wrapper });
 
-    expect(screen.getAllByText('Hospital General San Isidro')).toHaveLength(1);
+    expect(screen.getAllByText('S_Hospital')).toHaveLength(1);
   });
 });

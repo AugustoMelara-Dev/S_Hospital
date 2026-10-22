@@ -1,7 +1,7 @@
 {
-  "name": "Sistema de Caja Hospitalaria",
-  "short_name": "Caja",
-  "description": "Sistema local para facturacion, caja, pagos, recibos institucionales, reportes y respaldos en red LAN.",
+  "name": "S_Hospital",
+  "short_name": "S_Hospital",
+  "description": "S_Hospital: sistema local para facturacion, caja, pagos, recibos institucionales, reportes y respaldos en red LAN.",
   "start_url": "/login",
   "scope": "/",
   "display": "standalone",

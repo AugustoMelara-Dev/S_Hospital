@@ -4,7 +4,10 @@ namespace App\Support;
 
 final class HospitalName
 {
-    private const FALLBACK = 'Hospital General San Isidro';
+    /**
+     * Neutral product name shown until Administración → Identidad is completed.
+     */
+    private const FALLBACK = 'S_Hospital';
 
     public static function display(?string $name): string
     {
@@ -29,9 +32,12 @@ final class HospitalName
     {
         $legacyProductName = 'hospital '.('bill'.'ing').' os';
         $legacyPlaceholderName = 'hospital '.('de'.'mo');
+        $legacyFirstHospitalName = 'hospital '.('san '.'isidro');
+        $legacyDefaultHospitalName = 'hospital '.('general '.'san '.'isidro');
 
         return [
-            'hospital san isidro',
+            $legacyFirstHospitalName,
+            $legacyDefaultHospitalName,
             $legacyProductName,
             's_hospital '.$legacyProductName,
             $legacyProductName.' offline',

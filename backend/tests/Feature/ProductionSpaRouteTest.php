@@ -211,7 +211,7 @@ class ProductionSpaRouteTest extends TestCase
         $this->assertStringContainsString('rel="manifest" href="/manifest.webmanifest"', $index);
         $this->assertStringContainsString('rel="icon" href="/icons/icon.svg"', $index);
 
-        $this->assertSame('Sistema de Caja Hospitalaria', $manifest['name']);
+        $this->assertSame('S_Hospital', $manifest['name']);
         $this->assertSame('/login', $manifest['start_url']);
         $this->assertSame('standalone', $manifest['display']);
         $this->assertStringContainsString('Disallow: /', $robots);
