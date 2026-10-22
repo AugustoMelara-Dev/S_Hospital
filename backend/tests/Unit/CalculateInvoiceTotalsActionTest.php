@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Actions\Billing\CalculateInvoiceTotalsAction;
 use App\Models\Category;
 use App\Models\Service;
+use App\Models\TaxRate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -330,5 +331,54 @@ class CalculateInvoiceTotalsActionTest extends TestCase
             'is_billable' => true,
             'category_id' => $category->id,
         ]);
+    }
+
+    public function test_mixed_rates_and_exempt_lines_are_grouped_and_reconciled(): void
+    {
+        $rate15 = TaxRate::query()->create(['name' => 'ISV 15 %', 'percentage' => '15.00', 'active' => true, 'is_default' => true]);
+        $rate18 = TaxRate::query()->create(['name' => 'ISV 18 %', 'percentage' => '18.00', 'active' => true, 'is_default' => false]);
+
+        $service15 = $this->createService(price: '10.00', taxable: true);
+        $service15->tax_rate_id = $rate15->id;
+        $service15->save();
+
+        $service18 = $this->createService(price: '10.00', taxable: true);
+        $service18->tax_rate_id = $rate18->id;
+        $service18->save();
+
+        $serviceExempt = $this->createService(price: '5.00', taxable: false);
+
+        $epo = $this->createService(price: '25.00', taxable: true, specialRuleCode: Service::ERYTHROPOIETIN_RULE);
+        $epo->tax_rate_id = $rate15->id;
+        $epo->save();
+
+        $result = $this->action->execute([
+            ['service' => $service15, 'quantity' => '1', 'notes' => null],
+            ['service' => $service18, 'quantity' => '1', 'notes' => null],
+            ['service' => $serviceExempt, 'quantity' => '1', 'notes' => null],
+            ['service' => $epo, 'quantity' => '1', 'notes' => null],
+        ], '15.00', true);
+
+        $this->assertSame('25.00', $result['subtotal']);
+        $this->assertSame('20.00', $result['taxable_base']);
+        $this->assertSame('5.00', $result['exempt']);
+        $this->assertSame('3.30', $result['tax_amount']);
+        $this->assertSame('28.30', $result['total']);
+        $this->assertSame($result['tax_amount_cents'], array_sum(array_column($result['items'], 'tax_amount_cents')));
+
+        $breakdown = collect($result['tax_breakdown'])->keyBy('rate');
+        $this->assertSame(1000, $breakdown['18.00']['base_cents']);
+        $this->assertSame(180, $breakdown['18.00']['tax_cents']);
+        $this->assertSame('Gravado 18 %', $breakdown['18.00']['base_label']);
+        $this->assertSame(1000, $breakdown['15.00']['base_cents']);
+        $this->assertSame(150, $breakdown['15.00']['tax_cents']);
+        $this->assertSame(500, $breakdown['0.00']['base_cents']);
+        $this->assertSame(0, $breakdown['0.00']['tax_cents']);
+        $this->assertSame('Exento', $breakdown['0.00']['base_label']);
+
+        $epoLine = $result['items'][3];
+        $this->assertSame(0, $epoLine['line_subtotal_cents']);
+        $this->assertSame(0, $epoLine['tax_amount_cents']);
+        $this->assertSame(2500, $epoLine['rule_adjustment_cents']);
     }
 }

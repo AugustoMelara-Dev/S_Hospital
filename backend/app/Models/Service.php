@@ -26,6 +26,7 @@ use LogicException;
  * @property string|null $internal_code
  * @property string $price
  * @property bool $taxable
+ * @property int|null $tax_rate_id
  * @property bool $active
  * @property bool $visible_in_billing
  * @property bool $is_billable
@@ -60,6 +61,7 @@ class Service extends Model
         'internal_code',
         'price',
         'taxable',
+        'tax_rate_id',
         'active',
         'visible_in_billing',
         'is_billable',
@@ -99,6 +101,12 @@ class Service extends Model
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
+    }
+
+    /** @return BelongsTo<TaxRate, $this> */
+    public function taxRate(): BelongsTo
+    {
+        return $this->belongsTo(TaxRate::class);
     }
 
     /** @return HasMany<ServicePriceHistory, $this> */

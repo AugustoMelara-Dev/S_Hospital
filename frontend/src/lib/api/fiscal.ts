@@ -1,5 +1,5 @@
 import { apiClient } from './base';
-import type { FiscalSettings, FiscalSequence, OperationalSettings, PublicBranding } from './types';
+import type { FiscalSettings, FiscalSequence, OperationalSettings, PublicBranding, TaxRate, TaxRatePayload } from './types';
 
 export const fiscal = {
   async getPublicBranding(): Promise<PublicBranding | null> {
@@ -38,8 +38,36 @@ export const fiscal = {
     return response.data;
   },
 
-  async getFiscalSequences(): Promise<FiscalSequence[]> {
-    const response = await apiClient.request<{ data: FiscalSequence[] }>('/api/fiscal-sequences');
+  async getTaxRates(activeOnly = false): Promise<TaxRate[]> {
+    const query = activeOnly ? '?active_only=1' : '';
+    const response = await apiClient.request<{ data: TaxRate[] }>(`/api/tax-rates${query}`);
+    return response?.data ?? [];
+  },
+
+  async createTaxRate(payload: TaxRatePayload): Promise<TaxRate> {
+    const response = await apiClient.request<{ data: TaxRate }>('/api/tax-rates', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return response.data;
+  },
+
+  async updateTaxRate(id: number, payload: TaxRatePayload): Promise<TaxRate> {
+    const response = await apiClient.request<{ data: TaxRate }>(`/api/tax-rates/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    return response.data;
+  },
+
+  async deleteTaxRate(id: number, reason: string): Promise<void> {
+    await apiClient.request(`/api/tax-rates/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  async getFiscalSequences(): Promise<FiscalSequence[]> {    const response = await apiClient.request<{ data: FiscalSequence[] }>('/api/fiscal-sequences');
     return response?.data ?? [];
   },
 

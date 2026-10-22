@@ -18,6 +18,11 @@ class CalculateInvoiceTotalsAction
      * requirement demands half-to-even, the divisor is unchanged but the
      * additive offset must vary based on the parity of the quotient.
      *
+     * H-15: the rate is resolved per line. A service with `tax_rate_id` uses
+     * that rate; a line without a rate is exempt. For legacy rows that still
+     * carry only `taxable`, the configured default rate is used, so existing
+     * single-rate invoices keep the exact same totals.
+     *
      * @param  list<array{service: Service, quantity: string, notes: ?string}>  $items
      * @return array{
      *     subtotal: string, subtotal_cents: int,
@@ -26,15 +31,15 @@ class CalculateInvoiceTotalsAction
      *     tax_amount: string, tax_amount_cents: int,
      *     discount_amount: string, discount_amount_cents: int,
      *     total: string, total_cents: int,
-     *     items: list<array<string, mixed>>
+     *     items: list<array<string, mixed>>,
+     *     tax_breakdown: list<array{rate: string, base_cents: int, tax_cents: int, base_label: string, tax_label: string}>
      * }
      */
     public function execute(array $items, string $taxRate, bool $patientDialysisPrescription = false): array
     {
-        $taxRateBasisPoints = $this->parseRateBasisPoints($taxRate);
+        $defaultBasisPoints = $this->parseRateBasisPoints($taxRate);
         $subtotal = Money::zero();
         $calculatedItems = [];
-        $taxableSubtotalCents = 0;
 
         foreach ($items as $item) {
             $service = $item['service'];
@@ -42,7 +47,8 @@ class CalculateInvoiceTotalsAction
             $specialRuleApplied = $this->appliesErythropoietinRule($service, $patientDialysisPrescription);
             // La regla de gratuidad solo cambia el importe efectivo de la línea.
             // El tratamiento fiscal siempre proviene del catálogo autorizado.
-            $lineTaxable = $service->taxable;
+            $lineBasisPoints = $this->lineRateBasisPoints($service, $defaultBasisPoints);
+            $lineTaxable = $lineBasisPoints > 0;
             $registeredUnitPriceCents = $this->parseMoneyCents((string) $service->price);
             $unitPriceCents = $specialRuleApplied ? 0 : $registeredUnitPriceCents;
             $lineSubtotalCents = intdiv(($unitPriceCents * $quantityUnits) + 50, 100);
@@ -50,9 +56,6 @@ class CalculateInvoiceTotalsAction
             $ruleAdjustmentCents = $registeredLineSubtotalCents - $lineSubtotalCents;
 
             $subtotal = $subtotal->plus(Money::fromCents($lineSubtotalCents));
-            if ($lineTaxable) {
-                $taxableSubtotalCents += $lineSubtotalCents;
-            }
 
             $category = $service->category;
             $categoryName = $category === null ? '' : $category->name;
@@ -61,7 +64,8 @@ class CalculateInvoiceTotalsAction
 
             $calculatedItems[] = [
                 '_taxable' => $lineTaxable,
-                '_tax_remainder' => ($lineSubtotalCents * $taxRateBasisPoints) % 10000,
+                '_rate_bp' => $lineBasisPoints,
+                '_tax_remainder' => ($lineSubtotalCents * $lineBasisPoints) % 10000,
                 'service_id' => $service->id,
                 'service_name' => $service->name,
                 'category_id' => $service->category_id,
@@ -82,7 +86,7 @@ class CalculateInvoiceTotalsAction
                 'rule_adjustment' => $this->formatMoney($ruleAdjustmentCents),
                 'rule_adjustment_cents' => $ruleAdjustmentCents,
                 'rule_cause' => $this->ruleCause($specialRuleApplied),
-                'tax_rate' => $lineTaxable ? $this->formatRate($taxRateBasisPoints) : '0.00',
+                'tax_rate' => $this->formatRate($lineBasisPoints),
                 'line_subtotal' => $this->formatMoney($lineSubtotalCents),
                 'line_subtotal_cents' => $lineSubtotalCents,
                 'special_rule_code' => $service->special_rule_code,
@@ -91,10 +95,12 @@ class CalculateInvoiceTotalsAction
             ];
         }
 
-        $taxCents = intdiv(($taxableSubtotalCents * $taxRateBasisPoints) + 5000, 10000);
-        $calculatedItems = $this->distributeInvoiceTax($calculatedItems, $taxCents, $taxRateBasisPoints);
-        $discountCents = 0;
+        $distribution = $this->distributeInvoiceTaxByRate($calculatedItems);
+        $calculatedItems = $distribution['items'];
         $subtotalCents = $subtotal->toCents();
+        $taxableSubtotalCents = $distribution['taxable_base_cents'];
+        $taxCents = $distribution['tax_amount_cents'];
+        $discountCents = 0;
         $exemptCents = $subtotalCents - $taxableSubtotalCents;
         $totalCents = $subtotalCents + $taxCents - $discountCents;
 
@@ -112,55 +118,124 @@ class CalculateInvoiceTotalsAction
             'total' => $this->formatMoney($totalCents),
             'total_cents' => $totalCents,
             'items' => $calculatedItems,
+            'tax_breakdown' => $distribution['tax_breakdown'],
         ];
     }
 
     /**
-     * @param  list<array{_taxable: bool, line_subtotal_cents: int, ...}>  $items
-     * @return list<array<string, mixed>>
+     * Distribuye el impuesto por grupo de tasa aplicando resto mayor dentro de
+     * cada grupo. Con una sola tasa el resultado es idéntico al algoritmo
+     * anterior (misma base, mismo redondeo, mismo reparto).
+     *
+     * @param  list<array<string, mixed>>  $items
+     * @return array{
+     *     items: list<array<string, mixed>>,
+     *     taxable_base_cents: int,
+     *     tax_amount_cents: int,
+     *     tax_breakdown: list<array{rate: string, base_cents: int, tax_cents: int, base_label: string, tax_label: string}>
+     * }
      */
-    private function distributeInvoiceTax(array $items, int $invoiceTaxCents, int $taxRateBasisPoints): array
+    private function distributeInvoiceTaxByRate(array $items): array
     {
-        $baseTaxTotal = 0;
-        $remainders = [];
-        $lineTaxCentsByIndex = [];
+        $lineTaxCents = [];
+        $groups = [];
+        $taxableBaseCents = 0;
 
         foreach ($items as $index => $item) {
-            if (! $item['_taxable']) {
-                $lineTaxCentsByIndex[$index] = 0;
+            $basisPoints = $this->intValue($item['_rate_bp'] ?? null);
+            $baseCents = $this->intValue($item['line_subtotal_cents'] ?? null);
+
+            if ($basisPoints <= 0 || ($item['_taxable'] ?? false) !== true) {
+                $lineTaxCents[$index] = 0;
 
                 continue;
             }
 
-            $exactNumerator = $item['line_subtotal_cents'] * $taxRateBasisPoints;
-            $baseTaxCents = intdiv($exactNumerator, 10000);
-            $lineTaxCentsByIndex[$index] = $baseTaxCents;
-            $baseTaxTotal += $baseTaxCents;
-            $remainders[] = [
-                'index' => $index,
-                'remainder' => $exactNumerator % 10000,
+            $exactNumerator = $baseCents * $basisPoints;
+            $lineTaxCents[$index] = intdiv($exactNumerator, 10000);
+            $taxableBaseCents += $baseCents;
+
+            if (! isset($groups[$basisPoints])) {
+                $groups[$basisPoints] = ['base' => 0, 'base_tax' => 0, 'refs' => []];
+            }
+
+            $groups[$basisPoints]['base'] += $baseCents;
+            $groups[$basisPoints]['base_tax'] += $lineTaxCents[$index];
+            $groups[$basisPoints]['refs'][] = ['index' => $index, 'remainder' => $exactNumerator % 10000];
+        }
+
+        $breakdown = [];
+        $taxAmountCents = 0;
+        krsort($groups);
+
+        foreach ($groups as $basisPoints => $group) {
+            $groupTaxCents = intdiv(($group['base'] * $basisPoints) + 5000, 10000);
+            $remainingCents = $groupTaxCents - $group['base_tax'];
+            $refs = $group['refs'];
+
+            usort($refs, fn (array $a, array $b): int => $b['remainder'] <=> $a['remainder']
+                ?: $a['index'] <=> $b['index']);
+
+            for ($i = 0; $i < $remainingCents && isset($refs[$i]); $i++) {
+                $lineTaxCents[$refs[$i]['index']]++;
+            }
+
+            $taxAmountCents += $groupTaxCents;
+            $compactRate = $this->formatCompactRate($basisPoints);
+            $breakdown[] = [
+                'rate' => $this->formatRate($basisPoints),
+                'base_cents' => $group['base'],
+                'tax_cents' => $groupTaxCents,
+                'base_label' => 'Gravado '.$compactRate.' %',
+                'tax_label' => 'ISV '.$compactRate.' %',
             ];
         }
 
-        usort($remainders, fn (array $a, array $b): int => $b['remainder'] <=> $a['remainder']
-            ?: $a['index'] <=> $b['index']);
-
-        $remainingCents = $invoiceTaxCents - $baseTaxTotal;
-        for ($i = 0; $i < $remainingCents && isset($remainders[$i]); $i++) {
-            $lineTaxCentsByIndex[$remainders[$i]['index']]++;
-        }
+        $exemptBaseCents = 0;
 
         foreach ($items as $index => $item) {
-            $lineTaxCents = $lineTaxCentsByIndex[$index];
-            $lineTotalCents = $item['line_subtotal_cents'] + $lineTaxCents;
-            $items[$index]['tax_amount_cents'] = $lineTaxCents;
-            $items[$index]['tax_amount'] = $this->formatMoney($lineTaxCents);
+            $lineTax = $lineTaxCents[$index] ?? 0;
+            $lineTotalCents = $this->intValue($item['line_subtotal_cents'] ?? null) + $lineTax;
+            $items[$index]['tax_amount_cents'] = $lineTax;
+            $items[$index]['tax_amount'] = $this->formatMoney($lineTax);
             $items[$index]['line_total'] = $this->formatMoney($lineTotalCents);
             $items[$index]['line_total_cents'] = $lineTotalCents;
-            unset($items[$index]['_taxable'], $items[$index]['_tax_remainder']);
+
+            if ($this->intValue($item['_rate_bp'] ?? null) <= 0) {
+                $exemptBaseCents += $this->intValue($item['line_subtotal_cents'] ?? null);
+            }
+
+            unset($items[$index]['_taxable'], $items[$index]['_rate_bp'], $items[$index]['_tax_remainder']);
         }
 
-        return $items;
+        if ($exemptBaseCents > 0) {
+            $breakdown[] = [
+                'rate' => '0.00',
+                'base_cents' => $exemptBaseCents,
+                'tax_cents' => 0,
+                'base_label' => 'Exento',
+                'tax_label' => 'Exento',
+            ];
+        }
+
+        return [
+            'items' => $items,
+            'taxable_base_cents' => $taxableBaseCents,
+            'tax_amount_cents' => $taxAmountCents,
+            'tax_breakdown' => $breakdown,
+        ];
+    }
+
+    private function lineRateBasisPoints(Service $service, int $defaultBasisPoints): int
+    {
+        if ($service->tax_rate_id === null) {
+            return $service->taxable ? $defaultBasisPoints : 0;
+        }
+
+        $service->loadMissing('taxRate');
+        $percentage = $service->taxRate?->percentage;
+
+        return $percentage === null ? 0 : $this->parseRateBasisPoints((string) $percentage);
     }
 
     private function appliesErythropoietinRule(Service $service, bool $patientDialysisPrescription): bool
@@ -271,5 +346,23 @@ class CalculateInvoiceTotalsAction
     private function formatRate(int $basisPoints): string
     {
         return intdiv($basisPoints, 100).'.'.str_pad((string) ($basisPoints % 100), 2, '0', STR_PAD_LEFT);
+    }
+
+    private function formatCompactRate(int $basisPoints): string
+    {
+        return rtrim(rtrim($this->formatRate($basisPoints), '0'), '.');
+    }
+
+    private function intValue(mixed $value): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_float($value)) {
+            return (int) $value;
+        }
+
+        return is_string($value) && is_numeric($value) ? (int) $value : 0;
     }
 }

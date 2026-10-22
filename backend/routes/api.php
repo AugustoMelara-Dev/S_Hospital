@@ -25,6 +25,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceAreaController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SystemStatusController;
+use App\Http\Controllers\TaxRateController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\LoginLockout;
 use Illuminate\Support\Facades\Route;
@@ -97,6 +98,15 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:30,1');
         Route::post('/settings/logo', [LogoController::class, 'upload'])
             ->middleware('throttle.user:20,1');
+
+        // H-15: configurable tax rates (ISV 15 %, ISV 18 %, exempt, ...).
+        Route::get('/tax-rates', [TaxRateController::class, 'index']);
+        Route::post('/tax-rates', [TaxRateController::class, 'store'])
+            ->middleware('throttle.user:30,1');
+        Route::patch('/tax-rates/{taxRate}', [TaxRateController::class, 'update'])
+            ->middleware('throttle.user:30,1');
+        Route::delete('/tax-rates/{taxRate}', [TaxRateController::class, 'destroy'])
+            ->middleware('throttle.user:30,1');
 
         Route::get('/fiscal-sequences', [FiscalSequenceController::class, 'index']);
         Route::post('/fiscal-sequences', [FiscalSequenceController::class, 'store'])

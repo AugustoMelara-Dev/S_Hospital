@@ -63,6 +63,27 @@ export type PublicBranding = Pick<
   'hospital_name' | 'primary_color' | 'slogan' | 'government_line' | 'secretariat_line' | 'receipt_location'
 >;
 
+/** H-15: configurable tax rate. `percentage` is a decimal string ("15.00"). */
+export type TaxRate = {
+  id: number;
+  name: string;
+  percentage: string;
+  active: boolean;
+  is_default: boolean;
+  created_by?: number | null;
+  updated_by?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type TaxRatePayload = {
+  name: string;
+  percentage: string;
+  active?: boolean;
+  is_default?: boolean;
+  reason: string;
+};
+
 export type OperationalSettings = Pick<
   FiscalSettings,
   'default_tax_rate' | 'scanner_enabled' | 'partial_payments_enabled'

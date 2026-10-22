@@ -15,6 +15,8 @@ import type {
   OperationalSettings,
   PublicBranding,
   FiscalSequence,
+  TaxRate,
+  TaxRatePayload,
   Category,
   Area,
   ServiceArea,
@@ -427,6 +429,22 @@ export const apiClient = {
     payload: Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'>,
   ): Promise<Pick<OperationalSettings, 'scanner_enabled' | 'partial_payments_enabled'>> {
     return fiscal.updateOperationalSettings(payload);
+  },
+
+  async getTaxRates(activeOnly = false): Promise<TaxRate[]> {
+    return fiscal.getTaxRates(activeOnly);
+  },
+
+  async createTaxRate(payload: TaxRatePayload): Promise<TaxRate> {
+    return fiscal.createTaxRate(payload);
+  },
+
+  async updateTaxRate(id: number, payload: TaxRatePayload): Promise<TaxRate> {
+    return fiscal.updateTaxRate(id, payload);
+  },
+
+  async deleteTaxRate(id: number, reason: string): Promise<void> {
+    return fiscal.deleteTaxRate(id, reason);
   },
 
   async getFiscalSequences(): Promise<FiscalSequence[]> {
