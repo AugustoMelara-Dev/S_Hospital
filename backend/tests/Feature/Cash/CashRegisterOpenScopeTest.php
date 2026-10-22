@@ -51,6 +51,27 @@ class CashRegisterOpenScopeTest extends TestCase
         $this->assertSame($cashier->id, (int) $row['open_user_id']);
     }
 
+    public function test_open_returns_the_same_pending_work_contract_as_current_session(): void
+    {
+        $cashier = $this->cashier();
+
+        $opened = $this->actingAs($cashier)
+            ->postJson('/api/cash-sessions/open', ['opening_amount' => '100.00'])
+            ->assertCreated();
+
+        // H-04: a freshly opened session must already resolve "pending work" as
+        // zero instead of leaving the UI with an unconfirmed state until the
+        // next refetch of /cash-sessions/current.
+        $opened->assertJsonPath('data.pending_invoice_count', 0);
+        $opened->assertJsonPath('data.pending_amount', '0.00');
+
+        $current = $this->actingAs($cashier)->getJson('/api/cash-sessions/current')->assertOk();
+
+        $this->assertSame(0, $current->json('data.pending_invoice_count'));
+        $this->assertSame('0.00', $current->json('data.pending_amount'));
+        $this->assertSame($opened->json('data.id'), $current->json('data.id'));
+    }
+
     public function test_cash_register_inventory_lists_only_active_real_registers(): void
     {
         $cashier = $this->cashier();

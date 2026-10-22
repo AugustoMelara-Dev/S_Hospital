@@ -73,11 +73,18 @@ class CashSessionController extends Controller
         ]);
     }
 
-    public function open(OpenCashSessionRequest $request, OpenCashSessionAction $openCashSession): JsonResponse
-    {
+    public function open(
+        OpenCashSessionRequest $request,
+        OpenCashSessionAction $openCashSession,
+        BuildCashReconciliationAction $buildCashReconciliation,
+    ): JsonResponse {
         $session = $openCashSession->execute($request->payload(), $this->authenticatedUser($request), $request);
 
-        return response()->json(['data' => $session], 201);
+        // Same contract as GET /cash-sessions/current: the freshly opened
+        // session already carries `pending_invoice_count` / `pending_amount`
+        // (zero for a new session), so the UI never sees an unresolved
+        // "pending work" state between opening and the next refetch.
+        return response()->json(['data' => $this->openSessionPayload($session, $buildCashReconciliation)], 201);
     }
 
     public function close(

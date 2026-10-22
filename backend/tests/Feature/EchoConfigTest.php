@@ -13,6 +13,20 @@ class EchoConfigTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_offline_default_disables_realtime_without_a_socket_server(): void
+    {
+        Config::set('broadcasting.default', 'null');
+        Config::set('broadcasting.connections.pusher.key', '');
+        $user = User::factory()->create();
+
+        // H-10: with no socket server (production default), the client must be
+        // told realtime is disabled so it never imports pusher-js nor retries.
+        $this->actingAs($user)->getJson('/api/system/echo-config')
+            ->assertOk()
+            ->assertJsonPath('data.enabled', false)
+            ->assertJsonPath('data.key', '');
+    }
+
     public function test_wss_client_configuration_is_reported_as_tls(): void
     {
         Config::set('app.url', 'https://hospital.local');

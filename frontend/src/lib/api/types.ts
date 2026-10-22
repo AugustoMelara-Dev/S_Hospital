@@ -9,6 +9,10 @@ export type AuthUser = {
   direct_permissions?: string[];
   uses_exact_permission_map?: boolean;
   service_area_id?: number | null;
+  /** Capabilities resolved server-side for permissions that must stay hidden. */
+  capabilities?: {
+    manage_roles?: boolean;
+  };
   must_change_password: boolean;
 };
 

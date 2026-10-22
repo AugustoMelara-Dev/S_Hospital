@@ -274,7 +274,7 @@ export function CobrarView() {
             ) : (
               <AdminChip tone="neutral">Sin caja abierta</AdminChip>
             )}
-            {lines.length > 0 ? (
+            {!showResult && lines.length > 0 ? (
               <AdminChip tone="accent">
                 {lines.length} {lines.length === 1 ? 'concepto' : 'conceptos'} en cuenta
               </AdminChip>

@@ -2,7 +2,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
-import { apiClient, type AuthUser, type CashSession, type InvoicePreview, type Service } from '@/lib/api';
+import { apiClient, type AuthUser, type CashSession, type Invoice, type InvoicePreview, type PaymentRegistrationResult, type Service } from '@/lib/api';
 import { billing } from '@/lib/api/billing';
 import { AdminSessionProvider } from '@/shell/admin/AdminSessionContext';
 import { ERYTHROPOIETIN_RULE } from './state/domain';
@@ -471,6 +471,41 @@ describe('CobrarView · recorrido continuo', () => {
 
     await waitFor(() => expect(within(station).getByText(/listo para cobrar/i)).toBeVisible());
     expect(within(station).getByTestId('cobrar-primary-action')).toBeEnabled();
+  });
+
+  it('deja de contar conceptos en cuenta cuando la operación queda cobrada', async () => {
+    const user = userEvent.setup();
+    mockCatalog();
+    vi.spyOn(apiClient, 'previewInvoice').mockResolvedValue(positivePreview());
+
+    const invoice = {
+      id: 77,
+      invoice_number: '000-001-01-00000077',
+      total: '100.00',
+      balance_due: '100.00',
+      status: 'issued',
+    } as unknown as Invoice;
+    const paidInvoice = { ...invoice, status: 'paid', balance_due: '0.00' } as unknown as Invoice;
+    vi.spyOn(apiClient, 'createInvoice').mockResolvedValue(invoice);
+    vi.spyOn(apiClient, 'registerPayment').mockResolvedValue({
+      receipt_outcome: 'not_required',
+      institutional_receipt: null,
+      invoice: paidInvoice,
+      payment: { paid_at: '2026-10-21T12:00:00Z' },
+    } as unknown as PaymentRegistrationResult);
+
+    renderCobrar();
+
+    await user.type(screen.getByLabelText(/nombre del paciente/i), 'Ana López');
+    await addFirstService(user);
+    expect(await screen.findByText(/1 concepto en cuenta/i)).toBeVisible();
+
+    const action = await screen.findByTestId('cobrar-primary-action');
+    await waitFor(() => expect(action).toBeEnabled());
+    await user.click(action);
+    await user.click(await screen.findByTestId('cobrar-confirm'));
+
+    await waitFor(() => expect(screen.queryByText(/concepto en cuenta/i)).not.toBeInTheDocument());
   });
 
   it('un Enter en la búsqueda agrega el concepto seleccionado sin abrir confirmación ni cobrar', async () => {

@@ -242,6 +242,12 @@ class AuthController extends Controller
             'active' => $user->active,
             'roles' => $user->getRoleNames()->values(),
             'permissions' => $this->visiblePermissionNames($user),
+            // Capabilities for permissions that must stay hidden from the
+            // visible permission list (security: the UI still needs to know
+            // whether it may manage roles). The backend remains the authority.
+            'capabilities' => [
+                'manage_roles' => $user->can('users.assign_admin_role'),
+            ],
             'uses_exact_permission_map' => $user->usesExactDirectPermissionMap(),
             'must_change_password' => $user->must_change_password,
         ];

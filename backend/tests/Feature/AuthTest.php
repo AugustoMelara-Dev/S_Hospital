@@ -181,6 +181,26 @@ class AuthTest extends TestCase
         $this->assertNotContains('reports.view', $response->json('data.permissions'));
     }
 
+    public function test_session_exposes_role_management_capability_without_the_hidden_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $adminSession = $this->actingAs($admin)->getJson('/api/auth/session')->assertOk();
+
+        $this->assertTrue($adminSession->json('data.capabilities.manage_roles'));
+        $this->assertNotContains('users.assign_admin_role', $adminSession->json('data.permissions'));
+
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $cashierSession = $this->actingAs($cashier)->getJson('/api/auth/session')->assertOk();
+
+        $this->assertFalse($cashierSession->json('data.capabilities.manage_roles'));
+    }
+
     public function test_session_endpoint_does_not_hydrate_inactive_user_payload(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
