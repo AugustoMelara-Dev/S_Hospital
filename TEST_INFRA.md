@@ -1,4 +1,4 @@
-# E2E Test Infra: Hospital General San Isidro Cashier System
+# E2E Test Infra: S_Hospital Cashier System
 
 ## Test Philosophy
 - Opaque-box, requirement-driven, offline-first.
@@ -27,6 +27,43 @@
   - Frontend: `npm run typecheck` (`tsc --noEmit`), `node scripts/check-no-legacy-ui.mjs --mode=strict`
   - Backend: `vendor/bin/phpstan analyse --no-progress`, `vendor/bin/pint --test`
 - **Visual Capture**: Playwright screenshots at 1440×900 (Desktop) and 390×844 (Mobile).
+
+## Backend Database Test Matrix (SQLite vs MariaDB)
+
+`backend/phpunit.xml` runs the default SQLite `:memory:` suite. The
+MySQL/MariaDB suite is `backend/phpunit.mysql.xml`, but the harness deliberately
+**forces SQLite unless two conditions hold**
+(`backend/tests/TestCase.php::forceTestingEnvironment`):
+
+1. `HOSPITAL_TEST_ALLOW_EXTERNAL_DB=1`
+2. `DB_DATABASE` starts with `s_hospital_test_`
+
+Without them the command still looks green but runs SQLite, so the MySQL-only
+tests (money CHECKs, FKs, audit triggers, real concurrency) are silently
+skipped. That is the trap A-12 records.
+
+Correct PowerShell invocation (disposable lab database, never production):
+
+```powershell
+$env:APP_ENV='testing'
+$env:DB_CONNECTION='mysql'
+$env:DB_HOST='127.0.0.1'
+$env:DB_PORT='3306'                       # 3317 for the payload MariaDB 11.4
+$env:DB_DATABASE='s_hospital_test_delivery_104'
+$env:DB_USERNAME='sh_ai_lab_local'
+$env:DB_PASSWORD=$env:LAB_DB_PASSWORD     # from the local lab env, never committed
+$env:HOSPITAL_TEST_ALLOW_EXTERNAL_DB='1'
+php -c <php83.ini> vendor/bin/phpunit -c phpunit.mysql.xml --display-skipped
+```
+
+- The database must be disposable and match the `s_hospital_test_` prefix; the
+  harness throws before touching anything else.
+- Run the SQLite and MariaDB suites **serially**: both share
+  `backend/storage/framework/testing/` and the backup directories.
+- `HOSPITAL_RUN_CONCURRENT_TESTS=1` enables the real multi-process cash/fiscal
+  race tests (also requires the external-DB flag).
+- The production target is MariaDB 11.4 (payload); the lab also has MariaDB
+  10.4. Both must be green before the release candidate.
 
 ## Real-World Application Scenarios (Tier 4)
 1. **Full Cashier Shift Lifecycle**: Operator logs in -> Opens cashbox with L. 500.00 -> Issues multiple invoices (standard and mixed EPO) -> Performs mid-shift movement -> Reconciles drawer with physical denominations -> Closes cashbox with audit notes.
