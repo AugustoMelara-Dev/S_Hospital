@@ -250,6 +250,11 @@
             margin-top: 1px;
         }
 
+        .keep-together {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
         .receipt-summary {
             page-break-inside: avoid;
             break-inside: avoid;
@@ -1078,6 +1083,7 @@
             </tbody>
         </table>
 
+        <div class="keep-together">
         <div class="receipt-summary">
             <table class="totals-table">
                 <tr>
@@ -1154,6 +1160,7 @@
         @if ($profile['show_copy_legend'] && ! empty($page['institution']['receipt_footer_text']))
             <div class="copy-legend">{{ $page['institution']['receipt_footer_text'] }}</div>
         @endif
+        </div>
         </div>
     </section>
 @endforeach

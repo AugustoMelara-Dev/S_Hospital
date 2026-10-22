@@ -418,15 +418,51 @@ class InstitutionalReceiptPaperCompositionTest extends TestCase
             'area_name' => 'Farmacia',
         ]);
 
-        foreach ([ReceiptPrintProfile::CODE_LETTER_PORTRAIT, ReceiptPrintProfile::CODE_THERMAL_80] as $profileCode) {
-            $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt(
-                $this->receiptFixture([$sameDescriptor, $distinctDescriptors], $this->profile($profileCode)),
-            );
+        $letterHtml = app(InstitutionalReceiptPdfService::class)->htmlForReceipt(
+            $this->receiptFixture([$sameDescriptor, $distinctDescriptors], $this->profile(ReceiptPrintProfile::CODE_LETTER_PORTRAIT)),
+        );
 
-            $this->assertStringContainsString('Laboratorio', $html);
-            $this->assertStringNotContainsString('Laboratorio / Laboratorio', $html);
-            $this->assertStringContainsString('Medicamentos / Farmacia', $html);
-        }
+        $this->assertStringContainsString('Laboratorio', $letterHtml);
+        $this->assertStringNotContainsString('Laboratorio / Laboratorio', $letterHtml);
+        $this->assertStringContainsString('Medicamentos / Farmacia', $letterHtml);
+
+        // A-07: the thermal ticket omits category/area descriptors so the concept
+        // name owns the full width and a 30-line account stays under one metre.
+        $thermalHtml = app(InstitutionalReceiptPdfService::class)->htmlForReceipt(
+            $this->receiptFixture([$sameDescriptor, $distinctDescriptors], $this->profile(ReceiptPrintProfile::CODE_THERMAL_80)),
+        );
+
+        $this->assertStringNotContainsString('Laboratorio', $thermalHtml);
+        $this->assertStringNotContainsString('Medicamentos / Farmacia', $thermalHtml);
+    }
+
+    public function test_thermal_ticket_uses_full_width_concept_and_breaks_range_only_at_a(): void
+    {
+        $item = array_merge($this->lineItem('Eritropoyetina con nombre largo para envolver'), [
+            'unit_price_cents' => 12345678,
+            'unit_price' => '123456.78',
+            'line_subtotal_cents' => 12345678,
+            'line_subtotal' => '123456.78',
+            'line_total_cents' => 12345678,
+            'line_total' => '123456.78',
+        ]);
+
+        $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt(
+            $this->withFiscalBlock(
+                $this->receiptFixture([$item], $this->profile(ReceiptPrintProfile::CODE_THERMAL_80)),
+            ),
+        );
+
+        // A-07 ticket: concept name owns the full width, then qty x price left
+        // and the line amount right. No columns that can cut words.
+        $this->assertStringContainsString('class="item-name"', $html);
+        $this->assertStringNotContainsString('<table class="items">', $html);
+        $this->assertStringContainsString('class="item-line"', $html);
+        $this->assertMatchesRegularExpression('/<td class="left">1 × L\. 123,456\.78<\/td>/u', $html);
+        $this->assertStringContainsString('<td class="right">L. 123,456.78</td>', $html);
+
+        // The fiscal range breaks explicitly only at " a ".
+        $this->assertMatchesRegularExpression('/000-001-01-00000001<br>a 000-001-01-00005000/u', $html);
     }
 
     public function test_paired_receipt_preserves_top_margin_and_formats_large_amounts_without_splitting_headers(): void

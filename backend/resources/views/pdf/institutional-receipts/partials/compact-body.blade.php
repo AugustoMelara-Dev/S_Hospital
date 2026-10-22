@@ -348,6 +348,7 @@
     </table>
 @endif
 
+<div class="keep-together">
 <div class="receipt-summary">
     <table class="closing-block">
         <tr>
@@ -449,6 +450,7 @@
         </td>
     </tr>
 </table>
+</div>
 
 @if ($profile['show_copy_legend'] && ! empty($page['institution']['receipt_footer_text']))
     <div class="copy-legend">{{ $page['institution']['receipt_footer_text'] }}</div>

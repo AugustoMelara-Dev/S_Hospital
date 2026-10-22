@@ -33,7 +33,7 @@ Fecha: 2026-10-22 · Rama `release/entrega-20261021`.
 - Medición de altura mínima de carta actualizada a 778.4 pt (antes 790.6): la
   tipografía F2C reduce la altura y sigue cabiendo en una hoja de 792 pt.
 
-## Evidencia generada (A-05)
+## Evidencia generada (A-05 / A-07)
 
 Generador reproducible (omitido por defecto):
 `backend/tests/Feature/Evidence/ReceiptFormatsEvidenceTest.php`, ejecutado con
@@ -43,24 +43,46 @@ Escribe un PDF vectorial por formato con una cuenta de 31 líneas (10 al 15 %,
 10 al 18 %, 9 exentas, 1 EPO gratuita), nombre de paciente largo y un importe de
 6 cifras:
 
-| Archivo | MediaBox (pt) | Páginas |
-|---|---|---|
-| `carta.pdf` | 612 × 792 | 2 |
-| `media-carta.pdf` | 612 × 396 | 3 |
-| `termica-80mm.pdf` | 226.772 × 3163.930 | 1 |
-| `termica-58mm.pdf` | 164.409 × 3401.575 | 2 |
+| Archivo | MediaBox (pt) | Alto | Páginas |
+|---|---|---|---|
+| `carta.pdf` | 612 × 792 | 279 mm | 2 |
+| `media-carta.pdf` | 612 × 396 | 140 mm | 3 |
+| `termica-80mm.pdf` | 226.772 × 1738.856 | 613 mm | 1 |
+| `termica-58mm.pdf` | 164.409 × 1836.020 | 648 mm | 1 |
 
-80 mm = 226.8 pt y 58 mm = 164.4 pt, con alto de rollo dinámico: confirma la
-plantilla térmica dedicada (no la carta encogida).
+80 mm = 226.8 pt y 58 mm = 164.4 pt, con alto de rollo dinámico; el recibo de
+31 líneas queda **por debajo de 1 m** en ambas térmicas.
+
+### Rediseño A-07 (ticket)
+
+- **Nombre del concepto a todo el ancho** (línea 1), ajuste por palabras; no se
+  corta ninguna palabra (`overflow-wrap: break-word`, sin columnas estrechas).
+- **Línea 2**: `cant × precio` a la izquierda e **importe a la derecha** (sin
+  repetir el importe bajo el nombre; la cantidad se imprime compacta: `1`, no
+  `1.00`).
+- **Línea 3** solo si aplica: «Sin cobro por receta» + ajuste autorizado.
+- Sin categoría/área (ocupaban dos líneas por concepto y alargaban el rollo).
+- Cabecera en **filas de ancho completo** (etiqueta y valor), no en dos columnas.
+- **Rango fisca** en su propia línea y salto explícito **solo en « a »**:
+  `000-001-01-00000001` / `a 000-001-01-00005000`; el CAI completo no se parte.
+- Media carta: totales + firmas + «Gracias» van en un bloque
+  `page-break-inside: avoid` (`.keep-together`), sin hoja de firmas huérfanas.
+
+Verificación textual del PDF (extracción de las líneas reales del content
+stream): nombres completos, CAI completo, rango partido solo en « a », importes
+de 6 cifras completos. Capturas HTML vía Edge headless en `recibos/*.png`.
 
 ## No verificado (pendiente, no se declara hecho)
 
-- **PNG a 300/203 dpi**: no hay rasterizador instalado en esta PC (sin
-  Ghostscript, ImageMagick ni poppler; `convert.exe` es la utilidad de
-  Windows, no ImageMagick). Generar PNG exige instalar una herramienta externa
-  (descarga/UAC) o hacerlo en otra máquina. Los PDFs vectoriales sí están
-  generados y los tests validan paginación/contenido/geometría.
+- **PNG a 300/203 dpi del PDF**: no hay rasterizador instalado en esta PC (sin
+  Ghostscript, ImageMagick ni poppler; `convert.exe` es la utilidad de Windows,
+  no ImageMagick). Las capturas PNG existentes son del **HTML** renderizado por
+  Edge, no del PDF rasterizado. Rasterizar el PDF exige instalar una herramienta
+  externa (descarga/UAC) o hacerlo en otra máquina.
 - **Impresora física** (carta, 2 ejemplares, corte, térmica real): Fase 7, en el
   hospital.
+- **Media carta con 31 líneas**: el bloque de firmas ya va junto a los totales,
+  pero la cuenta sigue ocupando 3 hojas (2 de detalle + cierre); reducirlo a 2
+  exige una tipografía/márgenes distintos y se valida con la impresora real.
 - Logo monocromo ≥ 300 dpi: el código lo convierte si existe; no hay logo real
   cargado en laboratorio para validarlo visualmente.

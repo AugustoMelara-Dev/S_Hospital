@@ -6,7 +6,6 @@ use App\Actions\Billing\CalculateInvoiceTotalsAction;
 use App\Models\FiscalSetting;
 use App\Models\Service;
 use App\Models\TaxRate;
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

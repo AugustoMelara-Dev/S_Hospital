@@ -417,6 +417,11 @@
        Cierre: situación + método (izquierda), totales (derecha).
        --------------------------------------------------------------- */
 
+    .keep-together {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
     .receipt-summary {
         page-break-inside: avoid;
         break-inside: avoid;

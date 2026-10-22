@@ -74,6 +74,13 @@
             width: 100%;
         }
 
+        /* Header fields: let the value take the remaining width instead of a
+           fixed 50/50 split; a long CAI/range must not be cut. */
+        .doc-band,
+        .meta {
+            table-layout: auto;
+        }
+
         th,
         td {
             vertical-align: top;
@@ -163,7 +170,7 @@
         .doc-band .key {
             font-weight: 700;
             text-transform: uppercase;
-            width: 22mm;
+            width: 16mm;
         }
 
         .doc-number {
@@ -197,11 +204,35 @@
         .meta .key {
             font-weight: 700;
             text-transform: uppercase;
-            width: 22mm;
+            width: 13mm;
         }
 
         .meta .value {
-            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
+        /* A-07: header fields as full-width rows (label, then value). A 58 mm
+           roll cannot share a label and a long CAI/range on one line without
+           cutting it. */
+        .fields {
+            margin-top: 0.6mm;
+        }
+
+        .field {
+            margin-top: 0.4mm;
+        }
+
+        .field .label {
+            display: block;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .field .value {
+            display: block;
+            overflow-wrap: break-word;
+            word-break: normal;
         }
 
         .section-title {
@@ -209,74 +240,61 @@
             font-size: {{ $basePt }}pt;
             font-weight: 700;
             letter-spacing: 0.04em;
-            margin-top: 2mm;
-            padding-bottom: 0.5mm;
+            margin-top: 1.6mm;
+            padding-bottom: 0.4mm;
             text-transform: uppercase;
         }
 
-        .items {
+        /* A-07: ticket layout. The concept name owns the full width, so words
+           wrap at spaces and are never cut mid-word. The second row carries
+           quantity x price on the left and the line amount on the right. */
+        .items-list {
             margin-top: 0.6mm;
         }
 
-        .items thead {
-            display: table-header-group;
-        }
-
-        .items th {
+        .item {
             border-bottom: 0.5pt solid #000;
-            border-top: 0.5pt solid #000;
-            font-size: {{ $basePt }}pt;
-            font-weight: 700;
-            padding: 0.8mm 0;
-            text-align: left;
-            text-transform: uppercase;
-        }
-
-        .items th.qty {
-            text-align: right;
-            width: 8mm;
-        }
-
-        .items th.amount {
-            text-align: right;
-            width: {{ $amountWidthMm }}mm;
-        }
-
-        .items td {
-            border-bottom: 0.5pt solid #000;
-            font-size: {{ $basePt }}pt;
-            padding: 0.8mm 0;
-        }
-
-        .items tr {
+            padding: 0.45mm 0;
             page-break-inside: avoid;
             break-inside: avoid;
         }
 
-        .items td.desc {
-            word-wrap: break-word;
-        }
-
-        .items td.qty {
-            text-align: right;
-            white-space: nowrap;
-        }
-
-        .items td.amount {
-            font-weight: 700;
-            text-align: right;
-            white-space: nowrap;
-        }
-
         .item-name {
+            display: block;
+            font-size: {{ $basePt }}pt;
             font-weight: 700;
-            word-wrap: break-word;
+            line-height: 1.15;
+            overflow-wrap: break-word;
+            word-break: normal;
         }
 
-        .item-sub {
+        .item-line {
+            line-height: 1.15;
+            margin-top: 0.15mm;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .item-line .left {
+            font-size: {{ $basePt }}pt;
+            text-align: left;
+            width: 62%;
+        }
+
+        .item-line .right {
+            font-size: {{ $basePt }}pt;
+            font-weight: 700;
+            text-align: right;
+            white-space: nowrap;
+            width: 38%;
+        }
+
+        .item-extra {
             font-size: {{ $basePt }}pt;
             line-height: 1.15;
-            word-wrap: break-word;
+            margin-top: 0.15mm;
+            overflow-wrap: break-word;
+            word-break: normal;
         }
 
         .tag-free {
@@ -562,115 +580,98 @@
                 @endif
             </div>
 
-            <table class="doc-band">
-                <tr>
-                    <td class="key">Recibo No.</td>
-                    <td class="doc-number">{{ $page['series']['receipt_number_full'] }}</td>
-                </tr>
-                <tr>
-                    <td class="key">Fecha y hora</td>
-                    <td>{{ $formatDate($page['issued_at']) }}</td>
-                </tr>
-            </table>
+            <div class="fields">
+                <div class="field">
+                    <span class="label">Recibo No.</span>
+                    <span class="value doc-number">{{ $page['series']['receipt_number_full'] }}</span>
+                </div>
+                <div class="field">
+                    <span class="label">Fecha y hora</span>
+                    <span class="value">{{ $formatDate($page['issued_at']) }}</span>
+                </div>
+            </div>
 
             <div class="patient">
                 <div class="label">Paciente</div>
                 <div class="patient-name">{{ $page['payer_name'] }}</div>
             </div>
 
-            <table class="meta">
-                <tr>
-                    <td class="key">Factura</td>
-                    <td class="value">{{ $invoice['invoice_number'] ?: 'No registrada' }}</td>
-                </tr>
-                <tr>
-                    <td class="key">Cajero</td>
-                    <td class="value">{{ $cashier ?: 'No registrado' }}</td>
-                </tr>
-                <tr>
-                    <td class="key">Caja</td>
-                    <td class="value">{{ $payment['cash_context']['cash_register_label'] ?? 'No registrada' }}</td>
-                </tr>
+            <div class="fields">
+                <div class="field">
+                    <span class="label">Factura</span>
+                    <span class="value">{{ $invoice['invoice_number'] ?: 'No registrada' }}</span>
+                </div>
+                <div class="field">
+                    <span class="label">Cajero</span>
+                    <span class="value">{{ $cashier ?: 'No registrado' }}</span>
+                </div>
+                <div class="field">
+                    <span class="label">Caja</span>
+                    <span class="value">{{ $payment['cash_context']['cash_register_label'] ?? 'No registrada' }}</span>
+                </div>
                 @if ($hasFiscal)
                     @if (! empty($invoice['fiscal_cai']))
-                        <tr>
-                            <td class="key">CAI</td>
-                            <td class="value">{{ $invoice['fiscal_cai'] }}</td>
-                        </tr>
+                        <div class="field">
+                            <span class="label">CAI</span>
+                            <span class="value">{{ $invoice['fiscal_cai'] }}</span>
+                        </div>
                     @endif
                     @if (! empty($invoice['fiscal_range_from']) || ! empty($invoice['fiscal_range_to']))
-                        <tr>
-                            <td class="key">Rango</td>
-                            <td class="value">{{ $invoice['fiscal_range_from'] ?: '—' }} a {{ $invoice['fiscal_range_to'] ?: '—' }}</td>
-                        </tr>
+                        <div class="field">
+                            <span class="label">Rango autorizado</span>
+                            <span class="value">{{ $invoice['fiscal_range_from'] ?: '—' }}<br>a {{ $invoice['fiscal_range_to'] ?: '—' }}</span>
+                        </div>
                     @endif
                     @if (! empty($invoice['fiscal_valid_until']))
-                        <tr>
-                            <td class="key">Límite</td>
-                            <td class="value">{{ $formatDateOnly($invoice['fiscal_valid_until']) }}</td>
-                        </tr>
+                        <div class="field">
+                            <span class="label">Límite de emisión</span>
+                            <span class="value">{{ $formatDateOnly($invoice['fiscal_valid_until']) }}</span>
+                        </div>
                     @endif
                 @endif
-            </table>
+            </div>
 
             <div class="section-title">Detalle de servicios</div>
-            <table class="items">
-                <thead>
-                    <tr>
-                        <th class="desc">Descripción</th>
-                        @if (! $isNarrow)
-                            <th class="qty">Cant.</th>
+            <div class="items-list">
+                @forelse ($items as $item)
+                    @php
+                        $isFreeLine = ! empty($item['rule_adjusted']);
+                        $lineAdjustment = $item['adjustment'] ?? null;
+                        $adjustmentUnknown = (bool) ($item['adjustment_unknown'] ?? false);
+                        $priceLabel = $moneyLabel($item['reference_unit_price'] ?? $item['unit_price'] ?? null);
+                        $quantityLabel = rtrim(rtrim((string) ($item['quantity'] ?? '1'), '0'), '.');
+                        if ($quantityLabel === '') {
+                            $quantityLabel = '0';
+                        }
+                    @endphp
+                    <div class="item">
+                        <span class="item-name">{{ $item['service_name'] ?: 'Servicio hospitalario' }}</span>
+                        <table class="item-line">
+                            <tr>
+                                <td class="left">{{ $quantityLabel }} × {{ $priceLabel }}</td>
+                                <td class="right">{{ $moneyLabel($item['line_subtotal'] ?? null) }}</td>
+                            </tr>
+                        </table>
+                        @if ($isFreeLine)
+                            <div class="item-extra">
+                                Sin cobro por receta
+                                @if ($lineAdjustment !== null)
+                                    · Ajuste {{ $negativeMoneyLabel($lineAdjustment) }}
+                                @endif
+                            </div>
+                        @elseif ($lineAdjustment !== null)
+                            <div class="item-extra">Ajuste {{ $negativeMoneyLabel($lineAdjustment) }}</div>
+                        @elseif ($adjustmentUnknown)
+                            <div class="item-extra">Ajuste {{ $unknownAdjustmentLabel }}</div>
                         @endif
-                        <th class="amount">Importe</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($items as $item)
-                        @php
-                            $isFreeLine = ! empty($item['rule_adjusted']);
-                            $lineAdjustment = $item['adjustment'] ?? null;
-                            $adjustmentUnknown = (bool) ($item['adjustment_unknown'] ?? false);
-                            $itemDescriptors = collect([$item['category_name'] ?? null, $item['area_name'] ?? null])
-                                ->filter(fn ($value) => is_string($value) && trim($value) !== '')
-                                ->map(fn (string $value) => trim($value))
-                                ->unique()
-                                ->values();
-                            $priceLabel = $moneyLabel($item['reference_unit_price'] ?? $item['unit_price'] ?? null);
-                        @endphp
-                        <tr>
-                            <td class="desc">
-                                <span class="item-name">{{ $item['service_name'] ?: 'Servicio hospitalario' }}</span>
-                                @if ($isFreeLine)
-                                    <span class="tag-free">Sin cobro por receta</span>
-                                @endif
-                                <div class="item-sub">
-                                    @if ($isNarrow){{ $item['quantity'] }} · @endif
-                                    {{ $priceLabel }}
-                                    @if ($lineAdjustment !== null)
-                                        · Ajuste {{ $negativeMoneyLabel($lineAdjustment) }}
-                                    @elseif ($adjustmentUnknown)
-                                        · Ajuste {{ $unknownAdjustmentLabel }}
-                                    @endif
-                                </div>
-                                @if ($itemDescriptors->isNotEmpty())
-                                    <div class="item-sub">{{ $itemDescriptors->implode(' / ') }}</div>
-                                @endif
-                                @if (! empty($item['notes']))
-                                    <div class="item-sub">{{ $item['notes'] }}</div>
-                                @endif
-                            </td>
-                            @if (! $isNarrow)
-                                <td class="qty">{{ $item['quantity'] }}</td>
-                            @endif
-                            <td class="amount">{{ $moneyLabel($item['line_subtotal'] ?? null) }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td class="desc" colspan="{{ $isNarrow ? 2 : 3 }}">Servicios hospitalarios</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                        @if (! empty($item['notes']))
+                            <div class="item-extra">{{ $item['notes'] }}</div>
+                        @endif
+                    </div>
+                @empty
+                    <div class="item"><span class="item-name">Servicios hospitalarios</span></div>
+                @endforelse
+            </div>
 
             @if ($hasMultiplePayments)
                 <div class="section-title">Pagos aplicados</div>
