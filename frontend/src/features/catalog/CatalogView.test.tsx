@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
@@ -26,6 +26,8 @@ function setupBasicMocks() {
   vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
   vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
   vi.spyOn(apiClient, 'getOperationalSettings').mockResolvedValue(null);
+  vi.spyOn(apiClient, 'getTaxRatesWithStatus').mockResolvedValue({ data: [], meta: null });
+  vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue(null);
 }
 
 describe('CatalogView', () => {
@@ -591,6 +593,107 @@ describe('CatalogView modernized structure', () => {
 
     expect(getDashboardReport).not.toHaveBeenCalled();
     expect(getSystemStatusSummary).not.toHaveBeenCalled();
+  });
+});
+
+describe('CatalogView impuestos', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('muestra el aviso de revisión cuando el servidor lo indica', async () => {
+    setupBasicMocks();
+    vi.mocked(apiClient.getTaxRatesWithStatus).mockResolvedValue({
+      data: [{ id: 1, name: 'ISV 15 %', percentage: '15.00', active: true, is_default: true }],
+      meta: { catalog_tax_review_required: true },
+    });
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(
+      <CatalogView user={catalogUser(['catalog.view', 'catalog.manage', 'settings.fiscal.view'])} onStatus={vi.fn()} />,
+    );
+
+    expect(await screen.findByText(/revise impuestos del catálogo antes de cobrar/i)).toBeInTheDocument();
+    expect(screen.getByText(/las facturas ya emitidas conservan su impuesto/i)).toBeInTheDocument();
+  });
+
+  it('no muestra el aviso cuando el servidor confirma que no hace falta revisar', async () => {
+    setupBasicMocks();
+    vi.mocked(apiClient.getTaxRatesWithStatus).mockResolvedValue({
+      data: [{ id: 1, name: 'ISV 15 %', percentage: '15.00', active: true, is_default: true }],
+      meta: { catalog_tax_review_required: false },
+    });
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [serviceFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(
+      <CatalogView user={catalogUser(['catalog.view', 'settings.fiscal.view'])} onStatus={vi.fn()} />,
+    );
+
+    await waitFor(() => expect(apiClient.getTaxRatesWithStatus).toHaveBeenCalled());
+    expect(screen.queryByText(/revise impuestos del catálogo antes de cobrar/i)).not.toBeInTheDocument();
+  });
+
+  it('deduce el aviso si hay tasas gravables pero la página visible sigue exenta', async () => {
+    setupBasicMocks();
+    vi.mocked(apiClient.getTaxRatesWithStatus).mockResolvedValue({
+      data: [
+        { id: 1, name: 'ISV 15 %', percentage: '15.00', active: true, is_default: true },
+      ],
+      meta: null,
+    });
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [{ ...serviceFixture(), tax_rate_id: null } as Service],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText(/revise impuestos del catálogo antes de cobrar/i)).toBeInTheDocument();
+  });
+
+  it('muestra la tasa o «Exento» por concepto en la columna Impuesto', async () => {
+    setupBasicMocks();
+    vi.mocked(apiClient.getTaxRatesWithStatus).mockResolvedValue({
+      data: [
+        { id: 2, name: 'Exento', percentage: '0.00', active: true, is_default: false },
+      ],
+      meta: null,
+    });
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [{ ...serviceFixture(), tax_rate_id: null } as Service],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    const table = await screen.findByRole('table', { name: /listado de productos y servicios/i });
+    expect(within(table).getByText('Impuesto')).toBeInTheDocument();
+    expect(within(table).getByText('Exento')).toBeInTheDocument();
+  });
+
+  it('ofrece importar/exportar y editar impuestos en lote al administrador del catálogo', async () => {
+    setupBasicMocks();
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0 },
+    });
+
+    renderWithQueryClient(
+      <CatalogView user={catalogUser(['catalog.view', 'catalog.manage'])} onStatus={vi.fn()} />,
+    );
+
+    expect(await screen.findByRole('button', { name: /importar o exportar catálogo/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /editar impuestos en lote/i })).toBeInTheDocument();
   });
 });
 

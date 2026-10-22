@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { ChevronDownIcon, EditIcon, PlusIcon } from 'lucide-react';
+import { ChevronDownIcon, EditIcon, PlusIcon, ReceiptTextIcon, UploadIcon } from 'lucide-react';
 import { AdminCallout, AdminChip, AdminDialog, AdminField, AdminPageHeader, AdminPanel, StatusStamp } from '@/design-system/admin/components';
 import { type AuthUser, type Category, type Service, type ServiceFilters, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { useAreas, useCategories } from '@/hooks/useCategories';
@@ -13,6 +13,10 @@ import { ServiceCatalogTable } from './components/ServiceCatalogTable';
 import { CategoryDrawer } from './components/CategoryDrawer';
 import { ServiceDrawer } from './components/ServiceDrawer';
 import { ServiceHistoryDialog } from './components/ServiceHistoryDialog';
+import { BulkTaxDialog } from './components/BulkTaxDialog';
+import { CatalogTransferDialog } from './components/CatalogTransferDialog';
+import { CATALOG_TAX_REVIEW_MESSAGE, catalogTaxReviewRequired } from './components/catalogTax';
+import { TAX_RATES_QUERY_KEY, useCatalogTaxData } from './useCatalogTaxData';
 import { invalidateCatalogQueries } from '@/lib/queryInvalidation';
 import {
   CATEGORY_FILTER_ALL,
@@ -44,6 +48,8 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [servicePendingStatusChange, setServicePendingStatusChange] = useState<Service | null>(null);
   const [serviceStatusError, setServiceStatusError] = useState('');
   const [serviceHistoryTarget, setServiceHistoryTarget] = useState<Service | null>(null);
+  const [bulkTaxOpen, setBulkTaxOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
 
   const canManageCatalog = useMemo(
     () => user.permissions.includes('catalog.manage'),
@@ -63,6 +69,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const servicesQuery = useServices(serviceFilters);
   const categoriesQuery = useCategories();
   const areasQuery = useAreas(true);
+  const taxDataQuery = useCatalogTaxData(
+    user.permissions.includes('catalog.view') || user.permissions.includes('settings.fiscal.view'),
+  );
 
   useEffect(() => {
     if (servicesQuery.data) {
@@ -72,6 +81,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   const servicesData = servicesQuery.data ?? lastServicesData;
   const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
+  const taxRates = useMemo(() => taxDataQuery.data?.data ?? [], [taxDataQuery.data]);
   const areas = areasQuery.data ?? [];
   const services = useMemo(() => servicesData?.data ?? [], [servicesData]);
   const requestedServiceId = positiveUrlInteger(searchParams.get('service'), 0) || null;
@@ -87,6 +97,11 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   const hasFilters = search !== '' || categoryFilter !== CATEGORY_FILTER_ALL || activeFilter !== STATUS_FILTER_ALL;
   const isEmpty = services.length === 0 && !isLoading;
+  const taxReviewRequired = catalogTaxReviewRequired({
+    flag: taxDataQuery.data?.meta?.catalog_tax_review_required ?? null,
+    taxRates,
+    services,
+  });
 
   useEffect(() => {
     searchParamsRef.current = searchParams;
@@ -206,6 +221,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   function handleServiceSuccess() {
     void invalidateCatalogQueries(queryClient);
+    void queryClient.invalidateQueries({ queryKey: TAX_RATES_QUERY_KEY });
     void refetchCatalogData();
     onStatus({ key: 'catalog:service:save', level: 'success', message: 'Producto o servicio guardado.' });
   }
@@ -221,8 +237,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     setServicePendingStatusChange(service);
   }, []);
 
-  const confirmServiceStatusChange = useCallback(async (reason: string | null) => {
-    const service = servicePendingStatusChange;
+  const confirmServiceStatusChange = useCallback(async (reason: string | null) => {    const service = servicePendingStatusChange;
 
     if (!service) {
       return;
@@ -245,6 +260,18 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       onStatus({ key: 'catalog:service:status', level: 'error', message });
     }
   }, [onStatus, queryClient, refetchCatalogData, servicePendingStatusChange]);
+
+  function handleBulkTaxApplied() {
+    void invalidateCatalogQueries(queryClient);
+    void queryClient.invalidateQueries({ queryKey: TAX_RATES_QUERY_KEY });
+    void refetchCatalogData();
+  }
+
+  function handleCatalogImported() {
+    void invalidateCatalogQueries(queryClient);
+    void queryClient.invalidateQueries({ queryKey: TAX_RATES_QUERY_KEY });
+    void refetchCatalogData();
+  }
 
   function normalizeServiceForDrawer(service: Service) {
     return {
@@ -283,6 +310,24 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             <>
               {canManageCatalog ? (
                 <>
+                  <button
+                    type="button"
+                    data-ui-press
+                    className={SECONDARY_BUTTON}
+                    onClick={() => setTransferOpen(true)}
+                    aria-label="Importar o exportar catálogo"
+                  >
+                    <UploadIcon aria-hidden="true" className="size-4" strokeWidth={1.5} />Importar / Exportar
+                  </button>
+                  <button
+                    type="button"
+                    data-ui-press
+                    className={SECONDARY_BUTTON}
+                    onClick={() => setBulkTaxOpen(true)}
+                    aria-label="Editar impuestos en lote"
+                  >
+                    <ReceiptTextIcon aria-hidden="true" className="size-4" strokeWidth={1.5} />Impuestos en lote
+                  </button>
                   <button type="button" data-ui-press className={SECONDARY_BUTTON} onClick={openNewCategory} aria-label="Crear nueva categoría">
                     <PlusIcon aria-hidden="true" className="size-4" strokeWidth={1.5} />Nueva categoría
                   </button>
@@ -296,6 +341,15 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             </>
           )}
         />
+
+      {taxReviewRequired ? (
+        <AdminCallout tone="warn" title="Impuestos pendientes de revisión">
+          <p>{CATALOG_TAX_REVIEW_MESSAGE} Hay conceptos que hoy se cobran sin ISV o con la tasa predeterminada. Confirme la tasa de cada producto en este catálogo antes de abrir caja.</p>
+          <p className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">
+            Las facturas ya emitidas conservan su impuesto y no se recalculan.
+          </p>
+        </AdminCallout>
+      ) : null}
 
       <AdminPanel className="overflow-hidden">
         <CatalogToolbar
@@ -319,6 +373,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           onRetry={refetchCatalogData}
           onRowActions={{ canManage: canManageCatalog, onEdit: openEditService, onHistory: setServiceHistoryTarget, onToggleActive: toggleServiceActive }}
           services={services}
+          taxRates={taxRates}
           hasActiveFilters={hasFilters}
           isEmpty={isEmpty}
           categories={categories}
@@ -365,6 +420,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             service={overlayState.editingService ? normalizeServiceForDrawer(overlayState.editingService) : null}
             categories={categories}
             areas={areas}
+            taxRates={taxRates}
             onSuccess={handleServiceSuccess}
           />
 
@@ -373,6 +429,24 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             onOpenChange={handleCategoryDrawerOpenChange}
             category={overlayState.editingCategory}
             onSuccess={handleCategorySuccess}
+          />
+
+          <BulkTaxDialog
+            open={bulkTaxOpen}
+            onOpenChange={setBulkTaxOpen}
+            categories={categories}
+            services={services}
+            taxRates={taxRates}
+            canManage={canManageCatalog}
+            onApplied={handleBulkTaxApplied}
+            onStatus={onStatus}
+          />
+
+          <CatalogTransferDialog
+            open={transferOpen}
+            onOpenChange={setTransferOpen}
+            onImported={handleCatalogImported}
+            onStatus={onStatus}
           />
 
           <ConfirmDialog

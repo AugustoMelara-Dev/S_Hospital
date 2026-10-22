@@ -6,9 +6,10 @@ import { useAdminSession } from '@/shell/admin/AdminSessionContext';
 import { HospitalSettingsView } from '@/features/settings/HospitalSettingsView';
 import { FiscalNumerationView } from '@/features/settings/FiscalNumerationView';
 import { OperationalRulesView } from '@/features/settings/OperationalRulesView';
+import { TaxRatesView } from '@/features/settings/TaxRatesView';
 import { InstitutionalReceiptSettingsView } from '@/features/receipt-settings/InstitutionalReceiptSettingsView';
 
-/** Una sola navegación por tarea: identidad, numeración, reglas e impresión. */
+/** Una sola navegación por tarea: identidad, numeración, impuestos, reglas e impresión. */
 export function AjustesView() {
   const { has, onStatus } = useAdminSession();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,6 +24,7 @@ export function AjustesView() {
     ...(canViewFiscal ? [
       { id: 'identidad', label: 'Identidad' },
       { id: 'numeracion', label: 'Numeración' },
+      { id: 'impuestos', label: 'Impuestos' },
     ] : []),
     ...(canEditOperational ? [{ id: 'reglas', label: 'Reglas de cobro' }] : []),
     ...(canViewReceipt && canEditAdvanced ? [{ id: 'impresion', label: 'Impresión' }] : []),
@@ -58,7 +60,7 @@ export function AjustesView() {
       <AdminPageHeader
         headingId="ajustes-title"
         title="Ajustes institucionales"
-        description="Datos del hospital, numeración, reglas de cobro e impresión de los próximos documentos."
+        description="Datos del hospital, numeración, impuestos, reglas de cobro e impresión de los próximos documentos."
       />
       <AdminTabs ariaLabel="Secciones de ajustes" items={items} value={active} onValueChange={changePanel}>
         {canViewFiscal ? (
@@ -69,6 +71,11 @@ export function AjustesView() {
         {canViewFiscal ? (
           <TabsPrimitive.Content value="numeracion" forceMount={mountedPanels.includes('numeracion') || undefined} className="pt-1 data-[state=inactive]:hidden">
             <FiscalNumerationView canEdit={canEditFiscal} onStatus={onStatus} />
+          </TabsPrimitive.Content>
+        ) : null}
+        {canViewFiscal ? (
+          <TabsPrimitive.Content value="impuestos" forceMount={mountedPanels.includes('impuestos') || undefined} className="pt-1 data-[state=inactive]:hidden">
+            <TaxRatesView canEdit={canEditFiscal} onStatus={onStatus} />
           </TabsPrimitive.Content>
         ) : null}
         {canEditOperational ? (

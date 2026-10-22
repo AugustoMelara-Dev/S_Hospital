@@ -1,6 +1,26 @@
 import { apiClient } from './base';
 import type { FiscalSettings, FiscalSequence, OperationalSettings, PublicBranding, TaxRate, TaxRatePayload } from './types';
 
+/**
+ * Estado derivado del catálogo frente a impuestos (H-15/H-02).
+ *
+ * El backend lo publica en `meta` de `GET /api/tax-rates` y se limpia en cuanto
+ * al menos un concepto facturable tiene tasa. No se persiste: es un aviso.
+ */
+export type CatalogTaxStatus = {
+  catalog_tax_review_required: boolean;
+  message?: string | null;
+  services_without_tax_rate?: number;
+  active_billable_services?: number;
+  tax_rate_count?: number;
+  default_tax_rate?: { id: number; name: string; percentage: string } | null;
+};
+
+export type TaxRatesWithStatus = {
+  data: TaxRate[];
+  meta: CatalogTaxStatus | null;
+};
+
 export const fiscal = {
   async getPublicBranding(): Promise<PublicBranding | null> {
     const response = await apiClient.request<{ data: PublicBranding | null }>('/api/settings/branding');
@@ -39,9 +59,24 @@ export const fiscal = {
   },
 
   async getTaxRates(activeOnly = false): Promise<TaxRate[]> {
-    const query = activeOnly ? '?active_only=1' : '';
-    const response = await apiClient.request<{ data: TaxRate[] }>(`/api/tax-rates${query}`);
+    const response = await this.getTaxRatesWithStatus(activeOnly);
     return response?.data ?? [];
+  },
+
+  /**
+   * Tasas + aviso del catálogo en una sola consulta. El contrato fijo
+   * (`{data: TaxRate[]}`) se conserva y `meta` es aditivo; si una versión del
+   * servidor no lo envía, `meta` queda en `null` y la pantalla deduce el aviso.
+   */
+  async getTaxRatesWithStatus(activeOnly = false): Promise<TaxRatesWithStatus> {
+    const query = activeOnly ? '?active_only=1' : '';
+    const response = await apiClient.request<{ data?: TaxRate[]; meta?: CatalogTaxStatus }>(`/api/tax-rates${query}`);
+    const meta = response?.meta;
+
+    return {
+      data: response?.data ?? [],
+      meta: meta && typeof meta.catalog_tax_review_required === 'boolean' ? meta : null,
+    };
   },
 
   async createTaxRate(payload: TaxRatePayload): Promise<TaxRate> {

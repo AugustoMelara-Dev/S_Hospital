@@ -430,6 +430,72 @@ describe('ServiceDrawer', () => {
       );
     });
   });
+
+  it('elige la tasa del producto e incluye «Exento» como tasa nula con su motivo', async () => {
+    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
+      id: 1,
+      category_id: 1,
+      area_id: 1,
+      name: 'Glucosa',
+      slug: 'glucosa',
+      price: '15.00',
+      scan_code: null,
+      barcode: null,
+      qr_code: null,
+      taxable: false,
+      active: true,
+      special_rule_code: null,
+    });
+
+    render(
+      <ServiceDrawer
+        open
+        onOpenChange={vi.fn()}
+        service={{
+          id: 1,
+          category_id: 1,
+          area_id: 1,
+          name: 'Glucosa',
+          price: '15.00',
+          scan_code: null,
+          barcode: null,
+          qr_code: null,
+          taxable: true,
+          active: true,
+          visible_in_billing: true,
+          is_billable: true,
+          special_rule_code: null,
+        }}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        taxRates={[
+          { id: 1, name: 'ISV 15 %', percentage: '15.00', active: true, is_default: true },
+          { id: 2, name: 'Exento', percentage: '0.00', active: true, is_default: false },
+        ]}
+        onSuccess={noop}
+      />,
+    );
+
+    const taxSelect = screen.getByLabelText(/tasa de impuesto/i);
+    expect(taxSelect).toHaveValue('1');
+
+    fireEvent.change(taxSelect, { target: { value: '' } });
+    fireEvent.change(await screen.findByLabelText(/motivo del cambio de impuesto/i), {
+      target: { value: 'Exoneración aprobada por la institución' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    await waitFor(() => {
+      expect(saveService).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tax_rate_id: null,
+          taxable: false,
+          tax_change_reason: 'Exoneración aprobada por la institución',
+        }),
+        1,
+      );
+    });
+  });
 });
 
 describe('ServiceDrawer contract preservation', () => {

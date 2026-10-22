@@ -11,6 +11,31 @@ import type {
   ServicePayload,
 } from './types';
 
+/** Edición de impuesto en lote (contrato `PATCH /api/services/bulk-tax`). */
+export type ServiceBulkTaxPayload = {
+  service_ids?: number[];
+  category_id?: number;
+  /** `null` = exento. */
+  tax_rate_id: number | null;
+  reason: string;
+};
+
+export type CatalogImportMode = 'preview' | 'apply';
+
+export type CatalogImportError = {
+  line: number;
+  message: string;
+};
+
+/** `preview` no escribe: sólo informa filas válidas y errores. */
+export type CatalogImportResult = {
+  valid: number;
+  applied: number;
+  errors: CatalogImportError[];
+};
+
+export type CatalogExportFormat = 'csv' | 'xlsx';
+
 export const catalog = {
   async getCategories(active?: boolean): Promise<Category[]> {
     const query = active === undefined ? '' : `?active=${active ? '1' : '0'}`;
@@ -112,5 +137,45 @@ export const catalog = {
     });
 
     return response.data;
+  },
+
+  /**
+   * Reasigna la tasa de impuesto de varios conceptos. El backend decide el
+   * resultado; aquí sólo se declara el alcance (ids o categoría) y el motivo
+   * obligatorio para la auditoría.
+   */
+  async bulkTax(payload: ServiceBulkTaxPayload): Promise<number> {
+    const response = await apiClient.request<{ data?: { updated?: number } }>('/api/services/bulk-tax', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+
+    return response?.data?.updated ?? 0;
+  },
+
+  /**
+   * Importa el catálogo desde CSV/XLSX. `preview` no escribe nada; `apply`
+   * confirma las filas válidas. La importación de un archivo completo puede
+   * exceder el tiempo de una mutación normal: se concede un minuto y medio.
+   */
+  async importServices(
+    file: File,
+    mode: CatalogImportMode,
+  ): Promise<CatalogImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mode', mode);
+
+    const response = await apiClient.request<{ data?: CatalogImportResult }>('/api/services/import', {
+      method: 'POST',
+      body: formData,
+      timeout: 90_000,
+    });
+
+    return response?.data ?? { valid: 0, applied: 0, errors: [] };
+  },
+
+  async exportServices(format: CatalogExportFormat): Promise<Blob> {
+    return apiClient.download(`/api/services/export?format=${format}`);
   },
 };

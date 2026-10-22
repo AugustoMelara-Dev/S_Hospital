@@ -2,18 +2,22 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AdminCallout, AdminDialog, AdminField, MoneyText } from '@/design-system/admin/components';
-import { ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { type ServicePayload, type TaxRate, ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { parseCents } from '@/lib/moneyCents';
+import { formatTaxPercentage } from '@/features/settings/taxRatesFormat';
 import { ServiceAuditedChangesSummary, auditedServiceChanges, priceValuesDiffer } from './ServiceAuditedChangesSummary';
+import { resolveServiceTaxRateId } from './catalogTax';
 import { CHECKBOX_CLASS, INPUT_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON, SELECT_CLASS } from './catalogUi';
 import { MIN_CHANGE_REASON_LENGTH, SPECIAL_RULE_ERYTHROPOIETIN, defaultServiceFormValues, serviceSchema, type ServiceFormData } from './serviceDrawerTypes';
 
 type ServiceDraft = { id: number; category_id: number; area_id?: number | null; name: string; price: string; scan_code?: string | null; barcode?: string | null; qr_code?: string | null; taxable: boolean; active: boolean; visible_in_billing?: boolean | null; is_billable?: boolean | null; special_rule_code?: string | null };
-type ServiceDrawerProps = { open: boolean; onOpenChange: (open: boolean) => void; service?: ServiceDraft | null; categories: Array<{ id: number; name: string }>; areas: Array<{ id: number; name: string }>; onSuccess: () => void };
+type ServiceDrawerProps = { open: boolean; onOpenChange: (open: boolean) => void; service?: ServiceDraft | null; categories: Array<{ id: number; name: string }>; areas: Array<{ id: number; name: string }>; taxRates?: TaxRate[]; onSuccess: () => void };
 type TextFieldName = keyof Pick<ServiceFormData, 'name' | 'price' | 'price_change_reason' | 'tax_change_reason' | 'availability_change_reason' | 'scan_code' | 'barcode' | 'qr_code'>;
+/** `tax_rate_id` viaja con el payload cuando el catálogo tiene tasas configuradas. */
+type ServiceSavePayload = ServicePayload & { tax_rate_id?: number | null };
 const optionalCode = (value: string | null | undefined) => value?.trim() || null;
 
-export function ServiceDrawer({ open, onOpenChange, service, categories, areas, onSuccess }: ServiceDrawerProps) {
+export function ServiceDrawer({ open, onOpenChange, service, categories, areas, taxRates = [], onSuccess }: ServiceDrawerProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { control, register, handleSubmit, getValues, reset, setError, setFocus, setValue, watch, formState: { errors, isSubmitting } } = useForm<ServiceFormData>({ resolver: zodResolver(serviceSchema), defaultValues: defaultServiceFormValues });
   const wasOpenRef = useRef(false);
@@ -22,9 +26,16 @@ export function ServiceDrawer({ open, onOpenChange, service, categories, areas, 
   const values = watch();
   const hasEpoRule = Boolean(service?.special_rule_code === SPECIAL_RULE_ERYTHROPOIETIN);
   const priceChanged = Boolean(service && priceValuesDiffer(service.price, values.price));
-  const taxChanged = Boolean(service && service.taxable !== values.taxable);
+  const taxRatesConfigured = taxRates.length > 0;
+  const currentTaxRateId = service ? resolveServiceTaxRateId(service, taxRates) : null;
+  const taxChanged = taxRatesConfigured
+    ? Boolean(service && currentTaxRateId !== values.tax_rate_id)
+    : Boolean(service && service.taxable !== values.taxable);
   const availabilityChanged = Boolean(service && (service.active !== values.active || (service.visible_in_billing ?? true) !== values.visible_in_billing || (service.is_billable ?? true) !== values.is_billable));
-  const auditedChanges = service ? auditedServiceChanges(service, values) : [];
+  // El resumen auditado lee el tratamiento fiscal efectivo aunque el catálogo
+  // use el selector de tasas: `taxable` se deriva, nunca se inventa.
+  const effectiveTaxable = taxRatesConfigured ? values.tax_rate_id !== null : values.taxable;
+  const auditedChanges = service ? auditedServiceChanges(service, { ...values, taxable: effectiveTaxable }) : [];
   // La tarifa vigente y el tratamiento fiscal salen del catálogo, nunca de
   // literales ligados a la regla de gratuidad.
   const epoTariffCents = parseCents(values.price);
@@ -46,11 +57,13 @@ export function ServiceDrawer({ open, onOpenChange, service, categories, areas, 
         barcode: service.barcode,
         qr_code: service.qr_code,
         taxable: service.taxable,
+        tax_rate_id: resolveServiceTaxRateId(service, taxRates),
         active: service.active,
         visible_in_billing: service.visible_in_billing ?? true,
         is_billable: service.is_billable ?? true,
       } : {
         ...defaultServiceFormValues,
+        tax_rate_id: taxRates.find((rate) => rate.is_default)?.id ?? null,
         category_id: categories[0]?.id ?? 0,
         area_id: areas[0]?.id ?? 0,
       });
@@ -58,7 +71,7 @@ export function ServiceDrawer({ open, onOpenChange, service, categories, areas, 
 
     wasOpenRef.current = open;
     previousEntityKeyRef.current = entityKey;
-  }, [open, entityKey, service, categories, areas, reset]);
+  }, [open, entityKey, service, categories, areas, taxRates, reset]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -91,7 +104,17 @@ export function ServiceDrawer({ open, onOpenChange, service, categories, areas, 
   async function submit(data: ServiceFormData) {
     setSubmitError(null);
     if (!requireReason(priceChanged, 'price_change_reason', data.price_change_reason, 'Indique el motivo del cambio de precio.') || !requireReason(taxChanged, 'tax_change_reason', data.tax_change_reason, 'Indique el motivo del cambio de impuesto.') || !requireReason(availabilityChanged, 'availability_change_reason', data.availability_change_reason, 'Indique el motivo del cambio de disponibilidad para caja.')) return;
-    const payload = { ...data, price_change_reason: optionalCode(data.price_change_reason), tax_change_reason: optionalCode(data.tax_change_reason), availability_change_reason: optionalCode(data.availability_change_reason), scan_code: optionalCode(data.scan_code), barcode: optionalCode(data.barcode), qr_code: optionalCode(data.qr_code) };
+    const payload: ServiceSavePayload = {
+      ...data,
+      taxable: taxRatesConfigured ? data.tax_rate_id !== null : data.taxable,
+      ...(taxRatesConfigured ? { tax_rate_id: data.tax_rate_id } : {}),
+      price_change_reason: optionalCode(data.price_change_reason),
+      tax_change_reason: optionalCode(data.tax_change_reason),
+      availability_change_reason: optionalCode(data.availability_change_reason),
+      scan_code: optionalCode(data.scan_code),
+      barcode: optionalCode(data.barcode),
+      qr_code: optionalCode(data.qr_code),
+    };
     try {
       await apiClient.saveService(payload, service?.id);
       onSuccess();
@@ -172,7 +195,37 @@ export function ServiceDrawer({ open, onOpenChange, service, categories, areas, 
               )}
             </AdminCallout>
           ) : null}
-          {checkboxField('taxable', 'Aplica ISV')}
+          {taxRatesConfigured ? (
+            <Controller control={control} name="tax_rate_id" render={({ field }) => (
+              <AdminField
+                htmlFor="tax_rate_id"
+                label="Tasa de impuesto"
+                required
+                hint="«Exento» no aplica impuesto a la línea. El servidor calcula el ISV al cobrar; aquí solo se elige la tasa."
+                error={errors.tax_rate_id?.message}
+              >
+                <select
+                  id="tax_rate_id"
+                  className={SELECT_CLASS}
+                  value={field.value === null ? '' : String(field.value)}
+                  disabled={isSubmitting}
+                  aria-invalid={Boolean(errors.tax_rate_id)}
+                  onChange={(event) => field.onChange(event.target.value === '' ? null : Number(event.target.value))}
+                >
+                  <option value="">Exento (sin impuesto)</option>
+                  {taxRates.map((rate) => (
+                    <option key={rate.id} value={String(rate.id)}>
+                      {rate.name} · {formatTaxPercentage(rate.percentage)}
+                      {rate.is_default ? ' · Predeterminada' : ''}
+                      {rate.active ? '' : ' (inactiva)'}
+                    </option>
+                  ))}
+                </select>
+              </AdminField>
+            )} />
+          ) : (
+            checkboxField('taxable', 'Aplica ISV')
+          )}
           {taxChanged ? textField('tax_change_reason', 'Motivo del cambio de impuesto', true) : null}
         </fieldset>
 

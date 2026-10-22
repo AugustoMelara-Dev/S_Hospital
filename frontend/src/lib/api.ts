@@ -2,10 +2,16 @@ import { apiClient as baseClient, ApiError, isPermissionDeniedError, isSessionEx
 import { auth } from './api/auth';
 import { billing } from './api/billing';
 import { catalog } from './api/catalog';
+import type {
+  CatalogExportFormat,
+  CatalogImportMode,
+  CatalogImportResult,
+  ServiceBulkTaxPayload,
+} from './api/catalog';
 import { cash } from './api/cash';
 import { reports } from './api/reports';
 import { backups, type BackupPaginatedMeta } from './api/backups';
-import { fiscal } from './api/fiscal';
+import { fiscal, type CatalogTaxStatus, type TaxRatesWithStatus } from './api/fiscal';
 import { institutionalReceipts } from './api/institutionalReceipts';
 import { system } from './api/system';
 import { users, type RolePayload, type UserPayload } from './api/users';
@@ -96,6 +102,8 @@ export type {
   OperationalSettings,
   PublicBranding,
   FiscalSequence,
+  TaxRate,
+  TaxRatePayload,
   Category,
   Area,
   ServiceArea,
@@ -153,6 +161,12 @@ export type {
   ExecutiveReportFilters,
   OperationsReport,
   OperationsReportFilters,
+  CatalogExportFormat,
+  CatalogImportMode,
+  CatalogImportResult,
+  ServiceBulkTaxPayload,
+  CatalogTaxStatus,
+  TaxRatesWithStatus,
 };
 
 
@@ -234,6 +248,18 @@ export const apiClient = {
 
   async deleteService(id: number): Promise<Service> {
     return catalog.deleteService(id);
+  },
+
+  async bulkUpdateServiceTax(payload: ServiceBulkTaxPayload): Promise<number> {
+    return catalog.bulkTax(payload);
+  },
+
+  async importServices(file: File, mode: CatalogImportMode): Promise<CatalogImportResult> {
+    return catalog.importServices(file, mode);
+  },
+
+  async exportServices(format: CatalogExportFormat): Promise<Blob> {
+    return catalog.exportServices(format);
   },
 
   async createInvoice(payload: InvoicePayload, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
@@ -433,6 +459,10 @@ export const apiClient = {
 
   async getTaxRates(activeOnly = false): Promise<TaxRate[]> {
     return fiscal.getTaxRates(activeOnly);
+  },
+
+  async getTaxRatesWithStatus(activeOnly = false): Promise<TaxRatesWithStatus> {
+    return fiscal.getTaxRatesWithStatus(activeOnly);
   },
 
   async createTaxRate(payload: TaxRatePayload): Promise<TaxRate> {

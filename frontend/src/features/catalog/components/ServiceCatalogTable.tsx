@@ -11,10 +11,12 @@ import {
 import { AdminMenuContent, AdminMenuItem, AdminMenuRoot, AdminMenuSeparator, AdminMenuTrigger } from '@/design-system/admin/AdminMenu';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { Service } from '@/lib/api';
+import type { TaxRate } from '@/lib/api';
 import { parseCents } from '@/lib/moneyCents';
 import { getServiceBillingSummary, type ServiceBillingBadge } from '@/lib/serviceBilling';
 import { ICON_BUTTON, PINNED_ACTIONS_CELL, SECONDARY_BUTTON } from './catalogUi';
 import { serviceOperationalNotes } from './serviceOperationalNotes';
+import { serviceTaxLabel } from './catalogTax';
 import type { ServiceCatalogTableProps } from './catalogTypes';
 
 const TABLE_CAPTION = 'Listado de productos y servicios del catálogo';
@@ -64,6 +66,7 @@ export function ServiceCatalogTable({
   onRetry,
   onRowActions,
   services,
+  taxRates = [],
 }: ServiceCatalogTableProps) {
   const isMobile = useMediaQuery('(max-width: 767px)');
   const showActions = true;
@@ -90,6 +93,11 @@ export function ServiceCatalogTable({
       header: 'Precio',
       align: 'right',
       cell: (service) => <MoneyText cents={parseCents(service.price)} emphasis="strong" />,
+    },
+    {
+      key: 'tax',
+      header: 'Impuesto',
+      cell: (service) => <span className={CELL_CLASS}>{serviceTaxLabel(service, taxRates)}</span>,
     },
     {
       key: 'status',
@@ -164,7 +172,7 @@ export function ServiceCatalogTable({
       {!isLoading && !loadError && !isEmpty ? (
         <div role="region" aria-label={TABLE_CAPTION}>
           {isMobile ? (
-            <ServiceMobileList services={services} showActions={showActions} onRowActions={onRowActions} />
+            <ServiceMobileList services={services} showActions={showActions} onRowActions={onRowActions} taxRates={taxRates} />
           ) : (
             <AdminTable<Service>
               caption={TABLE_CAPTION}
@@ -336,10 +344,12 @@ function ServiceMobileList({
   services,
   showActions,
   onRowActions,
+  taxRates,
 }: {
   services: Service[];
   showActions: boolean;
   onRowActions: ServiceCatalogTableProps['onRowActions'];
+  taxRates: TaxRate[];
 }) {
   return (
     <ul
@@ -353,7 +363,7 @@ function ServiceMobileList({
             <MoneyText cents={parseCents(service.price)} emphasis="strong" className="shrink-0" />
           </div>
           <p className={SOFT_CLASS}>
-            {service.category?.name ?? 'Sin categoría'} · {service.area?.name ?? 'Sin área'}
+            {service.category?.name ?? 'Sin categoría'} · {service.area?.name ?? 'Sin área'} · {serviceTaxLabel(service, taxRates)}
           </p>
           <MobileServiceNote service={service} />
           <div className="flex flex-wrap items-center justify-between gap-2">

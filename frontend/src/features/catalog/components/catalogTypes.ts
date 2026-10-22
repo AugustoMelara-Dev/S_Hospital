@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Area, Category, Service } from '../../../lib/api';
+import type { Area, Category, Service, TaxRate } from '../../../lib/api';
 
 export type CatalogFilterState = {
   category: string;
@@ -49,6 +49,7 @@ export type ServiceCatalogTableProps = {
   onRetry: () => void;
   onRowActions: ServiceRowActions;
   services: Service[];
+  taxRates?: TaxRate[];
   hasActiveFilters: boolean;
   categories: Category[];
   areas: Area[];
