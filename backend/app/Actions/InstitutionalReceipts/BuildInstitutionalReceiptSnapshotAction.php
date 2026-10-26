@@ -263,7 +263,7 @@ class BuildInstitutionalReceiptSnapshotAction
             return trim($name);
         }
 
-        return 'Caja #'.$cashSession->id;
+        return 'Caja';
     }
 
     private function moneyFromCents(?int $cents, string|int|float|null $fallback): string

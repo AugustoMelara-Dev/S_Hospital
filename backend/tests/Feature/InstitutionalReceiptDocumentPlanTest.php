@@ -41,6 +41,48 @@ class InstitutionalReceiptDocumentPlanTest extends TestCase
         $this->seed(ReceiptPrintProfileSeeder::class);
     }
 
+    public function test_custom_preview_keeps_persisted_and_draft_paper_geometry_without_saving_it(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $profile = ReceiptPrintProfile::query()->where('code', ReceiptPrintProfile::CODE_CUSTOM_SMALL)->firstOrFail();
+        $profile->forceFill(['width_mm' => '180.00', 'height_mm' => '95.00', 'orientation' => 'landscape'])->save();
+
+        foreach ([null, ['copies_mode' => 'original_only'], ['width_mm' => '190.00', 'height_mm' => '105.00']] as $draft) {
+            $response = $this->actingAs($admin)->postJson('/api/settings/institutional-receipts/test-preview', [
+                'profile_code' => $profile->code,
+                'payer_name' => 'Paciente de prueba',
+                'amount' => '25.00',
+                ...($draft === null ? [] : ['draft' => $draft]),
+            ])->assertOk()->assertJsonPath('data.reserved_number', false)
+                ->assertJsonPath('data.document.paper.kind', 'custom_mm');
+
+            $this->assertEqualsWithDelta((float) ($draft['width_mm'] ?? 180) * 72 / 25.4, $response->json('data.document.paper.width_pt'), 0.01);
+            $this->assertEqualsWithDelta((float) ($draft['height_mm'] ?? 95) * 72 / 25.4, $response->json('data.document.paper.height_pt'), 0.01);
+        }
+
+        $this->assertSame('180.00', $profile->fresh()->width_mm);
+        $this->assertSame('95.00', $profile->fresh()->height_mm);
+        $this->assertDatabaseCount('institutional_receipts', 0);
+        $this->assertDatabaseCount('institutional_receipt_print_events', 0);
+    }
+
+    public function test_custom_profile_test_print_generates_a_real_pdf(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $response = $this->actingAs($admin)->postJson('/api/settings/institutional-receipts/test-print', [
+            'profile_code' => ReceiptPrintProfile::CODE_CUSTOM_SMALL,
+            'payer_name' => 'Paciente de prueba',
+            'amount' => '25.00',
+        ])->assertOk()->assertHeader('Content-Type', 'application/pdf');
+
+        $this->assertStringStartsWith('%PDF-', $response->getContent());
+        $this->assertDatabaseCount('institutional_receipts', 0);
+        $this->assertDatabaseCount('institutional_receipt_print_events', 1);
+    }
+
     // ------------------------------------------------------------------
     // (a) Dos ejemplares cortos: UNA página, y el texto lo dice
     // ------------------------------------------------------------------

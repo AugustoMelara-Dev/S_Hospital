@@ -688,7 +688,9 @@
     }
 
     .copy-legend {
+        margin-top: 0;
         padding-top: 0;
+        line-height: 1;
     }
 
     .patient-block {

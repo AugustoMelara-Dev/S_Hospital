@@ -32,12 +32,8 @@ final class HospitalName
     {
         $legacyProductName = 'hospital '.('bill'.'ing').' os';
         $legacyPlaceholderName = 'hospital '.('de'.'mo');
-        $legacyFirstHospitalName = 'hospital '.('san '.'isidro');
-        $legacyDefaultHospitalName = 'hospital '.('general '.'san '.'isidro');
 
         return [
-            $legacyFirstHospitalName,
-            $legacyDefaultHospitalName,
             $legacyProductName,
             's_hospital '.$legacyProductName,
             $legacyProductName.' offline',

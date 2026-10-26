@@ -902,6 +902,19 @@ class InstitutionalReceiptHtmlBuilder
         $invoice = $this->normalizedInvoice($receipt->invoice_snapshot ?? [], $items);
         $amounts = $this->amountReference($receipt, $invoice);
         $institution = $this->normalizedInstitution($receipt->institution_snapshot);
+        $payment = $this->normalizedPayment($receipt->payment_snapshot ?? []);
+        $cashSession = $receipt->invoice?->cashSession;
+        $cashContext = $payment['cash_context'] ?? null;
+
+        // Old emissions without a named physical register printed the session PK.
+        // Hide only that proven generated fallback; preserve real register names,
+        // including names containing '#', and leave persisted snapshots untouched.
+        if ($cashSession !== null && $cashSession->cash_register_id === null
+            && is_array($cashContext)
+            && ($cashContext['cash_register_label'] ?? null) === 'Caja #'.$cashSession->id) {
+            $cashContext['cash_register_label'] = 'Caja';
+            $payment['cash_context'] = $cashContext;
+        }
 
         if ($receipt->template_code === self::TEMPLATE_THERMAL) {
             $logoDataUri = $institution['logo_data_uri'] ?? null;
@@ -928,7 +941,7 @@ class InstitutionalReceiptHtmlBuilder
                 'concept' => $receipt->concept,
                 'status' => $receipt->status,
                 'invoice' => $invoice,
-                'payment' => $this->normalizedPayment($receipt->payment_snapshot ?? []),
+                'payment' => $payment,
                 'items' => $items,
             ])
             ->all());
@@ -1072,6 +1085,9 @@ class InstitutionalReceiptHtmlBuilder
             'show_copy_legend' => $profile->show_copy_legend,
             'show_physical_seal_space' => $profile->show_physical_seal_space,
             'paper_kind' => $profile->paper_kind,
+            'orientation' => $profile->orientation,
+            'width_mm' => $profile->width_mm,
+            'height_mm' => $profile->height_mm,
         ]);
     }
 

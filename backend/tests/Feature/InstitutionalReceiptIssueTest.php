@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
 use App\Models\CashRegisterSession;
+use App\Models\Category;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceipt;
@@ -12,6 +14,7 @@ use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\ReceiptPrintProfile;
 use App\Models\ReceiptProfileAssignment;
+use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -21,6 +24,50 @@ use Tests\TestCase;
 class InstitutionalReceiptIssueTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_new_invoice_and_receipt_pdf_honor_the_configured_real_hospital_name(): void
+    {
+        $context = $this->createIssueContext();
+        FiscalSetting::query()->firstOrFail()->update(['hospital_name' => 'Hospital General San Isidro']);
+        FiscalSequence::query()->whereKey($context['invoice']->fiscal_sequence_id)->update(['active' => true]);
+        $service = Service::factory()->for(Category::factory())->create(['price' => '0.00', 'taxable' => false]);
+
+        $invoiceId = $this->actingAs($context['user'])->postJson('/api/invoices', [
+            'patient_name' => 'Paciente identidad institucional',
+            'items' => [['service_id' => $service->id, 'quantity' => '1.00']],
+        ])->assertCreated()->json('data.id');
+        $this->assertSame('Hospital General San Isidro', Invoice::query()->findOrFail($invoiceId)->hospital_name);
+        $receiptId = $this->actingAs($context['user'])->postJson('/api/institutional-receipts', [
+            'invoice_id' => $invoiceId,
+        ])->assertCreated()->json('data.id');
+        $receipt = InstitutionalReceipt::query()->findOrFail($receiptId);
+        $this->assertSame('Hospital General San Isidro', $receipt->institution_snapshot['hospital_name']);
+        $pdfService = app(InstitutionalReceiptPdfService::class);
+        $this->assertStringContainsString('Hospital General San Isidro', $pdfService->htmlForReceipt($receipt));
+        $this->assertStringStartsWith('%PDF-', $pdfService->pdfForReceipt($receipt));
+    }
+
+    public function test_identity_changes_do_not_rewrite_invoice_or_issued_receipt_history(): void
+    {
+        $context = $this->createIssueContext(invoiceOverrides: ['hospital_name' => 'Hospital San Isidro']);
+        FiscalSetting::query()->firstOrFail()->update(['hospital_name' => 'Hospital Nuevo del Valle']);
+        $receiptId = $this->actingAs($context['user'])->postJson('/api/institutional-receipts', [
+            'invoice_id' => $context['invoice']->id,
+            'payment_id' => $context['payment']->id,
+        ])->assertCreated()->json('data.id');
+        $receipt = InstitutionalReceipt::query()->findOrFail($receiptId);
+        $snapshot = $receipt->institution_snapshot;
+        $this->assertSame('Hospital San Isidro', $snapshot['hospital_name']);
+
+        FiscalSetting::query()->firstOrFail()->update(['hospital_name' => 'Hospital Configurado Después']);
+        $pdfService = app(InstitutionalReceiptPdfService::class);
+        $historicalHtml = $pdfService->htmlForReceipt($receipt->fresh());
+        $this->assertStringContainsString('Hospital San Isidro', $historicalHtml);
+        $this->assertStringNotContainsString('Hospital Configurado Después', $historicalHtml);
+        $this->assertStringStartsWith('%PDF-', $pdfService->pdfForReceipt($receipt));
+        $this->assertSame('Hospital San Isidro', $context['invoice']->fresh()->hospital_name);
+        $this->assertSame($snapshot, $receipt->fresh()->institution_snapshot);
+    }
 
     public function test_cashier_can_issue_first_receipt_number_for_own_paid_invoice(): void
     {

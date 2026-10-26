@@ -7,6 +7,7 @@ use App\Actions\InstitutionalReceipts\InstitutionalReceiptHtmlBuilder;
 use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
 use App\Actions\InstitutionalReceipts\VoidInstitutionalReceiptAction;
 use App\Models\AuditLog;
+use App\Models\CashRegister;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -75,7 +76,8 @@ class InstitutionalReceiptPdfTest extends TestCase
             $this->assertStringContainsString($needle, $html);
         }
 
-        $this->assertMatchesRegularExpression('/>Caja<.*#\d+/s', $html);
+        $this->assertSame('Caja', data_get($context['receipt']->payment_snapshot, 'cash_context.cash_register_label'));
+        $this->assertStringNotContainsString('Caja #', $html);
 
         foreach ([
             'audit',
@@ -96,6 +98,33 @@ class InstitutionalReceiptPdfTest extends TestCase
         $this->assertStringContainsString('class="receipt-layout profile-', $html);
         $this->assertStringContainsString('class="meta-table receipt-meta-panel"', $html);
         $this->assertSame('2027-12-31', data_get($context['receipt']->invoice_snapshot, 'fiscal_valid_until'));
+    }
+
+    public function test_receipt_hides_only_proven_legacy_session_identifier_without_mutating_snapshot(): void
+    {
+        $context = $this->createIssuedReceiptContext();
+        $receipt = $context['receipt'];
+        $session = $receipt->invoice->cashSession;
+        $this->assertNotNull($session);
+        $legacyLabel = 'Caja #'.$session->id;
+        $snapshot = $receipt->payment_snapshot;
+        $snapshot['cash_context']['cash_register_label'] = $legacyLabel;
+        $receipt->forceFill(['payment_snapshot' => $snapshot])->save();
+
+        $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt);
+        $this->assertStringNotContainsString($legacyLabel, $html);
+        $this->assertSame($snapshot, $receipt->fresh()->payment_snapshot);
+
+        // An actual register may legitimately be called "Caja #1". Its name is
+        // institutional information, never inferred to be a generated session ID.
+        $register = CashRegister::query()->create([
+            'code' => 'RECEIPT-TEST', 'name' => $legacyLabel, 'active' => true,
+        ]);
+        $session->forceFill(['cash_register_id' => $register->id])->save();
+        $receipt->unsetRelation('invoice');
+        $namedHtml = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt);
+        $this->assertStringContainsString($legacyLabel, $namedHtml);
+        $this->assertSame($snapshot, $receipt->fresh()->payment_snapshot);
     }
 
     public function test_copy_modes_render_the_expected_pages_and_copy_labels(): void
@@ -1401,7 +1430,7 @@ class InstitutionalReceiptPdfTest extends TestCase
         // T2-014). updateOrCreate([], ...) reutiliza/actualiza la fila unica en
         // vez de insertar duplicados; el resultado es el mismo en SQLite.
         FiscalSetting::query()->updateOrCreate([], [
-            'hospital_name' => 'Hospital San Isidro',
+            'hospital_name' => 'S_Hospital',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
             'receipt_width' => '80mm',
@@ -1477,7 +1506,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             'fiscal_range_from' => '000-001-01-00000001',
             'fiscal_range_to' => '000-001-01-99999999',
             'fiscal_valid_until' => $sequence->valid_until,
-            'hospital_name' => 'Hospital San Isidro',
+            'hospital_name' => 'S_Hospital',
             'hospital_address' => 'Barrio El Centro',
             'receipt_template_mode' => 'institutional',
             'receipt_paper_size' => 'half_letter',

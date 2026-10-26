@@ -28,8 +28,8 @@ use Tests\TestCase;
  *   $env:S_HOSPITAL_RECEIPT_EVIDENCE_DIR='...\hospital-ai\evidencia\ENTREGA-20261021\recibos'
  *   php vendor/bin/phpunit --filter ReceiptFormatsEvidenceTest
  *
- * Issues one real receipt per delivery format (letter, half letter, thermal
- * 80 mm, thermal 58 mm) for a 30-line account that mixes 15 %, 18 %, exempt and
+ * Issues receipts with 30 and 4 lines, rendered on letter, half letter, A5,
+ * thermal 80 mm and thermal 58 mm. Each account that mixes 15 %, 18 %, exempt and
  * a free erythropoietin line, with a long patient name and a 6-digit amount.
  * The PDFs are vector (real text). Rasterise the output with PyMuPDF at
  * 300 dpi for paper and 203 dpi for thermal before visual approval.
@@ -117,6 +117,7 @@ class ReceiptFormatsEvidenceTest extends TestCase
         $formats = [
             'carta' => ReceiptPrintProfile::CODE_LETTER_PORTRAIT,
             'media-carta' => ReceiptPrintProfile::CODE_HALF_LETTER,
+            'a5' => ReceiptPrintProfile::CODE_A5,
             'termica-80mm' => ReceiptPrintProfile::CODE_THERMAL_80,
             'termica-58mm' => ReceiptPrintProfile::CODE_THERMAL_58,
         ];
@@ -127,37 +128,62 @@ class ReceiptFormatsEvidenceTest extends TestCase
         // profile snapshot (paper geometry/template), never the legal content.
         $base = $this->issueReceipt(ReceiptPrintProfile::CODE_LETTER_PORTRAIT, $rate15, $rate18, $user, $cashSession, $sequence);
 
-        foreach ($formats as $label => $profileCode) {
-            $profile = ReceiptPrintProfile::query()->where('code', $profileCode)->firstOrFail();
-            $receipt = clone $base;
-            $receipt->copy_mode = 'original_only';
-            $receipt->template_code = $profile->template_code;
-            $receipt->profile_snapshot = $this->profileSnapshot($profile);
+        // Both examples are issued through the API before any live names change.
+        $short = $this->issueReceipt(ReceiptPrintProfile::CODE_LETTER_PORTRAIT, $rate15, $rate18, $user, $cashSession, $sequence, short: true);
 
-            $pdf = app(InstitutionalReceiptPdfService::class)->pdfForReceipt($receipt);
+        foreach ([$base, $short] as $issued) {
+            Invoice::query()->whereKey($issued->invoice_id)->update(['patient_name' => 'PACIENTE CAMBIADO DESPUES']);
+            InvoiceItem::query()->where('invoice_id', $issued->invoice_id)->update(['service_name' => 'CATALOGO CAMBIADO DESPUES']);
+        }
 
-            $this->assertStringStartsWith('%PDF', $pdf);
-            $this->assertGreaterThan(2000, strlen($pdf), "{$label}: the PDF must contain real content.");
+        foreach (['' => $base, '-corta' => $short] as $suffix => $issued) {
+            foreach ($formats as $label => $profileCode) {
+                $profile = ReceiptPrintProfile::query()->where('code', $profileCode)->firstOrFail();
+                $receipt = clone $issued;
+                $receipt->copy_mode = 'original_only';
+                $receipt->template_code = $profile->template_code;
+                $receipt->profile_snapshot = $this->profileSnapshot($profile);
 
-            $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt);
+                $pdf = app(InstitutionalReceiptPdfService::class)->pdfForReceipt($receipt);
 
-            if ($profileCode === ReceiptPrintProfile::CODE_THERMAL_58) {
-                $this->assertStringContainsString('class="totals narrow"', $html);
-                $this->assertMatchesRegularExpression(
-                    '/<span class="total-label">Gravado[^<]*15[^<]*%<\/span><span class="amount">L\.[^<]*124,356\.78<\/span>/u',
-                    $html,
-                );
-                $this->assertMatchesRegularExpression(
-                    '/\.totals\.narrow \.amount\s*\{[^}]*display:\s*block;/s',
-                    $html,
-                );
-            }
+                $this->assertStringStartsWith('%PDF', $pdf);
+                $this->assertGreaterThan(2000, strlen($pdf), "{$label}: the PDF must contain real content.");
 
-            if ($writeEvidence) {
-                $target = rtrim($dir, '\\/').DIRECTORY_SEPARATOR.$label.'.pdf';
-                file_put_contents($target, $pdf);
-                $this->assertFileExists($target);
-                file_put_contents(rtrim($dir, '\\/').DIRECTORY_SEPARATOR.$label.'.html', $html);
+                $html = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($receipt);
+
+                if ($suffix === '-corta') {
+                    $this->assertSame(1, app(InstitutionalReceiptPdfService::class)->planForReceipt($receipt)->pageCount(), "{$label}: four lines must fit one page per copy.");
+                }
+
+                $this->assertStringContainsString('María de los Ángeles López de la Cruz y Fernández', $html);
+                $this->assertStringContainsString('Servicio gravado 15% #1', $html);
+                $this->assertStringContainsString('Eritropoyetina', $html);
+                $this->assertStringContainsString('Sin cobro por receta', $html);
+                $this->assertStringNotContainsString('PACIENTE CAMBIADO DESPUES', $html);
+                $this->assertStringNotContainsString('CATALOGO CAMBIADO DESPUES', $html);
+
+                foreach (['qr_code', 'barcode', 'service_id', 'user_id', 'special_rule_code'] as $forbidden) {
+                    $this->assertStringNotContainsString($forbidden, $html);
+                }
+
+                if ($profileCode === ReceiptPrintProfile::CODE_THERMAL_58) {
+                    $this->assertStringContainsString('class="totals narrow"', $html);
+                    $this->assertMatchesRegularExpression(
+                        '/<span class="total-label">Gravado[^<]*15[^<]*%<\/span><span class="amount">L\.[^<]*'.($suffix === '' ? '124,356' : '123,456').'\.78<\/span>/u',
+                        $html,
+                    );
+                    $this->assertMatchesRegularExpression(
+                        '/\.totals\.narrow \.amount\s*\{[^}]*display:\s*block;/s',
+                        $html,
+                    );
+                }
+
+                if ($writeEvidence) {
+                    $target = rtrim($dir, '\\/').DIRECTORY_SEPARATOR.$label.$suffix.'.pdf';
+                    file_put_contents($target, $pdf);
+                    $this->assertFileExists($target);
+                    file_put_contents(rtrim($dir, '\\/').DIRECTORY_SEPARATOR.$label.$suffix.'.html', $html);
+                }
             }
         }
     }
@@ -195,6 +221,7 @@ class ReceiptFormatsEvidenceTest extends TestCase
         User $user,
         CashRegisterSession $cashSession,
         FiscalSequence $sequence,
+        bool $short = false,
     ): InstitutionalReceipt {
         $profile = ReceiptPrintProfile::query()->where('code', $profileCode)->firstOrFail();
 
@@ -208,6 +235,10 @@ class ReceiptFormatsEvidenceTest extends TestCase
         );
 
         $items = $this->evidenceItems($rate15, $rate18);
+        if ($short) {
+            $items = [$items[0], $items[10], $items[20], $items[29]];
+        }
+
         $subtotalCents = array_sum(array_column($items, 'line_subtotal_cents'));
         $taxCents = array_sum(array_column($items, 'tax_amount_cents'));
 

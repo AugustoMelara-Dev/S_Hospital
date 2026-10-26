@@ -358,6 +358,10 @@
                     {{ $situation }}@if ($showBalance) · Saldo {{ $moneyLabel($invoice['balance_due']) }}@endif
                 </div>
 
+                @if ($density === 'half')
+                    <div class="method-line">Pagado {{ $moneyLabel($invoice['paid_amount']) }} · Saldo {{ $moneyLabel($invoice['balance_due']) }}</div>
+                @endif
+
                 <div class="method-line">
                     <span class="label label-block">Método aplicable</span>
                     @if ($hasMultiplePayments)
@@ -418,6 +422,7 @@
                         <td>Total</td>
                         <td class="money">{{ $moneyLabel($invoice['total']) }}</td>
                     </tr>
+                    @if ($density !== 'half')
                     <tr>
                         <td>Pagado</td>
                         <td class="money">{{ $moneyLabel($invoice['paid_amount']) }}</td>
@@ -426,6 +431,7 @@
                         <td>Saldo</td>
                         <td class="money">{{ $moneyLabel($invoice['balance_due']) }}</td>
                     </tr>
+                    @endif
                 </table>
             </td>
         </tr>
@@ -450,8 +456,8 @@
         </td>
     </tr>
 </table>
-</div>
 
 @if ($profile['show_copy_legend'] && ! empty($page['institution']['receipt_footer_text']))
     <div class="copy-legend">{{ $page['institution']['receipt_footer_text'] }}</div>
 @endif
+</div>

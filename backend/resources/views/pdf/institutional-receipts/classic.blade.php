@@ -1060,6 +1060,14 @@
                     <tr>
                         <td>
                             {{ $item['service_name'] ?: 'Servicio hospitalario' }}
+                            @if (! empty($item['rule_adjusted']))
+                                <span class="item-meta">Sin cobro por receta</span>
+                                @if (($item['adjustment'] ?? null) !== null)
+                                    <span class="item-meta">Ajuste {{ $negativeMoneyLabel($item['adjustment']) }}</span>
+                                @elseif (! empty($item['adjustment_unknown']))
+                                    <span class="item-meta">Ajuste no registrado</span>
+                                @endif
+                            @endif
                             @if ($itemDescriptors->isNotEmpty())
                                 <span class="item-meta">
                                     {{ $itemDescriptors->implode(' / ') }}
@@ -1071,7 +1079,7 @@
                         </td>
                         <td class="qty">{{ $item['quantity'] }}</td>
                         @if (! $isThermal)
-                            <td class="money">{{ $moneyLabel($item['unit_price']) }}</td>
+                            <td class="money">{{ $moneyLabel($item['reference_unit_price'] ?? $item['unit_price']) }}</td>
                         @endif
                         <td class="money">{{ $moneyLabel($item['line_subtotal'] ?? $item['line_total']) }}</td>
                     </tr>
