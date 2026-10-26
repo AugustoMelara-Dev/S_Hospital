@@ -7,6 +7,7 @@ use App\Models\ClientErrorLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class ClientErrorLogController extends Controller
 {
@@ -24,6 +25,9 @@ class ClientErrorLogController extends Controller
         $context = is_array($validatedContext)
             ? Arr::only($validatedContext, self::CONTEXT_ALLOW_LIST)
             : [];
+        if (isset($context['request_id']) && (! is_string($context['request_id']) || ! Str::isUuid($context['request_id']))) {
+            unset($context['request_id']);
+        }
         $technicalCode = $request->filled('technical_code')
             ? $request->string('technical_code')->toString()
             : null;

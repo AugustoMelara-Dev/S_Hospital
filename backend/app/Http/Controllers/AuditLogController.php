@@ -15,6 +15,15 @@ class AuditLogController extends Controller
 
         $query = AuditLog::query()->with(['user:id,name,username']);
 
+        if ($validated['user'] !== null) {
+            $query->whereHas('user', function ($userQuery) use ($validated): void {
+                $userQuery->where(function ($names) use ($validated): void {
+                    $names->where('name', 'like', '%'.$validated['user'].'%')
+                        ->orWhere('username', 'like', '%'.$validated['user'].'%');
+                });
+            });
+        }
+
         if ($validated['action'] !== null) {
             $query->where('action', 'like', '%'.$validated['action'].'%');
         }

@@ -17,6 +17,7 @@ class IndexAuditLogRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'user' => ['nullable', 'string', 'max:120'],
             'action' => ['nullable', 'string', 'max:120'],
             'user_id' => ['nullable', 'integer', 'min:1'],
             'from' => ['nullable', 'date_format:Y-m-d'],
@@ -27,11 +28,12 @@ class IndexAuditLogRequest extends FormRequest
     }
 
     /**
-     * @return array{action: string|null, user_id: int|null, from: string|null, to: string|null, per_page: int}
+     * @return array{user: string|null, action: string|null, user_id: int|null, from: string|null, to: string|null, per_page: int}
      */
     public function validatedPayload(): array
     {
         return [
+            'user' => $this->filled('user') ? $this->string('user')->trim()->toString() : null,
             'action' => $this->filled('action') ? $this->string('action')->toString() : null,
             'user_id' => $this->filled('user_id') ? $this->integer('user_id') : null,
             'from' => $this->filled('from') ? $this->string('from')->toString() : null,

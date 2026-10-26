@@ -4,9 +4,11 @@ use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\IdempotencyKey;
+use App\Http\Middleware\RequestCorrelation;
 use App\Http\Middleware\StripApiReadSessionCookies;
 use App\Http\Middleware\ThrottleByUser;
-use App\Support\OperationalMessageSanitizer;
+use App\Support\RestoreReconciliationPendingException;
+use App\Support\SafeExceptionDiagnostics;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -18,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -44,6 +47,7 @@ $application = Application::configure(basePath: dirname(__DIR__))
             'api/system/csp-report',
         ]);
         $middleware->prepend(StripApiReadSessionCookies::class);
+        $middleware->prepend(RequestCorrelation::class);
         $middleware->appendToGroup('web', AuthenticateSession::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->alias([
@@ -54,6 +58,18 @@ $application = Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->report(function (Throwable $exception): bool {
+            SafeExceptionDiagnostics::record($exception, 'server.exception', 'SERVER_ERROR');
+
+            // The framework's default reporter would log raw exception messages,
+            // SQL, bindings and paths. Only the allowlisted diagnostic is retained.
+            return false;
+        });
+        $exceptions->respond(function (Response $response) {
+            $response->headers->set('X-Request-ID', RequestCorrelation::id(request()));
+
+            return $response;
+        });
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request): bool => $request->is('api/*') || $request->expectsJson()
         );
@@ -67,6 +83,14 @@ $application = Application::configure(basePath: dirname(__DIR__))
                 || $exception instanceof AuthorizationException
                 || $exception instanceof AuthenticationException) {
                 return null;
+            }
+
+            if ($exception instanceof RestoreReconciliationPendingException) {
+                return response()->json([
+                    'message' => 'La emisión está bloqueada por reconciliación pendiente después de restaurar un respaldo. Un administrador debe confirmar los correlativos antes de continuar.',
+                    'code' => 'RESTORE_RECONCILIATION_PENDING',
+                    'request_id' => RequestCorrelation::id($request),
+                ], 409);
             }
 
             $status = $exception instanceof HttpExceptionInterface ? $exception->getStatusCode() : 500;
@@ -99,11 +123,11 @@ $application = Application::configure(basePath: dirname(__DIR__))
                 ], 409);
             }
 
-            if ($status >= 500 && ! (bool) config('app.debug')) {
+            if ($status >= 500) {
                 return response()->json([
-                    'message' => OperationalMessageSanitizer::message($exception->getMessage())
-                        ?? 'Error tecnico registrado. Revise el paquete de soporte.',
+                    'message' => 'Error tecnico registrado. Revise el paquete de soporte.',
                     'code' => 'SERVER_ERROR',
+                    'request_id' => RequestCorrelation::id($request),
                 ], $status);
             }
 
@@ -126,8 +150,8 @@ $application = Application::configure(basePath: dirname(__DIR__))
             $message = 'El sistema está en mantenimiento. Vuelva a intentarlo en unos minutos.';
             if (is_file($downFile)) {
                 $payload = json_decode((string) file_get_contents($downFile), true);
-                if (is_array($payload) && ! empty($payload['message'])) {
-                    $message = (string) $payload['message'];
+                if (is_array($payload) && isset($payload['message']) && is_string($payload['message']) && $payload['message'] !== '') {
+                    $message = $payload['message'];
                 }
             }
 

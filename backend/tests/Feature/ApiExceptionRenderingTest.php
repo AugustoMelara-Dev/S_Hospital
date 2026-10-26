@@ -30,9 +30,8 @@ class ApiExceptionRenderingTest extends TestCase
         $this->assertStringNotContainsString('hospital_app', $json);
         $this->assertStringNotContainsString('172.18.0.1', $json);
         $this->assertStringNotContainsString('C:\\Projects', $json);
-        $this->assertStringContainsString('[redacted]', $json);
-        $this->assertStringContainsString('[db-user-host]', $json);
-        $this->assertStringContainsString('[ruta-local]', $json);
+        $response->assertJsonPath('message', 'Error tecnico registrado. Revise el paquete de soporte.');
+        $this->assertSame($response->headers->get('X-Request-ID'), $response->json('request_id'));
     }
 
     public function test_api_validation_exception_is_not_masked_as_server_error_when_debug_is_disabled(): void

@@ -187,6 +187,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
 
         Route::get('/cash-registers', [CashRegisterController::class, 'index']);
         Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
+        Route::get('/cash-sessions/options', [CashSessionController::class, 'options']);
         Route::get('/cash-sessions/consolidated', [CashSessionController::class, 'consolidated'])
             ->middleware('throttle.user:30,1');
         Route::post('/cash-sessions/open', [CashSessionController::class, 'open'])

@@ -21,6 +21,9 @@ class IndexCashSessionRequest extends FormRequest
             'user_id' => ['sometimes', 'integer', 'exists:users,id'],
             // Filtro de lectura/historial: incluye cajas inactivas.
             'cash_register_id' => ['sometimes', 'integer', 'exists:cash_registers,id'],
+            'date_from' => ['sometimes', 'date_format:Y-m-d'],
+            'date_to' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'difference' => ['sometimes', 'in:all,balanced,shortage,overage'],
         ];
     }
 

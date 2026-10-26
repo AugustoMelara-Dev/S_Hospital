@@ -177,18 +177,18 @@ class PermissionAuditTest extends TestCase
         $this->assertContains('permission_audit_observer_failed', $score['issues']);
     }
 
-    public function test_default_supervisor_role_does_not_manage_catalog_prices(): void
+    public function test_default_supervisor_role_can_manage_catalog_prices(): void
     {
         $supervisor = User::factory()->create([
-            'username' => 'supervisor-catalog-readonly',
-            'email' => 'supervisor-catalog-readonly@hospital.local',
+            'username' => 'supervisor-catalog-manager',
+            'email' => 'supervisor-catalog-manager@hospital.local',
             'password' => Hash::make('Password123!'),
             'must_change_password' => false,
             'active' => true,
         ])->assignRole('supervisor');
 
         $this->assertTrue($supervisor->can('catalog.view'));
-        $this->assertFalse($supervisor->can('catalog.manage'));
+        $this->assertTrue($supervisor->can('catalog.manage'));
     }
 
     public function test_default_non_admin_roles_do_not_receive_legacy_reports_view(): void

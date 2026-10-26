@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Actions\Cash\BuildCashReconciliationAction;
 use App\Actions\Cash\CloseCashSessionAction;
+use App\Actions\Cash\ListCashSessionOptionsAction;
 use App\Actions\Cash\OpenCashSessionAction;
 use App\Actions\Reports\CashSessionReportService;
+use App\Http\Requests\Cash\CashSessionOptionsRequest;
 use App\Http\Requests\Cash\CloseCashSessionRequest;
 use App\Http\Requests\Cash\ConsolidatedCashSessionRequest;
 use App\Http\Requests\Cash\CurrentCashSessionRequest;
@@ -61,6 +63,22 @@ class CashSessionController extends Controller
             $query->where('cash_register_id', $request->integer('cash_register_id'));
         }
 
+        if ($request->filled('date_from')) {
+            $query->where('opened_at', '>=', Carbon::parse($request->string('date_from')->toString())->startOfDay());
+        }
+        if ($request->filled('date_to')) {
+            $query->where('opened_at', '<=', Carbon::parse($request->string('date_to')->toString())->endOfDay());
+        }
+        $difference = $request->string('difference', 'all')->toString();
+        if ($difference !== 'all') {
+            $query->where('status', CashRegisterSession::STATUS_CLOSED)
+                ->where('difference_amount', match ($difference) {
+                    'shortage' => '<',
+                    'overage' => '>',
+                    default => '=',
+                }, '0.00');
+        }
+
         $sessions = $query->paginate($request->perPage());
 
         return response()->json([
@@ -85,6 +103,11 @@ class CashSessionController extends Controller
         // (zero for a new session), so the UI never sees an unresolved
         // "pending work" state between opening and the next refetch.
         return response()->json(['data' => $this->openSessionPayload($session, $buildCashReconciliation)], 201);
+    }
+
+    public function options(CashSessionOptionsRequest $request, ListCashSessionOptionsAction $options): JsonResponse
+    {
+        return response()->json($options->execute($this->authenticatedUser($request), $request->filters()));
     }
 
     public function close(
