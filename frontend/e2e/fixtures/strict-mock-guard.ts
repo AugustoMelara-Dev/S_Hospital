@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-type GuardState = { issues: string[]; navigating: boolean };
+type GuardState = { issues: string[]; navigating: boolean; expectedHttpErrors: Array<{ path: string; status: number; seen: number }> };
 
 /** Textos de cancelación de petición por navegador (ver `requestfailed`). */
 const CANCELLED_REQUEST_MARKERS = [
@@ -13,7 +13,7 @@ const CANCELLED_REQUEST_MARKERS = [
 const guardStates = new WeakMap<Page, GuardState>();
 
 export async function installStrictMockGuard(page: Page): Promise<void> {
-  const state: GuardState = { issues: [], navigating: false };
+  const state: GuardState = { issues: [], navigating: false, expectedHttpErrors: [] };
   guardStates.set(page, state);
 
   page.on('console', (message) => {
@@ -22,6 +22,18 @@ export async function installStrictMockGuard(page: Page): Promise<void> {
     // sandboxed srcdoc frame. This browser diagnostic confirms the security
     // boundary; it is not an application console failure.
     if (message.type() === 'error' && /Blocked script execution in 'about:srcdoc'.*sandboxed.*allow-scripts/i.test(text)) return;
+    // Fault-injection tests declare the exact HTTP status and endpoint. Only
+    // Chromium's one resource diagnostic is expected; application errors remain
+    // failures, and each declared diagnostic must actually occur exactly once.
+    const expected = state.expectedHttpErrors.find((item) =>
+      message.type() === 'error'
+      && text === `Failed to load resource: the server responded with a status of ${item.status} (Conflict)`
+      && new URL(message.location().url, 'http://mock.invalid').pathname === item.path,
+    );
+    if (expected && expected.seen === 0) {
+      expected.seen += 1;
+      return;
+    }
     if (message.type() === 'error') state.issues.push(`console.error: ${text}`);
   });
   page.on('pageerror', (error) => state.issues.push(`pageerror: ${error.message}`));
@@ -59,7 +71,16 @@ export async function installStrictMockGuard(page: Page): Promise<void> {
   });
 }
 
+export function expectMockHttpConflict(page: Page, path: string): void {
+  const state = guardStates.get(page);
+  if (!state) throw new Error('Install the strict mock guard before declaring a conflict.');
+  state.expectedHttpErrors.push({ path, status: 409, seen: 0 });
+}
+
 export function assertStrictMockGuard(page: Page): void {
   const issues = guardStates.get(page)?.issues ?? ['strict mock guard was not installed'];
   expect(issues, issues.join('\n')).toEqual([]);
+  for (const expected of guardStates.get(page)?.expectedHttpErrors ?? []) {
+    expect(expected.seen, `Expected injected HTTP conflict at ${expected.path}`).toBe(1);
+  }
 }

@@ -24,7 +24,7 @@ import {
  * Evidencia: `hospital-ai/evidencia/T-FE-13/axe-<superficie>.json`.
  */
 
-const EVIDENCE_DIR = resolve(process.cwd(), '..', 'hospital-ai', 'evidencia', 'T-FE-13');
+const EVIDENCE_DIR = resolve(process.env.E2E_EVIDENCE_DIR ?? resolve(process.cwd(), '..', 'hospital-ai', 'evidencia', 'T-FE-13'));
 mkdirSync(EVIDENCE_DIR, { recursive: true });
 
 function resolveAxePath(): string {
@@ -159,15 +159,15 @@ test.describe('T-FE-13 — axe en Caja y Resumen (gate critical + serious)', () 
     expect(blockingViolations(movementsResults), 'axe critical/serious en Caja (Movimientos)').toEqual([]);
   });
 
-  test('Resumen — región del contexto y scroll de AdminTable', async ({ page }) => {
+  test('Resumen — navegación principal y scroll de AdminTable', async ({ page }) => {
     resetUnexpectedApis();
     await installResumenMocks(page);
     await page.goto('/resumen');
     await expect(page.getByRole('heading', { level: 1, name: /^resumen$/i })).toBeVisible();
 
-    // La franja de contexto es un landmark con nombre.
+    // El shell actual expone sus destinos en la navegación lateral.
     await expect(
-      page.getByRole('region', { name: /contexto de caja, hora y conexión/i }),
+      page.getByRole('navigation', { name: /navegación principal/i }),
     ).toBeVisible();
 
     // El contenedor desplazable de la tabla acepta foco y tiene nombre.

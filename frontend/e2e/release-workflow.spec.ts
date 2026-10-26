@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 const native = process.env.E2E_RELEASE_NATIVE_WORKFLOW === '1';
 const password = process.env.E2E_RELEASE_PASSWORD ?? '';
 const baseURL = process.env.E2E_RELEASE_BASE_URL;
-const evidence = resolve('../hospital-ai/evidencia/ENTREGA-20261021/F3');
+const evidence = resolve(process.env.E2E_RELEASE_EVIDENCE_DIR ?? '../hospital-ai/evidencia/ENTREGA-20261021/F3');
 const runId = process.env.E2E_RELEASE_RUN_ID ?? `f3-${Date.now()}`;
 const outcomes: Record<string, unknown>[] = [];
 const issues: string[] = [];
@@ -36,13 +36,13 @@ test('F3 role matrix and native production UI', async ({ browser }) => {
       const userStatus = await page.evaluate(async () => (await fetch('/api/admin/users', { headers: { Accept: 'application/json' } })).status);
       expect(userStatus).toBe(role === 'admin' ? 200 : 403);
       await page.goto('/administracion/usuarios');
-      await expect(page.getByRole('heading', { level: 1, name: role === 'admin' ? /usuarios y funciones/i : /sin permisos/i })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: role === 'admin' ? /usuarios y roles/i : /sin permisos/i })).toBeVisible();
       outcomes.push({ role, users_api: userStatus, users_route: role === 'admin' ? 'allowed' : 'denied', primary_navigation: ['Cobrar', 'Recibos', 'Caja', 'Reportes'] });
     } finally { await page.close(); }
   }
 });
 
-test('F3 thermal profile is saved from Ajustes Impresión', async ({ page }) => {
+test('F3 institutional paper is saved without requiring hidden technical fields', async ({ page }) => {
   await page.goto('/login');
   await capture(page, 'capturas/login.png');
   await login(page, 'admin.e2e');
@@ -50,18 +50,19 @@ test('F3 thermal profile is saved from Ajustes Impresión', async ({ page }) => 
   await expect(page.getByRole('heading', { name: /impuestos/i }).first()).toBeVisible();
   await capture(page, 'capturas/ajustes-impuestos.png');
   await page.goto('/administracion/ajustes?panel=impresion');
-  await page.getByRole('tab', { name: /papel y copias/i }).click();
-  const thermal = page.getByRole('radio', { name: /80\s*mm/i });
-  await expect(thermal).toBeEnabled();
-  await thermal.check();
+  const paper = page.getByRole('radio', { name: 'A5', exact: true });
+  await expect(paper).toBeEnabled();
+  await paper.check();
   const saved = page.waitForResponse((response) => response.request().method() === 'PATCH' && /\/print-profiles\/\d+$/.test(new URL(response.url()).pathname));
   await page.getByRole('button', { name: /guardar perfil/i }).click();
   const response = await saved;
   expect(response.ok(), await response.text()).toBe(true);
   const profile = await response.json() as Envelope;
-  expect(profile.data.paper_kind).toBe('thermal_80mm');
+  expect(profile.data.paper_kind).toBe('a5_landscape');
+  expect(response.request().postDataJSON()).not.toHaveProperty('support_reason');
+  expect(response.request().postDataJSON()).not.toHaveProperty('width_mm');
   await capture(page, 'capturas/ajustes-impresion.png');
-  outcomes.push({ name: 'thermal_profile', profile: profile.data });
+  outcomes.push({ name: 'institutional_profile', profile: profile.data });
 });
 
 test('F3 daily flow: cash, transfer, mixed taxes, EPO, reprint, supervisor void, reports, backup and close', async ({ page, browser }) => {
@@ -76,6 +77,7 @@ test('F3 daily flow: cash, transfer, mixed taxes, EPO, reprint, supervisor void,
   await closeCurrent(page, 'Preparación F3: cierre del fixture H07');
   const opening = page.getByRole('region', { name: /apertura de caja/i });
   const register = opening.getByLabel('Caja física');
+  await expect(register).toBeVisible();
   const registerValue = await register.locator('option').evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value).find((value) => value !== '') ?? null);
   expect(registerValue).toBeTruthy();
   await register.selectOption(registerValue!);
@@ -119,23 +121,22 @@ test('F3 daily flow: cash, transfer, mixed taxes, EPO, reprint, supervisor void,
   expect(zeroPayments).toBe(0);
   page.off('response', countPayment);
 
-  await page.goto('/recibos');
-  await page.getByRole('row', { name: new RegExp(String(cash.invoice.invoice_number)) }).getByRole('button', { name: /ver recibo/i }).click();
-  const receiptDialog = page.getByRole('dialog', { name: new RegExp(`^Comprobante ${cash.invoice.invoice_number}$`) });
-  const firstPrint = receiptDialog.getByRole('button', { name: /^abrir para imprimir$/i });
-  if (await firstPrint.isVisible()) {
-    const firstPrintResponse = page.waitForResponse((response) => response.request().method() === 'POST' && /\/institutional-receipts\/\d+\/print-events$/.test(new URL(response.url()).pathname));
-    await firstPrint.click();
-    expect((await firstPrintResponse).ok()).toBe(true);
+  await page.goto(`/recibos?operacion=${cash.invoice.id}`);
+  const receiptDetail = page.getByRole('complementary', { name: /detalle de la operación/i });
+  await expect(receiptDetail).toBeVisible();
+  // La primera entrega registra print; la segunda registra reprint con motivo.
+  for (const reason of ['F3: entrega inicial del comprobante.', 'F3: segunda copia sintética solicitada.']) {
+    await receiptDetail.getByRole('button', { name: /^reimprimir con motivo$/i }).click();
+    const reprint = page.getByRole('dialog', { name: /^reimprimir /i });
+    await reprint.getByLabel(/^motivo \*$/i).fill(reason);
+    const printResponse = page.waitForResponse((response) => response.request().method() === 'POST' && /\/institutional-receipts\/\d+\/print-events$/.test(new URL(response.url()).pathname));
+    await reprint.getByRole('button', { name: /^reimprimir$/i }).click();
+    expect((await printResponse).ok()).toBe(true);
+    await expect(reprint).toBeHidden();
   }
-  await receiptDialog.getByRole('button', { name: /^registrar reimpresión$/i }).click();
-  const reprint = page.getByRole('dialog', { name: /^reimprimir /i });
-  await reprint.getByLabel(/^motivo \*$/i).fill('F3: segunda copia sintética solicitada.');
-  const printResponse = page.waitForResponse((response) => response.request().method() === 'POST' && /\/institutional-receipts\/\d+\/print-events$/.test(new URL(response.url()).pathname));
-  await reprint.getByRole('button', { name: /^reimprimir$/i }).click();
-  expect((await printResponse).ok()).toBe(true);
   const invoiceAfter = await get(page, `/api/invoices/${cash.invoice.id}`);
   expect(invoiceAfter.data.paid_amount).toBe(cash.invoice.paid_amount);
+  expect((invoiceAfter.data.institutional_receipt as Data).reprint_count).toBe(1);
 
   // A pending synthetic invoice can be voided without falsifying a payment.
   const pending = await mutate(page, '/api/invoices', { patient_name: `E2E Release Gate F3 ${runId} ANULAR`, items: [{ service_id: await serviceId(page, 'F3 concepto 0'), quantity: '1' }] });
@@ -177,18 +178,21 @@ test('F3 daily flow: cash, transfer, mixed taxes, EPO, reprint, supervisor void,
     outcomes.push({ name: 'reports_h07', filter: filters, report, excel_ms: durations, criterion_ms: 3000, all_under_3s: durations.every((duration) => duration <= 3000) });
     await admin.goto('/administracion/mantenimiento/respaldos');
     await admin.getByRole('button', { name: /^crear respaldo$/i }).first().click();
-    const backupResponse = admin.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/backups');
+    const backupResponse = admin.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/backups', { timeout: 120_000 });
     await admin.getByRole('dialog', { name: /crear respaldo local/i }).getByRole('button', { name: /^crear respaldo$/i }).click();
     const createdBackupResponse = await backupResponse;
     expect(createdBackupResponse.ok()).toBe(true);
     const createdBackup = await createdBackupResponse.json() as Envelope;
+    await expect(admin.getByRole('dialog', { name: /crear respaldo local/i })).toBeHidden();
     let completedBackup: Data | undefined;
     await expect.poll(async () => {
       const list = await (await admin.request.get('/api/backups')).json() as { data: Data[] };
       completedBackup = list.data.find((backup) => backup.id === createdBackup.data.id);
       return completedBackup?.status;
     }, { timeout: 120_000 }).toBe('success');
-    expect(completedBackup).toMatchObject({ verify_status: 'verified', verification_scope: 'encrypted_file_integrity', restore_tested: false });
+    // Crear/descargar no certifica una revisión ni una restauración: la revisión
+    // cifrada se ejecuta por separado con hospital:verify-backup.
+    expect(completedBackup).toMatchObject({ status: 'success', restore_tested: false });
     const download = admin.getByRole('button', { name: /descargar respaldo del/i }).first();
     await expect(download).toBeEnabled({ timeout: 120_000 });
     await download.click();

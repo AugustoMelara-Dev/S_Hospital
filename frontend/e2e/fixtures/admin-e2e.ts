@@ -1,4 +1,5 @@
 import { type Page, type Route } from '@playwright/test';
+import { installCashSessionOptions } from './cash-options';
 
 /**
  * Helpers de mock para los recorridos E2E del producto nuevo "Panel administrativo".
@@ -100,6 +101,7 @@ export async function installAdminApi(
   options: { user: AdminTestUser; cashSession?: AdminTestCashSession | null },
 ): Promise<AdminApi> {
   let currentCashSession = options.cashSession ?? null;
+  await installCashSessionOptions(page, () => currentCashSession ? [currentCashSession] : []);
 
   await page.addInitScript(() => {
     window.open = () => null;

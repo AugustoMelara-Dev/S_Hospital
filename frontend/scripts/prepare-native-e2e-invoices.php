@@ -10,6 +10,12 @@ $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 if (! $app->environment('testing') || ! str_starts_with((string) config('database.connections.mysql.database'), 'sh_ai_f3_')) {
     throw new RuntimeException('F3 fixture requires testing and a disposable sh_ai_f3_* database.');
 }
+// Branding exercises an administrator payment without taking the cashier's
+// pre-opened release session. Keep a dedicated synthetic register available.
+App\Models\CashRegister::firstOrCreate(
+    ['code' => 'QA_IDENTIDAD'],
+    ['name' => 'Caja QA identidad', 'active' => true],
+);
 $cashier = App\Models\User::where('username', 'cajero.e2e')->firstOrFail();
 $session = App\Models\CashRegisterSession::where('user_id', $cashier->id)->where('status', 'open')->firstOrFail();
 $base = App\Models\Service::where('name', 'Glucosa')->firstOrFail();

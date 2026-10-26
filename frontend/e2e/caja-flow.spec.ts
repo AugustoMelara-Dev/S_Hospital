@@ -72,7 +72,9 @@ test.describe('Caja — apertura y cierre', () => {
     await expect.poll(() => openPayload).not.toBeNull();
     expect(openPayload).toMatchObject({ opening_amount: '500.00', cash_register_id: 1 });
     await expect(page.getByText('Caja abierta').first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('region', { name: /caja, usuario y sesión/i })).toContainText('#7');
+    const sessionIdentity = page.getByRole('region', { name: /caja, usuario y sesión/i });
+    await expect(sessionIdentity).toContainText('Caja abierta');
+    await expect(sessionIdentity).toContainText(CASHIER.name);
   });
 
   test('cierra la caja abierta con el monto contado y muestra el resumen', async ({ page }) => {

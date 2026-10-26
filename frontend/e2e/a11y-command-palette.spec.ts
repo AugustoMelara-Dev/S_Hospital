@@ -19,7 +19,7 @@ import {
  * Evidencia: `hospital-ai/evidencia/T-FE-14/axe-command-palette.json`.
  */
 
-const EVIDENCE_DIR = resolve(process.cwd(), '..', 'hospital-ai', 'evidencia', 'T-FE-14');
+const EVIDENCE_DIR = resolve(process.env.E2E_EVIDENCE_DIR ?? resolve(process.cwd(), '..', 'hospital-ai', 'evidencia', 'T-FE-14'));
 mkdirSync(EVIDENCE_DIR, { recursive: true });
 
 function resolveAxePath(): string {
@@ -118,6 +118,8 @@ test.describe('T-FE-14 — command palette y sorting (axe real, sin backend)', (
     await page.goto('/resumen');
     await expect(page.getByRole('heading', { level: 1, name: /^resumen$/i })).toBeVisible();
 
+    // Los atajos y el foco se comprueban en la pestaña activa del usuario.
+    await page.bringToFront();
     await page.keyboard.press('Control+k');
     const dialog = page.getByRole('dialog', { name: /paleta de comandos/i });
     await expect(dialog).toBeVisible();
@@ -146,12 +148,12 @@ test.describe('T-FE-14 — command palette y sorting (axe real, sin backend)', (
     await expect(dialog).toBeHidden();
   });
 
-  test('el disparador de la barra abre la palette y recupera el foco al cerrar', async ({ page }) => {
+  test('el buscador de la navegación abre la palette y recupera el foco al cerrar', async ({ page }) => {
     resetUnexpectedApis();
     await installResumenMocks(page);
     await page.goto('/resumen');
 
-    const trigger = page.getByRole('button', { name: 'Abrir paleta de comandos' });
+    const trigger = page.getByRole('button', { name: /^buscar.*ctrl.*k/i });
     await trigger.click();
 
     const dialog = page.getByRole('dialog', { name: /paleta de comandos/i });

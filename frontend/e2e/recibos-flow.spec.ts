@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+import { installCashSessionOptions } from './fixtures/cash-options';
 import {
   installAdminApi,
   json,
@@ -88,6 +89,7 @@ async function installRecibosMocks(
   options: { onInstitutionalPdf?: () => void; onPrintEvent?: (payload: Record<string, unknown>, key: string | null) => void } = {},
 ): Promise<void> {
   await installAdminApi(page, { user: ADMIN, cashSession: openCashSessionFixture() });
+  await installCashSessionOptions(page, () => [openCashSessionFixture({ status: 'closed', closed_at: '2026-09-18T16:00:00-06:00' })]);
 
   await page.route(/\/api\/invoices(?:\?.*)?$/, (route) => {
     const url = new URL(route.request().url());

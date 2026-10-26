@@ -12,6 +12,9 @@ test('mock E2E covers the new admin product without release credentials', () => 
   assert.match(serialized, /caja-flow\.spec\.ts/);
   assert.match(serialized, /reportes-flow\.spec\.ts/);
   assert.match(serialized, /rbac-admin\.spec\.ts/);
+  assert.match(serialized, /a11y-admin\.spec\.ts/);
+  assert.match(serialized, /a11y-command-palette\.spec\.ts/);
+  assert.match(serialized, /contrast-regression\.spec\.ts/);
   assert.doesNotMatch(serialized, /PASSWORD|SEED|secret/i);
-  assert.equal(runs.length, 3);
+  assert.equal(runs.length, 4);
 });

@@ -1,4 +1,5 @@
 import { expect, type Page, type Route } from '@playwright/test';
+import { installCashSessionOptions } from './cash-options';
 import {
   ERYTHROPOIETIN_RULE,
   currencyTotals,
@@ -445,6 +446,7 @@ const PAID_INVOICE = {
 export async function installRecibosMocks(page: Page): Promise<void> {
   await installFallback(page, 'recibos');
   await installAdminApi(page, { user: VISUAL_USER, cashSession: VISUAL_CASH_SESSION });
+  await installCashSessionOptions(page, () => [openCashSessionFixture({ status: 'closed', closed_at: '2026-09-18T16:00:00-06:00' })]);
 
   await page.route(/\/api\/invoices(?:\?.*)?$/, (route) => {
     const url = new URL(route.request().url());
@@ -708,6 +710,7 @@ function executiveReport(from: string, to: string) {
 export async function installReportesMocks(page: Page): Promise<void> {
   await installFallback(page, 'reportes');
   await installAdminApi(page, { user: VISUAL_USER, cashSession: VISUAL_CASH_SESSION });
+  await installCashSessionOptions(page, () => [openCashSessionFixture({ status: 'closed', closed_at: '2026-09-01T16:00:00-06:00' })]);
 
   await page.route(/\/api\/cash-sessions(?:\?.*)?$/, (route) =>
     json(route, {

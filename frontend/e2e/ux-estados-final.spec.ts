@@ -57,7 +57,7 @@ test('estados desconocidos, reintento y ceros confirmados en las rutas reales', 
   await page.unroute('**/api/cash-sessions/current?scope=closable');
 
   let failCashOptions = true;
-  await page.route('**/api/cash-sessions?per_page=50', async (route) => {
+  await page.route(/\/api\/cash-sessions\/options(?:\?.*)?$/, async (route) => {
     if (failCashOptions) await route.fulfill({ status: 503, json: { message: 'No se pudo cargar la lista.' } });
     else await route.continue();
   });
@@ -72,7 +72,7 @@ test('estados desconocidos, reintento y ceros confirmados en las rutas reales', 
   await expect(page.getByRole('combobox', { name: 'Cajero', exact: true })).toBeEnabled();
   await expect(page.getByRole('combobox', { name: 'Cajero', exact: true })).toContainText('Todos');
   await page.screenshot({ path: resolve(screenshots, 'reportes-filtros-recuperados.png'), fullPage: true });
-  await page.unroute('**/api/cash-sessions?per_page=50');
+  await page.unroute(/\/api\/cash-sessions\/options(?:\?.*)?$/);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: resolve(screenshots, 'reportes-mobile.png'), fullPage: true });
   expect(mutations, 'El recorrido no debe escribir datos de negocio').toEqual([]);

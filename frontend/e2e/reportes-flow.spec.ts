@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
 import { installAdminApi, json, openCashSessionFixture, type AdminTestUser } from './fixtures/admin-e2e';
+import { installCashSessionOptions } from './fixtures/cash-options';
 
 /**
  * Reportes — filtros de período y exportación sobre el producto nuevo.
@@ -212,6 +213,7 @@ async function installReportesMocks(
   } = {},
 ): Promise<void> {
   await installAdminApi(page, { user: SUPERVISOR, cashSession: openCashSessionFixture() });
+  await installCashSessionOptions(page, () => [openCashSessionFixture({ status: 'closed', closed_at: '2026-09-01T16:00:00-06:00' })]);
 
   await page.route(/\/api\/cash-sessions(?:\?.*)?$/, (route) =>
     json(route, {

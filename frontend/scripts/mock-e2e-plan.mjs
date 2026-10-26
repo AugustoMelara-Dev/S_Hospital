@@ -26,5 +26,15 @@ export function buildMockE2eRuns() {
         '--project=chromium',
       ],
     },
+    {
+      label: 'accesibilidad-contraste',
+      args: [
+        'test',
+        'e2e/a11y-admin.spec.ts',
+        'e2e/a11y-command-palette.spec.ts',
+        'e2e/contrast-regression.spec.ts',
+        '--project=chromium',
+      ],
+    },
   ];
 }

@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { assertStrictMockGuard, installStrictMockGuard } from './fixtures/strict-mock-guard';
+import { assertStrictMockGuard, expectMockHttpConflict, installStrictMockGuard } from './fixtures/strict-mock-guard';
 import {
   ERYTHROPOIETIN_RULE,
   currencyTotals,
@@ -354,6 +354,54 @@ test.describe('Cobrar — recorrido del producto nuevo', () => {
     expect(paymentRequests).toBe(0);
   });
 
+  test('409 de reconciliación conserva la cuenta editable y permite reintentar sin pagos ficticios', async ({ page }) => {
+    expectMockHttpConflict(page, '/api/invoices');
+    const invoices: Array<Record<string, unknown>> = [];
+    let payments = 0;
+    let receipts = 0;
+    let attempts = 0;
+    await installCobrarMocks(page, {
+      onCreateInvoice: (payload) => invoices.push(payload),
+      onRegisterPayment: () => { payments += 1; },
+      onStoreReceipt: () => { receipts += 1; },
+      invoiceTotal: '17.25',
+    });
+    await page.route(/\/api\/invoices(?:\?.*)?$/, async (route) => {
+      if (route.request().method() === 'POST' && attempts++ === 0) {
+        return json(route, { message: 'Reconciliación pendiente.', code: 'RESTORE_RECONCILIATION_PENDING' }, 409);
+      }
+      return route.fallback();
+    });
+    await page.goto('/cobrar');
+    const patient = page.getByLabel(/nombre del paciente/i);
+    await patient.fill('Paciente sintético RESTORE');
+    await addService(page, 'Glucosa basal');
+    await expect.poll(() => readTotal(page)).toBe('L. 17.25');
+    await page.getByTestId('cobrar-primary-action').click();
+    await page.getByTestId('cobrar-confirm').click();
+    await expect(page.getByText(/reconciliación pendiente después de restaurar/i)).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /confirmar cobro/i })).toBeHidden();
+    await expect(patient).toHaveValue('Paciente sintético RESTORE');
+    await expect(patient).toBeEditable();
+    await expect(page.getByRole('table', { name: /líneas de la cuenta/i }).getByText('Glucosa basal', { exact: false }).first()).toBeVisible();
+    await expect.poll(() => readTotal(page)).toBe('L. 17.25');
+    expect(invoices).toHaveLength(0);
+    expect(payments).toBe(0);
+    expect(receipts).toBe(0);
+    await expect(page.getByRole('heading', { name: /operación cobrada/i })).toHaveCount(0);
+
+    // The administrator resolves the server block; the operator keeps and edits
+    // the same draft, then explicitly retries the real emission flow.
+    await patient.fill('Paciente sintético recuperado');
+    await expect(page.getByTestId('cobrar-primary-action')).toBeEnabled();
+    await page.getByTestId('cobrar-primary-action').click();
+    await page.getByTestId('cobrar-confirm').click();
+    await expect(page.getByRole('heading', { name: /operación cobrada/i })).toBeVisible();
+    expect(attempts).toBe(2);
+    expect(invoices).toHaveLength(1);
+    expect(invoices[0]).toMatchObject({ patient_name: 'Paciente sintético recuperado', items: [{ service_id: GLUCOSE.id, quantity: '1' }] });
+    expect(payments).toBe(1);
+  });
   test('cobra normalmente con método y referencia y abre el comprobante', async ({ page }) => {
     const paymentPayloads: Array<Record<string, unknown>> = [];
 

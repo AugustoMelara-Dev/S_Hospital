@@ -67,7 +67,7 @@ test('administrator creates cashier user and new navigation scopes administratio
   await login(page, adminLogin, seededPassword);
   await openAdministrationItem(page, /usuarios y permisos/i);
   await expect(page).toHaveURL(/\/administracion\/usuarios$/);
-  await expect(page.getByRole('heading', { level: 1, name: /usuarios y funciones/i })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /usuarios y roles/i })).toBeVisible();
 
   const createUserButton = page.getByRole('button', { name: /^crear usuario$/i }).first();
   await expect(createUserButton).toBeEnabled();
@@ -111,7 +111,7 @@ test('administrator creates cashier user and new navigation scopes administratio
   expect(createdUser?.permissions).not.toContain('receipt_settings.update');
 
   await logout(page);
-  await login(page, username, initialPassword, /cambio obligatorio de contraseña/i);
+  await login(page, username, initialPassword, /proteja su cuenta/i);
   await page.getByLabel(/^contraseña actual/i).fill(initialPassword);
   await page.getByLabel(/^nueva contraseña/i).fill(changedPassword);
   await page.getByLabel(/^confirmar nueva contraseña/i).fill(changedPassword);
@@ -127,12 +127,12 @@ test('administrator creates cashier user and new navigation scopes administratio
   await expect(primaryNav.getByRole('link', { name: 'Reportes' })).toBeVisible();
 
   // 2) Administración queda acotada: solo Catálogo (catalog.view) y Ayuda.
-  await page.getByRole('button', { name: /^administración$/i }).click();
-  await expect(page.getByRole('menuitem', { name: /catálogo y precios/i })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: /usuarios y permisos/i })).toHaveCount(0);
-  await expect(page.getByRole('menuitem', { name: /ajustes institucionales/i })).toHaveCount(0);
-  await expect(page.getByRole('menuitem', { name: /mantenimiento y respaldos/i })).toHaveCount(0);
-  await page.keyboard.press('Escape');
+  await page.getByRole('link', { name: /^administración$/i }).click();
+  const administrationNav = page.getByRole('navigation', { name: /secciones de administración/i });
+  await expect(administrationNav.getByRole('link', { name: /catálogo y precios/i })).toBeVisible();
+  await expect(administrationNav.getByRole('link', { name: /usuarios y permisos/i })).toHaveCount(0);
+  await expect(administrationNav.getByRole('link', { name: /ajustes institucionales/i })).toHaveCount(0);
+  await expect(administrationNav.getByRole('link', { name: /mantenimiento y respaldos/i })).toHaveCount(0);
 
   const authenticatedSession = await page.evaluate(async () => {
     const response = await fetch('/api/auth/session', { headers: { Accept: 'application/json' } });
@@ -152,7 +152,7 @@ test('administrator creates cashier user and new navigation scopes administratio
 
   await page.goto('/administracion/usuarios');
   await expect(page.getByRole('heading', { level: 1, name: /sin permisos/i })).toBeVisible();
-  await expect(page.getByText(/requiere permiso para administrar usuarios/i)).toBeVisible();
+  await expect(page.getByText(/no puede administrar cuentas/i)).toBeVisible();
 
   expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
   releaseResults.push({
@@ -182,8 +182,8 @@ async function logout(page: Page) {
 }
 
 async function openAdministrationItem(page: Page, label: RegExp) {
-  await page.getByRole('button', { name: /^administración$/i }).click();
-  await page.getByRole('menuitem', { name: label }).click();
+  await page.getByRole('link', { name: /^administración$/i }).click();
+  await page.getByRole('navigation', { name: /secciones de administración/i }).getByRole('link', { name: label }).click();
 }
 
 async function fetchJsonFromPage<T>(page: Page, path: string): Promise<T> {
