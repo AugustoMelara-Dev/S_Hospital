@@ -89,7 +89,15 @@ describe('admin motion contract (better-ui / emil)', () => {
   it('convierte el reduced motion en menos movimiento, no en cero color', () => {
     expect(tokens).toMatch(/prefers-reduced-motion:\s*reduce/);
     const reduced = tokens.slice(tokens.indexOf('prefers-reduced-motion: reduce'));
-    expect(reduced).toMatch(/transition-property:\s*background-color, border-color, color, opacity/);
+    const reducedPress = reduced.match(/\[data-ui-press\]\s*\{([^}]+)\}/)?.[1];
+    expect(reducedPress).toBeDefined();
+    expect(reducedPress).toMatch(/transition-property:\s*background-color, border-color, color\s*!important/);
+    // Habilitar un botón debe restaurar el contraste inmediatamente, también
+    // con movimiento reducido; la opacidad se reserva al intercambio de iconos.
+    expect(reducedPress).not.toMatch(/transition-property:[^;]*\bopacity\b/);
+    const press = tokens.match(/\[data-ui-press\]\s*\{([^}]+)\}/)?.[1];
+    expect(press).toBeDefined();
+    expect(press).not.toMatch(/transition-property:[^;]*\bopacity\b/);
     // Los overlays pierden zoom/desplazamiento; el fundido lo acota la regla
     // global (transition-duration 0.001 ms), no una animación keyframe.
     expect(reduced).toMatch(/scale:\s*1\s*!important/);

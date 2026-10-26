@@ -31,6 +31,7 @@ export default defineConfig({
       'e2e/**',
       'qa-e2e/**',
       'scripts/mock-e2e-plan.test.mjs',
+      'scripts/check-product-delivery.test.mjs',
       'scripts/segmented-tests-lib.test.mjs',
     ],
     maxWorkers: 2,

@@ -38,7 +38,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
       {children}
       {/* Identidad dark única: el Toaster no hereda un toggle; dark fijo
           (resuelve el hallazgo LOW de AUDITORIA_CALIDAD_UI.md). */}
-      <Toaster theme="dark" richColors closeButton={false} position="top-right" />
+      <Toaster theme="light" richColors closeButton={false} position="top-right" />
     </FeedbackContext.Provider>
   );
 }

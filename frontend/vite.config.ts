@@ -97,6 +97,7 @@ export default defineConfig({
           // suite entera (hallazgo del coordinador, 2026-09-18).
           'qa-e2e/**',
           'scripts/mock-e2e-plan.test.mjs',
+          'scripts/check-product-delivery.test.mjs',
           'scripts/segmented-tests-lib.test.mjs',
         ],
         maxWorkers: 4,

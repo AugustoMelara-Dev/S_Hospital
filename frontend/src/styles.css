@@ -5,12 +5,7 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
-/*
- * El variante `dark` de clase se retiró: la identidad dark es única y fija
- * (ThemeProvider siempre declara `html.dark`), ningún consumidor usa utilidades
- * `dark:*` (check-ui-rules lo prohíbe en primitivos) y sin la redefinición
- * no hay toggling de variant por clase que sorprenda.
- */
+/* Tema claro único: los tokens semánticos gobiernan todas las superficies. */
 
 /*
  * better-ui/emil: los efectos de hover solo se activan con un puntero fino
@@ -41,13 +36,12 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
-    /* Identidad dark única (IDENTIDAD_DARK_20261016 §8): color-scheme fijo,
-       sin toggle. Fija scrollbars y popups nativos en dark. */
-    color-scheme: dark;
+    /* Tema claro fijo para scrollbars y controles nativos. */
+    color-scheme: light;
     @apply bg-background text-foreground;
   }
 
-  html.dark body { color-scheme: dark; }
+  html { color-scheme: light; }
 
   /* Selección de texto (§8): tintado cobalto 28 %; sobre papel el texto del
      documento sigue `#111827` y legible. */
@@ -225,7 +219,7 @@
 }
 
 /*
- * Esqueleto dark (identidad 2026-10-16 §5): pulso de opacidad 0.55→1, 1.6 s,
+ * Esqueleto de carga claro: pulso de opacidad 0.55→1, 1.6 s,
  * `--ui-ease-in-out`, sin barrido luminoso ("shimmer"). La superficie delta
  * (two-tone) la pintan los consumidores con `--ui-skel-from/--ui-skel-to`;
  * esta clase solo aporta el ritmo. Los consumidores la usan como
@@ -452,39 +446,10 @@
   --radius-4xl: 1rem;
 }
 
-.dark {
-  /* Elevación dark canónica (IDENTIDAD_DARK_20261016 §3): la profundidad es
-     "sombra-como-borde" blanca; el ambiente de overlay es corto (12/24 px), no
-     la sombra de 80 px de la identidad light revocada. */
-  --shadow-border: 0 0 0 1px oklch(1 0 0 / 0.08);
-  --shadow-border-hover: 0 0 0 1px oklch(1 0 0 / 0.13);
-  --shadow-overlay:
-    0 0 0 1px oklch(1 0 0 / 0.08),
-    0 12px 32px -12px oklch(0 0 0 / 0.55),
-    0 24px 64px -24px oklch(0 0 0 / 0.45);
-  /* El anillo de foco nunca vuelve al teal institucional ni a paletas antiguas:
-     es `--ui-focus` (= --ui-action cobalto) en la identidad única. */
-  --focus-ring-color: var(--ui-focus);
-  --ring: var(--ui-focus);
-}
 
 /*
- * Puente semántico shadcn → identidad dark institucional (IDENTIDAD_DARK_20261016).
- *
- * R2 mapeaba cada token semántico a --institutional-* (--primary y --ring =
- * teal), así que cualquier primitiva shadcn heredada (`bg-primary`,
- * `text-primary`, `ring-ring`, `bg-accent`) pintaba teal. El puente resuelve a
- * --ui-*: las primitivas heredadas quedan dentro de la identidad admin y
- * ninguna puede reintroducir la paleta institucional ni la light revocada.
- *
- * La identidad es dark ÚNICA (sin toggle): los --ui-* canónicos viven en :root
- * de tokens.css y el puente no cambia con html.dark. La clase .dark la fija
- * ThemeProvider siempre y solo activa la elevación dark (sombras §3).
- *
- * Los tokens R2 `--institutional-*` y su archivo fueron retirados con la
- * identidad revocada (2026-10-16): ninguna capa los consume. La excepción
- * de papel (`--color-receipt-*`, §4) vive tras este bloque como `:root`
- * plano; `check:ui-legacy` detecta cualquier reintroducción de paleta R2.
+ * Puente semántico shadcn: los controles heredados comparten los mismos tokens
+ * claros del shell y los portales. El papel conserva su contrato independiente.
  */
 :root {
   --background: var(--ui-paper);
@@ -494,8 +459,7 @@
   --popover: var(--ui-surface);
   --popover-foreground: var(--ui-ink);
   --primary: var(--ui-action);
-  /* Etiqueta sobre relleno de acción (§1.3 regla 2): el blanco #FFFFFF
-     suspende AA en dark (2.20); --ui-action-foreground (#0B0E14) da 8.03. */
+  /* Etiqueta blanca sobre azul hospitalario con contraste AA. */
   --primary-foreground: var(--ui-action-foreground);
   --secondary: var(--ui-surface-alt);
   --secondary-foreground: var(--ui-ink);
@@ -508,9 +472,7 @@
   --ring: var(--ui-focus);
   /* El foco global (styles.css base) comparte el anillo admin. */
   --focus-ring-color: var(--ui-focus);
-  /* Series de datos dark (§1.4): cinco colores **distinguibles**, sin morado.
-     `--chart-3` es sky (#67CBF0, hue 196) distinguible del cobalto; el indigo
-     de la identidad anterior quedó retirado. */
+  /* Series distinguibles y legibles sobre superficies claras. */
   --chart-1: var(--ui-action);
   --chart-2: var(--ui-success);
   --chart-3: var(--ui-data-series-3);
@@ -521,9 +483,7 @@
   /* Contorno de control: ink-soft mantiene >=3:1 (1.4.11) sobre papel. */
   --border-strong: var(--ui-ink-soft);
   --border-subtle: var(--ui-line);
-  /* TOKENS_V2 §6: sombra-como-borde (valores exactos de better-ui/surfaces.md).
-     La sombra es capa, no un segundo borde; el fallback light (3 capas) es la
-     excepción de papel/imprenta y el bloque .dark lo sustituye (§3). */
+  /* Elevación ligera: borde, sombra próxima y ambiente del overlay. */
   --shadow-border:
     0px 0px 0px 1px oklch(0 0 0 / 0.06),
     0px 1px 2px -1px oklch(0 0 0 / 0.06),

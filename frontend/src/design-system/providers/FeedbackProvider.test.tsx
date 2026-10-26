@@ -57,7 +57,7 @@ describe('FeedbackProvider', () => {
     expect(screen.getByTestId('toaster')).toBeInTheDocument();
     expect(screen.getByTestId('toaster')).toHaveAttribute('data-close-button', 'false');
     expect(screen.getByTestId('toaster')).toHaveAttribute('data-position', 'top-right');
-    // Dark único: el feedback nunca renders un modal claro (IDENTIDAD_DARK_20261016).
-    expect(screen.getByTestId('toaster')).toHaveAttribute('data-theme', 'dark');
+    // Feedback claro coherente con el panel.
+    expect(screen.getByTestId('toaster')).toHaveAttribute('data-theme', 'light');
   });
 });
