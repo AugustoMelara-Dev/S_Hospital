@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { cash, type Invoice } from '@/lib/api';
-import { queryKeys } from '@/lib/queryKeys';
+import { type Invoice } from '@/lib/api';
+import { useCashSessionOptions } from '@/hooks/useCashSessionOptions';
+import { CashOptionsSearch } from '@/features/cash/components/CashOptionsSearch';
 import { cn } from '@/lib/utils';
 import { useAdminSession } from '@/shell/admin/AdminSessionContext';
 import {
@@ -64,6 +64,10 @@ export function RecibosView() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   const query = useInvoiceHistoryQuery({ detailParam: 'operacion' });
+  const parsedCashOptionId = Number(query.filters.cash_session_id);
+  const appliedCashOptionId = Number.isSafeInteger(parsedCashOptionId) && parsedCashOptionId > 0 ? parsedCashOptionId : undefined;
+  const [cashOptionSelection, setCashOptionSelection] = useState(appliedCashOptionId);
+  useEffect(() => setCashOptionSelection(appliedCashOptionId), [appliedCashOptionId]);
   const detail = useInvoiceHistoryDetail({
     detailInvoiceId: query.detailInvoiceId,
     detailParam: 'operacion',
@@ -86,12 +90,7 @@ export function RecibosView() {
     onStatus,
   });
 
-  const cashSessionsQuery = useQuery({
-    queryKey: [...queryKeys.cashSessions.all, 'recibos-filter'],
-    queryFn: () => cash.getCashSessions({ perPage: 50 }),
-    enabled: canFilterCash,
-    staleTime: 60_000,
-  });
+  const sessionOptions = useCashSessionOptions('sessions', { enabled: canFilterCash, selectedId: cashOptionSelection });
   function isOwnInvoiceFromToday(invoice: Invoice): boolean {
     const issuedDate = localDateString(new Date(invoice.issued_at));
 
@@ -172,8 +171,11 @@ export function RecibosView() {
             hasActiveFilters={query.hasActiveFilters}
             loading={query.loading}
             canFilterByCash={canFilterCash}
-            cashSessions={cashSessionsQuery.data?.data ?? []}
-            cashSessionsLoading={canFilterCash && cashSessionsQuery.isLoading}
+            cashSessions={[]}
+            cashSessionsLoading={canFilterCash && sessionOptions.isPending}
+            cashOptions={sessionOptions.options}
+            cashSearch={<CashOptionsSearch picker={sessionOptions} label="Buscar turnos autorizados" />}
+            onCashSelectionChange={setCashOptionSelection}
             onApply={query.applyFilters}
             onClear={query.clearFilters}
           />

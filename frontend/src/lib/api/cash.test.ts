@@ -12,6 +12,20 @@ vi.mock('./base', () => ({
 const mockedRequest = vi.mocked(apiClient.request);
 
 describe('cash api client', () => {
+  it('requests paginated searchable options while resolving a selected historical item', async () => {
+    mockedRequest.mockResolvedValueOnce({ data: [], meta: { current_page: 2, per_page: 20, total: 70 }, selected: { value: '4', label: 'Turno histórico' } });
+    await cash.getCashSessionOptions({ kind: 'sessions', search: 'Emergencia', page: 2, selectedId: 4 });
+    const url = new URL(mockedRequest.mock.calls[0][0] as string, 'http://localhost');
+    expect(url.pathname).toBe('/api/cash-sessions/options');
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({ kind: 'sessions', search: 'Emergencia', page: '2', per_page: '20', selected_id: '4' });
+  });
+
+  it('sends history filters to the server instead of filtering one local page', async () => {
+    mockedRequest.mockResolvedValueOnce({ data: [], meta: { current_page: 1, per_page: 10, total: 0 } });
+    await cash.getCashSessions({ page: 1, perPage: 10, date_from: '2026-06-01', date_to: '2026-06-02', cash_register_id: 3, user_id: 7, difference: 'shortage' });
+    const url = new URL(mockedRequest.mock.calls[0][0] as string, 'http://localhost');
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({ date_from: '2026-06-01', date_to: '2026-06-02', cash_register_id: '3', user_id: '7', difference: 'shortage' });
+  });
   beforeEach(() => {
     mockedRequest.mockReset();
   });

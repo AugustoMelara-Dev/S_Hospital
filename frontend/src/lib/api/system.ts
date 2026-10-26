@@ -4,6 +4,7 @@ import type { AuditLogPage, OperationalHealth, SystemHealthLiveness, SystemStatu
 export type AuditLogFilters = {
   action?: string;
   user_id?: number;
+  user?: string;
   from?: string;
   to?: string;
   page?: number;
@@ -37,6 +38,7 @@ export const system = {
 
   async getAuditLogs(filters: AuditLogFilters = {}): Promise<AuditLogPage> {
     const params = new URLSearchParams();
+    if (filters.user) params.set('user', filters.user);
     if (filters.action) params.set('action', filters.action);
     if (filters.user_id !== undefined) params.set('user_id', String(filters.user_id));
     if (filters.from) params.set('from', filters.from);

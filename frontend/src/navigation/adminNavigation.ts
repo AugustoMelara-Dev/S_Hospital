@@ -42,6 +42,7 @@ export const adminRoutePaths = {
   administracionAjustes: '/administracion/ajustes',
   administracionMantenimiento: '/administracion/mantenimiento',
   administracionAyuda: '/administracion/ayuda',
+  administracionAuditoria: '/administracion/auditoria',
 } as const;
 
 export const adminPrimarySections: AdminNavigationItem[] = [
@@ -87,7 +88,7 @@ export const adminPrimarySections: AdminNavigationItem[] = [
     path: adminRoutePaths.reportes,
     group: 'primary',
     description: 'Períodos, filtros, cobros y exportaciones.',
-    permissions: ['reports.managerial.view', 'reports.cash_session.view', 'audit.view'],
+    permissions: ['reports.managerial.view', 'reports.cash_session.view'],
     permissionMode: 'any',
     activePathPrefixes: ['/reportes'],
     deniedReason: 'Requiere permiso para consultar reportes operativos, gerenciales o de caja.',
@@ -133,6 +134,14 @@ export const adminAdministrationItems: AdminNavigationItem[] = [
     description: 'Copias, integridad y estado técnico.',
     permissions: ['backups.view', 'system.status.view'],
     permissionMode: 'any',
+  },
+  {
+    id: 'auditoria',
+    label: 'Auditoría',
+    path: adminRoutePaths.administracionAuditoria,
+    group: 'administration',
+    description: 'Responsables, motivos e historial de cambios.',
+    permissions: ['audit.view'],
   },
   {
     id: 'ayuda',

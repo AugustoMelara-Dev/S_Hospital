@@ -35,7 +35,7 @@ describe('LoginView', () => {
     expect(screen.queryByText(/identidad provisional/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/acceso seguro|estación de trabajo|caja y facturación, listas/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/infraestructura|módulos autorizados|administración|LAN|offline/i)).not.toBeInTheDocument();
-    expect(screen.getByText('Use la cuenta asignada para este equipo.')).toBeVisible();
+    expect(screen.getByText('Ingrese con su usuario y contraseña.')).toBeVisible();
     const heading = screen.getByRole('heading', { name: 'Iniciar sesión' });
     expect(heading).toBeVisible();
     expect(heading.closest('section')).not.toBeNull();

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ChevronDownIcon, RefreshCwIcon } from 'lucide-react';
 import { AdminCallout, AdminChip, AdminField, AdminPanel } from '@/design-system/admin/components';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,8 @@ type Props = {
   categoryOptionsStatus: OpcionesAuxiliaresEstado;
   onRetryCashOptions: () => void;
   onRetryCategoryOptions: () => void;
+  cajerosSearch?: ReactNode;
+  cajasSearch?: ReactNode;
 };
 
 /** Presets visibles como segmentos; `custom` sólo se anuncia como chip. */
@@ -112,6 +114,8 @@ export function ReportesFiltrosPanel({
   categoryOptionsStatus,
   onRetryCashOptions,
   onRetryCategoryOptions,
+  cajerosSearch,
+  cajasSearch,
 }: Props) {
   const disabled = loading;
   const activeCount = countSecondaryFilters(filters, canFilterScope);
@@ -349,6 +353,7 @@ export function ReportesFiltrosPanel({
                       </option>
                     ))}
                   </select>
+                  {cajerosSearch}
                 </AdminField>
 
                 <AdminField label="Caja o turno" htmlFor="reportes-caja">
@@ -377,6 +382,7 @@ export function ReportesFiltrosPanel({
                       </option>
                     ))}
                   </select>
+                  {cajasSearch}
                 </AdminField>
 
                 <AdminField label="Categoría" htmlFor="reportes-categoria">

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { SearchIcon } from 'lucide-react';
 import type { CashSession, InvoiceFilters } from '@/lib/api';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
@@ -19,6 +19,9 @@ type RecibosFiltersProps = {
   canFilterByCash: boolean;
   cashSessions: CashSession[];
   cashSessionsLoading: boolean;
+  cashOptions?: { value: string; label: string }[];
+  cashSearch?: ReactNode;
+  onCashSelectionChange?: (id: number | undefined) => void;
   onApply: (filters: InvoiceFilters) => void;
   onClear: () => void;
 };
@@ -41,6 +44,9 @@ export function RecibosFilters({
   canFilterByCash,
   cashSessions,
   cashSessionsLoading,
+  cashOptions,
+  cashSearch,
+  onCashSelectionChange,
   onApply,
   onClear,
 }: RecibosFiltersProps) {
@@ -169,12 +175,16 @@ export function RecibosFilters({
             <select
               id="recibos-caja"
               value={draft.cash_session_id ?? ''}
-              onChange={(event) => update({ cash_session_id: event.target.value })}
+              onChange={(event) => {
+                const value = event.target.value;
+                update({ cash_session_id: value });
+                onCashSelectionChange?.(value ? Number(value) : undefined);
+              }}
               className={COMPACT_SELECT_CLASS}
               disabled={cashSessionsLoading}
             >
               <option value="">Todas las cajas autorizadas</option>
-              {cashSessions.map((session) => (
+              {cashOptions ? cashOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>) : cashSessions.map((session) => (
                 <option key={session.id} value={String(session.id)}>
                   {session.cash_register
                     ? session.cash_register.name
@@ -183,7 +193,9 @@ export function RecibosFilters({
                   {session.status === 'open' ? 'abierta' : `cerrada ${formatDateTimeEs(session.closed_at)}`}
                 </option>
               ))}
+              {draft.cash_session_id && cashOptions && !cashOptions.some((option) => option.value === String(draft.cash_session_id)) ? <option value={draft.cash_session_id}>Turno seleccionado · selección conservada</option> : null}
             </select>
+            {cashSearch}
             {cashSessionsLoading ? (
               <span className="text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">Consultando cajas…</span>
             ) : null}

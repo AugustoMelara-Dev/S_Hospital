@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { FileDownIcon, FileSpreadsheetIcon } from 'lucide-react';
-import { cash, reports, userSafeErrorMessage, type ExecutiveReportFilters } from '@/lib/api';
-import { queryKeys } from '@/lib/queryKeys';
+import { reports, userSafeErrorMessage, type ExecutiveReportFilters } from '@/lib/api';
 import { downloadBlob } from '@/lib/download';
 import { useCategories } from '@/hooks/useCategories';
 import { useAdminSession } from '@/shell/admin/AdminSessionContext';
@@ -17,7 +15,8 @@ import {
 import { computePresetRange, parseReportDate, type PresetKey } from '@/features/reports/components/reportDateRanges';
 import { SECONDARY_BUTTON } from './reportesUi';
 import { formatDias, formatPeriodo } from './formato';
-import { formatDateTimeEs } from '@/lib/format/formatDate';
+import { useCashSessionOptions } from '@/hooks/useCashSessionOptions';
+import { CashOptionsSearch } from '@/features/cash/components/CashOptionsSearch';
 import {
   ReportesFiltrosPanel,
   METHOD_OPTIONS,
@@ -45,7 +44,7 @@ function optionLabel(options: FiltroOpcion[], value: string | number | undefined
  * del mismo período: cada cohorte viene resuelta por el servidor.
  */
 export function ReportesView() {
-  const { has, onStatus, cashSession } = useAdminSession();
+  const { has, onStatus, cashSession, cashSessionLoading } = useAdminSession();
   const [searchParams, setSearchParams] = useSearchParams();
   const canManagerial = has('reports.managerial.view');
   const canCashSession = has('reports.cash_session.view');
@@ -54,53 +53,43 @@ export function ReportesView() {
   const missingScopedSession = !canManagerial && canCashSession && !cashSession;
 
   const scopedSessionId = !canManagerial && canCashSession ? cashSession?.id : undefined;
-  const initial = useMemo(() => initialFilters(searchParams, scopedSessionId), [searchParams, scopedSessionId]);
-  const [filters, setFilters] = useState<ReportesFiltros>(initial);
-  const [appliedFilters, setAppliedFilters] = useState<ReportesFiltros>(initial);
+  const initial = useMemo(() => initialFilters(searchParams, scopedSessionId, canManagerial), [searchParams, scopedSessionId, canManagerial]);
+  const [draftFilters, setFilters] = useState<ReportesFiltros>(initial);
+  const [storedAppliedFilters, setAppliedFilters] = useState<ReportesFiltros>(initial);
+  // El turno vigente puede llegar o cambiar antes de que se sincronicen los
+  // filtros. Consulta y exportaciones deben usarlo desde ese mismo render.
+  const filters = useMemo(
+    () => canManagerial ? draftFilters : { ...draftFilters, user_id: undefined, cash_session_id: scopedSessionId },
+    [canManagerial, draftFilters, scopedSessionId],
+  );
+  const appliedFilters = useMemo(
+    () => canManagerial ? storedAppliedFilters : { ...storedAppliedFilters, user_id: undefined, cash_session_id: scopedSessionId },
+    [canManagerial, storedAppliedFilters, scopedSessionId],
+  );
   const [preset, setPreset] = useState<PresetKey>(() => detectPreset(initial));
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    const next = initialFilters(searchParams, scopedSessionId);
+    const next = initialFilters(searchParams, scopedSessionId, canManagerial);
     setFilters((current) => (sameFilters(current, next) ? current : next));
     setAppliedFilters((current) => (sameFilters(current, next) ? current : next));
     setPreset(detectPreset(next));
-  }, [searchParams, scopedSessionId]);
+  }, [searchParams, scopedSessionId, canManagerial]);
 
   const rangeError = validateRange(filters.date_from, filters.date_to);
   const hasUnappliedChanges = !sameFilters(filters, appliedFilters);
 
   const reportQuery = useReporteEjecutivo(
     appliedFilters,
-    canView && !missingScopedSession && rangeError === null,
+    canView && !missingScopedSession && (canManagerial || !cashSessionLoading) && rangeError === null,
   );
   const report = reportQuery.data;
 
-  const cashSessionsQuery = useQuery({
-    queryKey: [...queryKeys.cashSessions.all, 'reportes-filtro'],
-    queryFn: () => cash.getCashSessions({ perPage: 50 }),
-    enabled: canManagerial,
-    staleTime: 120_000,
-  });
+  const cashierOptions = useCashSessionOptions('cashiers', { enabled: canManagerial, selectedId: filters.user_id });
+  const sessionOptions = useCashSessionOptions('sessions', { enabled: canManagerial, selectedId: filters.cash_session_id });
   const categoriesQuery = useCategories(true);
-
-  const cajeros = useMemo<FiltroOpcion[]>(() => {
-    const map = new Map<number, string>();
-    for (const session of cashSessionsQuery.data?.data ?? []) {
-      const id = session.user?.id ?? session.user_id;
-      map.set(id, session.user?.name ?? session.user?.username ?? 'Cajero sin nombre registrado');
-    }
-    return [...map.entries()].map(([value, label]) => ({ value: String(value), label }));
-  }, [cashSessionsQuery.data]);
-
-  const cajas = useMemo<FiltroOpcion[]>(
-    () =>
-      (cashSessionsQuery.data?.data ?? []).map((session) => ({
-        value: String(session.id),
-        label: `${session.cash_register?.name ?? 'Caja'} · ${session.user?.name ?? session.user?.username ?? 'Cajero sin nombre registrado'} · ${session.opened_at ? `abierta ${formatDateTimeEs(session.opened_at)}` : 'sin apertura'}`,
-      })),
-    [cashSessionsQuery.data],
-  );
+  const cajeros = cashierOptions.options;
+  const cajas = sessionOptions.options;
 
   const categorias = useMemo<FiltroOpcion[]>(
     () => (categoriesQuery.data ?? []).map((category) => ({ value: String(category.id), label: category.name })),
@@ -108,11 +97,11 @@ export function ReportesView() {
   );
   const cashOptionsStatus: OpcionesAuxiliaresEstado = !canManagerial
     ? 'ready'
-    : cashSessionsQuery.isError
+    : cashierOptions.isError || sessionOptions.isError
       ? 'error'
-      : cashSessionsQuery.isPending
+      : cashierOptions.isPending || sessionOptions.isPending
         ? 'pending'
-        : cajas.length === 0
+        : cajas.length === 0 && cajeros.length === 0
           ? 'empty'
           : 'ready';
   const categoryOptionsStatus: OpcionesAuxiliaresEstado = !canManagerial
@@ -169,12 +158,7 @@ export function ReportesView() {
     }
 
     setAppliedFilters(filters);
-    setSearchParams((current) => {
-      const next = new URLSearchParams(current);
-      next.set('from', filters.date_from);
-      next.set('to', filters.date_to);
-      return next;
-    });
+    setSearchParams((current) => filtersToSearchParams(current, filters));
   }
 
   function expandToThisMonth() {
@@ -183,12 +167,7 @@ export function ReportesView() {
     setFilters(next);
     setAppliedFilters(next);
     setPreset('thisMonth');
-    setSearchParams((current) => {
-      const params = new URLSearchParams(current);
-      params.set('from', range.from);
-      params.set('to', range.to);
-      return params;
-    });
+    setSearchParams((current) => filtersToSearchParams(current, next));
   }
 
   function exportPdf() {
@@ -248,7 +227,7 @@ export function ReportesView() {
     report.cash_sessions.length === 0 &&
     report.gratuities.length === 0;
 
-  const exportBlocked = exporting || hasUnappliedChanges || rangeError !== null || appliedScopeUnavailable;
+  const exportBlocked = exporting || hasUnappliedChanges || rangeError !== null || appliedScopeUnavailable || (!canManagerial && cashSessionLoading);
   const pageHeader = (
     <AdminPageHeader
       headingId="reportes-titulo"
@@ -309,6 +288,15 @@ export function ReportesView() {
     );
   }
 
+  if (missingScopedSession && cashSessionLoading) {
+    return (
+      <section className="flex flex-col gap-5" aria-labelledby="reportes-titulo" aria-busy="true">
+        {pageHeader}
+        <p role="status" className="py-5 text-[color:var(--ui-ink-soft)]">Consultando su caja…</p>
+      </section>
+    );
+  }
+
   if (missingScopedSession) {
     return (
       <section className="flex flex-col gap-5" aria-labelledby="reportes-titulo">
@@ -340,8 +328,10 @@ export function ReportesView() {
         categorias={categorias}
         cashOptionsStatus={cashOptionsStatus}
         categoryOptionsStatus={categoryOptionsStatus}
-        onRetryCashOptions={() => void cashSessionsQuery.refetch()}
+        onRetryCashOptions={() => void Promise.all([cashierOptions.refetch(), sessionOptions.refetch()])}
         onRetryCategoryOptions={() => void categoriesQuery.refetch()}
+        cajerosSearch={canManagerial ? <CashOptionsSearch picker={cashierOptions} label="Buscar cajeros" /> : null}
+        cajasSearch={canManagerial ? <CashOptionsSearch picker={sessionOptions} label="Buscar turnos" /> : null}
       />
 
       {reportQuery.isError ? (
@@ -385,13 +375,38 @@ export function ReportesView() {
   );
 }
 
-function initialFilters(searchParams: URLSearchParams, scopedSessionId?: number): ReportesFiltros {
+function initialFilters(searchParams: URLSearchParams, scopedSessionId?: number, canManagerial = false): ReportesFiltros {
   const defaultRange = computePresetRange('thisMonth');
+  const positiveId = (key: string): number | undefined => {
+    const raw = searchParams.get(key);
+    if (!raw || !/^\d+$/.test(raw)) return undefined;
+    const value = Number(raw);
+    return Number.isSafeInteger(value) && value > 0 ? value : undefined;
+  };
+  const method = searchParams.get('method');
+  const status = searchParams.get('status');
   return {
     date_from: searchParams.get('from') ?? defaultRange.from,
     date_to: searchParams.get('to') ?? defaultRange.to,
-    ...(scopedSessionId !== undefined ? { cash_session_id: scopedSessionId } : {}),
+    cash_session_id: canManagerial ? positiveId('cash_session_id') : scopedSessionId,
+    user_id: canManagerial ? positiveId('user_id') : undefined,
+    category_id: positiveId('category_id'),
+    area_id: positiveId('area_id'),
+    ...(METHOD_OPTIONS.some((option) => option.value === method && method !== 'todos') ? { method: method as ReportesFiltros['method'] } : {}),
+    ...(STATUS_OPTIONS.some((option) => option.value === status && status !== 'todos') ? { status: status as ReportesFiltros['status'] } : {}),
   };
+}
+
+function filtersToSearchParams(current: URLSearchParams, filters: ReportesFiltros): URLSearchParams {
+  const next = new URLSearchParams(current);
+  next.set('from', filters.date_from);
+  next.set('to', filters.date_to);
+  for (const key of ['cash_session_id', 'user_id', 'category_id', 'area_id', 'method', 'status'] as const) {
+    const value = filters[key];
+    if (value === undefined) next.delete(key);
+    else next.set(key, String(value));
+  }
+  return next;
 }
 
 function detectPreset(filters: ExecutiveReportFilters): PresetKey {
@@ -409,6 +424,7 @@ function sameFilters(left: ExecutiveReportFilters, right: ExecutiveReportFilters
     left.user_id === right.user_id &&
     left.cash_session_id === right.cash_session_id &&
     left.category_id === right.category_id &&
+    left.area_id === right.area_id &&
     left.method === right.method &&
     left.status === right.status
   );

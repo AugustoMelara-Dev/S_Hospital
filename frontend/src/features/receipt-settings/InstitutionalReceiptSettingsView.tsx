@@ -1,19 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
-import { CheckIcon, ChevronDownIcon, Loader2Icon, PrinterIcon, SaveIcon } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Loader2Icon, PrinterIcon, SaveIcon } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type ComponentProps, type ReactNode, useRef } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { useForm } from 'react-hook-form';
 import {
   AdminCallout,
-  AdminEmpty,
-  AdminField,
   AdminPanel,
   AdminPanelHeader,
 } from '@/design-system/admin/components';
-import { cn } from '@/lib/utils';
 import { ReceiptSettingsPreview } from './components/ReceiptSettingsPreview';
+import { ReceiptSeriesSection } from './components/ReceiptSeriesSection';
+import { ReceiptPaperChoices } from './components/ReceiptPaperChoices';
+import { ReceiptAdvancedSettingsSection } from './components/ReceiptAdvancedSettingsSection';
+import { Field } from './components/ReceiptSettingsControls';
 import {
   COPIES_MODE_OPTIONS,
   copiesModeLabel,
@@ -24,31 +23,30 @@ import {
   useReceiptEnginePreview,
   type ReceiptEngineDraft,
 } from './useReceiptEnginePreview';
-import { type InstitutionalReceiptSeries, type InstitutionalReceiptSettings, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { type InstitutionalReceiptSettings, type ReceiptPrintProfile, apiClient, userSafeErrorMessage } from '@/lib/api';
 import type { InstitutionalReceiptTemplateCode } from '@/lib/api/types';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 import { downloadBlob } from '@/lib/download';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  PAPER_CHOICES,
-  THERMAL_COMPATIBILITY_CHOICES,
   institutionalPaperFromProfile,
   paperProfileCode,
   type InstitutionalPaper,
 } from '@/modules/receipts/paperPolicy';
 import {
   receiptProfileSchema,
+  seriesSchema,
+  advancedProfileSchema,
+  type SeriesFormData,
+  type AdvancedProfileFormData,
   type ReceiptProfileForm,
 } from './receiptSettings.schema';
 import {
   CHECKBOX_CLASS,
-  FOCUS_RING,
-  INPUT_CLASS,
   PRIMARY_BUTTON,
   SECONDARY_BUTTON,
   SELECT_CLASS,
-  TEXTAREA_CLASS,
 } from './receiptAdminUi';
 
 type InstitutionalReceiptSettingsViewProps = {
@@ -66,49 +64,14 @@ const PROFILE_FORM_DEFAULTS = {
   is_global_default: false,
 } as const;
 
-const seriesSchema = z.object({
-  series: z.string().trim().min(1, 'Requerido'),
-  prefix: z.string().trim().min(1, 'Requerido'),
-  number_format: z.string().trim().min(1, 'Requerido'),
-  min_number: z.number().int().min(1),
-  max_number: z.number().int().min(1),
-  current_number: z.number().int().min(0),
-  range_authorization: z.string().max(120).optional(),
-  legal_text: z.string().max(255).optional(),
-  active: z.boolean(),
-}).refine((data) => data.max_number >= data.min_number, {
-  path: ['max_number'],
-  message: 'El numero final debe ser mayor o igual al inicial.',
-}).refine((data) => data.current_number <= data.max_number, {
-  path: ['current_number'],
-  message: 'El correlativo actual no puede superar el numero final.',
-}).refine((data) => !data.active || (data.current_number + 1 >= data.min_number && data.current_number + 1 <= data.max_number), {
-  path: ['current_number'],
-  message: 'El siguiente recibo debe quedar dentro del rango autorizado.',
-});
-
-const advancedProfileSchema = z.object({
-  width_mm: z.number().positive('Debe ser mayor que cero.'),
-  height_mm: z.number().positive('Debe ser mayor que cero.'),
-  margin_top_mm: z.number().min(0),
-  margin_right_mm: z.number().min(0),
-  margin_bottom_mm: z.number().min(0),
-  margin_left_mm: z.number().min(0),
-  orientation: z.enum(['landscape', 'portrait']),
-  font_family: z.string().trim().min(1),
-  font_scale: z.number().min(0.5).max(2),
-  support_reason: z.string().trim().min(10, 'Documente el motivo de soporte.'),
-});
-
-type SeriesFormData = z.infer<typeof seriesSchema>;
 type ProfileFormData = ReceiptProfileForm;
-type AdvancedProfileFormData = z.infer<typeof advancedProfileSchema>;
 type ProfileDraft = {
   profile: ProfileFormData;
   advanced: AdvancedProfileFormData;
 };
 type ProfileMutationData = ProfileDraft & {
   profileId: number;
+  includeAdvanced: boolean;
   /**
    * Plantilla vigente del perfil que se esta editando. Persistir el valor del
    * perfil (no un literal fijo) conserva `institutional_compact` y no degrada
@@ -118,48 +81,6 @@ type ProfileMutationData = ProfileDraft & {
 };
 
 const DEFAULT_TEMPLATE_CODE: InstitutionalReceiptTemplateCode = 'institutional_classic';
-
-/**
- * Fila de un control de formato: la etiqueta va asociada por `htmlFor`, el
- * error se muestra como texto junto al campo (nunca como color) y el foco es
- * visible. Nunca se renderiza un `<select>` vacío.
- */
-function NumberInput({ value, onChange, className, ...props }: Omit<ComponentProps<'input'>, 'onChange' | 'value' | 'type'> & {
-  value?: number;
-  onChange: (value: number | null) => void;
-}) {
-  return (
-    <input
-      type="number"
-      value={value ?? ''}
-      className={cn(INPUT_CLASS, className)}
-      onChange={(event) => onChange(Number.isNaN(event.target.valueAsNumber) ? null : event.target.valueAsNumber)}
-      {...props}
-    />
-  );
-}
-
-function SelectControl({ id, value, onChange, options, disabled, ariaLabel }: {
-  id: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  disabled?: boolean;
-  ariaLabel?: string;
-}) {
-  return (
-    <select
-      id={id}
-      aria-label={ariaLabel}
-      className={SELECT_CLASS}
-      value={value}
-      disabled={disabled}
-      onChange={(event) => onChange(event.target.value)}
-    >
-      {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-    </select>
-  );
-}
 
 export function InstitutionalReceiptSettingsView({
   canEdit,
@@ -231,6 +152,9 @@ export function InstitutionalReceiptSettingsView({
   const seriesHasDirtyFields = Object.keys(seriesForm.formState.dirtyFields).length > 0;
   const profileIsDirty = profileForm.formState.isDirty;
   const advancedProfileIsDirty = advancedProfileForm.formState.isDirty;
+  // Subscribe even while the advanced fields are collapsed and pristine, so
+  // validation errors remain available when the support panel first opens.
+  const advancedProfileErrors = advancedProfileForm.formState.errors;
 
   const watchedProfile = profileForm.watch();
   const watchedAdvancedProfile = advancedProfileForm.watch();
@@ -244,7 +168,7 @@ export function InstitutionalReceiptSettingsView({
   const advancedDraftIncluded =
     canEditAdvanced &&
     advancedProfileIsDirty &&
-    Object.keys(advancedProfileForm.formState.errors).length === 0;
+    Object.keys(advancedProfileErrors).length === 0;
   const advancedDraftBlocked =
     canEditAdvanced && advancedProfileIsDirty && !advancedDraftIncluded;
   const draftProfile: ReceiptEngineDraft | null = (() => {
@@ -402,7 +326,7 @@ export function InstitutionalReceiptSettingsView({
   });
 
   const profileMutation = useMutation({
-    mutationFn: ({ profileId, profile, advanced, templateCode }: ProfileMutationData) =>
+    mutationFn: ({ profileId, profile, advanced, includeAdvanced, templateCode }: ProfileMutationData) =>
       apiClient.updateReceiptPrintProfile(profileId, {
         copies_mode: profile.copies_mode,
         show_physical_seal_space: profile.show_physical_seal_space,
@@ -410,7 +334,7 @@ export function InstitutionalReceiptSettingsView({
         active: true,
         is_global_default: true,
         template_code: templateCode,
-        ...(canEditAdvanced
+        ...(canEditAdvanced && includeAdvanced
           ? advancedProfilePayload(advanced)
           : {}),
       }),
@@ -587,82 +511,18 @@ export function InstitutionalReceiptSettingsView({
       )}
 
       <div className="flex flex-col gap-4">
-          <AdminPanel as="section" aria-labelledby="receipt-series-title">
-            <AdminPanelHeader
-              headingLevel={2}
-              id="receipt-series-title"
-              title="Serie institucional"
-              description="Numeración que usarán los próximos recibos."
-            />
-            <div className="p-4">
-              {!canEditAdvanced ? (
-                <SeriesReadOnlyState series={activeSeries} />
-              ) : (
-                <form
-                  className="flex flex-col gap-4"
-                  onSubmit={seriesForm.handleSubmit((data) =>
-                    seriesSavingRef.current
-                      ? undefined
-                      : (() => {
-                          seriesSavingRef.current = true;
-                          seriesMutation.mutate(data);
-                        })(),
-                  )}
-                >
-                  <AdminCallout tone="warn" title="Correlativo sensible">
-                    Cambie el correlativo solo con autorización documentada. No lo use para corregir recibos ya emitidos.
-                  </AdminCallout>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <Field label="Serie" id="series" error={seriesForm.formState.errors.series?.message}>
-                      <Controller name="series" control={seriesForm.control} render={({ field }) => <input id="series" className={INPUT_CLASS} disabled={!canEdit} {...field} />} />
-                    </Field>
-                    <Field label="Prefijo" id="prefix" error={seriesForm.formState.errors.prefix?.message}>
-                      <Controller name="prefix" control={seriesForm.control} render={({ field }) => <input id="prefix" className={INPUT_CLASS} disabled={!canEdit} {...field} />} />
-                    </Field>
-                    <Field label="Formato" id="number_format">
-                      <Controller name="number_format" control={seriesForm.control} render={({ field }) => <input id="number_format" className={INPUT_CLASS} disabled={!canEdit} {...field} />} />
-                    </Field>
-                    <Field label="Número inicial" id="min_number">
-                      <Controller name="min_number" control={seriesForm.control} render={({ field }) => <NumberInput id="min_number" disabled={!canEdit} className="w-full" {...field} />} />
-                    </Field>
-                    <Field label="Número final" id="max_number" error={seriesForm.formState.errors.max_number?.message}>
-                      <Controller name="max_number" control={seriesForm.control} render={({ field }) => <NumberInput id="max_number" disabled={!canEdit} className="w-full" {...field} />} />
-                    </Field>
-                    <Field
-                      label="Correlativo actual"
-                      id="current_number"
-                      error={seriesForm.formState.errors.current_number?.message}
-                      hint="El próximo recibo usará este valor + 1."
-                    >
-                      <Controller name="current_number" control={seriesForm.control} render={({ field }) => <NumberInput id="current_number" disabled={!canEdit} className="w-full" {...field} />} />
-                    </Field>
-                    <Field label="Rango autorizado" id="range_authorization">
-                      <Controller name="range_authorization" control={seriesForm.control} render={({ field }) => <input id="range_authorization" className={INPUT_CLASS} disabled={!canEdit} {...field} />} />
-                    </Field>
-                    <div className="flex items-center gap-2 pt-7">
-                      <input
-                        id="active"
-                        type="checkbox"
-                        className={CHECKBOX_CLASS}
-                        checked={seriesForm.watch('active')}
-                        disabled={!canEdit}
-                        onChange={(event) => seriesForm.setValue('active', event.target.checked, { shouldDirty: true })}
-                      />
-                      <label htmlFor="active" className="text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]">Serie activa</label>
-                    </div>
-                  </div>
-                  <Field label="Texto legal del recibo" id="legal_text">
-                    <Controller name="legal_text" control={seriesForm.control} render={({ field }) => <textarea id="legal_text" className={TEXTAREA_CLASS} disabled={!canEdit} {...field} />} />
-                  </Field>
-                  <div className="flex justify-end">
-                    <button type="submit" data-ui-press className={PRIMARY_BUTTON} disabled={!canEdit || seriesMutation.isPending}>
-                      {seriesMutation.isPending ? <Loader2Icon aria-hidden="true" className="size-4 animate-spin" /> : <SaveIcon aria-hidden="true" className="size-4" strokeWidth={1.5} />}Guardar serie
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </AdminPanel>
+          <ReceiptSeriesSection
+            form={seriesForm}
+            canEdit={canEdit}
+            canEditAdvanced={canEditAdvanced}
+            activeSeries={activeSeries}
+            isSaving={seriesMutation.isPending}
+            onSubmit={(data) => {
+              if (seriesSavingRef.current) return;
+              seriesSavingRef.current = true;
+              seriesMutation.mutate(data);
+            }}
+          />
         <div>
           <div className="flex flex-col gap-4">
             <ReceiptProfileProvenance
@@ -680,79 +540,32 @@ export function InstitutionalReceiptSettingsView({
                   description="El sistema ajusta márgenes, fuente y escala automáticamente."
                 />
                 <div className="p-4">
-                  <fieldset disabled={profileControlsDisabled} className="min-w-0 space-y-3">
-                    <legend className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Formatos institucionales</legend>
-                    <div role="radiogroup" aria-label="Formatos institucionales: tipo de papel del recibo" className="grid gap-3 sm:grid-cols-3">
-                      {PAPER_CHOICES.map((choice) => {
-                        const selected = choice.value === paper;
-                        const inputId = `receipt-paper-${choice.value}`;
-                        return (
-                          <label
-                            key={choice.value}
-                            htmlFor={inputId}
-                            className={cn(
-                              'flex min-h-11 cursor-pointer items-start gap-3 rounded-[var(--ui-radius)] border p-3 text-left transition-colors duration-[120ms] ease-[var(--ui-ease-out)]',
-                              selected
-                                ? 'border-[var(--ui-navy)] bg-[var(--ui-surface-alt)]'
-                                : 'border-[var(--ui-control-border)] bg-[var(--ui-surface)]',
-                              profileControlsDisabled && 'cursor-not-allowed opacity-60',
-                            )}
-                          >
-                            <input
-                              type="radio"
-                              id={inputId}
-                              name="receipt-paper"
-                              value={choice.value}
-                              checked={selected}
-                              disabled={profileControlsDisabled}
-                              aria-label={choice.label}
-                              onChange={() => selectPaper(choice.value)}
-                              className="mt-0.5 size-4 shrink-0 accent-[var(--ui-navy)]"
-                            />
-                            <span className="min-w-0">
-                              <span className="flex items-center gap-1.5 text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">
-                                {choice.label}
-                                {selected ? <CheckIcon aria-hidden="true" className="size-3.5 text-[color:var(--ui-navy)]" strokeWidth={2} /> : null}
-                              </span>
-                              <span className="mt-1 block text-[length:var(--ui-text-xs)] leading-relaxed text-[color:var(--ui-ink-soft)]">
-                                {choice.description}
-                              </span>
-                              {selected ? <span className="mt-1 block text-[length:var(--ui-text-xs)] font-semibold text-[color:var(--ui-navy)]">Seleccionado</span> : null}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </fieldset>
-
-                  <fieldset className="mt-5 min-w-0 rounded-[var(--ui-radius)] border border-dashed border-[var(--ui-line-strong)] p-3">
-                    <legend className="px-1 text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Formatos térmicos secundarios</legend>
-                    <p className="text-[length:var(--ui-text-xs)] leading-relaxed text-[color:var(--ui-ink-soft)]">
-                      Disponibles solo para compatibilidad secundaria; no reemplazan el recibo institucional.
-                    </p>
-                    <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {THERMAL_COMPATIBILITY_CHOICES.map((choice) => (
-                        <li key={choice.value} className="min-h-11 rounded-[var(--ui-radius)] border border-[var(--ui-line)] bg-[var(--ui-surface-alt)] p-3">
-                          <span className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">{choice.label}</span>
-                          <span className="mt-1 block text-[length:var(--ui-text-xs)] leading-relaxed text-[color:var(--ui-ink-soft)]">
-                            {choice.description}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </fieldset>
+                  <ReceiptPaperChoices paper={paper} disabled={profileControlsDisabled} canEditAdvanced={canEditAdvanced} onSelectPaper={selectPaper} />
 
                   <form
                     className="mt-5 flex flex-col gap-4"
                     onSubmit={profileForm.handleSubmit(async (data) => {
                       if (profileSavingRef.current) return;
                       if (!selectedProfile) return;
-                      if (canEditAdvanced && !(await advancedProfileForm.trigger())) return;
+                      // Activating the custom profile or making it the default is
+                      // an advanced operation, even with unchanged geometry.
+                      const requiresSupport = selectedProfile.code === paperProfileCode('custom');
+                      if (requiresSupport && !canEditAdvanced) {
+                        setError('El formato personalizado requiere autorización de soporte. Seleccione otro formato institucional.');
+                        return;
+                      }
+                      const advanced = advancedProfileForm.getValues();
+                      const includeAdvanced = canEditAdvanced && (requiresSupport || hasAdvancedProfileChanges(advanced, selectedProfile));
+                      if (includeAdvanced && !(await advancedProfileForm.trigger())) {
+                        setAdvancedOpen(true);
+                        return;
+                      }
                       profileSavingRef.current = true;
                       profileMutation.mutate({
                         profileId: selectedProfile.id,
                         profile: data,
-                        advanced: advancedProfileForm.getValues(),
+                        advanced,
+                        includeAdvanced,
                         templateCode: selectedProfile.template_code ?? DEFAULT_TEMPLATE_CODE,
                       });
                     })}
@@ -837,95 +650,12 @@ export function InstitutionalReceiptSettingsView({
                     ) : null}
 
                     {canEditAdvanced ? (
-                      <div className="border-t border-[var(--ui-line)] pt-3">
-                        <button
-                          type="button"
-                          data-ui-press
-                          aria-expanded={advancedOpen}
-                          aria-controls="receipt-advanced-fields"
-                          onClick={() => setAdvancedOpen((current) => !current)}
-                          className={cn('flex w-full items-center justify-between gap-2 text-left', FOCUS_RING)}
-                        >
-                          <span className="text-[length:var(--ui-text-sm)] font-semibold text-[color:var(--ui-ink)]">Ajustes técnicos avanzados</span>
-                          <ChevronDownIcon
-                            aria-hidden="true"
-                            strokeWidth={1.5}
-                            className={cn('size-4 shrink-0 text-[color:var(--ui-ink-soft)] transition-transform duration-[120ms] ease-[var(--ui-ease-out)]', advancedOpen && 'rotate-180')}
-                          />
-                        </button>
-                        {advancedOpen ? (
-                          <div id="receipt-advanced-fields" className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {([
-                              ['width_mm', 'Ancho mm'],
-                              ['height_mm', 'Alto mm'],
-                              ['margin_top_mm', 'Margen sup. (mm)'],
-                              ['margin_right_mm', 'Margen der. (mm)'],
-                              ['margin_bottom_mm', 'Margen inf. (mm)'],
-                              ['margin_left_mm', 'Margen izq. (mm)'],
-                            ] as const).map(([name, label]) => (
-                              <Controller
-                                key={name}
-                                control={advancedProfileForm.control}
-                                name={name}
-                                render={({ field, fieldState }) => (
-                                  <Field id={`advanced_${name}`} label={label} error={fieldState.error?.message}>
-                                    <NumberInput
-                                      id={`advanced_${name}`}
-                                      min={0}
-                                      step={0.1}
-                                      value={field.value}
-                                      onBlur={field.onBlur}
-                                      onChange={(value) => field.onChange(value ?? 0)}
-                                      className="w-full"
-                                    />
-                                  </Field>
-                                )}
-                              />
-                            ))}
-                            <Controller
-                              control={advancedProfileForm.control}
-                              name="orientation"
-                              render={({ field }) => (
-                                <Field id="advanced_orientation" label="Orientación">
-                                  <SelectControl
-                                    id="advanced_orientation"
-                                    value={field.value}
-                                    onChange={field.onChange}
-                                    options={[
-                                      { value: 'landscape', label: 'Horizontal' },
-                                      { value: 'portrait', label: 'Vertical' },
-                                    ]}
-                                  />
-                                </Field>
-                              )}
-                            />
-                            <Field id="advanced_font_family" label="Fuente" error={advancedProfileForm.formState.errors.font_family?.message}>
-                              <input id="advanced_font_family" className={INPUT_CLASS} {...advancedProfileForm.register('font_family')} />
-                            </Field>
-                            <Controller
-                              control={advancedProfileForm.control}
-                              name="font_scale"
-                              render={({ field, fieldState }) => (
-                                <Field id="advanced_font_scale" label="Escala" error={fieldState.error?.message}>
-                                  <NumberInput
-                                    id="advanced_font_scale"
-                                    min={0.5}
-                                    max={2}
-                                    step={0.05}
-                                    value={field.value}
-                                    onChange={(value) => field.onChange(value ?? 1)}
-                                  />
-                                </Field>
-                              )}
-                            />
-                            <div className="md:col-span-2 xl:col-span-3">
-                              <Field id="advanced_support_reason" label="Motivo de soporte" error={advancedProfileForm.formState.errors.support_reason?.message}>
-                                <textarea id="advanced_support_reason" rows={3} className={TEXTAREA_CLASS} {...advancedProfileForm.register('support_reason')} />
-                              </Field>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
+                      <ReceiptAdvancedSettingsSection
+                        form={advancedProfileForm}
+                        errors={advancedProfileErrors}
+                        open={advancedOpen}
+                        onToggle={() => setAdvancedOpen((current) => !current)}
+                      />
                     ) : null}
 
                     <AdminCallout tone="info" title="Antes de imprimir">
@@ -964,6 +694,24 @@ export function InstitutionalReceiptSettingsView({
       </div>
     </>
   );
+}
+
+function hasAdvancedProfileChanges(values: AdvancedProfileFormData, profile: ReceiptPrintProfile) {
+  // Compare against persisted values: restoring a paper draft resets RHF's dirty
+  // baseline, but must still require an audited reason for technical changes.
+  const persisted = {
+    width_mm: Number(profile.width_mm ?? 215.9),
+    height_mm: Number(profile.height_mm ?? 139.7),
+    margin_top_mm: Number(profile.margin_top_mm ?? 6),
+    margin_right_mm: Number(profile.margin_right_mm ?? 6),
+    margin_bottom_mm: Number(profile.margin_bottom_mm ?? 6),
+    margin_left_mm: Number(profile.margin_left_mm ?? 6),
+    orientation: profile.orientation ?? 'landscape',
+    font_family: profile.font_family ?? 'Arial, sans-serif',
+    font_scale: Number(profile.font_scale ?? 1),
+  };
+  return (Object.keys(persisted) as (keyof typeof persisted)[])
+    .some((key) => values[key] !== persisted[key]);
 }
 
 function advancedProfilePayload(values: AdvancedProfileFormData) {
@@ -1062,26 +810,6 @@ function ProvenanceItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Field({
-  children,
-  error,
-  hint,
-  id,
-  label,
-}: {
-  children: ReactNode;
-  error?: string;
-  hint?: ReactNode;
-  id: string;
-  label: string;
-}) {
-  return (
-    <AdminField htmlFor={id} label={label} error={error} hint={hint}>
-      {children}
-    </AdminField>
-  );
-}
-
 function CheckboxField({
   checked,
   disabled,
@@ -1106,50 +834,6 @@ function CheckboxField({
         onChange={(event) => onChange(event.target.checked)}
       />
       <label htmlFor={id} className="text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]">{label}</label>
-    </div>
-  );
-}
-
-function SeriesReadOnlyState({ series }: { series: InstitutionalReceiptSeries | null }) {
-  if (!series) {
-    return (
-      <div data-testid="series-readonly-empty">
-        <AdminEmpty
-          title="Sin serie institucional configurada"
-          description="El sistema aun no tiene una serie activa. Solicite a soporte tecnico autorizado que la configure."
-        />
-      </div>
-    );
-  }
-
-  const formatRange = `${series.min_number.toLocaleString('es-HN')} a ${series.max_number.toLocaleString('es-HN')}`;
-  const correlativo = series.current_number.toLocaleString('es-HN');
-  const next = (series.current_number + 1).toLocaleString('es-HN');
-
-  return (
-    <div data-testid="series-readonly-state" className="grid gap-3 sm:grid-cols-2">
-      <ReadOnlyField label="Serie" value={series.series} />
-      <ReadOnlyField label="Prefijo" value={series.prefix} />
-      <ReadOnlyField label="Formato" value={series.number_format} />
-      <ReadOnlyField label="Rango autorizado" value={formatRange} />
-      <ReadOnlyField label="Correlativo actual" value={correlativo} hint={`Próximo recibo: ${next}`} />
-      <ReadOnlyField label="Estado" value={series.active ? 'Activa' : 'Inactiva'} />
-      {series.range_authorization ? (
-        <ReadOnlyField label="Autorización" value={series.range_authorization} />
-      ) : null}
-      {series.legal_text ? (
-        <ReadOnlyField label="Texto legal" value={series.legal_text} multiline />
-      ) : null}
-    </div>
-  );
-}
-
-function ReadOnlyField({ label, value, hint, multiline }: { label: string; value: string; hint?: string; multiline?: boolean }) {
-  return (
-    <div className="border-b border-[var(--ui-line)] py-3 last:border-b-0">
-      <p className="text-[length:var(--ui-text-xs)] font-semibold uppercase tracking-wide text-[color:var(--ui-ink-soft)]">{label}</p>
-      <p className={cn('mt-1 text-[length:var(--ui-text-sm)] font-medium text-[color:var(--ui-ink)]', multiline && 'whitespace-pre-line')}>{value}</p>
-      {hint ? <p className="mt-1 text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">{hint}</p> : null}
     </div>
   );
 }

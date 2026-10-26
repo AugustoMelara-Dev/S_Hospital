@@ -2,23 +2,26 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { seriesSchema } from '../features/receipt-settings/receiptSettings.schema';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const readSource = (relative: string) => readFileSync(resolve(here, relative), 'utf-8');
 
 describe('Pre-installation audit: institutional receipt series form', () => {
   it('does not require a receipt_number_color in the normal series schema', () => {
-    const source = readSource('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx');
-
-    const seriesSchemaMatch = source.match(/const\s+seriesSchema\s*=\s*z\.object\(\s*\{([\s\S]*?)\}\)/);
-    expect(seriesSchemaMatch, 'seriesSchema debe seguir declarada en el modulo de recibos.').not.toBeNull();
-    const seriesSchemaBody = seriesSchemaMatch?.[1] ?? '';
-
-    expect(seriesSchemaBody).not.toContain('receipt_number_color');
+    // El formulario importa el esquema compartido; comprobar el contrato de
+    // validación evita acoplar esta regresión a su ubicación en la vista.
+    const values = {
+      series: 'REC-A', prefix: 'RA', number_format: '{series}-{number:08}',
+      min_number: 1, max_number: 100, current_number: 0, active: true,
+    };
+    expect(seriesSchema.safeParse(values).success).toBe(true);
+    expect(seriesSchema.shape).not.toHaveProperty('receipt_number_color');
   });
 
   it('does not render a color picker in the normal institutional series form', () => {
-    const source = readSource('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx');
+    const source = readSource('../features/receipt-settings/InstitutionalReceiptSettingsView.tsx')
+      + readSource('../features/receipt-settings/components/ReceiptSeriesSection.tsx');
 
     const typeColorMatch = source.match(/<Input\s+id="receipt_number_color"\s+type="color"/);
     expect(typeColorMatch, 'El selector de color no debe renderizarse en el formulario normal de serie.').toBeNull();

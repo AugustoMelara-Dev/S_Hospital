@@ -335,6 +335,7 @@ export function UsersView({
     <div className="flex flex-col gap-4">
       <UserManagementOverview
         activeUsersCount={activeUsersCount}
+        canManageRoles={canManageRoles}
         editableRolesCount={editableRolesCount}
         onCreateUser={handleOpenCreateModal}
         pendingPasswordUsersCount={pendingPasswordUsersCount}

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { apiClient, type AuthUser, type Invoice, type Payment } from '@/lib/api';
+import { apiClient, cash, type AuthUser, type Invoice, type Payment } from '@/lib/api';
 import { AdminSessionProvider } from '@/shell/admin/AdminSessionContext';
 import { RecibosView } from './RecibosView';
 
@@ -77,6 +77,23 @@ function renderView(permissions: string[], initialEntries = ['/recibos']) {
 }
 
 describe('RecibosView', () => {
+  it('searches authorized historical turns on the server before filtering receipts', async () => {
+    const getInvoices = vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({ data: [], meta: { current_page: 1, per_page: 10, total: 0 } });
+    const getOptions = vi.spyOn(cash, 'getCashSessionOptions').mockImplementation(async ({ search, selectedId }) => ({
+      data: search === 'Emergencia' ? [{ value: '99', label: 'Turno histórico de Emergencia' }] : [{ value: '1', label: 'Turno reciente' }], selected: selectedId === 99 ? { value: '99', label: 'Turno histórico de Emergencia' } : null, meta: { current_page: 1, per_page: 20, total: search ? 1 : 80 },
+    }));
+    renderView(['invoices.view', 'cash.view']);
+    await userEvent.type(screen.getByLabelText('Buscar turnos autorizados'), 'Emergencia');
+    await screen.findByRole('option', { name: 'Turno histórico de Emergencia' });
+    await userEvent.selectOptions(screen.getByLabelText('Caja autorizada'), '99');
+    await userEvent.clear(screen.getByLabelText('Buscar turnos autorizados'));
+    await userEvent.type(screen.getByLabelText('Buscar turnos autorizados'), 'Otra búsqueda');
+    await waitFor(() => expect(getOptions).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'Otra búsqueda' })));
+    expect(await screen.findByRole('option', { name: 'Turno histórico de Emergencia' })).toHaveValue('99');
+    await userEvent.click(screen.getByRole('button', { name: /^buscar$/i }));
+    await waitFor(() => expect(getInvoices).toHaveBeenLastCalledWith(expect.objectContaining({ cash_session_id: '99' })));
+    expect(getOptions).toHaveBeenLastCalledWith(expect.objectContaining({ kind: 'sessions', search: 'Otra búsqueda', selectedId: 99, page: 1 }));
+  });
   afterEach(() => {
     vi.restoreAllMocks();
   });

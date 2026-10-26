@@ -8,8 +8,6 @@ describe('displayHospitalName', () => {
     expect(DEFAULT_HOSPITAL_NAME).toBe('S_Hospital');
     expect(displayHospitalName(null)).toBe('S_Hospital');
     expect(displayHospitalName('')).toBe('S_Hospital');
-    expect(displayHospitalName('Hospital San Isidro')).toBe('S_Hospital');
-    expect(displayHospitalName('Hospital General San Isidro')).toBe('S_Hospital');
     expect(displayHospitalName(retiredProductName)).toBe('S_Hospital');
     expect(displayHospitalName(`S_Hospital ${retiredProductName}`)).toBe('S_Hospital');
     expect(displayHospitalName(`Hospital ${'De' + 'mo'}`)).toBe('S_Hospital');
@@ -17,5 +15,7 @@ describe('displayHospitalName', () => {
 
   it('keeps the configured hospital name when it is not a retired internal name', () => {
     expect(displayHospitalName('Hospital San Rafael')).toBe('Hospital San Rafael');
+    expect(displayHospitalName('Hospital San Isidro')).toBe('Hospital San Isidro');
+    expect(displayHospitalName('  Hospital General San Isidro  ')).toBe('Hospital General San Isidro');
   });
 });

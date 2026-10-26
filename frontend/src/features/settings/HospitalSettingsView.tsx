@@ -6,6 +6,7 @@ import { AdminCallout, AdminDialog, AdminField, AdminPanel, AdminPanelHeader } f
 import { type FiscalSettings, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { safeClientMessage } from '@/lib/support/clientIssueLog';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { useUpdateFiscalSettings } from '@/hooks/useFiscalSettings';
 import { INPUT_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON, STICKY_ACTIONS, TEXTAREA_CLASS } from './settingsUi';
 import type { OperationalStatusReporter } from '@/app/operationalStatus';
 
@@ -50,6 +51,7 @@ function HospitalField({ children, error, hint, id, label, required }: {
 }
 
 export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsViewProps) {
+  const updateFiscalSettings = useUpdateFiscalSettings();
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -138,7 +140,7 @@ export function HospitalSettingsView({ canEdit, onStatus }: HospitalSettingsView
     setError('');
     onStatus({ key: 'settings:hospital:save', level: 'info', message: 'Guardando datos del hospital...', toast: false });
     try {
-      const updated = await apiClient.updateFiscalSettings({
+      const updated = await updateFiscalSettings.mutateAsync({
         hospital_name: data.hospital_name,
         rtn: data.rtn ?? '',
         address: optionalText(data.address ?? '') ?? '',

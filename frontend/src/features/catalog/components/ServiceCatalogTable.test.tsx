@@ -89,6 +89,17 @@ describe('ServiceCatalogTable', () => {
     expect(screen.getByRole('menuitem', { name: /ver historial/i })).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /^editar$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /activar|desactivar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /editar precio/i })).not.toBeInTheDocument();
+  });
+
+  it.each([false, true])('offers a visible price edit action without opening the row menu (mobile: %s)', async (isMobile) => {
+    mediaState.isMobile = isMobile;
+    const user = userEvent.setup();
+    const props = baseProps();
+    render(<ServiceCatalogTable {...props} />);
+    await user.click(screen.getByRole('button', { name: /editar precio de glucosa/i }));
+    expect(props.onRowActions.onEdit).toHaveBeenCalledWith(props.services[0]);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
   it('describes the erythropoietin rule with the tariff from the catalog, never with a hardcoded amount', () => {

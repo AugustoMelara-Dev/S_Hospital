@@ -10,6 +10,7 @@ import type { AuthUser } from '@/lib/api';
 
 // Las superficies reales se aíslan: esta prueba verifica el shell de
 // administración (navegación interna, permisos y sub-rutas), no cada vista.
+vi.mock('./AuditView', () => ({ AuditView: () => <div data-testid="surface-auditoria"><h1>Auditoría</h1></div> }));
 vi.mock('@/features/catalog/CatalogView', () => ({
   CatalogView: () => <div data-testid="surface-catalogo"><h1>Productos y servicios</h1></div>,
 }));
@@ -203,5 +204,18 @@ describe('AdministracionView: navegación interna y permisos', () => {
       'aria-current',
       'page',
     );
+  });
+});
+
+describe('Administración auditoría', () => {
+  it('abre auditoría para audit.view', async () => {
+    renderAt('/administracion/auditoria', ['audit.view']);
+    expect(await screen.findByTestId('surface-auditoria')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Auditoría$/ })).toHaveAttribute('aria-current', 'page');
+  });
+  it('deniega acceso directo sin audit.view', async () => {
+    renderAt('/administracion/auditoria', ['catalog.view']);
+    expect(await screen.findByRole('heading', { level: 1, name: /sin permisos/i })).toBeInTheDocument();
+    expect(screen.queryByTestId('surface-auditoria')).not.toBeInTheDocument();
   });
 });

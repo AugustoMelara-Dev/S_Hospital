@@ -17,6 +17,34 @@ type HelpTopic = {
 
 const DAILY_TOPICS: HelpTopic[] = [
   {
+    id: 'sin-cobro', title: 'Emitir sin cobro',
+    body: 'Una operación con total cero se emite sin registrar un pago ni una entrada de efectivo.',
+    to: adminRoutePaths.cobrar, linkLabel: 'Preparar emisión sin cobro',
+    permissions: ['invoices.create', 'catalog.view', 'cash.view', 'payments.create', 'receipts.view'], permissionMode: 'all',
+    steps: ['Abra su caja, escriba el nombre del paciente y agregue los conceptos autorizados.', 'Revise el total cero y confirme Emitir sin cobro una sola vez.', 'Compruebe el documento en Recibos; no registre un pago para completar una emisión gratuita.'],
+  },
+  {
+    id: 'dialisis', title: 'Eritropoyetina con receta de diálisis',
+    body: 'La gratuidad afecta sólo la línea elegible de eritropoyetina; los demás productos y servicios se cobran normalmente.',
+    to: adminRoutePaths.cobrar, linkLabel: 'Revisar cuenta con diálisis',
+    permissions: ['invoices.create', 'catalog.view', 'cash.view', 'payments.create', 'receipts.view'], permissionMode: 'all',
+    steps: ['Agregue el medicamento elegible y confirme la receta de diálisis en la cuenta.', 'Revise el beneficio de esa línea y el importe de los demás conceptos.', 'Confirme Emitir sin cobro si todo el total es cero; si queda saldo, cobre ese saldo.'],
+  },
+  {
+    id: 'anulacion', title: 'Anular una operación',
+    body: 'La anulación requiere permiso y motivo; una operación cobrada requiere revisar la reversión.',
+    to: adminRoutePaths.recibos, linkLabel: 'Revisar operación para anular',
+    permissions: ['invoices.view', 'invoices.void'], permissionMode: 'all',
+    steps: ['Busque la operación y abra su detalle para comprobar paciente, estado e importe.', 'Use Anular sólo si la operación es elegible y escriba el motivo real.', 'Confirme y compruebe el estado anulado; no borre ni reemplace el comprobante original.'],
+  },
+  {
+    id: 'reversion', title: 'Revertir una operación cobrada',
+    body: 'Revise primero el pago y el turno; la reversión deja trazabilidad de la operación y del ajuste autorizado.',
+    to: adminRoutePaths.recibos, linkLabel: 'Revisar operación para revertir',
+    permissions: ['invoices.view', 'invoices.reverse'], permissionMode: 'all',
+    steps: ['Abra el detalle de la operación cobrada y compruebe su pago, caja y cajero.', 'Seleccione Revertir cuando esté habilitado, registre el motivo y revise el efecto indicado antes de confirmar.', 'Si el sistema bloquea la reversión, solicite revisión al supervisor; no cree cobros ni movimientos para compensarla por su cuenta.'],
+  },
+  {
     id: 'cobrar',
     title: 'Cobrar una cuenta',
     body: 'Escriba el nombre del paciente, agregue los conceptos y revise el total antes de confirmar.',
@@ -53,6 +81,7 @@ const DAILY_TOPICS: HelpTopic[] = [
       'Seleccione la caja y registre el monto inicial antes del primer cobro.',
       'Revise movimientos y efectivo al terminar el turno.',
       'Explique cualquier diferencia y confirme el cierre una sola vez.',
+      'Si el cierre está bloqueado, revise las operaciones pendientes y resuélvalas con una persona autorizada; no altere el efectivo para forzar el cierre.',
     ],
     permissions: ['cash.view'],
   },
@@ -67,12 +96,18 @@ const DAILY_TOPICS: HelpTopic[] = [
       'Pulse Aplicar y revise que las cifras correspondan al período.',
       'Descargue PDF o Excel conservando esos mismos filtros.',
     ],
-    permissions: ['reports.managerial.view', 'reports.cash_session.view', 'audit.view'],
+    permissions: ['reports.managerial.view', 'reports.cash_session.view'],
     permissionMode: 'any',
   },
 ];
 
 const ADMIN_TOPICS: HelpTopic[] = [
+  {
+    id: 'auditoria', title: 'Consultar auditoría',
+    body: 'Consulte quién realizó una operación, cuándo ocurrió y el motivo registrado. El historial es de sólo lectura.',
+    to: adminRoutePaths.administracionAuditoria, linkLabel: 'Abrir Auditoría', permissions: ['audit.view'],
+    steps: ['Busque por nombre o usuario, acción y fechas.', 'Aplique los filtros y avance entre páginas para revisar el período completo.', 'Compruebe responsable, resultado y motivo; solicite revisión si falta una explicación.'],
+  },
   {
     id: 'catalogo',
     title: 'Administrar catálogo y precios',

@@ -81,6 +81,9 @@ describe('R2-QA-01 // invalidacion real de facturacion', () => {
       queryKeys.cashSessions.all,
       queryKeys.cashSessions.current(),
       queryKeys.reports.dashboard(),
+      queryKeys.reports.executive({ date_from: '2026-06-01', date_to: '2026-06-02' }),
+      queryKeys.reports.cashSession(42),
+      queryKeys.reports.today(),
       queryKeys.settings.all,
     ]);
 
@@ -91,6 +94,9 @@ describe('R2-QA-01 // invalidacion real de facturacion', () => {
     expect(isInvalidated(client, queryKeys.cashSessions.all)).toBe(true);
     expect(isInvalidated(client, queryKeys.cashSessions.current())).toBe(true);
     expect(isInvalidated(client, queryKeys.reports.dashboard())).toBe(true);
+    expect(isInvalidated(client, queryKeys.reports.executive({ date_from: '2026-06-01', date_to: '2026-06-02' }))).toBe(true);
+    expect(isInvalidated(client, queryKeys.reports.cashSession(42))).toBe(true);
+    expect(isInvalidated(client, queryKeys.reports.today())).toBe(true);
     expect(isInvalidated(client, queryKeys.settings.all)).toBe(false);
   });
 });

@@ -1,10 +1,11 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cash, type CashSession } from '@/lib/api';
 import { CashSessionHistory } from './CashSessionHistory';
+import { filtersFromSearchParams } from '@/features/invoices/history/invoiceHistoryParams';
 
 function session(overrides: Partial<CashSession> = {}): CashSession {
   return {
@@ -38,9 +39,39 @@ function renderHistory(canViewInvoices = true) {
 }
 
 describe('CashSessionHistory', () => {
+  beforeEach(() => {
+    vi.spyOn(cash, 'getCashSessionOptions').mockImplementation(async ({ kind }) => ({ data: [{ value: kind === 'registers' ? '2' : '4', label: kind === 'registers' ? 'Caja Emergencia' : 'Cajera Central' }], selected: null, meta: { current_page: 1, per_page: 20, total: 1 } }));
+  });
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+  });
+
+  it('applies dates, register, operator and shortage filters to the complete server history', async () => {
+    const getSessions = vi.spyOn(cash, 'getCashSessions').mockImplementation(async (filters) => ({ data: filters?.difference ? [] : [session()], meta: { current_page: 1, per_page: 10, total: filters?.difference ? 0 : 1 } }));
+    renderHistory();
+    await screen.findByRole('option', { name: 'Caja Emergencia' });
+    fireEvent.change(screen.getByLabelText('Desde apertura'), { target: { value: '2026-06-01' } });
+    fireEvent.change(screen.getByLabelText('Hasta apertura'), { target: { value: '2026-06-02' } });
+    fireEvent.change(screen.getByLabelText('Caja física del histórico'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText('Operador del histórico'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('Diferencia del cierre'), { target: { value: 'shortage' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar al histórico' }));
+    await waitFor(() => expect(getSessions).toHaveBeenLastCalledWith({ page: 1, perPage: 10, date_from: '2026-06-01', date_to: '2026-06-02', cash_register_id: 2, user_id: 4, difference: 'shortage' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar histórico' }));
+    expect(await screen.findByRole('table', { name: /turnos de caja registrados/i })).toBeVisible();
+    expect(screen.getByLabelText('Desde apertura')).toHaveValue('');
+  });
+
+  it('does not request an inverted date range', async () => {
+    const getSessions = vi.spyOn(cash, 'getCashSessions').mockResolvedValue({ data: [], meta: { current_page: 1, per_page: 10, total: 0 } });
+    renderHistory();
+    await waitFor(() => expect(getSessions).toHaveBeenCalledOnce());
+    fireEvent.change(screen.getByLabelText('Desde apertura'), { target: { value: '2026-06-03' } });
+    fireEvent.change(screen.getByLabelText('Hasta apertura'), { target: { value: '2026-06-02' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar al histórico' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('La fecha inicial no puede ser posterior a la final.');
+    expect(getSessions).toHaveBeenCalledOnce();
   });
 
   it('loads real sessions and preserves pending amounts apart from legitimate zero', async () => {
@@ -68,8 +99,10 @@ describe('CashSessionHistory', () => {
     expect(table).not.toHaveTextContent(/#12|#11|EMERG-01/);
     expect(within(rows[1]).getByRole('link', { name: /ver operaciones/i })).toHaveAttribute(
       'href',
-      '/recibos?reconciliation_cash_session_id=12',
+      '/recibos?cash_session_id=12',
     );
+    const href = within(rows[1]).getByRole('link', { name: /ver operaciones/i }).getAttribute('href')!;
+    expect(filtersFromSearchParams(new URL(href, 'http://hospital.local').searchParams).cash_session_id).toBe('12');
   });
 
   it('paginates through the server result without replacing missing values with zero', async () => {

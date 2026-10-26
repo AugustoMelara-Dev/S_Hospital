@@ -296,6 +296,19 @@ function ServiceActions({
   onToggle: (service: Service) => void;
 }) {
   return (
+    <div className="flex items-center justify-end gap-2">
+      {canManage ? (
+        <button
+          type="button"
+          data-ui-press
+          className={SECONDARY_BUTTON}
+          aria-label={`Editar precio de ${service.name}`}
+          onClick={() => onEdit(service)}
+        >
+          <PencilIcon aria-hidden="true" className="size-4" strokeWidth={1.5} />
+          Editar precio
+        </button>
+      ) : null}
     <AdminMenuRoot>
       <AdminMenuTrigger asChild>
         <button
@@ -332,6 +345,7 @@ function ServiceActions({
         ) : null}
       </AdminMenuContent>
     </AdminMenuRoot>
+    </div>
   );
 }
 

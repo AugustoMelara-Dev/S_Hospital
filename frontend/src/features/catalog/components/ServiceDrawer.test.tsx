@@ -6,6 +6,27 @@ import { ServiceDrawer } from './ServiceDrawer';
 const noop = () => undefined;
 
 describe('ServiceDrawer', () => {
+  it.each(['before', 'after'])('submits the category and area shown when catalogs arrive %s a mounted drawer opens', async (arrival) => {
+    const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
+      id: 999, category_id: 17, area_id: 28, name: 'Concepto con catálogos cargados',
+      slug: 'concepto', price: '100.00', taxable: false, active: true,
+      scan_code: null, barcode: null, qr_code: null, special_rule_code: null,
+    });
+    const props = { onOpenChange: noop, service: null, onSuccess: noop };
+    const view = render(<ServiceDrawer {...props} open={false} categories={[]} areas={[]} />);
+    const categories = [{ id: 17, name: 'Servicios generales' }];
+    const areas = [{ id: 28, name: 'Consulta externa' }];
+    if (arrival === 'before') view.rerender(<ServiceDrawer {...props} open={false} categories={categories} areas={areas} />);
+    else view.rerender(<ServiceDrawer {...props} open categories={[]} areas={[]} />);
+    view.rerender(<ServiceDrawer {...props} open categories={categories} areas={areas} />);
+    expect(await screen.findByRole('combobox', { name: 'Categoría' })).toHaveValue('17');
+    expect(screen.getByRole('combobox', { name: 'Área' })).toHaveValue('28');
+    fireEvent.change(screen.getByLabelText(/^nombre/i), { target: { value: 'Concepto con catálogos cargados' } });
+    fireEvent.change(screen.getByLabelText(/^precio/i), { target: { value: '100.00' } });
+    fireEvent.click(screen.getByRole('button', { name: /^crear$/i }));
+    await waitFor(() => expect(saveService).toHaveBeenCalledWith(expect.objectContaining({ category_id: 17, area_id: 28 }), undefined));
+  });
+
   beforeEach(() => {
     vi.restoreAllMocks();
     Element.prototype.scrollIntoView = vi.fn();

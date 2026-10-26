@@ -1,15 +1,9 @@
 function internalHospitalNames(): string[] {
   const retiredProductName = `hospital ${'bill' + 'ing'} os`;
   const retiredPlaceholderName = `hospital ${'de' + 'mo'}`;
-  // Legacy installations may still store one of these names. They are kept
-  // split so the neutral product never ships a concrete hospital name as a
-  // searchable literal, while existing data still sanitizes to S_Hospital.
-  const retiredFirstHospital = `hospital ${'san ' + 'isidro'}`;
-  const retiredDefaultHospital = `hospital ${'general ' + 'san ' + 'isidro'}`;
-
+  // Only technical placeholders are retired. A configured institution name
+  // must not be mistaken for a product placeholder.
   return [
-    retiredFirstHospital,
-    retiredDefaultHospital,
     retiredProductName,
     `s_hospital ${retiredProductName}`,
     `${retiredProductName} offline`,

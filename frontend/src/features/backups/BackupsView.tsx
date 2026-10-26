@@ -233,6 +233,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
     try {
       const backup = await createBackupMutation.mutateAsync();
+      setConfirmCreateOpen(false);
       setPage(1);
       onStatus({
         key: 'backups:create:success',
@@ -296,7 +297,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 busy={busy}
                 createDisabled={authoritativePendingCount !== null && authoritativePendingCount > 0}
                 creatingBackup={creatingBackup}
-                onCreateRequest={() => setConfirmCreateOpen(true)}
+                onCreateRequest={() => { setManualError(''); setConfirmCreateOpen(true); }}
                 onRefresh={refreshOperationalStatus}
               />
             ) : (
@@ -457,6 +458,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         )}
       >
         <p className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">Confirme la creación del respaldo local antes de continuar.</p>
+        {manualError ? <p role="alert" className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-danger)]">{manualError}</p> : null}
       </AdminDialog>
 
       <BackupDownloadDialog

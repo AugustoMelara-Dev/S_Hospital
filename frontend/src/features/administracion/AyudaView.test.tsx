@@ -48,7 +48,7 @@ describe('AyudaView por permisos', () => {
     expect(within(daily).getByRole('link', { name: /abrir cobrar/i })).toHaveAttribute('href', '/cobrar');
     expect(within(daily).getByRole('link', { name: /abrir recibos/i })).toHaveAttribute('href', '/recibos');
     expect(within(daily).getByRole('link', { name: /abrir caja/i })).toHaveAttribute('href', '/caja');
-    expect(within(daily).getAllByText(/cómo hacerlo/i)).toHaveLength(3);
+    expect(within(daily).getAllByText(/cómo hacerlo/i)).toHaveLength(5);
     expect(within(daily).getByText(/si la impresión falla.*no cobre otra vez/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /impresión avanzada/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /respaldos/i })).not.toBeInTheDocument();
@@ -146,5 +146,25 @@ describe('AyudaView por permisos', () => {
 
     expect(screen.getByText(/^sin tareas habilitadas$/i)).toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+});
+
+describe('Ayuda para casos especiales', () => {
+  it('explica emisión sin cobro, gratuidad por línea y cierre bloqueado', () => {
+    renderHelp(['invoices.create', 'catalog.view', 'cash.view', 'payments.create', 'receipts.view']);
+    expect(screen.getByText(/^Emitir sin cobro$/i)).toBeInTheDocument();
+    expect(screen.getByText(/sólo la línea elegible de eritropoyetina/i)).toBeInTheDocument();
+    expect(screen.getByText(/si el cierre está bloqueado/i)).toBeInTheDocument();
+  });
+  it('distingue anulación de reversión y conserva el historial', () => {
+    renderHelp(['invoices.view', 'invoices.void', 'invoices.reverse']);
+    expect(screen.getByText(/^Anular una operación$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Revertir una operación cobrada$/i)).toBeInTheDocument();
+    expect(screen.getByText(/no borre ni reemplace el comprobante original/i)).toBeInTheDocument();
+  });
+  it('dirige al auditor hacia auditoría sin ofrecer reportes financieros', () => {
+    renderHelp(['audit.view']);
+    expect(screen.getByRole('link', { name: /abrir auditoría/i })).toHaveAttribute('href', '/administracion/auditoria');
+    expect(screen.queryByRole('link', { name: /abrir reportes/i })).not.toBeInTheDocument();
   });
 });

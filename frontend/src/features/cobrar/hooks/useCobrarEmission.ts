@@ -62,7 +62,7 @@ export function useCobrarEmission({
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.cashSessions.current('own') }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.reports.dashboard(), refetchType: 'none' }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all, refetchType: 'none' }),
     ]);
   }, [queryClient]);
 
@@ -232,7 +232,7 @@ export function useCobrarEmission({
           error instanceof ApiError
           && error.status >= 400
           && error.status < 500
-          && error.status !== 409;
+          && (error.status !== 409 || error.code === 'RESTORE_RECONCILIATION_PENDING');
         const requiresResolution = !responseIsDefinitiveClientError;
 
         setInvoiceResolutionPending(requiresResolution);

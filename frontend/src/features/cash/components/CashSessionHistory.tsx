@@ -2,19 +2,23 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cash, type CashSession, userSafeErrorMessage } from '@/lib/api';
+import type { CashSessionHistoryFilters } from '@/lib/api/cash';
+import { useCashSessionOptions } from '@/hooks/useCashSessionOptions';
+import { CashOptionsSearch } from './CashOptionsSearch';
 import { queryKeys } from '@/lib/queryKeys';
 import { parseCents } from '@/lib/moneyCents';
 import { formatDateTimeEs } from '@/lib/format/formatDate';
 import {
   AdminCallout,
   AdminEmpty,
+  AdminField,
   AdminPanel,
   AdminPanelHeader,
   AdminTable,
   MoneyText,
   type AdminColumn,
 } from '@/design-system/admin/components';
-import { PRIMARY_BUTTON, SECONDARY_BUTTON } from '../cashUi';
+import { INPUT_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON } from '../cashUi';
 
 type CashSessionHistoryProps = {
   visible: boolean;
@@ -51,9 +55,24 @@ function SessionStatus({ session }: { session: CashSession }) {
 /** Histórico real de turnos. Los importes ausentes permanecen ausentes. */
 export function CashSessionHistory({ visible, canViewInvoices }: CashSessionHistoryProps) {
   const [page, setPage] = useState(1);
+  const [draft, setDraft] = useState<CashSessionHistoryFilters>({});
+  const [applied, setApplied] = useState<CashSessionHistoryFilters>({});
+  const [filterError, setFilterError] = useState('');
+  const registerOptions = useCashSessionOptions('registers', { enabled: visible, selectedId: draft.cash_register_id });
+  const operatorOptions = useCashSessionOptions('cashiers', { enabled: visible, selectedId: draft.user_id });
+  const hasFilters = Object.values(applied).some((value) => value !== undefined && value !== '');
+  function applyHistoryFilters() {
+    if (draft.date_from && draft.date_to && draft.date_from > draft.date_to) {
+      setFilterError('La fecha inicial no puede ser posterior a la final.');
+      return;
+    }
+    setFilterError('');
+    setPage(1);
+    setApplied(Object.fromEntries(Object.entries(draft).filter(([, value]) => value !== undefined && value !== '' && value !== 'all')));
+  }
   const historyQuery = useQuery({
-    queryKey: [...queryKeys.cashSessions.all, 'history', page],
-    queryFn: () => cash.getCashSessions({ page, perPage: PAGE_SIZE }),
+    queryKey: [...queryKeys.cashSessions.all, 'history', page, applied],
+    queryFn: () => cash.getCashSessions({ page, perPage: PAGE_SIZE, ...applied }),
     enabled: visible,
     staleTime: 30_000,
   });
@@ -113,7 +132,7 @@ export function CashSessionHistory({ visible, canViewInvoices }: CashSessionHist
       align: 'right',
       cell: (session) => canViewInvoices ? (
         <Link
-          to={`/recibos?reconciliation_cash_session_id=${session.id}`}
+          to={`/recibos?cash_session_id=${session.id}`}
           className={SECONDARY_BUTTON}
         >
           Ver operaciones
@@ -129,6 +148,45 @@ export function CashSessionHistory({ visible, canViewInvoices }: CashSessionHist
         title="Histórico de caja"
         description="Aperturas y cierres anteriores, con el conteo y la diferencia de cada turno."
       />
+
+      <form aria-label="Filtros del histórico de caja" className="grid items-start gap-3 border-b border-[var(--ui-line)] bg-[var(--ui-surface-alt)] p-4 sm:grid-cols-2 xl:grid-cols-5" onSubmit={(event) => { event.preventDefault(); applyHistoryFilters(); }}>
+        <AdminField label="Desde apertura" htmlFor="history-from">
+          <input id="history-from" type="date" value={draft.date_from ?? ''} className={INPUT_CLASS} onChange={(event) => setDraft((current) => ({ ...current, date_from: event.target.value }))} />
+        </AdminField>
+        <AdminField label="Hasta apertura" htmlFor="history-to">
+          <input id="history-to" type="date" value={draft.date_to ?? ''} className={INPUT_CLASS} onChange={(event) => setDraft((current) => ({ ...current, date_to: event.target.value }))} />
+        </AdminField>
+        <AdminField label="Caja física del histórico" htmlFor="history-register">
+          <select id="history-register" value={draft.cash_register_id ?? ''} className={INPUT_CLASS} disabled={registerOptions.isPending} onChange={(event) => setDraft((current) => ({ ...current, cash_register_id: event.target.value ? Number(event.target.value) : undefined }))}>
+            <option value="">Todas las cajas autorizadas</option>
+            {registerOptions.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            {draft.cash_register_id && !registerOptions.options.some((option) => option.value === String(draft.cash_register_id)) ? <option value={draft.cash_register_id}>Caja seleccionada</option> : null}
+          </select>
+          <CashOptionsSearch picker={registerOptions} label="Buscar cajas del histórico" />
+        </AdminField>
+        <AdminField label="Operador del histórico" htmlFor="history-operator">
+          <select id="history-operator" value={draft.user_id ?? ''} className={INPUT_CLASS} disabled={operatorOptions.isPending} onChange={(event) => setDraft((current) => ({ ...current, user_id: event.target.value ? Number(event.target.value) : undefined }))}>
+            <option value="">Todos los operadores autorizados</option>
+            {operatorOptions.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            {draft.user_id && !operatorOptions.options.some((option) => option.value === String(draft.user_id)) ? <option value={draft.user_id}>Operador seleccionado</option> : null}
+          </select>
+          <CashOptionsSearch picker={operatorOptions} label="Buscar operadores del histórico" />
+        </AdminField>
+        <AdminField label="Diferencia del cierre" htmlFor="history-difference">
+          <select id="history-difference" className={INPUT_CLASS} value={draft.difference ?? 'all'} onChange={(event) => setDraft((current) => ({ ...current, difference: event.target.value as CashSessionHistoryFilters['difference'] }))}>
+            <option value="all">Todos los turnos</option>
+            <option value="balanced">Cerrados sin diferencia</option>
+            <option value="shortage">Cerrados con faltante</option>
+            <option value="overage">Cerrados con sobrante</option>
+          </select>
+        </AdminField>
+        <div className="flex flex-wrap gap-2 sm:col-span-2 xl:col-span-5">
+          <button type="submit" className={PRIMARY_BUTTON} disabled={historyQuery.isFetching}>Aplicar al histórico</button>
+          <button type="button" className={SECONDARY_BUTTON} onClick={() => { setDraft({}); setApplied({}); setPage(1); setFilterError(''); }}>Limpiar histórico</button>
+          <p className="self-center text-[length:var(--ui-text-xs)] text-[color:var(--ui-ink-soft)]">El período corresponde a la fecha de apertura. Solo se muestran turnos autorizados.</p>
+        </div>
+        {filterError ? <p role="alert" className="text-[length:var(--ui-text-sm)] text-[color:var(--ui-danger)] sm:col-span-2 xl:col-span-5">{filterError}</p> : null}
+      </form>
 
       {historyQuery.isLoading ? (
         <p role="status" className="px-4 py-6 text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
@@ -148,8 +206,8 @@ export function CashSessionHistory({ visible, canViewInvoices }: CashSessionHist
       ) : rows.length === 0 ? (
         <div className="p-4">
           <AdminEmpty
-            title="Sin turnos registrados"
-            description="Las aperturas y cierres aparecerán aquí después de completar el primer turno."
+            title={hasFilters ? 'Sin turnos para estos filtros' : 'Sin turnos registrados'}
+            description={hasFilters ? 'Cambie el período o limpie los filtros para consultar otros turnos autorizados.' : 'Las aperturas y cierres aparecerán aquí después de completar el primer turno.'}
           />
         </div>
       ) : (

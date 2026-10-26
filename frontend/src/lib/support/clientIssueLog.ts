@@ -2,6 +2,7 @@ type ClientIssueContext = {
   action?: string;
   module?: string;
   route?: string;
+  request_id?: string;
 };
 
 export type StoredClientIssue = {
@@ -11,6 +12,7 @@ export type StoredClientIssue = {
   safe_message: string;
   technical_code: string;
   occurred_at: string;
+  request_id?: string;
 };
 
 type SupportSummaryContext = {
@@ -21,6 +23,12 @@ type SupportSummaryContext = {
 
 const STORAGE_KEY = 'hospital_client_issue_log';
 const MAX_ISSUES = 20;
+
+export function safeRequestId(value: unknown): string | undefined {
+  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+    ? value.toLowerCase()
+    : undefined;
+}
 
 export const PERMISSION_DENIED_MESSAGE =
   'Su usuario no tiene permiso para esta acción. Solicite a un supervisor que revise su rol; no repita la operación varias veces.';
@@ -58,6 +66,7 @@ function safeStoredIssue(issue: StoredClientIssue): StoredClientIssue {
     safe_message: safeClientMessage(issue.safe_message),
     technical_code: safeClientMessage(issue.technical_code || 'CLIENT_ERROR') || 'CLIENT_ERROR',
     occurred_at: safeClientMessage(issue.occurred_at),
+    request_id: safeRequestId(issue.request_id),
   };
 }
 
@@ -77,6 +86,9 @@ export function logClientIssue(error: unknown, context: ClientIssueContext = {})
       safe_message: safeClientMessage(supportMessage ?? (error instanceof Error ? error.message : 'Error de interfaz')),
       technical_code: error instanceof Error ? error.name : 'CLIENT_ERROR',
       occurred_at: new Date().toISOString(),
+      request_id: safeRequestId(context.request_id) ?? safeRequestId(
+        typeof error === 'object' && error !== null && 'requestId' in error ? error.requestId : undefined,
+      ),
     });
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify([issue, ...existing].slice(0, MAX_ISSUES)));
@@ -107,6 +119,7 @@ export function buildClientIssueSupportSummary(issues: StoredClientIssue[], cont
           `   Pantalla: ${safeClientMessage(issue.route)}`,
           `   Mensaje: ${safeClientMessage(issue.safe_message)}`,
           `   Código técnico: ${safeClientMessage(issue.technical_code)}`,
+          ...(safeRequestId(issue.request_id) ? [`   Referencia de soporte: ${safeRequestId(issue.request_id)}`] : []),
           `   Fecha: ${safeClientMessage(issue.occurred_at)}`,
         ].join('\n'),
       );

@@ -2,8 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { buildClientIssueSupportSummary, getClientIssues, logClientIssue, safeClientMessage } from './clientIssueLog';
 
 describe('clientIssueLog', () => {
+  it('preserves a valid request reference in stored incidents and the support summary', () => {
+    window.localStorage.clear();
+    const requestId = 'd406f3e0-b551-41b3-821b-b6ee8c26a221';
+    logClientIssue(Object.assign(new Error('No se pudo cargar'), { requestId }), { module: 'api' });
+    expect(getClientIssues()[0]).toHaveProperty('request_id', requestId);
+    expect(buildClientIssueSupportSummary(getClientIssues())).toContain(`Referencia de soporte: ${requestId}`);
+  });
   it('redacts sensitive words from support messages', () => {
-    expect(safeClientMessage('DB_PASSWORD=secret token=abc')).not.toMatch(/secret|token/i);
+    expect(safeClientMessage('DB_PASSWORD=$PRIVATE token=abc')).not.toMatch(/secret|token/i);
     expect(safeClientMessage('contraseña=secret')).not.toMatch(/contraseña|secret/i);
     expect(safeClientMessage('Revise C:\\Users\\admin\\hospital\\.env')).not.toMatch(/C:\\Users|\.env/i);
   });
@@ -31,7 +38,7 @@ describe('clientIssueLog', () => {
   it('returns safe stored incidents for support', () => {
     window.localStorage.clear();
 
-    logClientIssue(new Error('No se pudo conectar DB_PASSWORD=secret'), {
+    logClientIssue(new Error('No se pudo conectar DB_PASSWORD=$PRIVATE'), {
       action: 'GET /api/health',
       module: 'api',
       route: '/help',
@@ -51,7 +58,7 @@ describe('clientIssueLog', () => {
 
     logClientIssue(new Error('Servidor no disponible'), {
       action: 'GET http://soporte:clave-secreta@192.168.1.10:8000/api/health?token=abc',
-      module: 'api DB_PASSWORD=secret',
+      module: 'api DB_PASSWORD=$PRIVATE',
       route: '/help?token=abc&cash_session_id=12',
     });
 
@@ -70,7 +77,7 @@ describe('clientIssueLog', () => {
         action: 'GET /api/health',
         module: 'api',
         route: '/help',
-        safe_message: 'No se pudo conectar DB_PASSWORD=secret token=abc en C:\\Users\\admin\\hospital\\.env cash_session_id SQLSTATE[HY000]: trace',
+        safe_message: 'No se pudo conectar DB_PASSWORD=$PRIVATE token=abc en C:\\Users\\admin\\hospital\\.env cash_session_id SQLSTATE[HY000]: trace',
         technical_code: 'cash_session_id',
         occurred_at: '2026-05-31T12:00:00.000Z',
       },

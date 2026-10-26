@@ -92,7 +92,7 @@ export function LoginView({
     <AuthLayout
       titleId="login-title"
       title="Iniciar sesión"
-      description="Use la cuenta asignada para este equipo."
+      description="Ingrese con su usuario y contraseña."
       brandName={hospitalName}
       logoUrl={logoUrl}
       footer={`${hospitalName} · sistema interno`}

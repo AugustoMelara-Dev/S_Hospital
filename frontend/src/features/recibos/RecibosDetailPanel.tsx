@@ -286,11 +286,16 @@ export function RecibosDetailPanel({
                 <AmountRow label="Total" cents={parseCents(invoice.total)} strong />
                 <AmountRow label="Pagado" cents={parseCents(invoice.paid_amount)} />
                 <AmountRow
-                  label="Saldo"
+                  label={invoice.status === 'void' ? 'Saldo al anular' : 'Saldo'}
                   cents={parseCents(invoice.balance_due)}
                   strong={parseCents(invoice.balance_due) !== 0}
                 />
               </dl>
+              {invoice.status === 'void' ? (
+                <p className="mt-2 text-[length:var(--ui-text-sm)] text-[color:var(--ui-ink-soft)]">
+                  Este saldo es histórico. La operación anulada no admite cobros.
+                </p>
+              ) : null}
               <dl className="mt-1 border-t border-[var(--ui-line)] pt-1">
                 <AmountRow label="Subtotal" cents={parseCents(invoice.subtotal)} small />
                 <AmountRow label="ISV" cents={parseCents(invoice.tax_amount)} small />

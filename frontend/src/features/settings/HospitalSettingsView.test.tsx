@@ -1,7 +1,14 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render as renderUi, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HospitalSettingsView } from './HospitalSettingsView';
 import { apiClient, type FiscalSettings } from '@/lib/api';
+
+function render(element: ReactElement) {
+  const cache = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return renderUi(<QueryClientProvider client={cache}>{element}</QueryClientProvider>);
+}
 
 const baseSettings: FiscalSettings = {
   id: 1,

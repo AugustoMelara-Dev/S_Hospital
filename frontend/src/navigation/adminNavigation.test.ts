@@ -94,3 +94,11 @@ describe('adminNavigation', () => {
     expect(getVisibleAdministrationItems([]).map((item) => item.id)).toEqual(['ayuda']);
   });
 });
+
+describe('separación de auditoría y finanzas', () => {
+  it('ofrece auditoría a audit.view sin habilitar reportes financieros', () => {
+    expect(getVisibleAdminSections(['audit.view']).map((item) => item.id)).not.toContain('reportes');
+    expect(getVisibleAdministrationItems(['audit.view']).find((item) => item.id === 'auditoria')?.path).toBe('/administracion/auditoria');
+    expect(getVisibleAdministrationItems([]).map((item) => item.id)).not.toContain('auditoria');
+  });
+});

@@ -82,6 +82,14 @@ function renderPanel(invoice: Invoice) {
 }
 
 describe('RecibosDetailPanel — líneas de la cuenta', () => {
+  it('identifica el saldo histórico de una operación anulada sin cambiar su importe', () => {
+    renderPanel(invoiceFixture({ status: 'void', balance_due: '250.00', void_reason: 'Error de registro' }));
+    const label = screen.getByText('Saldo al anular');
+    expect(label.parentElement).toHaveTextContent('L. 250.00');
+    expect(screen.getByText('Este saldo es histórico. La operación anulada no admite cobros.')).toBeVisible();
+    expect(screen.queryByText('Saldo', { exact: true })).not.toBeInTheDocument();
+  });
+
   it('renderiza concepto, cantidad, precio, ajuste e importe de cada línea del detalle', () => {
     const invoice = invoiceFixture({
       items: [

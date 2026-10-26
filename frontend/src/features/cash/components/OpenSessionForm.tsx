@@ -39,6 +39,7 @@ export function OpenSessionForm({
     register,
     handleSubmit,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<OpenSessionFormData>({
     resolver: zodResolver(openSessionSchema),
@@ -62,10 +63,14 @@ export function OpenSessionForm({
         description="Registre el efectivo real disponible al iniciar el turno. Puede ser L 0.00."
       />
       <form
-        onSubmit={handleSubmit((data) => onSubmit({
-          opening_amount: data.opening_amount,
-          cash_register_id: Number(data.cash_register_id),
-        }))}
+        onSubmit={handleSubmit((data) => {
+          const registerId = Number(data.cash_register_id);
+          if (unavailable || !cashRegisters.some((cashRegister) => cashRegister.id === registerId && cashRegister.active)) {
+            setError('cash_register_id', { type: 'validate', message: 'Seleccione una caja habilitada de la lista actual.' }, { shouldFocus: true });
+            return;
+          }
+          onSubmit({ opening_amount: data.opening_amount, cash_register_id: registerId });
+        })}
         className="grid gap-4 px-4 py-4 sm:px-5"
         aria-busy={isSubmitting || cashRegistersLoading}
       >

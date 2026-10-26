@@ -705,7 +705,7 @@ describe('InstitutionalReceiptSettingsView', () => {
 
   it('saves a standard paper profile as the institutional default for support users in the normal flow', async () => {
     const { apiClient } = await import('@/lib/api');
-    renderView();
+    renderView({ canEditAdvanced: true });
 
     expect(await screen.findByText('Recibos institucionales')).toBeInTheDocument();
     await activateTab('Papel y copias');
@@ -725,6 +725,156 @@ describe('InstitutionalReceiptSettingsView', () => {
     });
 
     expect(screen.queryByRole('checkbox', { name: /predeterminado global/i })).not.toBeInTheDocument();
+    const [, payload] = vi.mocked(apiClient.updateReceiptPrintProfile).mock.calls.at(-1)!;
+    expect(payload).not.toHaveProperty('width_mm');
+    expect(payload).not.toHaveProperty('support_reason');
+  });
+
+  it('saves copies for an advanced administrator without sending unchanged technical fields', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView({ canEditAdvanced: true });
+    await screen.findByText('Recibos institucionales');
+    await chooseCopies('Original + dos copias');
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+    await waitFor(() => expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalled());
+    const [, payload] = vi.mocked(apiClient.updateReceiptPrintProfile).mock.calls.at(-1)!;
+    expect(payload).toMatchObject({ copies_mode: 'original_first_second' });
+    expect(payload).not.toHaveProperty('width_mm');
+    expect(payload).not.toHaveProperty('support_reason');
+  });
+
+  it('expands technical errors when a changed advanced draft has no support reason', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView({ canEditAdvanced: true });
+    await screen.findByText('Recibos institucionales');
+    const advancedToggle = screen.getByRole('button', { name: 'Ajustes técnicos avanzados' });
+    fireEvent.click(advancedToggle);
+    fireEvent.change(screen.getByLabelText('Fuente'), { target: { value: 'Courier New' } });
+    fireEvent.click(advancedToggle);
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+    expect(await screen.findByText('Documente el motivo de soporte.')).toBeVisible();
+    expect(advancedToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(apiClient.updateReceiptPrintProfile).not.toHaveBeenCalled();
+  });
+
+  it('saves a technical change with its documented support reason', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView({ canEditAdvanced: true });
+    await screen.findByText('Recibos institucionales');
+    fireEvent.click(screen.getByRole('button', { name: 'Ajustes técnicos avanzados' }));
+    fireEvent.change(screen.getByLabelText('Fuente'), { target: { value: 'Courier New' } });
+    fireEvent.change(screen.getByLabelText('Motivo de soporte'), { target: { value: 'Ajuste autorizado de fuente' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+    await waitFor(() => expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalledWith(
+      2, expect.objectContaining({ font_family: 'Courier New', support_reason: 'Ajuste autorizado de fuente' }),
+    ));
+  });
+
+  it('still requires a support reason after restoring a technical draft by paper selection', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView({ canEditAdvanced: true });
+    await screen.findByText('Recibos institucionales');
+    fireEvent.click(screen.getByRole('button', { name: 'Ajustes técnicos avanzados' }));
+    fireEvent.change(screen.getByLabelText('Fuente'), { target: { value: 'Courier New' } });
+    fireEvent.click(screen.getByRole('radio', { name: /^Carta horizontal\b/i }));
+    await waitFor(() => expect(screen.getByLabelText('Fuente')).toHaveValue('Arial, sans-serif'));
+    fireEvent.click(screen.getByRole('radio', { name: /^Media carta\b/i }));
+    await waitFor(() => expect(screen.getByLabelText('Fuente')).toHaveValue('Courier New'));
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+    expect(await screen.findByText('Documente el motivo de soporte.')).toBeVisible();
+    expect(apiClient.updateReceiptPrintProfile).not.toHaveBeenCalled();
+  });
+
+  it('does not send unchanged technical settings when only the support reason was entered', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView({ canEditAdvanced: true });
+    await screen.findByText('Recibos institucionales');
+    fireEvent.click(screen.getByRole('button', { name: 'Ajustes técnicos avanzados' }));
+    fireEvent.change(screen.getByLabelText('Motivo de soporte'), { target: { value: 'Nota sin cambio técnico' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+    await waitFor(() => expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalled());
+    const [, payload] = vi.mocked(apiClient.updateReceiptPrintProfile).mock.calls.at(-1)!;
+    expect(payload).not.toHaveProperty('font_family');
+    expect(payload).not.toHaveProperty('support_reason');
+  });
+
+  it('does not send technical fields without the advanced permission', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView();
+    await screen.findByText('Recibos institucionales');
+    expect(screen.queryByRole('button', { name: 'Ajustes técnicos avanzados' })).not.toBeInTheDocument();
+    await chooseCopies('Original + primera copia');
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+    await waitFor(() => expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalled());
+    const [, payload] = vi.mocked(apiClient.updateReceiptPrintProfile).mock.calls.at(-1)!;
+    for (const key of ['width_mm', 'height_mm', 'font_family', 'font_scale', 'show_technical_fields', 'support_reason']) {
+      expect(payload).not.toHaveProperty(key);
+    }
+  });
+
+  it('requires a visible support reason to activate a custom profile with unchanged geometry', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView({ canEditAdvanced: true });
+    await screen.findByText('Recibos institucionales');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('radio', { name: 'Personalizado' }));
+    });
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Ajustes técnicos avanzados' })).toHaveAttribute('aria-expanded', 'true'));
+    expect(await screen.findByText('Documente el motivo de soporte.')).toBeVisible();
+    expect(apiClient.updateReceiptPrintProfile).not.toHaveBeenCalled();
+  });
+
+  it('activates a custom default with its support reason even when geometry is unchanged', async () => {
+    const { apiClient } = await import('@/lib/api');
+    renderView({ canEditAdvanced: true });
+    await screen.findByText('Recibos institucionales');
+    fireEvent.click(screen.getByRole('radio', { name: 'Personalizado' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ajustes técnicos avanzados' }));
+    fireEvent.change(screen.getByLabelText('Motivo de soporte'), { target: { value: 'Activación autorizada de formato personalizado' } });
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+    await waitFor(() => expect(apiClient.updateReceiptPrintProfile).toHaveBeenCalledWith(
+      1, expect.objectContaining({
+        active: true,
+        is_global_default: true,
+        support_reason: 'Activación autorizada de formato personalizado',
+      }),
+    ));
+  });
+
+  it('prevents choosing the support-only custom profile without advanced permission', async () => {
+    renderView();
+    await screen.findByText('Recibos institucionales');
+    expect(screen.getByRole('radio', { name: 'Personalizado' })).toBeDisabled();
+    expect(screen.getByText('Requiere autorización de soporte.')).toBeVisible();
+  });
+
+  it('blocks activating an already resolved custom profile without advanced permission', async () => {
+    const { apiClient } = await import('@/lib/api');
+    vi.mocked(apiClient.getInstitutionalReceiptSettings).mockResolvedValueOnce({
+      ...mockData.settings,
+      resolved_profile: mockData.profiles[0],
+    });
+    renderView();
+    await screen.findByText('Recibos institucionales');
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Personalizado' })).toBeChecked());
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+    expect(await screen.findByText('El formato personalizado requiere autorización de soporte. Seleccione otro formato institucional.')).toBeVisible();
+    expect(apiClient.updateReceiptPrintProfile).not.toHaveBeenCalled();
+  });
+
+  it('shows the support reason error for an initially resolved custom profile', async () => {
+    const { apiClient } = await import('@/lib/api');
+    vi.mocked(apiClient.getInstitutionalReceiptSettings).mockResolvedValueOnce({
+      ...mockData.settings,
+      resolved_profile: mockData.profiles[0],
+    });
+    renderView({ canEditAdvanced: true });
+    await screen.findByText('Recibos institucionales');
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Personalizado' })).toBeChecked());
+    fireEvent.click(screen.getByRole('button', { name: /guardar perfil/i }));
+    expect(await screen.findByText('Documente el motivo de soporte.')).toBeVisible();
+    expect(apiClient.updateReceiptPrintProfile).not.toHaveBeenCalled();
   });
 
   it('persists the selected compact template instead of degrading it to classic', async () => {

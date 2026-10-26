@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiClient, isPermissionDeniedError, isSessionExpiredError, resetCsrfCache, resetRequestChain, resolveApiBaseUrl, userSafeErrorMessage } from './base';
+import { getClientIssues } from '../support/clientIssueLog';
 
 function locationFor(hostname: string): Pick<Location, 'hostname'> {
   return { hostname };
@@ -15,6 +16,45 @@ describe('resolveApiBaseUrl', () => {
 
   it('uses same-origin API routes by default', () => {
     expect(resolveApiBaseUrl('', locationFor('192.168.1.10'))).toBe('');
+  });
+
+  it('keeps the server request reference on API failures and support incidents', async () => {
+    const requestId = 'd406f3e0-b551-41b3-821b-b6ee8c26a221';
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ message: 'Error del servidor' }), {
+      status: 503, headers: { 'Content-Type': 'application/json', 'X-Request-ID': requestId },
+    }));
+    const error = await apiClient.request('/api/reports/executive').catch((value: unknown) => value);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toHaveProperty('requestId', requestId);
+    expect(userSafeErrorMessage(error, 'No se pudo cargar el reporte.')).toContain(requestId);
+    expect(getClientIssues()[0]).toHaveProperty('request_id', requestId);
+  });
+
+  it('uses a valid JSON request reference when the error response has no reference header', async () => {
+    const requestId = '6a1b077a-5146-4d55-9fc3-262d32ac1603';
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ request_id: requestId }), { status: 500 }));
+    const error = await apiClient.request('/api/example').catch((value: unknown) => value);
+    expect(error).toHaveProperty('requestId', requestId);
+  });
+
+  it('does not store arbitrary response text as a support reference', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ request_id: 'DB_PASSWORD=$PRIVATE' }), {
+      status: 500, headers: { 'X-Request-ID': 'token=secret' },
+    }));
+    const error = await apiClient.request('/api/example').catch((value: unknown) => value);
+    expect(error).toHaveProperty('requestId', undefined);
+    expect(JSON.stringify(getClientIssues())).not.toContain('secret');
+  });
+
+  it.each(['download', 'postDownload'] as const)('preserves server references when %s fails', async (method) => {
+    const requestId = 'd406f3e0-b551-41b3-821b-b6ee8c26a221';
+    vi.spyOn(apiClient, 'csrf').mockResolvedValue(undefined);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ request_id: requestId }), { status: 500 }));
+    const error = await (method === 'download'
+      ? apiClient.download('/api/example/pdf')
+      : apiClient.postDownload('/api/example/pdf', {})).catch((value: unknown) => value);
+    expect(error).toHaveProperty('requestId', requestId);
+    expect(getClientIssues()[0]).toHaveProperty('request_id', requestId);
   });
 
   it('drops a localhost build URL when the app is opened by IP', () => {
@@ -61,6 +101,25 @@ describe('resolveApiBaseUrl', () => {
     expect(message).toMatch(/respaldo cambio de estado/i);
     expect(message).toMatch(/pida soporte antes de restaurar/i);
     expect(message).not.toMatch(/lock|conflict/i);
+  });
+
+  it('preserves the allowlisted restore block code and gives fixed administrator instructions without retrying', async () => {
+    vi.spyOn(apiClient, 'csrf').mockResolvedValue(undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      code: 'RESTORE_RECONCILIATION_PENDING', message: 'SQLSTATE private detail',
+    }), { status: 409 }));
+    const error = await apiClient.request('/api/invoices', { method: 'POST' }).catch((value: unknown) => value);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toHaveProperty('code', 'RESTORE_RECONCILIATION_PENDING');
+    expect(userSafeErrorMessage(error, 'No se pudo emitir.')).toBe('La emisión está bloqueada por reconciliación pendiente después de restaurar un respaldo. Un administrador debe confirmar los correlativos antes de continuar.');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['PRIVATE_INTERNAL_CODE', { secret: 'private' }, null])('discards unrecognized error codes (%j)', async (code) => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ code, message: 'backup restore lock conflict' }), { status: 409 }));
+    const error = await apiClient.request('/api/example').catch((value: unknown) => value);
+    expect(error).toHaveProperty('code', undefined);
+    expect(userSafeErrorMessage(error, 'Falló la consulta.')).toMatch(/respaldo cambio de estado/i);
   });
 
   it('lists every validation error from a 422 response with human-readable field labels', () => {
@@ -196,7 +255,7 @@ describe('resolveApiBaseUrl', () => {
   });
 
   it('stores safe local support evidence when the local server is unavailable', async () => {
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('failed to fetch DB_PASSWORD=secret'));
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('failed to fetch DB_PASSWORD=$PRIVATE'));
 
     await expect(apiClient.request('/api/health')).rejects.toThrow(/no se pudo conectar con el sistema/i);
     await expect(apiClient.request('/api/health')).rejects.not.toThrow(/failed to fetch|DB_PASSWORD|secret/i);

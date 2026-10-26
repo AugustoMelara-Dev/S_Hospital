@@ -940,6 +940,39 @@ describe('BackupsView', () => {
     });
   });
 
+  it.each(['pending', 'success'] as const)('closes creation confirmation after the server accepts a %s backup', async (status) => {
+    vi.spyOn(apiClient, 'createBackup').mockResolvedValue(backupFixture({ id: 7, status }));
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    await screen.findByRole('button', { name: /^crear respaldo$/i });
+    await waitFor(() => expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /^crear respaldo$/i }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^crear respaldo$/i }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /crear respaldo local/i })).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /descargar respaldo del/i })).toBeEnabled();
+  });
+
+  it('keeps a failed creation open with an accessible error and allows retrying', async () => {
+    const createBackup = vi.spyOn(apiClient, 'createBackup')
+      .mockRejectedValueOnce(new Error('No se pudo crear el respaldo.'))
+      .mockResolvedValueOnce(backupFixture({ id: 7 }));
+    renderWithQueryClient(<BackupsView user={adminUser} onStatus={() => undefined} />);
+
+    await screen.findByRole('button', { name: /^crear respaldo$/i });
+    await waitFor(() => expect(screen.getByRole('button', { name: /^crear respaldo$/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /^crear respaldo$/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear respaldo local/i });
+    fireEvent.click(within(dialog).getByRole('button', { name: /^crear respaldo$/i }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('No se pudo crear el respaldo.');
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: /^crear respaldo$/i })).toBeEnabled());
+    fireEvent.click(within(dialog).getByRole('button', { name: /^crear respaldo$/i }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /crear respaldo local/i })).not.toBeInTheDocument());
+    expect(createBackup).toHaveBeenCalledTimes(2);
+  });
+
   it('prevents duplicate manual backup creation while the request is pending', async () => {
     let resolveCreate!: (backup: BackupLog) => void;
     const pendingCreate = new Promise<BackupLog>((resolve) => {

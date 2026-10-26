@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import {
   BookOpenIcon,
+  ClipboardListIcon,
   DatabaseBackupIcon,
   LifeBuoyIcon,
   Settings2Icon,
@@ -22,11 +23,13 @@ import { UsersView } from '@/features/admin/UsersView';
 import { AjustesView } from './AjustesView';
 import { MantenimientoView } from './MantenimientoView';
 import { AyudaView } from './AyudaView';
+import { AuditView } from './AuditView';
 
 const focusRing =
   'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-focus)]';
 
 const DENIED_REASONS: Record<string, string> = {
+  auditoria: 'Su usuario no puede consultar la auditoría del sistema.',
   catalogo: 'Su usuario no puede consultar el catálogo institucional.',
   usuarios: 'Su usuario no puede administrar cuentas, roles ni permisos.',
   ajustes:
@@ -37,6 +40,7 @@ const DENIED_REASONS: Record<string, string> = {
 /** Icono por sección: refuerza el nombre sin convertir la navegación en otro riel. */
 const SECTION_ICONS: Record<string, LucideIcon> = {
   catalogo: BookOpenIcon,
+  auditoria: ClipboardListIcon,
   usuarios: UsersIcon,
   ajustes: Settings2Icon,
   mantenimiento: DatabaseBackupIcon,
@@ -173,6 +177,8 @@ export function AdministracionView() {
                 path="mantenimiento/respaldos"
                 element={gate('mantenimiento', <MantenimientoView />)}
               />
+
+              <Route path="auditoria" element={gate('auditoria', <AuditView />)} />
 
               <Route path="ayuda" element={<AyudaView />} />
 

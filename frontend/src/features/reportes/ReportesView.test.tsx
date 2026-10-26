@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminSessionProvider } from '@/shell/admin/AdminSessionContext';
@@ -11,9 +11,10 @@ import { buildReporteEjecutivo } from './testUtils';
 const useReporteEjecutivoMock = vi.hoisted(() => vi.fn());
 const downloadExecutivePdf = vi.hoisted(() => vi.fn());
 const downloadExecutiveExcel = vi.hoisted(() => vi.fn());
-const getCashSessions = vi.hoisted(() => vi.fn());
+const getCashSessionOptions = vi.hoisted(() => vi.fn());
 const downloadBlob = vi.hoisted(() => vi.fn());
 const useCategoriesMock = vi.hoisted(() => vi.fn());
+const getExecutiveReport = vi.hoisted(() => vi.fn());
 
 vi.mock('./useReporteEjecutivo', () => ({ useReporteEjecutivo: useReporteEjecutivoMock }));
 
@@ -30,9 +31,10 @@ vi.mock('@/lib/api', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
   return {
     ...actual,
-    cash: { ...actual.cash, getCashSessions },
+    cash: { ...actual.cash, getCashSessionOptions },
     reports: {
       ...actual.reports,
+      getExecutiveReport,
       downloadExecutivePdf,
       downloadExecutiveExcel,
     },
@@ -68,25 +70,33 @@ const cashSession: CashSession = {
   pending_amount: '0.00',
 };
 
+function LocationProbe() {
+  return <span hidden data-testid="report-url">{useLocation().search}</span>;
+}
+
 function renderReportes(
   permissions: string[] = user.permissions,
   session: CashSession | null = cashSession,
+  entry = '/reportes',
 ) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const view = (nextSession: CashSession | null, loading = false) => (
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/reportes']}>
+      <MemoryRouter initialEntries={[entry]}>
         <AdminSessionProvider
           user={{ ...user, permissions }}
-          cashSession={session}
-          cashSessionLoading={false}
+          cashSession={nextSession}
+          cashSessionLoading={loading}
           onStatus={vi.fn()}
         >
           <ReportesView />
+          <LocationProbe />
         </AdminSessionProvider>
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  const result = render(view(session));
+  return { ...result, rerenderSession: (nextSession: CashSession | null, loading = false) => result.rerender(view(nextSession, loading)) };
 }
 
 describe('ReportesView', () => {
@@ -100,8 +110,8 @@ describe('ReportesView', () => {
       refetch: vi.fn(),
       error: null,
     });
-    getCashSessions.mockReset();
-    getCashSessions.mockResolvedValue({ data: [cashSession], meta: { current_page: 1, per_page: 50, total: 1 } });
+    getCashSessionOptions.mockReset();
+    getCashSessionOptions.mockImplementation(async ({ kind }) => ({ data: [{ value: kind === 'cashiers' ? '7' : '42', label: kind === 'cashiers' ? 'Ana Ruiz' : 'Caja · Ana Ruiz' }], selected: null, meta: { current_page: 1, per_page: 20, total: 1 } }));
     useCategoriesMock.mockReset();
     useCategoriesMock.mockReturnValue({
       data: [{ id: 1, name: 'Laboratorio' }],
@@ -112,8 +122,47 @@ describe('ReportesView', () => {
     downloadExecutivePdf.mockReset();
     downloadExecutiveExcel.mockReset();
     downloadBlob.mockReset();
+    getExecutiveReport.mockReset();
+    getExecutiveReport.mockResolvedValue(buildReporteEjecutivo());
     downloadExecutivePdf.mockResolvedValue(new Blob(['pdf']));
     downloadExecutiveExcel.mockResolvedValue(new Blob(['xlsx']));
+  });
+
+  it('restores all report filters from a saved URL for managerial users', async () => {
+    renderReportes(user.permissions, cashSession, '/reportes?from=2026-06-01&to=2026-06-02&method=transfer&status=paid&user_id=7&cash_session_id=42&category_id=1&area_id=3');
+    await waitFor(() => expect(useReporteEjecutivoMock).toHaveBeenLastCalledWith(expect.objectContaining({
+      date_from: '2026-06-01', date_to: '2026-06-02', method: 'transfer', status: 'paid', user_id: 7, cash_session_id: 42, category_id: 1, area_id: 3,
+    }), true));
+  });
+
+  it('keeps secondary filters in queries and exports after applying a new period', async () => {
+    renderReportes();
+    fireEvent.click(screen.getByRole('button', { name: /^filtros/i }));
+    fireEvent.change(screen.getByLabelText(/método de cobro/i), { target: { value: 'transfer' } });
+    fireEvent.change(screen.getByLabelText(/estado de operación/i), { target: { value: 'paid' } });
+    await waitFor(() => expect(screen.getByLabelText(/^cajero$/i)).toBeEnabled());
+    fireEvent.change(screen.getByLabelText(/^cajero$/i), { target: { value: '7' } });
+    fireEvent.change(screen.getByLabelText(/^categoría$/i), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText(/^desde$/i), { target: { value: '2026-06-01' } });
+    fireEvent.change(screen.getByLabelText(/^hasta$/i), { target: { value: '2026-06-02' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: /aplicar/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /aplicar/i }));
+    await waitFor(() => expect(useReporteEjecutivoMock).toHaveBeenLastCalledWith(expect.objectContaining({
+      date_from: '2026-06-01', date_to: '2026-06-02', method: 'transfer', status: 'paid', user_id: 7, category_id: 1,
+    }), true));
+    const saved = new URLSearchParams(screen.getByTestId('report-url').textContent!);
+    expect(saved.get('method')).toBe('transfer');
+    expect(saved.get('user_id')).toBe('7');
+    fireEvent.click(screen.getByRole('button', { name: /exportar pdf/i }));
+    await waitFor(() => expect(downloadExecutivePdf).toHaveBeenCalledWith(expect.objectContaining({ method: 'transfer', status: 'paid', user_id: 7, category_id: 1 })));
+  });
+
+  it('rejects invalid URL enums and foreign cashier scope while preserving permitted filters', () => {
+    renderReportes(['reports.cash_session.view'], cashSession, '/reportes?method=transfer&status=void&cash_session_id=999&user_id=999&category_id=-1&area_id=NaN');
+    expect(useReporteEjecutivoMock).toHaveBeenLastCalledWith(expect.objectContaining({ cash_session_id: 42, user_id: undefined, method: 'transfer', status: 'void' }), true);
+    const [filters] = useReporteEjecutivoMock.mock.calls.at(-1)!;
+    expect(filters.category_id).toBeUndefined();
+    expect(filters.area_id).toBeUndefined();
   });
 
   it('denies the screen without a reports permission', () => {
@@ -121,6 +170,15 @@ describe('ReportesView', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Reportes' })).toBeInTheDocument();
     expect(screen.getByText(/reportes no disponibles/i)).toBeInTheDocument();
     expect(screen.getByTestId('reporte-scope')).toHaveTextContent('Acceso no habilitado');
+  });
+
+  it('espera la consulta de caja antes de indicar que no hay una abierta', () => {
+    const view = renderReportes(['reports.cash_session.view'], null);
+    view.rerenderSession(null, true);
+    expect(screen.getByRole('status')).toHaveTextContent('Consultando su caja…');
+    expect(screen.queryByText('Sin caja activa')).not.toBeInTheDocument();
+    view.rerenderSession(null, false);
+    expect(screen.getByText('Sin caja activa')).toBeInTheDocument();
   });
 
   it('muestra un desglose activo a la vez y permite recorrer los cinco', () => {
@@ -404,7 +462,7 @@ describe('ReportesView', () => {
   });
 
   it('distinguishes a failed cash options query and recovers it without hiding the report', async () => {
-    getCashSessions.mockRejectedValueOnce(new Error('backend unavailable'));
+    getCashSessionOptions.mockRejectedValueOnce(new Error('backend unavailable'));
     renderReportes();
 
     fireEvent.click(screen.getByRole('button', { name: /^filtros/i }));
@@ -516,6 +574,62 @@ describe('ReportesView', () => {
     expect(screen.getByText(/sin caja activa/i)).toBeInTheDocument();
     expect(screen.getByTestId('reporte-scope')).toHaveTextContent('Solo su caja');
     expect(screen.queryByRole('button', { name: /exportar/i })).not.toBeInTheDocument();
+  });
+
+  it('never requests an unscoped report while the cashier session arrives', async () => {
+    const actual = await vi.importActual<typeof import('./useReporteEjecutivo')>('./useReporteEjecutivo');
+    useReporteEjecutivoMock.mockImplementation(actual.useReporteEjecutivo);
+    const view = renderReportes(['reports.cash_session.view', 'reports.export'], null);
+    expect(getExecutiveReport).not.toHaveBeenCalled();
+
+    view.rerenderSession(cashSession);
+    await waitFor(() => expect(getExecutiveReport).toHaveBeenCalled());
+    expect(getExecutiveReport.mock.calls.every(([filters]) => filters.cash_session_id === 42)).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: /exportar pdf/i }));
+    await waitFor(() => expect(downloadExecutivePdf).toHaveBeenCalledWith(expect.objectContaining({ cash_session_id: 42 })));
+  });
+
+  it('never requests the previous session when the cashier changes turns', async () => {
+    const actual = await vi.importActual<typeof import('./useReporteEjecutivo')>('./useReporteEjecutivo');
+    useReporteEjecutivoMock.mockImplementation(actual.useReporteEjecutivo);
+    const view = renderReportes(['reports.cash_session.view', 'reports.export']);
+    await waitFor(() => expect(getExecutiveReport).toHaveBeenCalled());
+    useReporteEjecutivoMock.mockClear();
+    view.rerenderSession({ ...cashSession, id: 43 });
+    expect(useReporteEjecutivoMock.mock.calls.every(([filters, enabled]) => !enabled || filters.cash_session_id === 43)).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: /exportar excel/i }));
+    await waitFor(() => expect(downloadExecutiveExcel).toHaveBeenCalledWith(expect.objectContaining({ cash_session_id: 43 })));
+  });
+
+  it('ignores foreign session and user filters from a cashier URL', async () => {
+    const actual = await vi.importActual<typeof import('./useReporteEjecutivo')>('./useReporteEjecutivo');
+    useReporteEjecutivoMock.mockImplementation(actual.useReporteEjecutivo);
+    renderReportes(['reports.cash_session.view', 'reports.export'], cashSession, '/reportes?cash_session_id=999&user_id=999');
+    await waitFor(() => expect(getExecutiveReport).toHaveBeenCalled());
+    expect(getExecutiveReport.mock.calls.every(([filters]) => filters.cash_session_id === 42 && filters.user_id === undefined)).toBe(true);
+  });
+
+  it('stops querying and exporting when the cashier session disappears', async () => {
+    const actual = await vi.importActual<typeof import('./useReporteEjecutivo')>('./useReporteEjecutivo');
+    useReporteEjecutivoMock.mockImplementation(actual.useReporteEjecutivo);
+    const view = renderReportes(['reports.cash_session.view', 'reports.export']);
+    await waitFor(() => expect(getExecutiveReport).toHaveBeenCalled());
+    getExecutiveReport.mockClear();
+    view.rerenderSession(null);
+    expect(screen.getByText(/sin caja activa/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /exportar/i })).not.toBeInTheDocument();
+    expect(getExecutiveReport).not.toHaveBeenCalled();
+  });
+
+  it('waits for a refreshed session before querying or exporting', async () => {
+    const actual = await vi.importActual<typeof import('./useReporteEjecutivo')>('./useReporteEjecutivo');
+    useReporteEjecutivoMock.mockImplementation(actual.useReporteEjecutivo);
+    const view = renderReportes(['reports.cash_session.view', 'reports.export'], null);
+    view.rerenderSession(cashSession, true);
+    expect(getExecutiveReport).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /exportar pdf/i })).toBeDisabled();
+    view.rerenderSession(cashSession);
+    await waitFor(() => expect(getExecutiveReport).toHaveBeenCalledWith(expect.objectContaining({ cash_session_id: 42 })));
   });
 
   it('shows the empty state when all tables are empty', () => {

@@ -2,7 +2,7 @@ import { ShieldCheck, UserPlus } from 'lucide-react';
 import { AdminChip, AdminPageHeader, AdminStat, AdminStatBand } from '@/design-system/admin/components';
 import { PRIMARY_BUTTON } from '../adminUi';
 
-type Props = { activeUsersCount: number; editableRolesCount: number; onCreateUser: () => void; pendingPasswordUsersCount: number; showCreateAction: boolean; totalRolesCount: number; totalUsersCount: number };
+type Props = { activeUsersCount: number; canManageRoles: boolean; editableRolesCount: number; onCreateUser: () => void; pendingPasswordUsersCount: number; showCreateAction: boolean; totalRolesCount: number; totalUsersCount: number };
 
 /**
  * Cabecera del directorio de usuarios: título y propósito, marca de política de
@@ -10,7 +10,7 @@ type Props = { activeUsersCount: number; editableRolesCount: number; onCreateUse
  * divisores (no tres tarjetas). El conteo de roles vive en el pie de su
  * indicador, no en párrafos separados.
  */
-export function UserManagementOverview({ activeUsersCount, editableRolesCount, onCreateUser, pendingPasswordUsersCount, showCreateAction, totalRolesCount, totalUsersCount }: Props) {
+export function UserManagementOverview({ activeUsersCount, canManageRoles, editableRolesCount, onCreateUser, pendingPasswordUsersCount, showCreateAction, totalRolesCount, totalUsersCount }: Props) {
   const usersHint = `${totalUsersCount} cuenta${totalUsersCount === 1 ? '' : 's'} registrada${totalUsersCount === 1 ? '' : 's'}`;
   const rolesHint = `${totalRolesCount} rol${totalRolesCount === 1 ? '' : 'es'} en total.`;
 
@@ -35,7 +35,7 @@ export function UserManagementOverview({ activeUsersCount, editableRolesCount, o
       <AdminStatBand columns={3}>
         <AdminStat label="Usuarios activos" value={activeUsersCount} hint={usersHint} />
         <AdminStat label="Cambio pendiente" value={pendingPasswordUsersCount} hint="Usuarios que deberán cambiar clave al ingresar." />
-        <AdminStat label="Roles editables" value={editableRolesCount} hint={rolesHint} />
+        <AdminStat label={canManageRoles ? 'Roles editables' : 'Roles en consulta'} value={editableRolesCount} hint={rolesHint} />
       </AdminStatBand>
     </section>
   );

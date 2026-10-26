@@ -1,4 +1,4 @@
-import { PERMISSION_DENIED_MESSAGE, logClientIssue, safeClientMessage } from '../support/clientIssueLog';
+import { PERMISSION_DENIED_MESSAGE, logClientIssue, safeClientMessage, safeRequestId } from '../support/clientIssueLog';
 
 let forceLogoutHandler: (() => void) | null = null;
 
@@ -17,6 +17,7 @@ const NETWORK_MESSAGE = 'No se pudo conectar con el sistema. Vuelva a abrir la a
 const READ_ERROR_MESSAGE = 'No se pudo cargar la información. Vuelva a intentarlo.';
 const READ_TIMEOUT_MESSAGE = 'La consulta está tardando más de lo esperado. Vuelva a intentarlo.';
 const READ_NETWORK_MESSAGE = 'No se pudo conectar con el sistema. Revise la conexión local y vuelva a intentarlo.';
+const RESTORE_RECONCILIATION_MESSAGE = 'La emisión está bloqueada por reconciliación pendiente después de restaurar un respaldo. Un administrador debe confirmar los correlativos antes de continuar.';
 /**
  * Nombres visibles de los campos que el servidor puede citar en una
  * validación. El personal de caja nunca ve el nombre interno del campo
@@ -151,8 +152,10 @@ export class ApiError extends Error {
   readonly validationErrors?: Record<string, string[]>;
   readonly supportMessage?: string;
   readonly readOnlyRequest: boolean;
+  readonly requestId?: string;
+  readonly code?: 'RESTORE_RECONCILIATION_PENDING';
 
-  constructor(message: string, status: number, validationErrors?: Record<string, string[]>, supportMessage?: string, requestMethod?: string) {
+  constructor(message: string, status: number, validationErrors?: Record<string, string[]>, supportMessage?: string, requestMethod?: string, requestId?: string, code?: unknown) {
     const readOnlyRequest = requestMethod === 'GET' || requestMethod === 'HEAD';
     const publicMessage = status >= 500
       ? readOnlyRequest ? READ_ERROR_MESSAGE : UNKNOWN_RESULT_MESSAGE
@@ -163,6 +166,9 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
     this.readOnlyRequest = readOnlyRequest;
+    this.requestId = safeRequestId(requestId);
+    // Only documented operational codes may affect recovery or public copy.
+    this.code = status === 409 && code === 'RESTORE_RECONCILIATION_PENDING' ? code : undefined;
     this.validationErrors = validationErrors;
     this.supportMessage = supportMessage ?? (publicMessage !== message ? safeClientMessage(message) : undefined);
   }
@@ -216,6 +222,7 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error instanceof ApiError && error.status === 409) {
+    if (error.code === 'RESTORE_RECONCILIATION_PENDING') return RESTORE_RECONCILIATION_MESSAGE;
     return conflictSafeMessage(error.message);
   }
 
@@ -224,7 +231,8 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error instanceof ApiError && error.status >= 500) {
-    return error.readOnlyRequest ? fallback : UNKNOWN_RESULT_MESSAGE;
+    const message = error.readOnlyRequest ? fallback : UNKNOWN_RESULT_MESSAGE;
+    return error.requestId ? `${message} Referencia de soporte: ${error.requestId}.` : message;
   }
 
   if (error instanceof Error && isRequestTimeoutMessage(error.message)) {
@@ -604,30 +612,34 @@ export const apiClient = {
       const error = (await response.json().catch(() => null)) as {
         errors?: Record<string, string[]>;
         message?: string;
+        request_id?: unknown;
+        code?: unknown;
       } | null;
+      const requestId = safeRequestId(response.headers?.get?.('X-Request-ID')) ?? safeRequestId(error?.request_id);
+      const responseError = (message: string, validationErrors?: Record<string, string[]>) =>
+        new ApiError(message, response.status, validationErrors, undefined, method, requestId, error?.code);
       logClientIssue(
-        new ApiError(error?.message ?? `HTTP ${response.status}`, response.status, error?.errors),
+        responseError(error?.message ?? `HTTP ${response.status}`, error?.errors),
         { action: method, module: 'api', route: path },
       );
 
       if (response.status === 401) {
         notifySessionExpired();
-        recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `${method} ${path}`);
+        recordApiIssue(responseError('Sesión vencida. Vuelva a iniciar sesión para continuar.'), `${method} ${path}`);
       }
 
       if (response.status === 403) {
-        recordApiIssue(new ApiError(PERMISSION_DENIED_MESSAGE, response.status), `${method} ${path}`);
+        recordApiIssue(responseError(PERMISSION_DENIED_MESSAGE), `${method} ${path}`);
       }
 
       if (response.status === 419) {
         notifySessionExpired();
-        recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `${method} ${path}`);
+        recordApiIssue(responseError('La sesión expiró. Actualice la pantalla e intente de nuevo.'), `${method} ${path}`);
       }
 
       if (response.status === 422 && error?.errors) {
-        const apiError = new ApiError(
+        const apiError = responseError(
           'Revise los datos del formulario.',
-          response.status,
           error.errors,
         );
         logClientIssue(apiError, {
@@ -639,12 +651,12 @@ export const apiClient = {
 
       if (response.status === 423) {
         recordApiIssue(
-          new ApiError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.', response.status),
+          responseError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.'),
           `${method} ${path}`,
         );
       }
 
-      recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status, undefined, undefined, method), `${method} ${path}`);
+      recordApiIssue(responseError(error?.message ?? `HTTP ${response.status}`), `${method} ${path}`);
     }
 
     return (await response.json()) as T;
@@ -701,29 +713,32 @@ export const apiClient = {
       }
 
       if (!response.ok) {
+        const error = (await response.json().catch(() => null)) as { errors?: Record<string, string[]>; message?: string; request_id?: unknown; code?: unknown } | null;
+        const requestId = safeRequestId(response.headers?.get?.('X-Request-ID')) ?? safeRequestId(error?.request_id);
+        const responseError = (message: string, validationErrors?: Record<string, string[]>) =>
+          new ApiError(message, response.status, validationErrors, undefined, 'POST', requestId, error?.code);
         if (response.status === 401) {
           notifySessionExpired();
-          recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `POST_DOWNLOAD ${path}`);
+          recordApiIssue(responseError('Sesión vencida. Vuelva a iniciar sesión para continuar.'), `POST_DOWNLOAD ${path}`);
         }
 
         if (response.status === 403) {
-          recordApiIssue(new ApiError(PERMISSION_DENIED_MESSAGE, response.status), `POST_DOWNLOAD ${path}`);
+          recordApiIssue(responseError(PERMISSION_DENIED_MESSAGE), `POST_DOWNLOAD ${path}`);
         }
 
         if (response.status === 419) {
           notifySessionExpired();
-          recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `POST_DOWNLOAD ${path}`);
+          recordApiIssue(responseError('La sesión expiró. Actualice la pantalla e intente de nuevo.'), `POST_DOWNLOAD ${path}`);
         }
 
         if (response.status === 423) {
           recordApiIssue(
-            new ApiError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.', response.status),
+            responseError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.'),
             `POST_DOWNLOAD ${path}`,
           );
         }
 
-        const error = (await response.json().catch(() => null)) as { errors?: Record<string, string[]>; message?: string } | null;
-        recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status, error?.errors), `POST_DOWNLOAD ${path}`);
+        recordApiIssue(responseError(error?.message ?? `HTTP ${response.status}`, error?.errors), `POST_DOWNLOAD ${path}`);
       }
 
       return response.blob();
@@ -763,29 +778,31 @@ export const apiClient = {
     }
 
     if (!response.ok) {
+      const error = (await response.json().catch(() => null)) as { message?: string; request_id?: unknown; code?: unknown } | null;
+      const requestId = safeRequestId(response.headers?.get?.('X-Request-ID')) ?? safeRequestId(error?.request_id);
+      const responseError = (message: string) => new ApiError(message, response.status, undefined, undefined, 'GET', requestId, error?.code);
       if (response.status === 401) {
         notifySessionExpired();
-        recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `DOWNLOAD ${path}`);
+        recordApiIssue(responseError('Sesión vencida. Vuelva a iniciar sesión para continuar.'), `DOWNLOAD ${path}`);
       }
 
       if (response.status === 403) {
-        recordApiIssue(new ApiError(PERMISSION_DENIED_MESSAGE, response.status), `DOWNLOAD ${path}`);
+        recordApiIssue(responseError(PERMISSION_DENIED_MESSAGE), `DOWNLOAD ${path}`);
       }
 
       if (response.status === 419) {
         notifySessionExpired();
-        recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `DOWNLOAD ${path}`);
+        recordApiIssue(responseError('La sesión expiró. Actualice la pantalla e intente de nuevo.'), `DOWNLOAD ${path}`);
       }
 
       if (response.status === 423) {
         recordApiIssue(
-          new ApiError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.', response.status),
+          responseError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.'),
           `DOWNLOAD ${path}`,
         );
       }
 
-      const error = (await response.json().catch(() => null)) as { message?: string } | null;
-      recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status, undefined, undefined, 'GET'), `DOWNLOAD ${path}`);
+      recordApiIssue(responseError(error?.message ?? `HTTP ${response.status}`), `DOWNLOAD ${path}`);
     }
 
     return response.blob();

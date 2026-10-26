@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
-import type { FiscalSettings } from '@/lib/api';
+import type { FiscalSettings, PublicBranding } from '@/lib/api';
 import { invalidateSettingsQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 
@@ -32,7 +32,18 @@ export function useUpdateFiscalSettings() {
 
   return useMutation({
     mutationFn: (payload: Partial<FiscalSettings>) => apiClient.updateFiscalSettings(payload),
-    onSuccess: () => {
+    onSuccess: (updated) => {
+      // Publish the confirmed identity before background revalidation so every
+      // shell and login subscriber updates even when the branding GET is slow.
+      queryClient.setQueryData(queryKeys.settings.fiscal(), updated);
+      queryClient.setQueryData<PublicBranding>(queryKeys.settings.branding(), {
+        hospital_name: updated.hospital_name,
+        primary_color: updated.primary_color,
+        slogan: updated.slogan,
+        government_line: updated.government_line,
+        secretariat_line: updated.secretariat_line,
+        receipt_location: updated.receipt_location,
+      });
       return invalidateSettingsQueries(queryClient);
     },
   });
