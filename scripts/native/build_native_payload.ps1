@@ -136,6 +136,9 @@ try {
     Copy-NativeDirectoryContents -Source $mariaSource -Destination (Join-Path $stage 'runtime\mariadb')
     New-Item -ItemType Directory -Path (Join-Path $stage 'runtime\winsw') -Force | Out-Null
     Copy-Item -LiteralPath $byId.winsw -Destination (Join-Path $stage 'runtime\winsw\WinSW-x64.exe')
+    $winswLicense = Join-Path $ProjectRoot 'installer\native\licenses\WinSW-2.12.0-LICENSE.txt'
+    if (-not (Test-Path -LiteralPath $winswLicense -PathType Leaf)) { throw 'WinSW redistribution license is missing.' }
+    Copy-Item -LiteralPath $winswLicense -Destination (Join-Path $stage 'runtime\winsw\LICENSE.txt')
     New-Item -ItemType Directory -Path (Join-Path $stage 'runtime\vcredist') -Force | Out-Null
     Copy-Item -LiteralPath $byId.vcredist -Destination (Join-Path $stage 'runtime\vcredist\vc_redist.x64.exe')
 

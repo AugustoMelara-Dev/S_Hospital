@@ -42,6 +42,10 @@ try {
     }
 
     $artifacts = @()
+    $licenseDirectory = Join-Path $project 'installer\native\licenses'
+    New-Item -ItemType Directory -Path $licenseDirectory -Force | Out-Null
+    $winswLicense = Get-Content -LiteralPath (Join-Path $PSScriptRoot '..\..\installer\native\licenses\WinSW-2.12.0-LICENSE.txt') -Raw
+    [IO.File]::WriteAllText((Join-Path $licenseDirectory 'WinSW-2.12.0-LICENSE.txt'), $winswLicense, [Text.UTF8Encoding]::new($false))
     foreach ($definition in @(
         @{ id='php'; file='php.zip'; entries=@{'php.exe'='php';'php-cgi.exe'='cgi'} },
         @{ id='mariadb'; file='maria.zip'; entries=@{'mariadb-x\bin\mariadb-install-db.exe'='init';'mariadb-x\bin\mariadb-dump.exe'='dump';'mariadb-x\bin\mariadb.exe'='client';'mariadb-x\bin\mariadbd.exe'='server'} },
@@ -80,6 +84,8 @@ try {
     if (Test-Path -LiteralPath (Join-Path $output 'scripts\restore_hospital_windows.ps1')) { throw 'Legacy restore wrapper leaked into the native payload.' }
     if (-not (Test-Path -LiteralPath (Join-Path $output 'runtime\mariadb\bin\mariadb-dump.exe'))) { throw 'MariaDB archive layout was not normalized.' }
     if (-not (Test-Path -LiteralPath (Join-Path $output 'native-runtime-probe.json'))) { throw 'Runtime extension probe evidence is missing.' }
+    $bundledLicense = Get-Content -LiteralPath (Join-Path $output 'runtime\winsw\LICENSE.txt') -Raw
+    if ($bundledLicense -ne $winswLicense) { throw 'WinSW redistribution omitted or changed its upstream license notice.' }
     $release = Get-Content -LiteralPath (Join-Path $output 'native-release.json') -Raw | ConvertFrom-Json
     if ($release.database_update_policy -ne 'no_schema_change') { throw 'Payload builder must default to fail-closed database update policy.' }
     Write-Host '[ OK ] Native payload builder contract passed.'

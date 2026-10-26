@@ -31,9 +31,10 @@ entorno ni logs.
 
 ## Construcción reproducible
 
-La máquina de construcción sí necesita Internet para obtener los cinco
-runtimes y preparar dependencias de producción. Nunca se ejecutan estas tareas
-en el equipo hospitalario de destino.
+La primera preparación de la máquina de construcción necesita Internet para
+obtener runtimes y dependencias. Con las cachés verificadas y las dependencias
+de producción disponibles, la reconstrucción puede hacerse sin descargar nada.
+Nunca se ejecutan estas tareas en el equipo hospitalario de destino.
 
 1. Produzca `frontend/dist` una sola vez después del gate final del frontend.
 2. Cree un staging separado del backend y ejecute Composer con
@@ -51,11 +52,12 @@ en el equipo hospitalario de destino.
    ```powershell
    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/native/build_native_payload.ps1 `
      -ProjectRoot . `
-     -ProductionBackendRoot artifacts/native-staging/backend-2026.10.22.8 `
+     -ProductionBackendRoot artifacts/native-staging/backend-2026.10.24.8 `
      -FrontendDistRoot frontend/dist `
      -RuntimeCache artifacts/native-cache `
-     -OutputRoot artifacts/native-payload-2026.10.22.8 `
-     -Version 2026.10.22.8
+     -OutputRoot artifacts/native-payload-2026.10.24.8 `
+     -Version 2026.10.24.8 `
+     -DatabaseUpdatePolicy backward_compatible_additive
    ```
 
 5. Prepare Inno Setup 6.5.4 en modo portátil dentro de la caché. El script fija
@@ -70,8 +72,8 @@ en el equipo hospitalario de destino.
 
    ```powershell
    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/native/build_native_installer.ps1 `
-     -PayloadRoot artifacts/native-payload-2026.10.22.8 `
-     -Version 2026.10.22.8 `
+     -PayloadRoot artifacts/native-payload-2026.10.24.8 `
+     -Version 2026.10.24.8 `
      -IsccPath artifacts/tool-cache/inno-6.5.4-portable/ISCC.exe
    ```
 
@@ -89,6 +91,13 @@ instalador comprueba además su firma Authenticode y lo instala con las
 [opciones silenciosas oficiales](https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170)
 antes de iniciar PHP o MariaDB. Un código 3010 queda registrado para que Windows
 solicite reinicio al cerrar el instalador.
+
+El candidato `.8` incorpora dos migraciones de impuestos: crea `tax_rates`,
+añade `services.tax_rate_id` nullable y enlaza servicios gravados con la tasa
+preexistente. Conserva todas las migraciones anteriores y los snapshots de
+facturas. Por eso declara `backward_compatible_additive`; el valor predeterminado
+`no_schema_change` rechazaría correctamente esa actualización. Esta declaración
+requiere revisar las migraciones de cada release y no debe copiarse sin revisión.
 
 El payload incluye `LEEME.txt`, con los pasos de configuración de cada hospital.
 Al preparar el kit copie también la guía vigente y la entrega actual con los
@@ -171,17 +180,30 @@ y binarios auxiliares heredados del servicio. Esto evita que un proceso de
 servicio con permisos sobre datos mutables inyecte código en una operación de
 mantenimiento administrativa.
 
+## Licencias de terceros
+
+Los archivos de licencia de PHP, MariaDB y Caddy se conservan al extraer sus
+distribuciones oficiales. El constructor añade `runtime/winsw/LICENSE.txt`
+desde `installer/native/licenses/WinSW-2.12.0-LICENSE.txt`, copia del aviso MIT
+del [tag oficial 2.12.0](https://github.com/winsw/winsw/blob/v2.12.0/LICENSE.txt).
+Las dependencias PHP mantienen sus avisos dentro de `vendor`. Visual C++
+Redistributable y Windows/Edge conservan sus propias condiciones; incluirlos o
+usarlos no convierte sus licencias en licencias libres. No se requiere un SaaS
+ni una suscripción Docker para operar el sistema instalado.
+
 ## Evidencia que aún debe producirse
 
 Los contratos PowerShell y el modo sandbox no sustituyen la certificación del
-instalador. Antes de entregar se requiere ejecutar el EXE firmado en una VM
+instalador. Antes de certificar Windows limpio se requiere ejecutar el EXE en una VM
 Windows limpia sin PHP/MariaDB/Docker/Node, reiniciar, probar inicio de servicios
 y apertura al login, completar el flujo UI con backend real, validar backup y
 restore desechable, y repetir update/rollback. Impresora, política institucional,
-unidad externa y firma Authenticode siguen siendo comprobaciones del entorno de
-entrega; no se consideran certificadas por el código.
+unidad externa siguen siendo comprobaciones del entorno de entrega; no se
+consideran certificadas por el código. La entrega actual se prepara sin firma
+Authenticode por decisión del propietario; la guía explica el aviso de
+SmartScreen y la verificación de procedencia y hash.
 
 Los SHA-256 del manifiesto detectan archivos incompletos o modificados dentro
 del payload, pero por sí solos acreditan integridad, no la identidad del editor.
-La firma Authenticode del EXE final sigue siendo el control de autenticidad que
-debe completar el entorno de entrega.
+Este candidato no tiene firma Authenticode y su hash debe recibirse por un
+canal de confianza junto con el instalador.
