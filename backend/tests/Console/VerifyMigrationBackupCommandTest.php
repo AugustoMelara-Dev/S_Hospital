@@ -23,21 +23,22 @@ class VerifyMigrationBackupCommandTest extends TestCase
 
     /**
      * This suite simulates an empty/partial install by creating the ledgers by
-     * hand. SQLite :memory: starts clean, but the MariaDB lab persists the
-     * schema across classes, so the disposable schema is emptied once and the
-     * helpers recreate only the tables each case needs.
+     * hand. SQLite :memory: starts clean for each case, while MariaDB keeps
+     * DDL across cases. Empty only the disposable schema validated by
+     * TestCase's s_hospital_test_ guard before each case; helpers then create
+     * exactly the partial schema needed by that case.
      */
-    private static bool $schemaCleared = false;
-
     protected function setUp(): void
     {
         parent::setUp();
 
-        if (DB::connection()->getDriverName() !== 'sqlite' && ! self::$schemaCleared) {
-            self::$schemaCleared = true;
+        if (DB::connection()->getDriverName() !== 'sqlite') {
             Schema::disableForeignKeyConstraints();
-            Schema::dropAllTables();
-            Schema::enableForeignKeyConstraints();
+            try {
+                Schema::dropAllTables();
+            } finally {
+                Schema::enableForeignKeyConstraints();
+            }
         }
     }
 

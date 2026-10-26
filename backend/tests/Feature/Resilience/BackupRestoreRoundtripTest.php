@@ -43,9 +43,9 @@ class BackupRestoreRoundtripTest extends TestCase
         // unico que emite `BEGIN TRANSACTION`/`COMMIT` (ver
         // DatabaseDumpWriter::dumpSqliteMemoryDatabase). En MariaDB/MySQL el
         // writer toma la ruta mysqldump, cubierta por
-        // test_database_dump_writer_emits_complete_schema_for_mysql_simulation.
+        // test_database_dump_writer_emits_complete_schema_for_mysql.
         if (DB::connection()->getDriverName() !== 'sqlite') {
-            $this->markTestSkipped('Dump SQLite especifico: en MariaDB/MySQL el writer usa mysqldump (ver test_database_dump_writer_emits_complete_schema_for_mysql_simulation).');
+            $this->markTestSkipped('Dump SQLite especifico: en MariaDB/MySQL el writer usa mysqldump (ver test_database_dump_writer_emits_complete_schema_for_mysql).');
         }
 
         $this->seedBillingBase();
@@ -95,29 +95,35 @@ class BackupRestoreRoundtripTest extends TestCase
         $this->assertStringNotContainsString('DB_PASSWORD=', $dump);
     }
 
-    public function test_database_dump_writer_emits_complete_schema_for_mysql_simulation(): void
+    public function test_database_dump_writer_emits_complete_schema_for_mysql(): void
     {
-        $writer = app(DatabaseDumpWriter::class);
-        $path = Storage::disk('local')->path('backups/mysqldump-test.sql');
-
-        $reflection = new \ReflectionClass($writer);
-        $method = $reflection->getMethod('dumpMysql');
-        $method->setAccessible(true);
-
-        $this->seedBillingBase();
-        $config = Config::get('database.connections.'.Config::get('database.default'));
-
-        try {
-            $method->invoke($writer, $path, $config);
-        } catch (\RuntimeException $exception) {
-            // Expected when mysqldump binary is not present in the test
-            // environment. The test is informational, not blocking.
-            $this->markTestSkipped('mysqldump not available in CI: '.$exception->getMessage());
-
-            return;
+        if (! in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            $this->markTestSkipped('El dump nativo requiere la base MariaDB/MySQL desechable de la suite externa.');
         }
 
-        $this->assertTrue(is_file($path));
+        $writer = app(DatabaseDumpWriter::class);
+        $reflection = new \ReflectionClass($writer);
+        $findBinary = $reflection->getMethod('findDumpBinary');
+
+        if ($findBinary->invoke($writer) === null) {
+            $this->markTestSkipped('No hay mariadb-dump/mysqldump ejecutable; configure HOSPITAL_DUMP_BINARY para validar el respaldo nativo.');
+        }
+
+        Storage::disk('local')->makeDirectory('backups');
+        $path = Storage::disk('local')->path('backups/mysqldump-test.sql');
+
+        // A present binary must actually succeed. SQL, permission and writer
+        // failures must fail this test instead of being converted into skips.
+        $writer->dumpTo($path);
+
+        $this->assertFileExists($path);
+        $dump = file_get_contents($path);
+        $this->assertIsString($dump);
+        foreach (['invoices', 'invoice_items', 'payments', 'audit_logs'] as $table) {
+            $this->assertStringContainsString('CREATE TABLE `'.$table.'`', $dump);
+        }
+        $this->assertStringContainsString('`amount_cents`', $dump);
+        $this->assertStringContainsString('`quantity_cents`', $dump);
     }
 
     public function test_failed_backup_cleans_up_partial_file(): void

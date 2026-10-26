@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Backups\CreateBackupAction;
 use App\Actions\Backups\ReconcileStaleBackupLogsAction;
 use App\Actions\Backups\VerifyBackupAction;
+use App\Http\Middleware\RequestCorrelation;
 use App\Http\Requests\Backups\DownloadBackupRequest;
 use App\Http\Requests\Backups\IndexBackupRequest;
 use App\Http\Requests\Backups\StoreBackupRequest;
@@ -52,7 +53,7 @@ class BackupController extends Controller
     public function store(StoreBackupRequest $request, CreateBackupAction $createBackup): JsonResponse
     {
         $backupLog = $createBackup->createPending($this->authenticatedUser($request), BackupLog::TYPE_MANUAL);
-        RunBackupJob::dispatch($backupLog->id);
+        RunBackupJob::dispatch($backupLog->id, RequestCorrelation::id($request));
 
         return response()->json([
             'data' => $this->payload($backupLog),

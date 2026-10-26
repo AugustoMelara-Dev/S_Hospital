@@ -16,6 +16,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
@@ -339,6 +340,7 @@ class BackupWorkflowTest extends TestCase
         }
 
         $decryptedPath = storage_path('framework/testing/decrypted-backup.sql');
+        File::ensureDirectoryExists(dirname($decryptedPath));
         @unlink($decryptedPath);
         $this->artisan('hospital:decrypt-backup', [
             'input' => Storage::disk('local')->path((string) $backup->path),
@@ -386,6 +388,7 @@ class BackupWorkflowTest extends TestCase
         Storage::disk('local')->makeDirectory('backups');
         file_put_contents($legacyPath, $legacyPayload);
         $decryptedPath = storage_path('framework/testing/legacy-app-key-backup.sql');
+        File::ensureDirectoryExists(dirname($decryptedPath));
         @unlink($decryptedPath);
 
         $this->artisan('hospital:decrypt-backup', [

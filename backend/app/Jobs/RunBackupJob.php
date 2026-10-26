@@ -7,6 +7,7 @@ use App\Actions\Reports\OperationalMetricsService;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Support\OperationalMessageSanitizer;
+use App\Support\SafeExceptionDiagnostics;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
@@ -21,6 +22,7 @@ class RunBackupJob implements ShouldQueue
 
     public function __construct(
         private readonly int $backupLogId,
+        private readonly ?string $originRequestId = null,
     ) {
         $this->onQueue('backups');
     }
@@ -33,7 +35,7 @@ class RunBackupJob implements ShouldQueue
             return;
         }
 
-        $createBackup->run($backupLog);
+        $createBackup->run($backupLog, $this->originRequestId ?? null);
 
         OperationalMetricsService::recordWorkerHeartbeat();
     }
@@ -46,6 +48,9 @@ class RunBackupJob implements ShouldQueue
             return;
         }
 
+        if ($exception !== null) {
+            SafeExceptionDiagnostics::record($exception, 'backup.worker_failed', 'BACKUP_WORKER_FAILED', 'worker', $backupLog->id, $this->originRequestId ?? null);
+        }
         $message = OperationalMessageSanitizer::message($exception?->getMessage())
             ?? 'El worker de respaldos se detuvo antes de completar el respaldo. Revise el servicio de backups.';
 

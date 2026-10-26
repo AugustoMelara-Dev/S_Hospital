@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\User;
 use App\Support\OperationalMessageSanitizer;
+use App\Support\SafeExceptionDiagnostics;
 use Closure;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -50,7 +51,7 @@ class CreateBackupAction
         return $backupLog->fresh(['creator:id,name,username']) ?? $backupLog;
     }
 
-    public function run(BackupLog $backupLog): BackupLog
+    public function run(BackupLog $backupLog, ?string $originRequestId = null): BackupLog
     {
         $lock = Cache::lock('hospital:backup:local', 600);
 
@@ -58,6 +59,7 @@ class CreateBackupAction
             return $this->markFailed($backupLog, 'Ya hay un backup local en proceso.');
         }
 
+        $stage = 'prepare';
         try {
             $backupLog->refresh();
             $backupLog->forceFill([
@@ -78,13 +80,17 @@ class CreateBackupAction
             $this->removeAbsoluteFile($temporaryCompressedPath);
             $this->removeAbsoluteFile($temporaryEncryptedPath);
 
+            $stage = 'dump';
             $this->databaseDumpWriter->dumpTo($temporaryDumpPath);
             @chmod($temporaryDumpPath, 0600);
+            $stage = 'compress';
             $this->compressDumpFile($temporaryDumpPath, $temporaryCompressedPath);
             $this->removeAbsoluteFile($temporaryDumpPath);
+            $stage = 'encrypt';
             $this->encryptBackupFile->execute($temporaryCompressedPath, $temporaryEncryptedPath);
             $this->removeAbsoluteFile($temporaryCompressedPath);
 
+            $stage = 'publish';
             if (! @rename($temporaryEncryptedPath, $absolutePath)) {
                 throw new RuntimeException('No se pudo publicar el archivo de respaldo local.');
             }
@@ -96,6 +102,7 @@ class CreateBackupAction
                 throw new RuntimeException('El respaldo no genero un archivo local.');
             }
 
+            $stage = 'record';
             $backupLog->forceFill([
                 'size_bytes' => filesize($absolutePath),
                 'checksum_sha256' => hash_file('sha256', $absolutePath),
@@ -114,6 +121,7 @@ class CreateBackupAction
                 report($pruneException);
             }
         } catch (\Throwable $exception) {
+            SafeExceptionDiagnostics::record($exception, 'backup.failed', 'BACKUP_FAILED', $stage, $backupLog->id, $originRequestId);
             $this->removePartialFileIfSafe((string) $backupLog->path);
             $this->removePartialFileIfSafe((string) $backupLog->path.'.tmp');
             $this->removePartialFileIfSafe((string) $backupLog->path.'.gz.tmp');
