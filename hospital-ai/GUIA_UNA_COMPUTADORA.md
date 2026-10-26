@@ -1,6 +1,6 @@
 # S_Hospital en una computadora
 
-Actualizado el 22 de octubre de 2026. Consulte [la entrega actual](ENTREGA_ACTUAL_20260928.md) para identificar el instalador y sus comprobaciones pendientes. [Instrucciones breves del instalador](../installer/native/LEEME.txt).
+Actualizado el 25 de octubre de 2026. Consulte [la entrega actual](ENTREGA_ACTUAL_20260928.md) para identificar el instalador y sus comprobaciones pendientes. [Instrucciones breves del instalador](../installer/native/LEEME.txt).
 
 ## Una instalación por hospital
 
@@ -17,6 +17,10 @@ Abra **S_Hospital** desde el escritorio o Inicio. El modo habitual usa Microsoft
 5. Complete la configuración descrita abajo antes de atender pacientes.
 
 Si Windows solicita reiniciar, guarde su trabajo. Después de iniciar sesión compruebe que S_Hospital abra y permita entrar. La instalación y el reinicio comprobados para esta versión figuran en la entrega actual.
+
+El kit también contiene las fuentes oficiales de MariaDB y los avisos de
+terceros. No necesita extraer ni compilar ese archivo para usar S_Hospital;
+consérvelo junto al kit si entrega una copia a otra institución.
 
 ## Preparar cada hospital antes del primer cobro
 

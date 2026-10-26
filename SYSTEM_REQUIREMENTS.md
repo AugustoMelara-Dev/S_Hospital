@@ -53,24 +53,27 @@ Sin internet en produccion. Multiusuario por red local con una computadora servi
 
 ## Runtime y licencia
 
-- Ruta empaquetada actual (Windows): **Docker Desktop** + imagenes Linux
-  (`setup.bat` / `S_Hospital-Instalador.exe`). Docker Desktop exige
-  **suscripcion pagada para entidades gubernamentales**; la exencion de pequena
-  empresa no aplica a un hospital publico.
+- Entrega nativa Windows: instalador de `installer/native/` con PHP, MariaDB,
+  Caddy y WinSW incluidos, sin Docker ni suscripcion cloud obligatoria.
+  Opera en una computadora mediante loopback; habilitar clientes LAN requiere
+  configuracion y validacion especificas. Consulte la
+  [guia nativa](hospital-ai/GUIA_UNA_COMPUTADORA.md).
+- Alternativa Windows con contenedores: **Docker Desktop** + imagenes Linux
+  (`setup.bat` / `S_Hospital-Instalador.exe`). Sus condiciones de licencia se
+  documentan en [OFFLINE_RUNTIME_LICENSE.md](docs/OFFLINE_RUNTIME_LICENSE.md).
 - Alternativa sin suscripcion: **Docker Engine (Apache-2.0)** en un servidor
   Linux. Este repositorio no incluye empaquetado `.sh` de instalacion Linux; el
   `docker-compose.prod.yml` es portable, pero el camino Linux no esta certificado
   ni empaquetado.
-- La decision (suscripcion vs servidor Linux) es **institucional y externa**.
-  Ver `docs/OFFLINE_RUNTIME_LICENSE.md`. No hay compras ni cambios de SO
-  automaticos en este repositorio.
+- Windows, hardware y perifericos no estan incluidos en la gratuidad del
+  software. No hay compras ni cambios de SO automaticos en este repositorio.
 
 ## Requisitos de hardware (subagente 16)
 
 ### Servidor (PC donde corre backend, frontend compilado, MySQL/MariaDB y backups)
 
 **Minimos:**
-- CPU: 4 nucleos x86_64 con virtualizacion habilitada.
+- CPU: 4 nucleos x86_64; virtualizacion habilitada para la alternativa Docker.
 - RAM: 8 GB DDR4.
 - Disco: 100 GB SSD libres (sistema + codigo + base + backups locales + logs).
 - Red: Gigabit Ethernet.

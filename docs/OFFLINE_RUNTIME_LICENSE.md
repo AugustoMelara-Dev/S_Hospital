@@ -1,4 +1,41 @@
-# Runtime license: Docker Desktop vs Docker Engine (S_Hospital)
+# Runtimes de S_Hospital: entrega nativa y alternativa Docker
+
+## Estado actual — 24 de octubre de 2026
+
+La entrega Windows ya dispone de un [instalador nativo](../installer/native/README.md)
+que empaqueta PHP, MariaDB, Caddy y WinSW. No necesita Docker Desktop ni
+servicios SaaS para login, facturación, reportes, impresión o respaldos.
+Las versiones y hashes están en [runtime-sources.json](../installer/native/runtime-sources.json).
+Su configuración actual es para una computadora (loopback), no una certificación LAN.
+
+La ausencia de suscripción de la aplicación no incluye el costo de Windows,
+equipo, impresoras, mantenimiento ni servicios externos opcionales. Se deben
+conservar las licencias y avisos de los componentes redistribuidos.
+MariaDB documenta el [uso interno gratuito y las condiciones de distribución](https://mariadb.com/docs/general-resources/community/community/faq/licensing-questions/licensing-faq).
+
+Docker sigue siendo una alternativa de despliegue. Su documentación vigente
+indica que [Docker Desktop requiere suscripción para entidades gubernamentales](https://docs.docker.com/subscription-billing/desktop-license/).
+No es necesario contratarlo para la ruta nativa de S_Hospital.
+
+### Fuentes que acompañan al kit
+
+El 25 de octubre se descargó el archivo fuente oficial de MariaDB **11.4.13**,
+la misma versión del runtime, y se verificó contra sus
+[checksums oficiales](https://archive.mariadb.org/mariadb-11.4.13/source/sha256sums.txt).
+Se conserva en `artifacts/third-party-sources/mariadb-11.4.13.tar.gz`
+(221,118,336 bytes), SHA-256
+`1bb254b106d0a7ca871cfa18fa6e18d4b80a7430f9ec9d1571ec4271a13def96`.
+Debe acompañar al kit redistribuido junto con su README y los avisos;
+no se instala como dependencia ni se requiere compilarlo para usar la aplicación.
+El archivo original contiene la licencia y los controles de compilación.
+Se entrega la fuente disponible, sin inventar una oferta futura ni cambiar
+la licencia de S_Hospital o la de terceros.
+
+El análisis siguiente se conserva como antecedente del **17 de septiembre**:
+sus frases «único camino» y «no empaquetado» describen aquel corte, no el
+instalador nativo actual. No se ha comprado ni activado ninguna licencia.
+
+## Antecedente: Docker Desktop vs Docker Engine
 
 - **Estado:** documento de decision. NO constituye asesoría legal ni aprobacion
   institucional.

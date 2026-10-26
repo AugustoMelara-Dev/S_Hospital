@@ -1,5 +1,99 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-10-25 - Candidato offline: recibos, recuperación y exportación
+
+- Recibos: ocultar el identificador interno del turno usado como nombre de caja
+  automático, sin reescribir snapshots ni ocultar nombres reales. A5 muestra la
+  explicación y el ajuste de eritropoyetina gratuita. Media carta conserva en
+  una página la cuenta corta con impuestos mixtos y las firmas, sin reducir letra.
+- API: la emisión bloqueada por reconciliación posterior a restaurar responde
+  ahora `409 RESTORE_RECONCILIATION_PENDING`, con mensaje seguro y correlación,
+  en lugar del error genérico 500. El frontend conserva el borrador y presenta
+  la intervención requerida del administrador; no lo trata como cobro incierto.
+- Accesibilidad: los botones recuperan opacidad completa inmediatamente al
+  habilitarse y usan un color de hover con contraste comprobado.
+- Excel: agrupar formato de celdas de texto consecutivas por columna, conservando
+  valores, tipos, estilos y alturas. La serie HTTP final con 106 facturas midió
+  2,565 / 1,399 / 1,511 ms en el laboratorio.
+- Pruebas: ejecutar realmente las migraciones idempotentes y la preservación de
+  filas; evitar omisiones que ocultaban fallos del dump nativo. Ajustar contratos
+  antiguos de identidad, impresión y movimiento reducido sin cambiar las reglas
+  de negocio. Aislar por caso el esquema de prueba del guard de respaldo antes
+  de migraciones en MariaDB. Validar builds aislados mediante
+  `check-product-delivery --dist-dir`.
+- Desarrollo: respetar el registro fiscal único existente aunque su ID sea
+  distinto de 1 al preparar usuarios de validación o datos E2E; no crear un
+  duplicado.
+- Distribución: conservar la licencia de WinSW en el payload y acompañar el kit
+  con la fuente oficial verificada de MariaDB 11.4.13. Documentar la ruta nativa
+  sin Docker obligatorio y diferenciarla del despliegue LAN.
+
+La [evidencia de esta sesión](docs/qa/2026-10-24-completion.md) registra corridas,
+repeticiones y límites. No se ejecutó una instalación elevada ni se verificaron
+impresoras físicas, reinicio de Windows o un segundo puesto LAN.
+
+## 2026-10-22 - Correcciones funcionales verificadas y publicadas localmente
+
+Cambios verificados primero en una copia aislada y publicados en los dos entornos
+locales. La comparación antes/después conserva usuarios, credenciales, permisos,
+cajas, movimientos, facturas, pagos, recibos y ajustes existentes.
+
+- Identidad: propagar el nombre configurado del hospital a navegación, ajustes,
+  facturas nuevas y recibos, conservando los snapshots de documentos históricos.
+- Reportes: calcular cantidad y ajuste de gratuidades mediante agregados completos
+  en centavos, aunque la vista previa se limite a 5,000 filas. Unificar el alcance
+  gerencial de JSON, PDF y Excel sin otorgar permisos para cerrar cajas ajenas.
+- Caja y reportes: añadir filtros históricos y opciones paginadas con búsqueda;
+  conservar la selección fuera de la página actual y respetar el alcance del usuario.
+  Persistir filtros de reportes en URL e invalidar su caché tras operaciones de caja.
+- Auditoría: incorporar una sección autorizada por `audit.view` y búsqueda en el
+  servidor por nombre o usuario; ampliar ayuda para gratuidades, anulaciones y cierres.
+- Diagnóstico: generar `X-Request-ID` en el servidor y conservarlo en errores y
+  trabajos de respaldo. Registrar causas estructuradas sin mensajes crudos,
+  contraseñas, SQL, argumentos ni rutas locales; mantener genéricos los errores 500.
+- API: ampliar OpenAPI con rutas reales, esquemas financieros, códigos HTTP,
+  sesión, CSRF e idempotencia. Descomponer ajustes de impresión y conectar las
+  comprobaciones de accesibilidad y contraste al gate habitual.
+- Recuperación: restaurar en una base nueva y aislada; comparar 11 tablas críticas,
+  comprobar ausencia de líneas de factura huérfanas y realizar una prueba de
+  escritura y lectura. Esto no certifica impresión física ni reinicio de Windows.
+- Verificación backend integrada: 439 pruebas, 5,068 aserciones, 20 omisiones y
+  cero fallas. Trece escenarios reales únicos y 24 pruebas de navegador simulado
+  aprobados; 15 pantallas revisadas en escritorio y móvil. Verificados también
+  nombre nuevo en PDF, catálogo para ambos roles y persistencia tras reinicio PHP.
+- Contraste: habilitar acciones recupera inmediatamente la opacidad completa.
+  OPcache dispone de identidad propia por entorno y versión, persistida en la
+  configuración y los scripts de arranque, con validación de archivos activa.
+
+Evidencia y pendientes vigentes: `docs/superpowers/plans/2026-10-22-functional-hardening.md`.
+
+## 2026-10-22 - Interfaz clara hospitalaria y correcciones de entrega
+
+- Impresión: separar opciones institucionales de ajustes técnicos; papel y
+  copias estándar guardan sin exigir un motivo oculto. Los cambios técnicos y
+  la activación de un formato personalizado conservan permiso y motivo de soporte.
+- Reportes: resolver el turno autorizado del cajero en el mismo render que la
+  consulta y exportación, evitando consultas iniciales sin alcance o con el turno
+  anterior. Sin sesión disponible se bloquea la consulta; el backend mantiene
+  la validación de propietario y permisos.
+- Interfaz: aplicar blanco y azul hospitalario en pantallas, navegación, menús,
+  diálogos, avisos y controles nativos, incluso con preferencias oscuras anteriores.
+- Catálogo: mostrar «Editar precio» junto a cada concepto y permitir la gestión
+  a administrador y supervisor; exigir motivo y conservar precios históricos.
+- Caja: validar que la caja elegida siga habilitada. Recibos: identificar como
+  histórico el saldo al anular. Reportes: esperar la consulta de caja antes de
+  mostrar que no existe una abierta. Usuarios: distinguir roles en consulta.
+- Impresión personalizada: conservar ancho, alto y orientación del perfil al
+  construir vistas previas y documentos.
+- Respaldos: cerrar la confirmación al aceptar la creación para permitir la
+  descarga; mantener los errores visibles dentro del diálogo para reintentar.
+- Agregar regresiones de componente y de navegador; actualizar los selectores
+  de las pruebas de entrega a la navegación actual. Crear/descargar un respaldo
+  no se presenta como evidencia de restauración ni revisión de integridad.
+- Validación en una base MariaDB independiente y build temporal. Sin migraciones
+  ni cambios a credenciales o cajas existentes. El permiso `catalog.manage` se
+  añade únicamente al rol supervisor, conforme a la decisión del usuario.
+
 ## 2026-09-13 - Campana de reparacion previa a certificacion (sin nuevas certificaciones)
 
 Cambios locales de la campana sobre el worktree aislado: sin commits, sin

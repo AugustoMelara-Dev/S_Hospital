@@ -14,12 +14,26 @@ Sistema hospitalario local para facturacion, caja, pagos, reportes, catalogo de 
 
 No es un expediente clinico electronico ni una contabilidad financiera de partida doble. Los reportes controlan facturacion, cobros y caja. Los egresos operativos no se registran mientras no exista un modulo de egresos autorizado.
 
+## Entrega Windows sin servicios de pago obligatorios
+
+La rama de entrega incluye un **instalador nativo offline** con PHP, MariaDB,
+Caddy y servicios Windows. No requiere Docker Desktop, una cuenta cloud ni
+una suscripción para operar. Consulte la [guía de una computadora](hospital-ai/GUIA_UNA_COMPUTADORA.md),
+el [estado de entrega y sus límites](hospital-ai/ENTREGA_ACTUAL_20260928.md)
+y la [construcción del instalador](installer/native/README.md).
+
+El instalador nativo escucha en `127.0.0.1:8000`: su configuración actual es
+para una computadora. El acceso desde otro puesto LAN requiere configuración
+y validación propias; no se habilita automáticamente. Windows, hardware y
+periféricos siguen siendo requisitos del equipo.
+
 ## Arquitectura
 
 - Frontend: React 19, TypeScript estricto, Vite, TanStack Query, React Hook Form y Zod.
 - API: Laravel 12, Sanctum, Policies, Actions/Services y transacciones de base de datos.
 - Datos: MariaDB/MySQL; dinero persistido y calculado sin `float`.
-- Produccion LAN: Nginx, PHP-FPM, MariaDB, worker, scheduler y Soketi dentro de Docker Compose.
+- Entrega nativa Windows: Caddy, PHP FastCGI, MariaDB, colas y scheduler locales.
+- Alternativa LAN con contenedores: Nginx, PHP-FPM, MariaDB, worker, scheduler y Soketi dentro de Docker Compose.
 - Operacion: no requiere internet despues de instalar el paquete offline.
 
 La auditoria integral del 2026-07-21, sus comandos reproducibles, E2E con MariaDB real, restauracion cifrada y riesgos residuales se documentan en [`docs/refactor-migration/12-final-result.md`](docs/refactor-migration/12-final-result.md).
@@ -32,7 +46,10 @@ La auditoria integral del 2026-07-21, sus comandos reproducibles, E2E con MariaD
 - Git.
 - Node.js y PHP no son obligatorios si todos los comandos se ejecutan en Docker.
 
-### Servidor hospitalario
+### Servidor hospitalario con contenedores
+
+Estos requisitos corresponden a la alternativa Docker. Para el instalador
+nativo use los requisitos de [su guía](installer/native/README.md).
 
 - Windows 10/11 o Windows Server de 64 bits.
 - Docker Desktop activo, virtualizacion habilitada y al menos 5 GB libres.
@@ -92,7 +109,11 @@ La plantilla raiz es [`.env.example`](.env.example). No contiene secretos. El in
 
 En LAN HTTP controlada, `HOSPITAL_ALLOW_INSECURE_HTTP=1` documenta la excepcion y `SESSION_SECURE_COOKIE=false`. Con HTTPS, cambie `APP_SCHEME=https`, elimine la excepcion y use `SESSION_SECURE_COOKIE=true`.
 
-## Instalacion recomendada en LAN
+## Instalacion alternativa en LAN con Docker
+
+La ruta de esta sección es el empaquetado con contenedores. No es requisito
+del instalador nativo Windows. Revise las [condiciones del runtime](docs/OFFLINE_RUNTIME_LICENSE.md)
+antes de elegir Docker Desktop para una institución.
 
 ### Instalador grafico para una sola PC
 
@@ -133,7 +154,8 @@ Administrador:
 .\setup.bat
 ```
 
-El paquete offline solo ofrece Docker porque no incluye fuentes ni dependencias para una instalacion bare-metal.
+Este paquete offline de contenedores solo ofrece Docker. El instalador nativo
+es una distribución independiente que incluye sus propios runtimes.
 
 ### Instalacion desde el repositorio
 
