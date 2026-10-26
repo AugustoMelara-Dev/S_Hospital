@@ -131,12 +131,13 @@ class ProductionInstallationSeederTest extends TestCase
                 ->count(),
         );
 
-        // H-14: the neutral fallback replaces any legacy hospital identity.
-        $legacyDefaultHospital = 'Hospital '.'General '.('San '.'Isidro');
-        $legacyFirstHospital = 'Hospital '.('San '.'Isidro');
+        // The product fallback is neutral; actual configured hospital names
+        // remain valid identities instead of being replaced by the brand.
+        $configuredGeneralHospital = 'Hospital '.'General '.('San '.'Isidro');
+        $configuredHospital = 'Hospital '.('San '.'Isidro');
         $this->assertSame('S_Hospital', HospitalName::display(null));
-        $this->assertSame('S_Hospital', HospitalName::display($legacyDefaultHospital));
-        $this->assertSame('S_Hospital', HospitalName::display($legacyFirstHospital));
+        $this->assertSame($configuredGeneralHospital, HospitalName::display($configuredGeneralHospital));
+        $this->assertSame($configuredHospital, HospitalName::display($configuredHospital));
 
         foreach (['categories', 'services'] as $table) {
             foreach (DB::table($table)->pluck('name') as $name) {

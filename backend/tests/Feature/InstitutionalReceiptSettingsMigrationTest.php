@@ -28,8 +28,8 @@ class InstitutionalReceiptSettingsMigrationTest extends TestCase
 
     public function test_database_seeding_creates_required_print_profiles_without_thermal_global_default(): void
     {
-        // The DDL of the migration tests above commits on MariaDB; clear the
-        // singleton so the seeder can install it again deterministically.
+        // Clearing a singleton does not reset AUTO_INCREMENT on MariaDB.
+        // Full seeding must work even when its next primary key is not 1.
         FiscalSetting::query()->delete();
         $this->seed();
 
@@ -154,6 +154,22 @@ class InstitutionalReceiptSettingsMigrationTest extends TestCase
         // An installation that was already seeded with the previous single-copy
         // default keeps it: the delivery proposal is insert-only.
         $this->assertSame('original_only', $profile->copies_mode);
+    }
+
+    public function test_database_seeding_reuses_an_existing_fiscal_singleton_with_a_non_default_primary_key(): void
+    {
+        $settings = new FiscalSetting;
+        $settings->forceFill([
+            'id' => 47,
+            'hospital_name' => 'Hospital de laboratorio',
+            'rtn' => '08011999123456',
+            'default_tax_rate' => '0.00',
+        ])->save();
+
+        $this->seed();
+
+        $this->assertSame(47, FiscalSetting::query()->sole()->id);
+        $this->assertSame(1, FiscalSetting::query()->count());
     }
 
     public function test_new_install_delivery_proposal_is_editable_and_not_overwritten_by_seeder_reruns(): void

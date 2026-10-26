@@ -97,6 +97,25 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
         $this->assertTrue(AuditLog::query()->where('entity_id', $invoice->id)->exists());
     }
 
+    public function test_it_reuses_an_existing_fiscal_singleton_with_a_non_default_primary_key(): void
+    {
+        $settings = new FiscalSetting;
+        $settings->forceFill([
+            'id' => 47,
+            'hospital_name' => 'Hospital de laboratorio',
+            'rtn' => '08011999123456',
+            'default_tax_rate' => '0.00',
+        ])->save();
+
+        foreach ([1, 2] as $attempt) {
+            $this->artisan('hospital:prepare-e2e-release-data', ['--password' => 'TestPassword@E2E!'])
+                ->assertSuccessful();
+
+            $this->assertSame(47, FiscalSetting::query()->sole()->id, 'El intento '.$attempt.' debe reutilizar el singleton.');
+            $this->assertSame(1, FiscalSetting::query()->count());
+        }
+    }
+
     public function test_it_closes_a_completed_e2e_session_and_opens_a_clean_session_for_the_next_run(): void
     {
         $password = 'TestPassword@E2E!';

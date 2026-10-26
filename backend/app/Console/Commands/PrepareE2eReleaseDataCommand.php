@@ -77,25 +77,22 @@ class PrepareE2eReleaseDataCommand extends Command
         $supervisor = $this->upsertUser('supervisor.e2e', 'Supervisor E2E', 'supervisor', $password);
         $cashier = $this->upsertUser('cajero.e2e', 'Cajero E2E', 'cajero', $password);
 
-        FiscalSetting::query()->updateOrCreate(
-            ['id' => 1],
-            [
-                'hospital_name' => 'S_Hospital',
-                'rtn' => '08011999123456',
-                'default_tax_rate' => '15.00',
-                'receipt_paper_size' => 'half_letter',
-                'receipt_template_mode' => 'institutional',
-                'government_line' => 'Gobierno de Honduras',
-                'secretariat_line' => 'Secretaria de Salud Publica',
-                'receipt_location' => '',
-                'phone' => '2444-0000',
-                'receipt_footer_text' => 'Datos de prueba E2E no productivos.',
-                'scanner_enabled' => false,
-                'partial_payments_enabled' => false,
-                'created_by' => $admin->id,
-                'updated_by' => $admin->id,
-            ],
-        );
+        FiscalSetting::query()->firstOrNew()->fill([
+            'hospital_name' => 'S_Hospital',
+            'rtn' => '08011999123456',
+            'default_tax_rate' => '15.00',
+            'receipt_paper_size' => 'half_letter',
+            'receipt_template_mode' => 'institutional',
+            'government_line' => 'Gobierno de Honduras',
+            'secretariat_line' => 'Secretaria de Salud Publica',
+            'receipt_location' => '',
+            'phone' => '2444-0000',
+            'receipt_footer_text' => 'Datos de prueba E2E no productivos.',
+            'scanner_enabled' => false,
+            'partial_payments_enabled' => false,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ])->save();
 
         $sequence = FiscalSequence::query()
             ->where('document_type', 'invoice')

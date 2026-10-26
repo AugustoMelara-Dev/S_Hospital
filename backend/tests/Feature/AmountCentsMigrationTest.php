@@ -26,13 +26,20 @@ class AmountCentsMigrationTest extends TestCase
 
     public function test_migration_is_idempotent_when_run_a_second_time(): void
     {
-        $driver = DB::connection()->getDriverName();
+        foreach ([
+            'payments' => '2026_06_01_000001_add_amount_cents_to_payments_table.php',
+            'invoice_items' => '2026_06_02_000003_add_quantity_cents_to_invoice_items.php',
+        ] as $table => $filename) {
+            $columnsBefore = Schema::getColumns($table);
+            $rowsBefore = DB::table($table)->count();
+            $migration = require database_path('migrations/'.$filename);
 
-        if (! in_array($driver, ['mysql', 'mariadb'], true)) {
-            $this->markTestSkipped('Idempotency is enforced by an explicit guard on the migration. Verifying requires re-running migrations against a separate schema, which is impractical on the in-memory SQLite used by tests.');
+            $migration->up();
+            $migration->up();
+
+            $this->assertSame($columnsBefore, Schema::getColumns($table));
+            $this->assertSame($rowsBefore, DB::table($table)->count());
         }
-
-        $this->assertTrue(true);
     }
 
     public function test_migration_uses_driver_safe_backfill_path_on_non_mysql(): void

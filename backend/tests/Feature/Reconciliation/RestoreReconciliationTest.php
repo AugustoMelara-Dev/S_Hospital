@@ -484,8 +484,11 @@ class RestoreReconciliationTest extends TestCase
             'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
         ]);
 
-        $response->assertStatus(500);
-        $this->assertStringContainsString('post-restore', (string) $response->getContent());
+        $response->assertStatus(409)
+            ->assertJsonPath('code', 'RESTORE_RECONCILIATION_PENDING');
+        $this->assertStringContainsString('correlativos', (string) $response->json('message'));
+        $this->assertSame($response->headers->get('X-Request-ID'), $response->json('request_id'));
+        $this->assertStringNotContainsString('hospital:restore-reconciliation', (string) $response->getContent());
         $this->assertSame(0, Invoice::query()->count());
         $this->assertSame(41, $sequence->fresh()->current_number);
         $this->assertSame(0, AuditLog::query()->where('action', 'invoice.issued')->count());

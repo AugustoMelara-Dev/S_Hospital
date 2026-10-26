@@ -16,7 +16,21 @@ use Tests\TestCase;
  */
 class LegacyIdempotencyTableDeprecationMigrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase {
+        beginDatabaseTransaction as private beginRefreshTransaction;
+    }
+
+    protected static bool $resetSchemaAfterDdl = true;
+
+    public function beginDatabaseTransaction(): void
+    {
+        // The target COMMENT DDL must run outside a transaction. Tests leave
+        // its marker restored; TestCase rebuilds the disposable schema once
+        // after this class, including its two synthetic legacy rows.
+        if (! in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            $this->beginRefreshTransaction();
+        }
+    }
 
     protected function setUp(): void
     {
@@ -41,7 +55,6 @@ class LegacyIdempotencyTableDeprecationMigrationTest extends TestCase
 
     public function test_deprecation_migration_is_idempotent(): void
     {
-        $this->skipDdlInsideRefreshTransactionOnMariaDb();
         $migration = $this->migration();
 
         $before = $this->tableComment();
@@ -53,7 +66,6 @@ class LegacyIdempotencyTableDeprecationMigrationTest extends TestCase
 
     public function test_down_restores_empty_comment_and_up_reapplies(): void
     {
-        $this->skipDdlInsideRefreshTransactionOnMariaDb();
         $migration = $this->migration();
 
         $migration->down();
@@ -65,7 +77,8 @@ class LegacyIdempotencyTableDeprecationMigrationTest extends TestCase
 
     public function test_deprecation_does_not_modify_legacy_rows(): void
     {
-        $this->skipDdlInsideRefreshTransactionOnMariaDb();
+        $this->migration()->down();
+
         DB::table('operation_idempotency_keys')->insert([
             [
                 'key' => 'legacy-t2040-a',
@@ -89,27 +102,15 @@ class LegacyIdempotencyTableDeprecationMigrationTest extends TestCase
             ],
         ]);
 
+        $rowsBefore = DB::table('operation_idempotency_keys')->orderBy('id')->get()->toJson();
+
         $this->migration()->up();
 
+        $this->assertSame($rowsBefore, DB::table('operation_idempotency_keys')->orderBy('id')->get()->toJson());
+        $this->assertStringContainsString('DEPRECATED T2-040', $this->tableComment());
         $this->assertSame(2, (int) DB::table('operation_idempotency_keys')->count());
         $this->assertDatabaseHas('operation_idempotency_keys', ['key' => 'legacy-t2040-a', 'operation' => 'invoice.create']);
         $this->assertDatabaseHas('operation_idempotency_keys', ['key' => 'legacy-t2040-b', 'operation' => 'payment.register']);
-    }
-
-    /**
-     * MariaDB commits DDL implicitly. Running `ALTER TABLE ... COMMENT` while
-     * RefreshDatabase holds its test transaction keeps a metadata lock and the
-     * next statement can wait forever. The migration already ran when the
-     * schema was built; `test_table_comment_contains_the_deprecation_marker`
-     * verifies its effect read-only, so the up()/down() idempotency is covered
-     * on SQLite and documented as not reproducible inside a persistent
-     * MariaDB transaction.
-     */
-    private function skipDdlInsideRefreshTransactionOnMariaDb(): void
-    {
-        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
-            $this->markTestSkipped('DDL COMMENT dentro de la transaccion de RefreshDatabase retiene metadata locks en MariaDB; la migracion ya se aplico al construir el esquema y la prueba de solo lectura verifica el COMMENT.');
-        }
     }
 
     private function tableComment(): string

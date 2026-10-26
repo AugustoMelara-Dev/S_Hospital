@@ -71,6 +71,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Role::findOrCreate('supervisor', 'web')->syncPermissions($permissions->whereIn('name', [
             'settings.fiscal.view',
             'catalog.view',
+            'catalog.manage',
             'invoices.view',
             'invoices.create',
             'invoices.operate_any',
