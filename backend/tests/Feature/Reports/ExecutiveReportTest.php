@@ -21,8 +21,10 @@ use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\TestWith;
 use ReflectionMethod;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -41,6 +43,86 @@ class ExecutiveReportTest extends TestCase
     {
         $this->getJson('/api/reports/executive?date_from=2026-06-01&date_to=2026-06-16')
             ->assertUnauthorized();
+    }
+
+    public function test_gratuity_summary_uses_all_5001_lines_while_preview_remains_limited(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $cashier->givePermissionTo('patients.mark_dialysis_prescription');
+        $this->openSession($cashier);
+        $invoice = app(CreateInvoiceAction::class)->execute([
+            'patient_name' => 'Prueba de agregado de gratuidades',
+            'dialysis_prescription' => true,
+            'items' => [['service_id' => Service::query()->where('name', 'Eritropoyetina')->firstOrFail()->id, 'quantity' => '1.00']],
+        ], $cashier->fresh());
+        $attributes = $invoice->items()->firstOrFail()->getAttributes();
+        unset($attributes['id']);
+        // 5,000 líneas adicionales: sólo snapshots sintéticos, sin consultar
+        // la tarifa actual ni ejecutar miles de operaciones de facturación.
+        foreach (array_chunk(range(1, ExecutiveReportService::MAX_TABLE_ROWS), 20) as $chunk) {
+            DB::table('invoice_items')->insert(array_fill(0, count($chunk), $attributes));
+        }
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $filters = ['date_from' => $today, 'date_to' => $today];
+        $service = app(ExecutiveReportService::class);
+        $preview = $service->report($filters);
+        $export = $service->report($filters, completeExport: true);
+
+        $this->assertCount(5000, $preview['gratuities']);
+        $this->assertCount(5001, $export['gratuities']);
+        $this->assertSame(5001, $preview['summary']['gratuity_item_count']);
+        $this->assertSame('125025.00', $preview['summary']['gratuity_adjustment_total']);
+        $this->assertTrue($preview['summary']['gratuity_adjustment_persisted']);
+        $this->assertSame($export['summary']['gratuity_item_count'], $preview['summary']['gratuity_item_count']);
+        $this->assertSame($export['summary']['gratuity_adjustment_total'], $preview['summary']['gratuity_adjustment_total']);
+    }
+
+    #[TestWith(['pdf', false])]
+    #[TestWith(['pdf', true])]
+    #[TestWith(['excel', false])]
+    #[TestWith(['excel', true])]
+    public function test_managerial_export_scope_matches_json_without_cash_close_any(string $format, bool $specificSession): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $role = Role::create(['name' => 'gestor_reportes', 'guard_name' => 'web']);
+        $role->givePermissionTo(['reports.managerial.view', 'reports.export']);
+        $viewer->assignRole($role);
+        $this->assertFalse($viewer->can('cash.close_any'));
+        $cashier = $this->cashier();
+        $session = $this->openSession($cashier);
+        $invoice = $this->createInvoice($cashier, 'Glucosa');
+        $this->payInvoice($cashier, $invoice->id, $session->id, Payment::METHOD_CASH, $invoice->total);
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $filters = ['date_from' => $today, 'date_to' => $today];
+        if ($specificSession) {
+            $filters['cash_session_id'] = (string) $session->id;
+        }
+        $this->actingAs($viewer)->getJson('/api/reports/executive?'.http_build_query($filters))
+            ->assertOk()->assertJsonPath('data.summary.invoice_count', 1);
+        $report = app(ExecutiveReportService::class)->report($filters, $viewer, true);
+        $this->mock(ExecutiveReportService::class)->shouldReceive('report')->once()
+            ->withArgs(fn (array $actualFilters, User $requester, bool $completeExport): bool => $actualFilters === $filters && $requester->id === $viewer->id && $completeExport)
+            ->andReturn($report);
+        $this->get('/api/reports/executive/'.$format.'?'.http_build_query($filters))->assertOk();
+    }
+
+    #[TestWith(['pdf'])]
+    #[TestWith(['excel'])]
+    public function test_cash_session_export_viewer_still_cannot_export_another_cashiers_session(string $format): void
+    {
+        $this->seedBillingBase();
+        $viewer = $this->cashier();
+        $viewer->givePermissionTo('reports.export');
+        $otherCashier = $this->cashier();
+        $session = $this->openSession($otherCashier);
+        $today = Carbon::now('America/Tegucigalpa')->toDateString();
+        $this->actingAs($viewer)->get('/api/reports/executive/'.$format.'?'.http_build_query([
+            'date_from' => $today,
+            'date_to' => $today,
+            'cash_session_id' => $session->id,
+        ]))->assertForbidden();
     }
 
     public function test_executive_endpoint_validates_date_range(): void

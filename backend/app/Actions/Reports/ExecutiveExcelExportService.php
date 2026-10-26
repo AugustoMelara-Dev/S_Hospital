@@ -522,6 +522,15 @@ class ExecutiveExcelExportService
             return;
         }
 
+        $textRunStarts = array_fill_keys($columns, null);
+        $alignTextRun = static function (Worksheet $sheet, string $column, int $start, int $end): void {
+            $sheet->getStyle("{$column}{$start}:{$column}{$end}")->getAlignment()->applyFromArray([
+                'horizontal' => Alignment::HORIZONTAL_LEFT,
+                'vertical' => Alignment::VERTICAL_TOP,
+                'wrapText' => true,
+            ]);
+        };
+
         foreach (range($firstRow, $lastRow) as $row) {
             $lineCount = 1;
 
@@ -531,11 +540,11 @@ class ExecutiveExcelExportService
                 $text = is_scalar($rawValue) ? (string) $rawValue : '';
 
                 if ($cell->getDataType() === DataType::TYPE_STRING) {
-                    $sheet->getStyle("{$column}{$row}")
-                        ->getAlignment()
-                        ->setHorizontal(Alignment::HORIZONTAL_LEFT)
-                        ->setVertical(Alignment::VERTICAL_TOP)
-                        ->setWrapText(true);
+                    // Empty explicit strings retain the same style as before.
+                    $textRunStarts[$column] ??= $row;
+                } elseif ($textRunStarts[$column] !== null) {
+                    $alignTextRun($sheet, $column, $textRunStarts[$column], $row - 1);
+                    $textRunStarts[$column] = null;
                 }
 
                 $usableWidth = max(1, (int) floor($sheet->getColumnDimension($column)->getWidth() - 2));
@@ -549,6 +558,12 @@ class ExecutiveExcelExportService
             }
 
             $sheet->getRowDimension($row)->setRowHeight(min(120, max(18, $lineCount * 15)));
+        }
+
+        foreach ($columns as $column) {
+            if ($textRunStarts[$column] !== null) {
+                $alignTextRun($sheet, $column, $textRunStarts[$column], $lastRow);
+            }
         }
     }
 

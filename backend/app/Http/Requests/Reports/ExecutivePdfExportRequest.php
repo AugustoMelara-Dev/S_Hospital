@@ -79,7 +79,7 @@ class ExecutivePdfExportRequest extends FormRequest
             abort(403);
         }
 
-        if ($user->can('cash.close_any')) {
+        if ($user->can('reports.managerial.view')) {
             return $filters;
         }
 

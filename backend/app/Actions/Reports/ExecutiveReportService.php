@@ -59,15 +59,6 @@ class ExecutiveReportService
     /** Tope defensivo por tabla para no reventar memoria en rangos de 92 dias. */
     public const MAX_TABLE_ROWS = 5000;
 
-    /**
-     * T-BE-02: `invoice_items` ya persiste `unit_price_registered_cents` y
-     * `rule_adjustment_cents`. El reporte marca esta bandera en `true` cuando
-     * al menos una linea gratuita leyó su ajuste de la fila persistida (no
-     * inferido). Los historicos backfilleados quedan con ajuste 0.00 para no
-     * inventar un valor que nunca se guardo.
-     */
-    private bool $gratuityAdjustmentPersisted = false;
-
     public function __construct(private readonly FinancialFactsService $financialFacts) {}
 
     /**
@@ -76,8 +67,6 @@ class ExecutiveReportService
      */
     public function report(array $filters, ?User $requester = null, bool $completeExport = false): array
     {
-        $this->gratuityAdjustmentPersisted = false;
-
         $start = ReportDate::day($filters['date_from'])->startOfDay();
         $end = ReportDate::day($filters['date_to'])->endOfDay();
 
@@ -104,11 +93,10 @@ class ExecutiveReportService
         $gratuities = $this->gratuities($start, $end, $filters, $completeExport);
 
         $summary['without_charge_count'] = $facts['without_charge_count'];
-        $summary['gratuity_item_count'] = count($gratuities);
-        $summary['gratuity_adjustment_total'] = $this->centsToMoney(
-            $this->monetaryValue($this->sumGratuityAdjustmentCents($gratuities)),
-        );
-        $summary['gratuity_adjustment_persisted'] = $this->gratuityAdjustmentPersisted;
+        $gratuitySummary = $this->gratuitySummary($start, $end, $filters);
+        $summary['gratuity_item_count'] = $gratuitySummary['item_count'];
+        $summary['gratuity_adjustment_total'] = $this->centsToMoney($gratuitySummary['adjustment_cents']);
+        $summary['gratuity_adjustment_persisted'] = $gratuitySummary['adjustment_persisted'];
 
         return [
             'period' => [
@@ -742,9 +730,6 @@ class ExecutiveReportService
             // de la linea (precio registrado > precio efectivo), nunca del
             // catalogo vigente. Ver LineRuleProvenance.
             $adjustmentRecorded = LineRuleProvenance::adjustmentRecorded($isFree, $registeredCents, $effectiveCents);
-            if ($isFree && $adjustmentRecorded) {
-                $this->gratuityAdjustmentPersisted = true;
-            }
 
             return [
                 'date' => $row->issued_at,
@@ -828,11 +813,7 @@ class ExecutiveReportService
      */
     private function gratuities(Carbon $start, Carbon $end, array $filters, bool $completeExport): array
     {
-        $rows = DB::table('invoice_items')
-            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
-            ->where('invoice_items.special_rule_applied', true)
-            ->whereBetween('invoices.issued_at', [$start, $end])
-            ->tap(fn ($query) => $this->applyInvoiceFilters($query, $filters, $start, $end))
+        $rows = $this->gratuitiesQuery($start, $end, $filters)
             ->select([
                 'invoices.invoice_number',
                 'invoices.patient_name',
@@ -860,9 +841,6 @@ class ExecutiveReportService
             // una gratuidad. La procedencia del ajuste sale de la evidencia de
             // la linea; un historico backfilleado queda como no registrado.
             $adjustmentRecorded = LineRuleProvenance::adjustmentRecorded(true, $registeredCents, $effectiveCents);
-            if ($adjustmentRecorded) {
-                $this->gratuityAdjustmentPersisted = true;
-            }
 
             return [
                 'date' => $row->issued_at,
@@ -882,23 +860,38 @@ class ExecutiveReportService
         })->all();
     }
 
-    /**
-     * @param  array<int, array<string, mixed>>  $gratuities
-     */
-    private function sumGratuityAdjustmentCents(array $gratuities): int
+    /** @param array<string, mixed> $filters */
+    private function gratuitiesQuery(Carbon $start, Carbon $end, array $filters): Builder
     {
-        $total = 0;
-        foreach ($gratuities as $row) {
-            if (($row['adjustment_persisted'] ?? false) === true) {
-                $adjustment = $row['adjustment_value'] ?? '0.00';
+        return DB::table('invoice_items')
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->where('invoice_items.special_rule_applied', true)
+            ->whereBetween('invoices.issued_at', [$start, $end])
+            ->tap(fn ($query) => $this->applyInvoiceFilters($query, $filters, $start, $end));
+    }
 
-                if (is_int($adjustment) || is_string($adjustment)) {
-                    $total += $this->moneyToCents($adjustment);
-                }
-            }
-        }
+    /**
+     * Agrega toda la cohorte, independientemente del limite de la vista previa.
+     * La procedencia replica LineRuleProvenance: el historico sin precio
+     * registrado nunca aporta un ajuste inventado ni consulta el catalogo.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array{item_count: int, adjustment_cents: int, adjustment_persisted: bool}
+     */
+    private function gratuitySummary(Carbon $start, Carbon $end, array $filters): array
+    {
+        $recorded = 'invoice_items.unit_price_registered_cents > invoice_items.unit_price_cents';
+        $row = $this->gratuitiesQuery($start, $end, $filters)
+            ->selectRaw('COUNT(*) as item_count')
+            ->selectRaw("COALESCE(SUM(CASE WHEN {$recorded} THEN COALESCE(invoice_items.rule_adjustment_cents, 0) ELSE 0 END), 0) as adjustment_cents")
+            ->selectRaw("COALESCE(MAX(CASE WHEN {$recorded} THEN 1 ELSE 0 END), 0) as adjustment_persisted")
+            ->first();
 
-        return $total;
+        return [
+            'item_count' => (int) ($row->item_count ?? 0),
+            'adjustment_cents' => (int) ($row->adjustment_cents ?? 0),
+            'adjustment_persisted' => (bool) ($row->adjustment_persisted ?? false),
+        ];
     }
 
     private function cashSessionLabel(mixed $registerName, mixed $registerCode, mixed $sessionId): ?string

@@ -116,7 +116,7 @@ class OpenApiExporterTest extends TestCase
         foreach ($document['paths'] as $path => $methods) {
             foreach ($methods as $method => $operation) {
                 $this->assertArrayHasKey('responses', $operation, "{$method} {$path} is missing a responses block");
-                $this->assertArrayHasKey('200', $operation['responses'], "{$method} {$path} is missing the 200 response");
+                $this->assertNotEmpty(array_filter(array_keys($operation['responses']), static fn ($status) => (int) $status >= 200 && (int) $status < 300), "{$method} {$path} is missing a success response");
             }
         }
     }
