@@ -28,7 +28,8 @@ class DevelopmentValidationSeederTest extends TestCase
         $this->assertTrue(Hash::check('Password123!', $admin->password));
         $this->assertFalse($admin->must_change_password);
         $this->assertDatabaseHas('fiscal_settings', [
-            'id' => 1,
+            // The singleton PK depends on the autoincrement history of the
+            // disposable schema; the seeder reuses the real row (no PK1).
             'hospital_name' => 'Hospital General San Isidro',
             'receipt_paper_size' => 'half_letter',
         ]);
