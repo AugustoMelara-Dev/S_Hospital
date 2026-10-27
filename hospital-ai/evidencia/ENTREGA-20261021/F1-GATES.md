@@ -61,3 +61,32 @@ Argon2id eran **del entorno** (XAMPP 8.2), no del producto.
 
 - Nada de F1. La medición de tiempos de exportación (H-07) y el recorrido real
   (F3) se hacen contra el servidor real, no contra `artisan serve`.
+
+## Re-verificación final — 2026-10-26
+
+Sobre el mismo árbol ya integrado (HEAD de la rama de entrega), con PHP 8.3.35
+del payload:
+
+- **PHPUnit SQLite** (phpunit.xml): **1532 tests, 1464 aprobadas, 68 omitidas,
+  0 fallos, 0 errores** (exit 0). La corrida con --debug contó 1532 y ninguna
+  prueba fallida/errónea.
+- **PHPUnit MariaDB 11.4.13 del payload** (phpunit.mysql.xml, instancia
+  temporal en 127.0.0.1:3317, base desechable s_hospital_test_oct26,
+  HOSPITAL_TEST_ALLOW_EXTERNAL_DB=1): **1532 tests, 13847 aserciones, 22
+  omitidas, 0 fallos, 0 errores** (exit 0). Lista de omitidos y motivos:
+  A-09-MARIADB-11.4.md.
+- **Concurrencia real** (HOSPITAL_RUN_CONCURRENT_TESTS=1, base desechable
+  aparte): **12 tests, 55 aserciones, 0 fallos, 1 omisión pcntl** (marcador de
+  fork en Windows; los procesos reales sí corrieron).
+- **PHPStan**: [OK] No errors (384 MB). **Pint**: esult: passed.
+- **Frontend**: 	sc --noEmit 0; eslint . 0; **168 archivos / 1364 tests**
+  aprobados; 
+pm run build OK y guard de producto aprobado.
+- **Instalador candidato** S_Hospital-2026.10.24.8-Windows-x64.exe:
+  102,328,024 bytes, SHA-256
+  91e2dddc1d9152466762228c5c333a70d205ee8fa0b44382726bb17d1a07a67
+  (coincide con el reporte del 24/10). No firmado ni ejecutado (decisión del
+  propietario y límite de UAC/Windows limpio).
+
+Los límites de hardware (impresora física, Windows limpio, otro puesto LAN) y
+el PNG 300/203 dpi del PDF siguen declarados como no verificados.
