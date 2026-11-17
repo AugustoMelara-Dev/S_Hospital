@@ -128,10 +128,15 @@ def _spa_response(path: str) -> Response | None:
 # --- factory -----------------------------------------------------------------
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    from app.services.scheduler import start_scheduler, stop_scheduler
+
     get_engine()  # fail fast on bad DATABASE_URL
-    # Domain agents: register background jobs (e.g. daily backups) here.
-    yield
+    start_scheduler(app)  # daily backup (SHS_DAILY_BACKUP_TIME=off disables it)
+    try:
+        yield
+    finally:
+        await stop_scheduler(app)
 
 
 def create_app() -> FastAPI:

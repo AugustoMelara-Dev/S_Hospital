@@ -26,6 +26,7 @@ import pytest
 
 os.environ["SHS_WEB_DIST"] = str(Path(__file__).parent / "_no_web_dist")
 os.environ.setdefault("SHS_SECRET_KEY", "test-secret")
+os.environ["SHS_DAILY_BACKUP_TIME"] = "off"  # no background scheduler in tests
 
 from app.config import get_settings
 

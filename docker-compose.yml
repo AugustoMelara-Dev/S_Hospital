@@ -1,0 +1,47 @@
+# S_Hospital v2 — servidor LAN (MariaDB + aplicación).
+# Uso:  cp .env.example .env  (editar claves)  &&  docker compose up -d
+# Clientes: http://<IP-del-servidor>:8080
+
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: shospital
+      MARIADB_USER: shospital
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD en .env}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Defina DB_ROOT_PASSWORD en .env}
+      TZ: America/Tegucigalpa
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+00:00"]
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    image: shospital:2.0.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SHS_DATABASE_URL: mysql+pymysql://shospital:${DB_PASSWORD}@db:3306/shospital?charset=utf8mb4
+      SHS_SECRET_KEY: ${SHS_SECRET_KEY:?Defina SHS_SECRET_KEY en .env}
+      SHS_BACKUP_KEY: ${SHS_BACKUP_KEY:?Defina SHS_BACKUP_KEY en .env}
+      SHS_DAILY_BACKUP_TIME: ${SHS_DAILY_BACKUP_TIME:-02:00}
+      SHS_SEED_DEMO: ${SHS_SEED_DEMO:-false}
+      SHS_ADMIN_USERNAME: ${SHS_ADMIN_USERNAME:-}
+      SHS_ADMIN_NAME: ${SHS_ADMIN_NAME:-}
+      SHS_ADMIN_PASSWORD: ${SHS_ADMIN_PASSWORD:-}
+    ports:
+      - "${APP_BIND_IP:-0.0.0.0}:${APP_PORT:-8080}:8000"
+    volumes:
+      - app_data:/data
+
+volumes:
+  db_data:
+  app_data:

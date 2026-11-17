@@ -1,12 +1,19 @@
-import { PageHeader } from '@/ui/PageHeader';
-import { UnderConstruction } from '@/ui/UnderConstruction';
+import { PageHeader, Tabs } from '@/ui';
+import { GroupsTab } from './GroupsTab';
+import { ServicesTab } from './ServicesTab';
 
-/** STUB — replaced by the feature agent that owns src/features/catalogo/. */
 export default function CatalogoPage() {
   return (
     <>
-      <PageHeader title="Catálogo y precios" description="Productos, servicios, categorías, áreas e impuestos." />
-      <UnderConstruction />
+      <PageHeader eyebrow="Administración" title="Catálogo y precios" description="Productos, servicios, categorías y áreas." />
+      <Tabs
+        label="Secciones del catálogo"
+        items={[
+          { value: 'conceptos', label: 'Conceptos', content: <ServicesTab /> },
+          { value: 'categorias', label: 'Categorías', content: <GroupsTab kind="categories" /> },
+          { value: 'areas', label: 'Áreas', content: <GroupsTab kind="areas" /> },
+        ]}
+      />
     </>
   );
 }

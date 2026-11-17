@@ -1,12 +1,18 @@
-import { PageHeader } from '@/ui/PageHeader';
-import { UnderConstruction } from '@/ui/UnderConstruction';
+import { PageHeader, Tabs } from '@/ui';
+import { RolesTab } from './RolesTab';
+import { UsersTab } from './UsersTab';
 
-/** STUB — replaced by the feature agent that owns src/features/usuarios/. */
 export default function UsuariosPage() {
   return (
     <>
-      <PageHeader title="Usuarios y permisos" description="Cuentas, roles y permisos por módulo." />
-      <UnderConstruction />
+      <PageHeader eyebrow="Administración" title="Usuarios y permisos" description="Cuentas de acceso, roles y permisos por módulo." />
+      <Tabs
+        label="Usuarios y roles"
+        items={[
+          { value: 'usuarios', label: 'Usuarios', content: <UsersTab /> },
+          { value: 'roles', label: 'Roles', content: <RolesTab /> },
+        ]}
+      />
     </>
   );
 }
