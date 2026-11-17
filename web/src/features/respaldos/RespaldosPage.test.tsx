@@ -28,10 +28,12 @@ describe('RespaldosPage', () => {
       'GET /auth/me': makeMe(),
       'GET /system/status': {
         version: '2.0.0',
-        database: { ok: true, engine: 'MariaDB', version: '11.4' },
-        migration: { current: 'x', head: 'x', up_to_date: true },
-        disk: { free_bytes: 10 * 1024 ** 3, total_bytes: 100 * 1024 ** 3 },
-        last_backup: done,
+        server_time: '2026-11-17T10:00:00-06:00',
+        timezone: 'America/Tegucigalpa',
+        database: { dialect: 'mariadb', server_version: '11.4', migration: 'x', migration_head: 'x', up_to_date: true },
+        disk: { path: '/b', free_bytes: 10 * 1024 ** 3, total_bytes: 100 * 1024 ** 3, used_bytes: 90 * 1024 ** 3 },
+        backups: { last_success: done, dump_tool_available: true, dedicated_key: true, daily_time: '02:00' },
+        counts: { users_active: 1, services_active: 1, invoices: 0, receipts: 0, open_cash_sessions: 0, backups: 1 },
       },
       'GET /backups': () => {
         if (!created) return { items: [done], page: 1, per_page: 25, total: 1 };

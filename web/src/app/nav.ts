@@ -27,13 +27,20 @@ export type NavItem = {
   keywords?: string;
 };
 
+/**
+ * The catalog administration page is for roles that manage or audit the catalog.
+ * Cashiers have `catalog.view` only to search services while charging (Cobrar),
+ * so the Administración section stays hidden for them.
+ */
+export const CATALOG_PAGE_PERMS: Permission[] = ['catalog.manage', 'audit.view'];
+
 export const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Resumen', short: 'Resumen', icon: LayoutDashboard, group: 'main', keywords: 'inicio hoy kpi' },
   { to: '/cobrar', label: 'Cobrar', short: 'Cobrar', icon: ShoppingBasket, perms: ['invoices.create'], group: 'main', keywords: 'factura venta operación' },
   { to: '/recibos', label: 'Recibos', short: 'Recibos', icon: ReceiptText, perms: ['invoices.view'], group: 'main', keywords: 'facturas documentos reimprimir anular' },
   { to: '/caja', label: 'Caja', short: 'Caja', icon: Vault, perms: ['cash.view'], group: 'main', keywords: 'apertura cierre arqueo turno' },
   { to: '/reportes', label: 'Reportes', short: 'Reportes', icon: ChartColumn, perms: ['reports.own', 'reports.all'], group: 'main', keywords: 'informe excel pdf' },
-  { to: '/admin/catalogo', label: 'Catálogo y precios', short: 'Catálogo', icon: BookOpenText, perms: ['catalog.view'], group: 'admin', keywords: 'servicios productos precios impuestos' },
+  { to: '/admin/catalogo', label: 'Catálogo y precios', short: 'Catálogo', icon: BookOpenText, perms: CATALOG_PAGE_PERMS, group: 'admin', keywords: 'servicios productos precios impuestos' },
   { to: '/admin/usuarios', label: 'Usuarios y permisos', short: 'Usuarios', icon: Users, perms: ['users.view'], group: 'admin', keywords: 'roles clave' },
   { to: '/admin/ajustes', label: 'Ajustes institucionales', short: 'Ajustes', icon: Settings2, perms: ['settings.view', 'receipt_settings.view'], group: 'admin', keywords: 'hospital cai numeración fiscal impresión' },
   { to: '/admin/respaldos', label: 'Respaldos', short: 'Respaldos', icon: Archive, perms: ['backups.view', 'system.status'], group: 'admin', keywords: 'backup copia sistema' },

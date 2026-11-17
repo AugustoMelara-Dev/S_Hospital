@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Eye, Printer } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatDateTime } from '@/lib/dates';
-import type { Paginated, User } from '@/api/types';
+import type { CashSession, Paginated, User } from '@/api/types';
 import { useAuth, usePermissions } from '@/auth/hooks';
 import { Badge, Card, DataTable, Dialog, Field, IconButton, Input, Money, Select, Skeleton, type Column } from '@/ui';
 import { DIFFERENCE_LABEL, DIFFERENCE_TONE, differenceKind } from './arqueo';
@@ -11,7 +11,7 @@ import { CierreResumen, printSummary } from './CierreResumen';
 import { invalidateCash, useCashRegisters, useSessionDetail, useSessionList } from './queries';
 import { MovimientosTab } from './SessionTabs';
 import { SessionView } from './SessionView';
-import { operatorName, registerName, type CashSessionRow, type CashSessionsQuery } from './types';
+import { operatorName, registerName, type CashSessionsQuery } from './types';
 
 const DIFF_OPTIONS = [
   { value: 'all', label: 'Todas' },
@@ -38,7 +38,7 @@ export function Historico() {
   const set = (patch: Partial<CashSessionsQuery>) => setParams((p) => ({ ...p, ...patch, page: 1 }));
   const rangeError = params.date_from && params.date_to && params.date_from > params.date_to ? '“Desde” no puede ser posterior a “Hasta”.' : null;
 
-  const columns: Column<CashSessionRow>[] = [
+  const columns: Column<CashSession>[] = [
     { key: 'opened', header: 'Turno abierto', cell: (s) => <span className="num">{formatDateTime(s.opened_at)}</span> },
     { key: 'register', header: 'Caja', cell: (s) => registerName(s) },
     { key: 'user', header: 'Operador', cell: (s) => operatorName(s) },
@@ -59,7 +59,11 @@ export function Historico() {
       key: 'expected',
       header: 'Esperado',
       numeric: true,
-      cell: (s) => <Money cents={s.expected_cash_cents ?? s.reconciliation?.expected_cash_cents} />,
+      cell: (s) => {
+        const cents = s.expected_cash_cents ?? s.reconciliation?.expected_cash_cents ?? null;
+        // Open sessions in the list carry no reconciliation: the figure is shown in the detail.
+        return cents === null ? <span className="text-ink-3">—</span> : <Money cents={cents} />;
+      },
     },
     {
       key: 'counted',
@@ -155,10 +159,10 @@ function SessionDetailDialog({ id, onClose }: { id: number | null; onClose: () =
   const { can } = usePermissions();
   const qc = useQueryClient();
   const detail = useSessionDetail(id);
-  const [closed, setClosed] = useState<CashSessionRow | null>(null);
+  const [closed, setClosed] = useState<CashSession | null>(null);
   const s = closed ?? detail.data;
 
-  const own = s && me ? s.user_id === me.id : false;
+  const own = s && me ? s.user.id === me.id : false;
   const canClose = s ? (own && can('cash.close')) || can('cash.close_any') : false;
 
   return (

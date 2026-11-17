@@ -6,7 +6,7 @@ import { qk } from '@/api/queryClient';
 import { usePermissions } from '@/auth/hooks';
 import { Button, Card, EmptyState, Field, Kbd, MoneyInput, Select, Skeleton, Textarea, toast } from '@/ui';
 import { invalidateCash, useCashRegisters } from './queries';
-import type { CashSessionRow } from './types';
+import type { CashSession } from '@/api/types';
 
 /** "Apertura de caja" (no session yet). Users without cash.open see the read-only notice. */
 export function AperturaPanel() {
@@ -78,7 +78,7 @@ function AperturaForm() {
     }
     setBusy(true);
     try {
-      const session = await api.post<CashSessionRow>('/cash-sessions/open', body, { idempotencyKey: keyRef.current });
+      const session = await api.post<CashSession>('/cash-sessions/open', body, { idempotencyKey: keyRef.current });
       qc.setQueryData(qk.currentCash, session);
       toast.success('Caja abierta.');
       keyRef.current = newIdempotencyKey();

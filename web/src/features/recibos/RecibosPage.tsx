@@ -5,10 +5,9 @@ import { ChevronRight, FilterX, Search } from 'lucide-react';
 import { api, errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/dates';
 import { qk } from '@/api/queryClient';
-import { INVOICE_STATUS_LABEL, type InvoiceDisplayStatus, type Paginated } from '@/api/types';
+import { DISPLAY_STATUS_TO_API, INVOICE_STATUS_LABEL, type InvoiceDisplayStatus, type InvoiceSummary, type Paginated } from '@/api/types';
 import { Button, Card, Checkbox, DataTable, EmptyState, Field, Input, Money, PageHeader, Select, StatusStamp, type Column } from '@/ui';
 import { useDebouncedValue } from '@/features/cobrar/hooks';
-import { STATUS_FILTER_TO_API, type InvoiceListItem } from './types';
 
 const PER_PAGE = 25;
 const STATUS_OPTIONS = (Object.keys(INVOICE_STATUS_LABEL) as InvoiceDisplayStatus[]).map((s) => ({
@@ -20,7 +19,7 @@ function isDisplayStatus(v: string): v is InvoiceDisplayStatus {
   return v in INVOICE_STATUS_LABEL;
 }
 
-const columns: Column<InvoiceListItem>[] = [
+const columns: Column<InvoiceSummary>[] = [
   {
     key: 'number',
     header: 'Documento',
@@ -84,14 +83,14 @@ export default function RecibosPage() {
     search: urlSearch,
     date_from: dateFrom,
     date_to: dateTo,
-    status: status ? STATUS_FILTER_TO_API[status] : '',
+    status: status ? DISPLAY_STATUS_TO_API[status] : '',
     pending: pending ? 1 : undefined,
     page,
     per_page: PER_PAGE,
   };
   const list = useQuery({
     queryKey: qk.invoices(query),
-    queryFn: ({ signal }) => api.get<Paginated<InvoiceListItem>>('/invoices', query, { signal }),
+    queryFn: ({ signal }) => api.get<Paginated<InvoiceSummary>>('/invoices', query, { signal }),
     placeholderData: keepPreviousData,
   });
 

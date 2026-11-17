@@ -3,19 +3,19 @@ import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Calculator, Lock, TriangleAlert } from 'lucide-react';
 import { api, errorMessage, newIdempotencyKey } from '@/lib/api';
-import type { Reconciliation } from '@/api/types';
+import type { CashSession, Reconciliation } from '@/api/types';
 import { Button, ConfirmDialog, Field, Money, Textarea, toast } from '@/ui';
 import { ArqueoSummary } from './ArqueoTab';
 import { arqueoReady, arqueoTotal, DIFFERENCE_LABEL, differenceCents, differenceKind, toBreakdown, type ArqueoState } from './arqueo';
 import { invalidateCash } from './queries';
-import { operatorName, registerName, type CashSessionRow } from './types';
+import { operatorName, registerName } from './types';
 
 export type CierreTabProps = {
-  session: CashSessionRow;
+  session: CashSession;
   reconciliation: Reconciliation;
   arqueo: ArqueoState;
   onGoToArqueo: () => void;
-  onClosed: (closed: CashSessionRow) => void;
+  onClosed: (closed: CashSession) => void;
   /** False when the user may view but not close this session. */
   canClose: boolean;
 };
@@ -50,7 +50,7 @@ export function CierreTab({ session, reconciliation, arqueo, onGoToArqueo, onClo
   async function confirmClose() {
     setError(null);
     try {
-      const closed = await api.post<CashSessionRow>(
+      const closed = await api.post<CashSession>(
         `/cash-sessions/${session.id}/close`,
         {
           counted_cents: counted,

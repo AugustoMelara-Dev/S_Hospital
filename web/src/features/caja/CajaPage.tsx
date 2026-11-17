@@ -8,13 +8,13 @@ import { CierreResumen } from './CierreResumen';
 import { Historico } from './Historico';
 import { useCurrentSession } from './queries';
 import { SessionView } from './SessionView';
-import type { CashSessionRow } from './types';
+import type { CashSession } from '@/api/types';
 
 /** /caja — apertura, turno abierto (resumen, movimientos, arqueo, cierre) e histórico. */
 export default function CajaPage() {
   const { can } = usePermissions();
   const current = useCurrentSession();
-  const [closed, setClosed] = useState<CashSessionRow | null>(null);
+  const [closed, setClosed] = useState<CashSession | null>(null);
 
   let body;
   if (closed) {

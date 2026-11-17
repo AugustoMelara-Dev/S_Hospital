@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Permission, Reconciliation } from '@/api/types';
+import type { CashSession, Permission, Reconciliation } from '@/api/types';
 import { makeMe, mockApi, reply, type MockRequest } from '@/test/mockApi';
 import { renderWithProviders } from '@/test/render';
 import CajaPage from './CajaPage';
-import type { CashSessionRow } from './types';
 
 const emptyPage = { items: [], page: 1, per_page: 25, total: 0 };
 const registers = [{ id: 1, code: 'principal', name: 'Caja principal', active: true }];
@@ -26,27 +25,25 @@ function rec(overrides: Partial<Reconciliation> = {}): Reconciliation {
   };
 }
 
-function openSession(overrides: Partial<CashSessionRow> = {}): CashSessionRow {
+function openSession(overrides: Partial<CashSession> = {}): CashSession {
   return {
     id: 7,
-    cash_register_id: 1,
     cash_register: { id: 1, code: 'principal', name: 'Caja principal' },
-    user_id: 1,
     user: { id: 1, name: 'Ana Martínez' },
     status: 'open',
     opening_cents: 50_000,
-    opening_notes: null,
+    opening_notes: '',
     opened_at: '2026-11-17T07:02:00-06:00',
     closed_at: null,
     closed_by: null,
     counted_cents: null,
     expected_cash_cents: null,
     difference_cents: null,
-    closing_notes: null,
+    closing_notes: '',
     closing_breakdown: null,
     method_totals: null,
-    payments_count: null,
-    payments_total_cents: null,
+    payments_count: 0,
+    payments_total_cents: 0,
     reconciliation: rec(),
     ...overrides,
   };
@@ -61,7 +58,7 @@ const base = {
 describe('CajaPage — apertura', () => {
   it('opens a session with an Idempotency-Key and shows the open session', async () => {
     const user = userEvent.setup();
-    let current: CashSessionRow | null = null;
+    let current: CashSession | null = null;
     const api = mockApi({
       ...base,
       'GET /auth/me': makeMe(),
@@ -113,7 +110,7 @@ describe('CajaPage — arqueo y cierre', () => {
           counted_cents: b.counted_cents,
           expected_cash_cents: 150_000,
           difference_cents: b.counted_cents - 150_000,
-          closing_notes: b.notes ?? null,
+          closing_notes: b.notes ?? '',
         });
       },
     });

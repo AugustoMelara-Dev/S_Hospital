@@ -10,10 +10,11 @@ import {
   INVOICE_STATUS_LABEL,
   PAYMENT_METHOD_LABEL,
   type Category,
-  type Invoice,
-  type InvoiceStatus,
   type Paginated,
   type PaymentMethod,
+  type ReportOperation,
+  type ReportSession,
+  type ReportStatusFilter,
   type ReportSummary,
   type User,
 } from '@/api/types';
@@ -36,7 +37,6 @@ import {
   type Column,
 } from '@/ui';
 import { DIFFERENCE_LABEL, DIFFERENCE_TONE, differenceKind } from '@/features/caja/arqueo';
-import { operatorName, registerName, type CashSessionRow } from '@/features/caja/types';
 import { MethodBars } from './MethodBars';
 import { PERIOD_LABEL, PRESETS, presetRange, validateRange, type PeriodPreset } from './period';
 import { TrendChart } from './TrendChart';
@@ -46,18 +46,20 @@ type Filters = {
   date_from: string;
   date_to: string;
   method: '' | PaymentMethod;
-  status: '' | InvoiceStatus;
+  status: '' | ReportStatusFilter;
   user_id: string;
   category_id: string;
 };
 
-type LineRow = ReportSummary['lines'][number];
+type LineRow = ReportSummary['lines'][number] & { _k: number };
+type FreeRow = ReportSummary['gratuities'][number] & { _k: number };
 type PaymentRow = ReportSummary['payments'][number];
 
-const STATUS_OPTIONS: Array<{ value: InvoiceStatus; label: string }> = [
+const STATUS_OPTIONS: Array<{ value: ReportStatusFilter; label: string }> = [
   { value: 'issued', label: INVOICE_STATUS_LABEL.pending },
   { value: 'partial', label: INVOICE_STATUS_LABEL.partial },
   { value: 'paid', label: INVOICE_STATUS_LABEL.paid },
+  { value: 'without_charge', label: INVOICE_STATUS_LABEL.no_charge },
   { value: 'void', label: INVOICE_STATUS_LABEL.void },
 ];
 
@@ -340,11 +342,11 @@ function DocLink({ id, number }: { id?: number; number: string }) {
 }
 
 function DetailTabs({ data }: { data: ReportSummary }) {
-  const opCols: Column<Invoice>[] = [
+  const opCols: Column<ReportOperation>[] = [
     { key: 'doc', header: 'Documento', cell: (i) => <DocLink id={i.id} number={i.number} /> },
     { key: 'date', header: 'Fecha', cell: (i) => <span className="num">{formatDateTime(i.issued_at)}</span> },
     { key: 'patient', header: 'Paciente', cell: (i) => i.patient_name },
-    { key: 'user', header: 'Cajero', cell: (i) => i.issued_by_name ?? '—' },
+    { key: 'user', header: 'Cajero', cell: (i) => i.cashier_name || '—' },
     { key: 'status', header: 'Estado', cell: (i) => <StatusStamp status={i} /> },
     { key: 'total', header: 'Total', numeric: true, cell: (i) => <Money cents={i.total_cents} /> },
     { key: 'balance', header: 'Saldo', numeric: true, cell: (i) => <Money cents={i.balance_cents} /> },
@@ -364,7 +366,7 @@ function DetailTabs({ data }: { data: ReportSummary }) {
     { key: 'patient', header: 'Paciente', cell: (p) => p.patient_name },
     { key: 'method', header: 'Método', cell: (p) => PAYMENT_METHOD_LABEL[p.method] },
     { key: 'ref', header: 'Referencia', cell: (p) => p.reference || <span className="text-ink-3">—</span> },
-    { key: 'user', header: 'Cajero', cell: (p) => p.user_name ?? '—' },
+    { key: 'user', header: 'Cajero', cell: (p) => p.cashier_name || '—' },
     {
       key: 'status',
       header: 'Estado',
@@ -372,12 +374,17 @@ function DetailTabs({ data }: { data: ReportSummary }) {
     },
     { key: 'amount', header: 'Monto', numeric: true, cell: (p) => <Money cents={p.amount_cents} /> },
   ];
-  const sessionCols: Column<CashSessionRow>[] = [
+  const sessionCols: Column<ReportSession>[] = [
     { key: 'opened', header: 'Turno abierto', cell: (x) => <span className="num">{formatDateTime(x.opened_at)}</span> },
-    { key: 'reg', header: 'Caja', cell: (x) => registerName(x) },
-    { key: 'user', header: 'Operador', cell: (x) => operatorName(x) },
+    { key: 'reg', header: 'Caja', cell: (x) => x.register_name },
+    { key: 'user', header: 'Operador', cell: (x) => x.user_name },
     { key: 'expected', header: 'Esperado', numeric: true, cell: (x) => <Money cents={x.expected_cash_cents} /> },
-    { key: 'counted', header: 'Contado', numeric: true, cell: (x) => <Money cents={x.counted_cents} /> },
+    {
+      key: 'counted',
+      header: 'Contado',
+      numeric: true,
+      cell: (x) => (x.counted_cents === null ? <span className="text-ink-3">—</span> : <Money cents={x.counted_cents} />),
+    },
     {
       key: 'diff',
       header: 'Diferencia',
@@ -396,16 +403,18 @@ function DetailTabs({ data }: { data: ReportSummary }) {
       },
     },
   ];
-  const freeCols: Column<LineRow>[] = [
+  const freeCols: Column<FreeRow>[] = [
     { key: 'doc', header: 'Documento', cell: (l) => <DocLink id={l.invoice_id} number={l.invoice_number} /> },
     { key: 'date', header: 'Fecha', cell: (l) => <span className="num">{formatDate(l.issued_at)}</span> },
     { key: 'patient', header: 'Paciente', cell: (l) => l.patient_name },
     { key: 'name', header: 'Concepto', cell: (l) => l.service_name },
     { key: 'qty', header: 'Cant.', numeric: true, cell: (l) => formatHundredths(l.quantity_hundredths) },
-    { key: 'value', header: 'Valor registrado', numeric: true, cell: (l) => <Money cents={l.rule_adjustment_cents} /> },
+    { key: 'value', header: 'Valor registrado', numeric: true, cell: (l) => <Money cents={l.value_cents} /> },
   ];
 
-  const sessions = data.sessions as CashSessionRow[];
+  const sessions = data.sessions;
+  const lines: LineRow[] = data.lines.map((l, i) => ({ ...l, _k: i }));
+  const gratuities: FreeRow[] = data.gratuities.map((l, i) => ({ ...l, _k: i }));
 
   return (
     <Card flush>
@@ -430,9 +439,9 @@ function DetailTabs({ data }: { data: ReportSummary }) {
               count: data.lines.length,
               content: (
                 <Limited
-                  rows={data.lines}
+                  rows={lines}
                   render={(rows) => (
-                    <DataTable caption="Detalle de conceptos" columns={lineCols} rows={rows} rowKey={(l) => `${l.invoice_id}-${l.id}`} density="compact" />
+                    <DataTable caption="Detalle de conceptos" columns={lineCols} rows={rows} rowKey={(l) => l._k} density="compact" />
                   )}
                 />
               ),
@@ -465,9 +474,9 @@ function DetailTabs({ data }: { data: ReportSummary }) {
               count: data.gratuities.length,
               content: (
                 <Limited
-                  rows={data.gratuities}
+                  rows={gratuities}
                   render={(rows) => (
-                    <DataTable caption="Gratuidades" columns={freeCols} rows={rows} rowKey={(l) => `${l.invoice_id}-${l.id}`} density="compact" />
+                    <DataTable caption="Gratuidades" columns={freeCols} rows={rows} rowKey={(l) => l._k} density="compact" />
                   )}
                 />
               ),

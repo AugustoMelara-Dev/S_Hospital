@@ -5,23 +5,22 @@ import { api, downloadFile, errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/dates';
 import { formatRateBp } from '@/lib/money';
 import { Badge, Button, DataTable, Dialog, EmptyState, Field, Money, Select, Textarea, toast } from '@/ui';
-import { type CatalogService, type ImportReport, type PriceHistoryEntry, importLines, useCategories, useTaxRates } from './api';
-import { FormAlert, REASON_MESSAGE, REASON_MIN, asList } from './formUtils';
+import type { ImportReport, Paginated, Service, ServicePriceHistory } from '@/api/types';
+import { useCategories, useTaxRates } from './api';
+import { FormAlert, REASON_MESSAGE, REASON_MIN } from './formUtils';
 
 // ---------- Historial de precios ----------
 
-function who(e: PriceHistoryEntry): string {
-  if (e.changed_by_name) return e.changed_by_name;
-  if (e.changed_by && typeof e.changed_by === 'object') return e.changed_by.name;
-  return '—';
+function who(e: ServicePriceHistory): string {
+  return e.changed_by?.name ?? '—';
 }
 
-export function HistoryDialog({ service, onClose }: { service: CatalogService | null; onClose: () => void }) {
+export function HistoryDialog({ service, onClose }: { service: Service | null; onClose: () => void }) {
   const q = useQuery({
     queryKey: ['services', 'history', service?.id],
     enabled: service !== null,
     queryFn: async () =>
-      asList(await api.get<PriceHistoryEntry[] | { items: PriceHistoryEntry[] }>(`/services/${service!.id}/history`)),
+      (await api.get<Paginated<ServicePriceHistory>>(`/services/${service!.id}/history`, { per_page: 200 })).items,
   });
   return (
     <Dialog open={service !== null} onClose={onClose} size="lg" title="Historial de precios" description={service?.name}>
@@ -184,7 +183,7 @@ export function ImportExportDialog({ open, onClose, canManage }: { open: boolean
   });
 
   const valid = report ? report.summary.create + report.summary.update : 0;
-  const errorsList = report ? importLines(report).filter((l) => l.action === 'error' || (l.errors?.length ?? 0) > 0) : [];
+  const errorsList = report ? report.lines.filter((l) => l.action === 'error' || l.errors.length > 0) : [];
   const reasonError = reason.trim().length < REASON_MIN ? REASON_MESSAGE : null;
 
   async function exportAs(ext: 'csv' | 'xlsx') {

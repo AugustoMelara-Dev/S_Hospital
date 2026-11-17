@@ -7,12 +7,16 @@ import ResumenPage, { greeting } from './ResumenPage';
 
 const today: ReportToday = {
   date: '2026-11-17',
+  scope: 'all',
+  invoices_count: 3,
+  payments_count: 3,
+  recent_operations: [],
   billed_cents: 120_000,
   collected_cents: 100_000,
   pending_cents: 20_000,
   without_charge_count: 2,
   voided_count: 0,
-  by_method: [{ method: 'cash', count: 3, amount_cents: 100_000 }],
+  by_method: [{ method: 'cash', label: 'Efectivo', count: 3, amount_cents: 100_000 }],
   current_session: null,
   attention: { pending_count: 0, pending_cents: 0, missing_receipts_count: 0 },
 };

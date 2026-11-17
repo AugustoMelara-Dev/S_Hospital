@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Download, Printer } from 'lucide-react';
 import { errorMessage } from '@/lib/api';
 import type { Receipt } from '@/api/types';
@@ -15,11 +16,14 @@ type Props = {
 /** "Imprimir recibo" (PDF in a new tab) and "Guardar PDF". */
 export function ReceiptButtons({ receipt, size = 'md', primary = false, showSave = true }: Props) {
   const [busy, setBusy] = useState<'print' | 'save' | null>(null);
+  const qc = useQueryClient();
 
   async function run(kind: 'print' | 'save') {
     setBusy(kind);
     try {
       await (kind === 'print' ? openReceiptPdf(receipt.id) : saveReceiptPdf(receipt));
+      // The first print is recorded server-side (later copies are consultation copies).
+      void qc.invalidateQueries({ queryKey: ['receipts', 'detail', receipt.id] });
     } catch (e) {
       toast.error({ title: 'No se pudo obtener el recibo.', description: errorMessage(e) });
     } finally {

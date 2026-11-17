@@ -9,7 +9,8 @@ import { formatRateBp } from '@/lib/money';
 import { qk } from '@/api/queryClient';
 import { usePermissions } from '@/auth/hooks';
 import { Badge, Button, Card, ConfirmDialog, DataTable, Drawer, EmptyState, Field, IconButton, Input, Switch, Textarea, toast } from '@/ui';
-import { type TaxRateRow, taxRatesKey, useTaxRates } from '@/features/catalogo/api';
+import type { TaxRate } from '@/api/types';
+import { taxRatesKey, useTaxRates } from '@/features/catalogo/api';
 import { FormAlert, REASON_MESSAGE, REASON_MIN, applyServerErrors } from '@/features/catalogo/formUtils';
 
 /** "15" → 1500, "12.5" → 1250 (no floats). */
@@ -20,7 +21,7 @@ export function percentToBp(text: string): number | null {
 }
 export const bpToPercent = (bp: number) => formatRateBp(bp).replace(' %', '');
 
-function TaxDrawer({ rate, onClose }: { rate: TaxRateRow | null; onClose: () => void }) {
+function TaxDrawer({ rate, onClose }: { rate: TaxRate | null; onClose: () => void }) {
   const qc = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
   const schema = useMemo(
@@ -58,8 +59,8 @@ function TaxDrawer({ rate, onClose }: { rate: TaxRateRow | null; onClose: () => 
   const save = useMutation({
     mutationFn: (v: V) => {
       const body = { name: v.name.trim(), rate_bp: percentToBp(v.rate), active: v.active, is_default: v.is_default };
-      if (!rate) return api.post<TaxRateRow>('/tax-rates', body);
-      return api.patch<TaxRateRow>(`/tax-rates/${rate.id}`, { ...body, reason: v.reason.trim() });
+      if (!rate) return api.post<TaxRate>('/tax-rates', body);
+      return api.patch<TaxRate>(`/tax-rates/${rate.id}`, { ...body, reason: v.reason.trim() });
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: taxRatesKey });
@@ -124,8 +125,8 @@ export function ImpuestosTab() {
   const canEdit = can('settings.update');
   const qc = useQueryClient();
   const q = useTaxRates();
-  const [editing, setEditing] = useState<TaxRateRow | 'new' | null>(null);
-  const [deleting, setDeleting] = useState<TaxRateRow | null>(null);
+  const [editing, setEditing] = useState<TaxRate | 'new' | null>(null);
+  const [deleting, setDeleting] = useState<TaxRate | null>(null);
   const [delError, setDelError] = useState<string | null>(null);
 
   async function remove(reason: string) {
@@ -141,7 +142,7 @@ export function ImpuestosTab() {
     }
   }
 
-  const inUse = (r: TaxRateRow) => (r.services_count ?? 0) > 0 || r.in_use === true;
+  const inUse = (r: TaxRate) => r.services_count > 0;
 
   return (
     <>

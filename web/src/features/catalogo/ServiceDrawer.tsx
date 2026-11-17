@@ -8,7 +8,8 @@ import { api } from '@/lib/api';
 import { formatRateBp } from '@/lib/money';
 import { ERYTHROPOIETIN_RULE } from '@/api/types';
 import { Button, Drawer, Field, Input, MoneyInput, Select, Switch, Textarea, toast } from '@/ui';
-import { type CatalogService, serviceAreaId, serviceCategoryId, serviceTaxId, useAreas, useCategories, useTaxRates } from './api';
+import type { Service } from '@/api/types';
+import { serviceAreaId, serviceCategoryId, serviceTaxId, useAreas, useCategories, useTaxRates } from './api';
 import { FormAlert, REASON_MESSAGE, REASON_MIN, applyServerErrors } from './formUtils';
 
 const EXEMPT = 'exento';
@@ -24,7 +25,7 @@ type Initial = {
   is_billable: boolean;
 };
 
-function initialOf(s: CatalogService | null, defaultTax: string): Initial {
+function initialOf(s: Service | null, defaultTax: string): Initial {
   if (!s) {
     return {
       name: '',
@@ -101,7 +102,7 @@ const FIELDS = [
   'availability_change_reason',
 ] as const;
 
-export type ServiceDrawerProps = { open: boolean; service: CatalogService | null; onClose: () => void };
+export type ServiceDrawerProps = { open: boolean; service: Service | null; onClose: () => void };
 
 /** "Nuevo concepto" / "Editar concepto". Remount per service (key) to reset. */
 export function ServiceDrawer({ open, service, onClose }: ServiceDrawerProps) {
@@ -153,7 +154,7 @@ export function ServiceDrawer({ open, service, onClose }: ServiceDrawerProps) {
       const tax = v.tax_rate_id === EXEMPT ? null : Number(v.tax_rate_id);
       const area = v.area_id === '' ? null : Number(v.area_id);
       if (!service) {
-        return api.post<CatalogService>('/services', {
+        return api.post<Service>('/services', {
           name: v.name.trim(),
           category_id: Number(v.category_id),
           area_id: area,
@@ -179,7 +180,7 @@ export function ServiceDrawer({ open, service, onClose }: ServiceDrawerProps) {
       if (c.availability) parts.push(`Disponibilidad: ${v.availability_change_reason.trim()}`);
       if (parts.length) body.reason = parts.length === 1 ? parts[0]!.replace(/^[^:]+: /, '') : parts.join(' · ');
       if (Object.keys(body).length === 0) return service;
-      return api.patch<CatalogService>(`/services/${service.id}`, body);
+      return api.patch<Service>(`/services/${service.id}`, body);
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['services'] });

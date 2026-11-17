@@ -7,14 +7,20 @@ import { api, downloadFile, errorMessage, newIdempotencyKey } from '@/lib/api';
 import { formatDate, formatDateTime } from '@/lib/dates';
 import { formatCents, formatHundredths } from '@/lib/money';
 import { qk } from '@/api/queryClient';
-import { PAYMENT_METHOD_LABEL, type CreatePaymentRequest, type CreatePaymentResponse, type Receipt } from '@/api/types';
+import {
+  PAYMENT_METHOD_LABEL,
+  type CreatePaymentRequest,
+  type CreatePaymentResponse,
+  type Invoice,
+  type Receipt,
+  type ReceiptSummary,
+} from '@/api/types';
 import { usePermissions } from '@/auth/hooks';
 import { Badge, Button, Card, ConfirmDialog, EmptyState, Money, PageHeader, Skeleton, StatusStamp, toast } from '@/ui';
 import { invalidateAfterOperation, openReceiptPdf } from './api';
 import { PaymentDialog } from './components/PaymentDialog';
 import { ReceiptButtons } from './components/ReceiptButtons';
 import { TotalsList, TotalsRow } from './components/TotalsList';
-import { deriveActions, type InvoiceDetail } from './types';
 
 type Attempt = { key: string; fingerprint: string };
 /** Same key while the body is unchanged, so a retry replays instead of duplicating. */
@@ -67,8 +73,17 @@ function Info({ label, children }: { label: string; children: ReactNode }) {
 export function useInvoiceDetail(id: number) {
   return useQuery({
     queryKey: qk.invoice(id),
-    queryFn: ({ signal }) => api.get<InvoiceDetail>(`/invoices/${id}`, undefined, { signal }),
+    queryFn: ({ signal }) => api.get<Invoice>(`/invoices/${id}`, undefined, { signal }),
     enabled: Number.isInteger(id) && id > 0,
+  });
+}
+
+/** Full receipt (issue date, amount in words, print events) for the "Comprobante" card. */
+function useReceiptDetail(receiptId: number | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['receipts', 'detail', receiptId],
+    queryFn: ({ signal }) => api.get<Receipt>(`/receipts/${receiptId}`, undefined, { signal }),
+    enabled: enabled && receiptId !== null,
   });
 }
 
@@ -85,6 +100,7 @@ export function ReciboDetalle({ id }: { id: number }) {
   const [reasonError, setReasonError] = useState<string | null>(null);
   const [issuing, setIssuing] = useState(false);
   const attempts = useRef<Record<string, Attempt | undefined>>({});
+  const receiptDetail = useReceiptDetail(inv?.receipt?.id ?? null, can('receipts.view'));
 
   if (isPending) {
     return (
@@ -113,12 +129,14 @@ export function ReciboDetalle({ id }: { id: number }) {
   }
 
   const invoice = inv;
-  const actions = deriveActions(invoice);
-  const receipt: Receipt | null = invoice.receipt;
+  const actions = invoice.actions;
+  const receipt: ReceiptSummary | null = invoice.receipt;
+  const receiptFull = receiptDetail.data && receipt && receiptDetail.data.id === receipt.id ? receiptDetail.data : null;
   const receiptIssued = receipt?.status === 'issued';
 
   const show = {
-    print: Boolean(receiptIssued) && can('receipts.view'),
+    // After the first print, GET …/pdf is a watermarked consultation copy that needs reprint rights.
+    print: Boolean(receiptIssued) && can('receipts.view') && (actions.can_reprint || receiptFull?.printed === false),
     reprint: actions.can_reprint && Boolean(receiptIssued) && can('receipts.reprint'),
     pay: actions.can_pay && invoice.balance_cents > 0 && can('payments.create'),
     issue: actions.can_issue_receipt && can(['payments.create', 'invoices.operate_any']),
@@ -138,7 +156,7 @@ export function ReciboDetalle({ id }: { id: number }) {
       const res = await api.post<CreatePaymentResponse>(`/invoices/${invoice.id}/payments`, body, { idempotencyKey: key });
       delete attempts.current.pay;
       setPayOpen(false);
-      qc.setQueryData(qk.invoice(invoice.id), (old: InvoiceDetail | undefined) => (old ? { ...old, ...res.invoice } : old));
+      qc.setQueryData(qk.invoice(invoice.id), () => res.invoice);
       const newReceipt = res.receipt;
       toast.success({
         title: res.invoice.balance_cents > 0 ? 'Abono registrado.' : 'Cobro registrado.',
@@ -159,7 +177,9 @@ export function ReciboDetalle({ id }: { id: number }) {
     setIssuing(true);
     try {
       const key = keyFor(attempts.current, 'issue', String(invoice.id));
-      const r = await api.post<Receipt>(`/invoices/${invoice.id}/receipt`, undefined, { idempotencyKey: key });
+      const updated = await api.post<Invoice>(`/invoices/${invoice.id}/receipt`, undefined, { idempotencyKey: key });
+      qc.setQueryData(qk.invoice(invoice.id), updated);
+      const r = updated.receipt;
       toast.success({
         title: 'Recibo emitido.',
         description: r?.number_full ? `Recibo ${r.number_full}` : undefined,
@@ -223,7 +243,7 @@ export function ReciboDetalle({ id }: { id: number }) {
         description={
           <>
             <span className="font-medium text-ink">{invoice.patient_name}</span> · {formatDateTime(invoice.issued_at)}
-            {invoice.issued_by_name ? ` · ${invoice.issued_by_name}` : ''}
+            {invoice.issued_by.name ? ` · ${invoice.issued_by.name}` : ''}
           </>
         }
         actions={
@@ -424,13 +444,13 @@ export function ReciboDetalle({ id }: { id: number }) {
                 <Info label="Estado">
                   {receipt.status === 'issued' ? <Badge tone="ok">Emitido</Badge> : <Badge tone="danger">Anulado</Badge>}
                 </Info>
-                <Info label="Emitido">{formatDateTime(receipt.issued_at)}</Info>
+                {receiptFull && <Info label="Emitido">{formatDateTime(receiptFull.issued_at)}</Info>}
                 <Info label="Reimpresiones">
                   <span className="num">{receipt.reprint_count}</span>
                 </Info>
-                {receipt.amount_words && (
+                {receiptFull?.amount_words && (
                   <div className="mt-1 rounded-[var(--radius-sm)] bg-surface-2 px-3 py-2 text-[12px] leading-snug text-ink-2">
-                    {receipt.amount_words}
+                    {receiptFull.amount_words}
                   </div>
                 )}
               </dl>
@@ -444,15 +464,14 @@ export function ReciboDetalle({ id }: { id: number }) {
           <Card title="Documento">
             <dl className="flex flex-col gap-2">
               <Info label="CAI">
-                <span className="num text-[12px]">{invoice.fiscal_cai}</span>
+                <span className="num text-[12px]">{invoice.fiscal.cai}</span>
               </Info>
               <Info label="Rango autorizado">
                 <span className="num text-[12px]">
-                  {invoice.fiscal_range_from} – {invoice.fiscal_range_to}
+                  {invoice.fiscal.range_from} – {invoice.fiscal.range_to}
                 </span>
               </Info>
-              <Info label="Fecha límite de emisión">{formatDate(invoice.fiscal_valid_until)}</Info>
-              {invoice.cash_register_name && <Info label="Caja">{invoice.cash_register_name}</Info>}
+              {invoice.fiscal.valid_until && <Info label="Fecha límite de emisión">{formatDate(invoice.fiscal.valid_until)}</Info>}
               {invoice.dialysis_prescription && (
                 <Info label="Receta de diálisis">
                   <Badge tone="brand">Sí</Badge>

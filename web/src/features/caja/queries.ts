@@ -1,8 +1,8 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { qk } from '@/api/queryClient';
-import type { CashRegister, Paginated } from '@/api/types';
-import type { CashSessionRow, CashSessionsQuery } from './types';
+import type { CashRegister, CashSession, Paginated } from '@/api/types';
+import type { CashSessionsQuery } from './types';
 
 export const cashKeys = {
   registers: ['cash-registers'] as const,
@@ -13,7 +13,7 @@ export const cashKeys = {
 export function useCurrentSession(enabled = true) {
   return useQuery({
     queryKey: qk.currentCash,
-    queryFn: () => api.get<CashSessionRow | null>('/cash-sessions/current'),
+    queryFn: () => api.get<CashSession | null>('/cash-sessions/current'),
     refetchInterval: 10_000,
     refetchIntervalInBackground: false,
     enabled,
@@ -34,7 +34,7 @@ export function useCashRegisters(enabled = true) {
 export function useSessionDetail(id: number | null, opts: { poll?: boolean } = {}) {
   return useQuery({
     queryKey: cashKeys.detail(id ?? 0),
-    queryFn: () => api.get<CashSessionRow>(`/cash-sessions/${id}`),
+    queryFn: () => api.get<CashSession>(`/cash-sessions/${id}`),
     enabled: id !== null,
     refetchInterval: opts.poll ? 10_000 : false,
     refetchIntervalInBackground: false,
@@ -45,7 +45,7 @@ export function useSessionList(params: CashSessionsQuery) {
   return useQuery({
     queryKey: qk.cashSessions(params),
     queryFn: () =>
-      api.get<Paginated<CashSessionRow>>('/cash-sessions', {
+      api.get<Paginated<CashSession>>('/cash-sessions', {
         date_from: params.date_from,
         date_to: params.date_to,
         cash_register_id: params.cash_register_id,

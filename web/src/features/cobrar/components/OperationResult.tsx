@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { CircleAlert, CircleCheck, FileText, Plus, RotateCcw } from 'lucide-react';
-import { PAYMENT_METHOD_LABEL, type Invoice, type Payment, type Receipt } from '@/api/types';
+import { PAYMENT_METHOD_LABEL, type Invoice, type Payment, type ReceiptSummary } from '@/api/types';
 import { Button, Card, Kbd, Money } from '@/ui';
 import { ReceiptButtons } from '@/features/recibos/components/ReceiptButtons';
 
@@ -25,11 +25,14 @@ export function ChargedPanel({
   invoice,
   payment,
   receipt,
+  receiptError = null,
   onNew,
 }: {
   invoice: Invoice;
   payment: Payment | null;
-  receipt: Receipt | null;
+  receipt: ReceiptSummary | null;
+  /** Set when the payment posted but the institutional receipt could not be issued. */
+  receiptError?: string | null;
   onNew: () => void;
 }) {
   const noCharge = invoice.total_cents === 0;
@@ -48,7 +51,7 @@ export function ChargedPanel({
                   Recibo <span className="num">{receipt.number_full}</span> listo para imprimir.
                 </>
               ) : (
-                'El recibo institucional aún no está disponible.'
+                receiptError || 'El recibo institucional aún no está disponible.'
               )}
             </p>
           </div>

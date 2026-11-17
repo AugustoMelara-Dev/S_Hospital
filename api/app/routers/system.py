@@ -177,7 +177,10 @@ def system_status(db: DB, user: StatusViewer) -> dict[str, Any]:
         },
         "disk": disk,
         "backups": {
-            "last_success": backups.backup_payload(last),
+            # Same shape/serialization as GET /backups (HN offset, creator name).
+            "last_success": BackupOut.model_validate(
+                backups.backup_payload(last, _names(db, {last.created_by or 0}))
+            ).model_dump(mode="json") if last is not None else None,
             "dump_tool_available": backups.dump_tool() is not None
             if engine.dialect.name != "sqlite" else True,
             "dedicated_key": bool(settings.backup_key),

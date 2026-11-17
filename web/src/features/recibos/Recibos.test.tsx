@@ -63,7 +63,7 @@ describe('Recibos (detalle)', () => {
       'GET /auth/me': supervisor,
       'GET /invoices/:id': () =>
         voided
-          ? makeDetail({ status: 'void', void_reason: 'Paciente duplicado', voided_at: '2026-11-17T10:00:00-06:00', actions: undefined })
+          ? makeDetail({ status: 'void', void_reason: 'Paciente duplicado', voided_at: '2026-11-17T10:00:00-06:00', actions: { can_pay: false, can_void: false, can_reverse: false, can_reprint: false, can_issue_receipt: false } })
           : makeDetail(),
       'POST /invoices/:id/void': () => {
         voided = true;

@@ -8,19 +8,29 @@ import AjustesPage from './AjustesPage';
 import { FiscalTab } from './FiscalTab';
 import { percentToBp } from './ImpuestosTab';
 
-const seq = (over: object) => ({
-  id: 1,
-  prefix: '000-001-01',
-  cai: 'ABC-123',
-  min_number: 1,
-  max_number: 5000,
-  current_number: 10,
-  valid_until: '2099-12-31',
-  active: false,
-  created_at: '2026-01-01T00:00:00-06:00',
-  updated_at: '2026-01-01T00:00:00-06:00',
-  ...over,
-});
+const seq = (over: { id: number; prefix: string; active?: boolean; valid_until?: string; current_number?: number }) => {
+  const base = {
+    min_number: 1,
+    max_number: 5000,
+    current_number: 10,
+    valid_until: '2099-12-31',
+    ...over,
+  };
+  const remaining = base.max_number - base.current_number;
+  return {
+    cai: 'ABC-123',
+    active: false,
+    next_number: base.current_number + 1,
+    next_number_formatted: `${base.prefix}-${String(base.current_number + 1).padStart(8, '0')}`,
+    remaining,
+    expired: base.valid_until < '2026-11-17',
+    exhausted: remaining <= 0,
+    low_range: remaining <= 100,
+    created_at: '2026-01-01T00:00:00-06:00',
+    updated_at: '2026-01-01T00:00:00-06:00',
+    ...base,
+  };
+};
 
 const receiptSettings = {
   series: [

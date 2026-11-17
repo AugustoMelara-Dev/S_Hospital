@@ -9,7 +9,7 @@ import { formatDateTime } from '@/lib/dates';
 import { useMe, usePermissions } from '@/auth/hooks';
 import type { Paginated, RolesResponse, User } from '@/api/types';
 import { Badge, Button, Card, ConfirmDialog, DataTable, Dialog, Drawer, EmptyState, Field, IconButton, Input, Select, Textarea, toast } from '@/ui';
-import { FormAlert, REASON_MESSAGE, REASON_MIN, applyServerErrors, asList } from '@/features/catalogo/formUtils';
+import { FormAlert, REASON_MESSAGE, REASON_MIN, applyServerErrors } from '@/features/catalogo/formUtils';
 import { PasswordChecklist, passwordOk } from './password';
 
 export const usersKey = ['users'] as const;
@@ -65,7 +65,7 @@ function UserDrawer({ user, onClose }: { user: User | null; onClose: () => void 
       username: user?.username ?? '',
       email: user?.email ?? '',
       password: '',
-      role_id: user ? String(user.role_id ?? user.role.id) : '',
+      role_id: user ? String(user.role.id) : '',
     },
   });
   const password = useWatch({ control, name: 'password' });
@@ -222,7 +222,7 @@ export function UsersTab() {
 
   const q = useQuery({
     queryKey: [...usersKey, deferred],
-    queryFn: async () => asList(await api.get<User[] | Paginated<User>>('/users', { search: deferred, per_page: 200 })),
+    queryFn: async () => (await api.get<Paginated<User>>('/users', { search: deferred, per_page: 200 })).items,
     placeholderData: (p) => p,
   });
   // Client-side filter as well, in case the API ignores `search`.

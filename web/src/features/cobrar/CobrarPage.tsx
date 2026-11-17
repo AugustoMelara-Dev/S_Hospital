@@ -14,7 +14,7 @@ import {
   type InvoicePreview,
   type InvoicePreviewRequest,
   type Payment,
-  type Receipt,
+  type ReceiptSummary,
   type Service,
 } from '@/api/types';
 import { usePermissions } from '@/auth/hooks';
@@ -34,7 +34,7 @@ import type { CartLine, QuickService } from './types';
 type Stage =
   | { kind: 'edit' }
   | { kind: 'pending'; invoice: Invoice; error: string }
-  | { kind: 'done'; invoice: Invoice; payment: Payment | null; receipt: Receipt | null };
+  | { kind: 'done'; invoice: Invoice; payment: Payment | null; receipt: ReceiptSummary | null; receiptError: string | null };
 
 /** Idempotency key kept while the request body is unchanged (retries replay, edits get a new key). */
 type Attempt = { key: string; fingerprint: string };
@@ -221,7 +221,7 @@ export default function CobrarPage() {
       }
       setSubmitting(false);
       setDialogOpen(false);
-      setStage({ kind: 'done', invoice, payment: null, receipt: invoice.receipt ?? null });
+      setStage({ kind: 'done', invoice, payment: null, receipt: invoice.receipt, receiptError: invoice.receipt_error ?? null });
       return;
     }
 
@@ -230,7 +230,13 @@ export default function CobrarPage() {
       const key = keyFor(paymentAttempt, JSON.stringify([invoice.id, body]));
       const res = await api.post<CreatePaymentResponse>(`/invoices/${invoice.id}/payments`, body, { idempotencyKey: key });
       setDialogOpen(false);
-      setStage({ kind: 'done', invoice: res.invoice, payment: res.payment, receipt: res.receipt ?? res.invoice.receipt ?? null });
+      setStage({
+        kind: 'done',
+        invoice: res.invoice,
+        payment: res.payment,
+        receipt: res.receipt ?? res.invoice.receipt,
+        receiptError: res.receipt_error,
+      });
       void invalidateAfterOperation(qc, invoice.id);
     } catch (e) {
       const msg = errorMessage(e, 'No se pudo registrar el cobro.');
@@ -318,7 +324,13 @@ export default function CobrarPage() {
     return (
       <>
         {header}
-        <ChargedPanel invoice={stage.invoice} payment={stage.payment} receipt={stage.receipt} onNew={reset} />
+        <ChargedPanel
+          invoice={stage.invoice}
+          payment={stage.payment}
+          receipt={stage.receipt}
+          receiptError={stage.receiptError}
+          onNew={reset}
+        />
       </>
     );
   }
@@ -449,7 +461,9 @@ export default function CobrarPage() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-[14px] font-semibold text-ink">Total</h2>
-                {lines.length > 0 && preview.data?.settlement === 'free_by_rule' && <Badge tone="brand">Sin cobro por receta</Badge>}
+                {lines.length > 0 && preview.data && preview.data.total_cents === 0 && preview.data.rule_adjustment_cents > 0 && (
+                  <Badge tone="brand">Sin cobro por receta</Badge>
+                )}
               </div>
               <div aria-live="polite" aria-busy={preview.calculating || undefined}>
                 <TotalsList

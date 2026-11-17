@@ -5,21 +5,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { FileDigit, Pencil, Plus } from 'lucide-react';
 import { api } from '@/lib/api';
-import { formatDate, todayISO } from '@/lib/dates';
-import type { FiscalSequence } from '@/api/types';
+import { formatDate } from '@/lib/dates';
+import type { FiscalSequence, Paginated } from '@/api/types';
 import { usePermissions } from '@/auth/hooks';
 import { Badge, Button, Card, DataTable, Drawer, EmptyState, Field, IconButton, Input, Switch, Textarea, toast } from '@/ui';
-import { FormAlert, REASON_MESSAGE, REASON_MIN, applyServerErrors, asList } from '@/features/catalogo/formUtils';
+import { FormAlert, REASON_MESSAGE, REASON_MIN, applyServerErrors } from '@/features/catalogo/formUtils';
 
-/** Real API adds computed fields (api/app/schemas/settings.py FiscalSequenceOut). */
-export type FiscalSequenceRow = FiscalSequence & {
-  next_number?: number | null;
-  next_number_formatted?: string | null;
-  remaining?: number;
-  expired?: boolean;
-  exhausted?: boolean;
-  low_range?: boolean;
-};
 
 export const LOW_RANGE = 100;
 export const fiscalKey = ['fiscal-sequences'] as const;
@@ -28,15 +19,12 @@ export function formatFiscalNumber(prefix: string, n: number): string {
   return `${prefix}-${String(n).padStart(8, '0')}`;
 }
 
-export function fiscalStatus(s: FiscalSequenceRow, today = todayISO()) {
-  const remaining = s.remaining ?? Math.max(s.max_number - Math.max(s.current_number, s.min_number - 1), 0);
-  const expired = s.expired ?? s.valid_until < today;
-  const exhausted = s.exhausted ?? s.current_number + 1 > s.max_number;
-  const low = !exhausted && (s.low_range ?? s.max_number - s.current_number <= LOW_RANGE);
-  return { remaining, expired, exhausted, low };
+/** Status flags computed by the server (`FiscalSequenceOut`). */
+export function fiscalStatus(s: FiscalSequence) {
+  return { remaining: s.remaining, expired: s.expired, exhausted: s.exhausted, low: !s.exhausted && s.low_range };
 }
 
-export function FiscalChips({ s }: { s: FiscalSequenceRow }) {
+export function FiscalChips({ s }: { s: FiscalSequence }) {
   const st = fiscalStatus(s);
   return (
     <div className="flex flex-wrap gap-1">
@@ -50,7 +38,7 @@ export function FiscalChips({ s }: { s: FiscalSequenceRow }) {
 
 const SEQ_MAX = 99_999_999;
 
-function SequenceDrawer({ seq, onClose }: { seq: FiscalSequenceRow | null; onClose: () => void }) {
+function SequenceDrawer({ seq, onClose }: { seq: FiscalSequence | null; onClose: () => void }) {
   const qc = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
   const schema = useMemo(
@@ -108,8 +96,8 @@ function SequenceDrawer({ seq, onClose }: { seq: FiscalSequenceRow | null; onClo
         max_number: Number(v.max_number),
         active: v.active,
       };
-      if (!seq) return api.post<FiscalSequenceRow>('/fiscal-sequences', body);
-      return api.patch<FiscalSequenceRow>(`/fiscal-sequences/${seq.id}`, { ...body, reason: v.reason.trim() });
+      if (!seq) return api.post<FiscalSequence>('/fiscal-sequences', body);
+      return api.patch<FiscalSequence>(`/fiscal-sequences/${seq.id}`, { ...body, reason: v.reason.trim() });
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: fiscalKey });
@@ -191,10 +179,10 @@ function SequenceDrawer({ seq, onClose }: { seq: FiscalSequenceRow | null; onClo
 export function FiscalTab() {
   const { can } = usePermissions();
   const canEdit = can('settings.update');
-  const [editing, setEditing] = useState<FiscalSequenceRow | 'new' | null>(null);
+  const [editing, setEditing] = useState<FiscalSequence | 'new' | null>(null);
   const q = useQuery({
     queryKey: fiscalKey,
-    queryFn: async () => asList(await api.get<FiscalSequenceRow[] | { items: FiscalSequenceRow[] }>('/fiscal-sequences')),
+    queryFn: async () => (await api.get<Paginated<FiscalSequence>>('/fiscal-sequences')).items,
   });
 
   return (

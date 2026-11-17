@@ -2,10 +2,10 @@ import { useState, type ReactNode } from 'react';
 import { CircleCheck, Printer } from 'lucide-react';
 import { downloadFile, errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/dates';
-import { PAYMENT_METHOD_LABEL, type PaymentMethod } from '@/api/types';
+import { PAYMENT_METHOD_LABEL, type CashSession, type PaymentMethod } from '@/api/types';
 import { Badge, Button, Card, Money, toast } from '@/ui';
 import { DENOMINATIONS, DIFFERENCE_LABEL, DIFFERENCE_TONE, denominationSubtotal, differenceKind, type DenominationKey } from './arqueo';
-import { operatorName, registerName, type CashSessionRow } from './types';
+import { operatorName, registerName } from './types';
 
 export async function printSummary(id: number): Promise<void> {
   try {
@@ -25,7 +25,7 @@ function Row({ label, children, strong }: { label: string; children: ReactNode; 
 }
 
 /** "Resumen de cierre": closed-session figures, count breakdown and print button. */
-export function CierreResumen({ session, actions, justClosed }: { session: CashSessionRow; actions?: ReactNode; justClosed?: boolean }) {
+export function CierreResumen({ session, actions, justClosed }: { session: CashSession; actions?: ReactNode; justClosed?: boolean }) {
   const [printing, setPrinting] = useState(false);
   const diff = session.difference_cents ?? 0;
   const kind = differenceKind(diff);

@@ -7,7 +7,10 @@ import { renderWithProviders } from '@/test/render';
 import ReportesPage from './ReportesPage';
 
 const summary: ReportSummary = {
+  filters: { date_from: '2026-11-01', date_to: '2026-11-30' },
   summary: {
+    voided_count: 0,
+    payments_count: 4,
     billed_cents: 250_000,
     collected_cents: 200_000,
     pending_cents: 50_000,
@@ -21,8 +24,8 @@ const summary: ReportSummary = {
     free_lines_count: 1,
     free_value_cents: 2_500,
   },
-  by_method: [{ method: 'cash', count: 4, amount_cents: 200_000 }],
-  daily: [{ date: '2026-11-17', billed_cents: 250_000, collected_cents: 200_000 }],
+  by_method: [{ method: 'cash', label: 'Efectivo', count: 4, amount_cents: 200_000 }],
+  daily: [{ date: '2026-11-17', billed_cents: 250_000, collected_cents: 200_000, invoices_count: 5 }],
   operations: [],
   lines: [],
   payments: [],

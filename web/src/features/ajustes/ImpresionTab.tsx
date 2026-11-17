@@ -165,15 +165,12 @@ function ProfilesCard({ profiles, canEdit }: { profiles: PrintProfile[]; canEdit
 
 const seriesSchema = z
   .object({
-    series: z.string().trim().min(1, 'Ingrese la serie.').max(32),
     prefix: z.string().trim().min(1, 'Ingrese el prefijo.').max(32),
-    min_number: z.string().regex(/^\d{1,8}$/, 'Número entero.'),
     max_number: z.string().regex(/^\d{1,8}$/, 'Número entero.'),
     range_authorization: z.string().max(128),
     legal_text: z.string().max(2000),
     number_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Color hexadecimal (#b91c1c).'),
   })
-  .refine((v) => Number(v.max_number) >= Number(v.min_number), { path: ['max_number'], message: '"Hasta" debe ser mayor o igual que "Desde".' });
 type SeriesValues = z.infer<typeof seriesSchema>;
 
 function SeriesDrawer({ series, onClose }: { series: ReceiptSeries; onClose: () => void }) {
@@ -188,9 +185,7 @@ function SeriesDrawer({ series, onClose }: { series: ReceiptSeries; onClose: () 
   } = useForm<SeriesValues>({
     resolver: zodResolver(seriesSchema),
     defaultValues: {
-      series: series.series,
       prefix: series.prefix,
-      min_number: String(series.min_number),
       max_number: String(series.max_number),
       range_authorization: series.range_authorization ?? '',
       legal_text: series.legal_text ?? '',
@@ -200,13 +195,12 @@ function SeriesDrawer({ series, onClose }: { series: ReceiptSeries; onClose: () 
   const color = watch('number_color');
   const save = useMutation({
     mutationFn: (v: SeriesValues) =>
+      // The series code and its first number are fixed once created (ReceiptSeriesPatch).
       api.patch<ReceiptSeries>(`/receipt-series/${series.id}`, {
-        series: v.series.trim(),
         prefix: v.prefix.trim(),
-        min_number: Number(v.min_number),
         max_number: Number(v.max_number),
-        range_authorization: v.range_authorization.trim() || null,
-        legal_text: v.legal_text.trim() || null,
+        range_authorization: v.range_authorization.trim(),
+        legal_text: v.legal_text.trim(),
         number_color: v.number_color,
       }),
     onSuccess: () => {
@@ -215,7 +209,7 @@ function SeriesDrawer({ series, onClose }: { series: ReceiptSeries; onClose: () 
       onClose();
     },
     onError: (e) =>
-      setFormError(applyServerErrors(e, setError, ['series', 'prefix', 'min_number', 'max_number', 'range_authorization', 'legal_text', 'number_color'])),
+      setFormError(applyServerErrors(e, setError, ['prefix', 'max_number', 'range_authorization', 'legal_text', 'number_color'])),
   });
 
   return (
@@ -241,16 +235,16 @@ function SeriesDrawer({ series, onClose }: { series: ReceiptSeries; onClose: () 
     >
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Serie" required error={errors.series?.message}>
-            <Input {...register('series')} mono maxLength={32} />
+          <Field label="Serie" hint="No se puede cambiar.">
+            <Input value={series.series} readOnly mono tabIndex={-1} className="bg-surface-2" />
           </Field>
           <Field label="Prefijo" required error={errors.prefix?.message}>
             <Input {...register('prefix')} mono maxLength={32} />
           </Field>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <Field label="Desde" required error={errors.min_number?.message}>
-            <Input {...register('min_number')} inputMode="numeric" mono />
+          <Field label="Desde" hint="No se puede cambiar.">
+            <Input value={String(series.min_number)} readOnly mono tabIndex={-1} className="bg-surface-2" />
           </Field>
           <Field label="Hasta" required error={errors.max_number?.message}>
             <Input {...register('max_number')} inputMode="numeric" mono />
@@ -269,7 +263,7 @@ function SeriesDrawer({ series, onClose }: { series: ReceiptSeries; onClose: () 
           <div className="flex items-center gap-2">
             <Input {...register('number_color')} mono maxLength={7} className="w-32" />
             <span className="num text-[14px] font-semibold" style={{ color: /^#[0-9a-f]{6}$/i.test(color) ? color : undefined }}>
-              {series.prefix || series.series}-{String(series.current_number + 1).padStart(8, '0')}
+              {series.series}-{String(series.current_number + 1).padStart(8, '0')}
             </span>
           </div>
         </Field>
@@ -307,7 +301,7 @@ export function ImpresionTab() {
               header: 'Próximo número',
               cell: (s) => (
                 <span className="num font-medium" style={{ color: s.number_color }}>
-                  {s.prefix || s.series}-{String(Math.max(s.current_number + 1, s.min_number)).padStart(8, '0')}
+                  {s.series}-{String(Math.max(s.current_number + 1, s.min_number)).padStart(8, '0')}
                 </span>
               ),
             },

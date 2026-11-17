@@ -28,6 +28,8 @@ const ACCENT: Record<Tone, string> = {
 export function KpiTile({ label, cents, value, hint, icon, tone = 'neutral', loading, className }: KpiTileProps) {
   return (
     <div
+      role="group"
+      aria-label={typeof label === 'string' ? label : undefined}
       className={cn(
         'relative flex flex-col gap-2 overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface px-4 py-3.5 shadow-1',
         'before:absolute before:inset-y-3 before:left-0 before:w-[3px] before:rounded-r-full',

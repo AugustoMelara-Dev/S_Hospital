@@ -4,6 +4,7 @@ import type { Permission } from '@/api/types';
 import { AuthProvider } from '@/auth/AuthProvider';
 import { FullScreenLoader, RequireAuth, RequirePermission } from '@/auth/guards';
 import { AppShell } from '@/shell/AppShell';
+import { CATALOG_PAGE_PERMS } from './nav';
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const ChangePasswordPage = lazy(() => import('@/pages/ChangePasswordPage'));
@@ -67,7 +68,7 @@ export const routes: RouteObject[] = [
           { path: 'recibos/:id', element: guarded(ReciboDetallePage, ['invoices.view']) },
           { path: 'caja', element: guarded(CajaPage, ['cash.view']) },
           { path: 'reportes', element: guarded(ReportesPage, ['reports.own', 'reports.all']) },
-          { path: 'admin/catalogo', element: guarded(CatalogoPage, ['catalog.view']) },
+          { path: 'admin/catalogo', element: guarded(CatalogoPage, CATALOG_PAGE_PERMS) },
           { path: 'admin/usuarios', element: guarded(UsuariosPage, ['users.view']) },
           { path: 'admin/ajustes', element: guarded(AjustesPage, ['settings.view', 'receipt_settings.view']) },
           { path: 'admin/respaldos', element: guarded(RespaldosPage, ['backups.view', 'system.status']) },

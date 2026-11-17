@@ -3,10 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Archive, CircleCheck, Database, Download, HardDrive, Plus, ServerCog, TriangleAlert } from 'lucide-react';
 import { api, downloadFile, errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/dates';
-import type { Backup, BackupStatus, Paginated, SystemStatus } from '@/api/types';
+import type { Backup, BackupPage, BackupStatus, SystemStatus } from '@/api/types';
 import { usePermissions } from '@/auth/hooks';
 import { Badge, Button, Card, ConfirmDialog, DataTable, EmptyState, IconButton, KpiTile, PageHeader, Skeleton, toast, type Tone } from '@/ui';
-import { asList } from '@/features/catalogo/formUtils';
 
 export const backupsKey = ['backups'] as const;
 export const BACKUP_POLL_MS = 2000;
@@ -16,6 +15,8 @@ const STATUS: Record<BackupStatus, { label: string; tone: Tone }> = {
   success: { label: 'Correcto', tone: 'ok' },
   failed: { label: 'Fallido', tone: 'danger' },
 };
+
+const DIALECT_LABEL: Record<string, string> = { mysql: 'MariaDB/MySQL', mariadb: 'MariaDB', sqlite: 'SQLite' };
 
 export function formatBytes(n: number | null | undefined): string {
   if (n === null || n === undefined) return '—';
@@ -49,25 +50,25 @@ function SystemStatusCard() {
           {row('Versión', <span className="num">{s.version}</span>)}
           {row(
             'Base de datos',
-            s.database.ok ? (
-              <Badge tone="ok" dot>
-                {[s.database.engine, s.database.version].filter(Boolean).join(' ') || 'Conectada'}
-              </Badge>
-            ) : (
-              <Badge tone="danger" dot>Sin conexión</Badge>
-            ),
+            <Badge tone="ok" dot>
+              {[DIALECT_LABEL[s.database.dialect] ?? s.database.dialect, s.database.server_version].filter(Boolean).join(' ') || 'Conectada'}
+            </Badge>,
           )}
           {row(
             'Migraciones',
-            s.migration.up_to_date ? <Badge tone="ok">Al día</Badge> : <Badge tone="warn">Pendientes</Badge>,
+            s.database.up_to_date === false ? <Badge tone="warn">Pendientes</Badge> : <Badge tone="ok">Al día</Badge>,
           )}
           {row(
             'Espacio en disco',
-            <span className="num">
-              {formatBytes(s.disk.free_bytes)} libres de {formatBytes(s.disk.total_bytes)}
-            </span>,
+            s.disk ? (
+              <span className="num">
+                {formatBytes(s.disk.free_bytes)} libres de {formatBytes(s.disk.total_bytes)}
+              </span>
+            ) : (
+              '—'
+            ),
           )}
-          {row('Último respaldo', s.last_backup ? <span className="tabular">{formatDateTime(s.last_backup.created_at)}</span> : 'Ninguno')}
+          {row('Último respaldo', s.backups.last_success ? <span className="tabular">{formatDateTime(s.backups.last_success.created_at)}</span> : 'Ninguno')}
         </div>
       )}
     </Card>
@@ -104,7 +105,7 @@ export default function RespaldosPage() {
   const q = useQuery({
     queryKey: backupsKey,
     enabled: canView,
-    queryFn: async () => asList(await api.get<Backup[] | Paginated<Backup>>('/backups')),
+    queryFn: async () => (await api.get<BackupPage>('/backups')).items,
     // Poll while any backup is still running.
     refetchInterval: (query) => (query.state.data?.some((b) => b.status === 'pending') ? BACKUP_POLL_MS : false),
   });

@@ -1,10 +1,10 @@
 import { Link } from 'react-router';
 import { Banknote } from 'lucide-react';
 import { formatTime } from '@/lib/dates';
-import { PAYMENT_METHOD_LABEL, type CashMovementType, type PaymentMethod, type Reconciliation } from '@/api/types';
+import { PAYMENT_METHOD_LABEL, type CashMovement, type CashMovementType, type PaymentMethod, type Reconciliation } from '@/api/types';
 import { Badge, DataTable, Money, type Column, type Tone } from '@/ui';
 import { MethodBars } from '@/features/reportes/MethodBars';
-import type { CashMovementRow } from './types';
+
 
 const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
 
@@ -68,8 +68,8 @@ const MOVEMENT_TONE: Record<CashMovementType, Tone> = {
 };
 
 /** Tab "Movimientos": Hora, Tipo, Referencia, Método, Monto. */
-export function MovimientosTab({ movements, loading }: { movements: CashMovementRow[] | undefined; loading: boolean }) {
-  const columns: Column<CashMovementRow>[] = [
+export function MovimientosTab({ movements, loading }: { movements: CashMovement[] | undefined; loading: boolean }) {
+  const columns: Column<CashMovement>[] = [
     { key: 'time', header: 'Hora', width: '80px', cell: (m) => <span className="num">{formatTime(m.occurred_at)}</span> },
     {
       key: 'type',

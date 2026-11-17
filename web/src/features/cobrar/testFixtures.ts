@@ -5,11 +5,10 @@ import {
   type InvoicePreview,
   type InvoicePreviewRequest,
   type Payment,
-  type Receipt,
+  type ReceiptSummary,
   type Service,
 } from '@/api/types';
 import { makeMe } from '@/test/mockApi';
-import type { InvoiceDetail } from '@/features/recibos/types';
 
 export const cajero = makeMe({
   name: 'Luis Cajero',
@@ -32,8 +31,8 @@ export const cajero = makeMe({
 
 export const openSession = {
   id: 3,
-  cash_register_id: 1,
-  user_id: 1,
+  cash_register: { id: 1, code: 'principal', name: 'Caja principal' },
+  user: { id: 1, name: 'Luis Cajero' },
   status: 'open',
   opened_at: '2026-11-17T07:02:00-06:00',
   opening_cents: 0,
@@ -42,22 +41,18 @@ export const openSession = {
 export function makeService(id: number, name: string, price_cents: number, extra: Partial<Service> = {}): Service {
   return {
     id,
-    category_id: 1,
-    category: { id: 1, name: 'Laboratorio', active: true },
-    area_id: null,
-    area: null,
     name,
-    slug: name.toLowerCase().replace(/\s+/g, '-'),
-    source_key: null,
-    aliases: null,
-    description: null,
+    category: { id: 1, name: 'Laboratorio' },
+    area: null,
     price_cents,
-    tax_rate_id: null,
     tax_rate: null,
     active: true,
     visible_in_billing: true,
     is_billable: true,
     special_rule_code: null,
+    aliases: '',
+    description: '',
+    updated_at: '2026-11-17T07:00:00-06:00',
     ...extra,
   };
 }
@@ -65,8 +60,7 @@ export function makeService(id: number, name: string, price_cents: number, extra
 export const hemograma = makeService(10, 'Hemograma completo', 15000);
 export const hemoglobina = makeService(11, 'Hemoglobina glicosilada', 32050);
 export const epo = makeService(20, 'Eritropoyetina 4000 UI', 25000, {
-  category: { id: 2, name: 'Farmacia', active: true },
-  category_id: 2,
+  category: { id: 2, name: 'Farmacia' },
   special_rule_code: ERYTHROPOIETIN_RULE,
 });
 export const services = [hemograma, hemoglobina, epo];
@@ -75,14 +69,15 @@ export const services = [hemograma, hemoglobina, epo];
 export function previewFor(body: InvoicePreviewRequest): InvoicePreview {
   const items = body.items.map((it, i) => {
     const s = services.find((x) => x.id === it.service_id) ?? hemograma;
-    const free = body.dialysis_prescription && s.special_rule_code === ERYTHROPOIETIN_RULE;
+    const eligible = s.special_rule_code === ERYTHROPOIETIN_RULE;
+    const free = body.dialysis_prescription && eligible;
     const registered = Math.round((s.price_cents * it.quantity_hundredths) / 100);
     const sub = free ? 0 : registered;
     return {
+      position: i + 1,
       service_id: s.id,
       service_name: s.name,
-      category_name: s.category?.name ?? '',
-      area_name: null,
+      category_name: s.category.name,
       quantity_hundredths: it.quantity_hundredths,
       unit_price_registered_cents: s.price_cents,
       unit_price_cents: free ? 0 : s.price_cents,
@@ -92,7 +87,7 @@ export function previewFor(body: InvoicePreviewRequest): InvoicePreview {
       tax_cents: 0,
       line_total_cents: sub,
       special_rule_applied: free,
-      position: i,
+      rule_eligible: eligible,
     };
   });
   const total = items.reduce((a, b) => a + b.line_total_cents, 0);
@@ -103,69 +98,60 @@ export function previewFor(body: InvoicePreviewRequest): InvoicePreview {
     taxable_cents: 0,
     tax_cents: 0,
     total_cents: total,
-    tax_breakdown: [{ rate_bp: 0, base_cents: total, label: 'Exento' }],
-    settlement: total === 0 ? 'free_by_rule' : 'pending',
+    rule_adjustment_cents: items.reduce((a, b) => a + b.rule_adjustment_cents, 0),
+    tax_breakdown: [{ rate_bp: 0, base_cents: total, tax_cents: 0, label: 'Exento' }],
+    dialysis_prescription: body.dialysis_prescription,
+    has_rule_eligible_items: items.some((x) => x.rule_eligible),
   };
 }
 
-export function makeReceipt(overrides: Partial<Receipt> = {}): Receipt {
+export function makeReceipt(overrides: Partial<ReceiptSummary> = {}): ReceiptSummary {
   return {
     id: 70,
-    invoice_id: 5,
-    series_id: 1,
-    number: 12,
     number_full: 'REC-A-00000012',
     status: 'issued',
-    amount_cents: 15000,
-    amount_words: 'CIENTO CINCUENTA LEMPIRAS CON 00/100',
-    payer_name: 'María López',
-    cash_session_id: 3,
-    issued_by: 1,
-    issued_at: '2026-11-17T09:15:00-06:00',
     reprint_count: 0,
-    voided_at: null,
-    void_reason: null,
     ...overrides,
   };
 }
+
+const cashier = { id: 1, name: 'Luis Cajero' };
 
 export function makeInvoice(overrides: Partial<Invoice> = {}): Invoice {
   return {
     id: 5,
     number: '000-001-01-00000012',
-    fiscal_sequence_id: 1,
-    fiscal_cai: 'ABC123-DEF456',
-    fiscal_range_from: '000-001-01-00000001',
-    fiscal_range_to: '000-001-01-00005000',
-    fiscal_valid_until: '2026-12-31',
-    hospital_name: 'Hospital de Prueba',
-    hospital_rtn: null,
-    hospital_address: null,
-    hospital_phone: null,
-    government_line: null,
-    secretariat_line: null,
-    receipt_location: null,
-    receipt_footer_text: null,
     patient_name: 'María López',
+    status: 'issued',
+    settlement: 'pending',
+    total_cents: 15000,
+    paid_cents: 0,
+    balance_cents: 15000,
+    dialysis_prescription: false,
+    reversed: false,
+    issued_at: '2026-11-17T09:10:00-06:00',
+    issued_by: cashier,
+    cash_session_id: 3,
     subtotal_cents: 15000,
     exempt_cents: 15000,
     taxable_cents: 0,
     tax_cents: 0,
-    total_cents: 15000,
-    paid_cents: 0,
-    balance_cents: 15000,
-    tax_breakdown: [{ rate_bp: 0, base_cents: 15000, label: 'Exento' }],
-    status: 'issued',
-    settlement: 'pending',
-    dialysis_prescription: false,
-    cash_session_id: 3,
-    issued_by: 1,
-    issued_at: '2026-11-17T09:10:00-06:00',
-    voided_by: null,
+    rule_adjustment_cents: 0,
+    tax_breakdown: [{ rate_bp: 0, base_cents: 15000, tax_cents: 0, label: 'Exento' }],
+    fiscal: {
+      cai: 'ABC123-DEF456',
+      range_from: '000-001-01-00000001',
+      range_to: '000-001-01-00005000',
+      valid_until: '2026-12-31',
+    },
     voided_at: null,
+    voided_by: null,
     void_reason: null,
-    reversed: false,
+    items: [],
+    payments: [],
     receipt: null,
+    receipt_error: null,
+    actions: { can_pay: true, can_void: true, can_reverse: false, can_reprint: false, can_issue_receipt: false },
     ...overrides,
   };
 }
@@ -175,32 +161,31 @@ export function makePayment(overrides: Partial<Payment> = {}): Payment {
     id: 90,
     invoice_id: 5,
     cash_session_id: 3,
-    user_id: 1,
+    user: cashier,
     method: 'cash',
     amount_cents: 15000,
     received_cents: 20000,
     change_cents: 5000,
-    reference: null,
+    reference: '',
     status: 'posted',
-    void_reason: null,
-    voided_by: null,
-    voided_at: null,
     paid_at: '2026-11-17T09:15:00-06:00',
+    void_reason: null,
+    voided_at: null,
     ...overrides,
   };
 }
 
-export function makeDetail(overrides: Partial<InvoiceDetail> = {}): InvoiceDetail {
-  return {
-    ...makeInvoice(),
+/** GET /invoices/{id} with one line. */
+export function makeDetail(overrides: Partial<Invoice> = {}): Invoice {
+  return makeInvoice({
     items: [
       {
         id: 1,
-        invoice_id: 5,
+        position: 1,
         service_id: 10,
         service_name: 'Hemograma completo',
         category_name: 'Laboratorio',
-        area_name: null,
+        area_name: '',
         quantity_hundredths: 100,
         unit_price_registered_cents: 15000,
         unit_price_cents: 15000,
@@ -210,12 +195,8 @@ export function makeDetail(overrides: Partial<InvoiceDetail> = {}): InvoiceDetai
         tax_cents: 0,
         line_total_cents: 15000,
         special_rule_applied: false,
-        position: 0,
       },
     ],
-    payments: [],
-    receipt: null,
-    actions: { can_pay: true, can_void: true, can_reverse: false, can_reprint: false, can_issue_receipt: false },
     ...overrides,
-  };
+  });
 }

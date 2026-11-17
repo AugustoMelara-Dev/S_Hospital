@@ -1,26 +1,26 @@
 import { useState } from 'react';
 import { Clock, User, Wallet } from 'lucide-react';
 import { formatDateTime, formatTime } from '@/lib/dates';
-import type { Reconciliation } from '@/api/types';
+import type { CashSession, Reconciliation } from '@/api/types';
 import { Badge, KpiTile, Tabs } from '@/ui';
 import { ArqueoTab } from './ArqueoTab';
 import { CierreTab } from './CierreTab';
 import { EMPTY_ARQUEO, type ArqueoState } from './arqueo';
 import { useSessionDetail } from './queries';
 import { MovimientosTab, ResumenTab } from './SessionTabs';
-import { operatorName, registerName, type CashSessionRow } from './types';
+import { operatorName, registerName } from './types';
 
 type TabValue = 'resumen' | 'movimientos' | 'arqueo' | 'cierre';
 
 export type SessionViewProps = {
-  session: CashSessionRow;
+  session: CashSession;
   canClose: boolean;
-  onClosed: (closed: CashSessionRow) => void;
+  onClosed: (closed: CashSession) => void;
   /** Movements already loaded (history detail). */
   movementsPreloaded?: boolean;
 };
 
-function fallbackReconciliation(s: CashSessionRow): Reconciliation {
+function fallbackReconciliation(s: CashSession): Reconciliation {
   return {
     opening_cents: s.opening_cents,
     expected_cash_cents: s.expected_cash_cents ?? s.opening_cents,
@@ -41,7 +41,7 @@ export function SessionView({ session, canClose, onClosed, movementsPreloaded }:
   const [arqueo, setArqueo] = useState<ArqueoState>(EMPTY_ARQUEO);
   const rec = session.reconciliation ?? fallbackReconciliation(session);
   const detail = useSessionDetail(!movementsPreloaded && tab === 'movimientos' ? session.id : null, { poll: true });
-  const movements = movementsPreloaded ? session.movements : detail.data?.movements;
+  const movements = (movementsPreloaded ? session.movements : detail.data?.movements) ?? undefined;
 
   return (
     <div className="flex flex-col gap-5">

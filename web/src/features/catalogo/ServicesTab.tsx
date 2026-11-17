@@ -4,11 +4,12 @@ import { formatRateBp } from '@/lib/money';
 import { ERYTHROPOIETIN_RULE } from '@/api/types';
 import { usePermissions } from '@/auth/hooks';
 import { Badge, Button, Card, DataTable, EmptyState, IconButton, Input, Money, Select } from '@/ui';
-import { type CatalogService, useCategories, useServices } from './api';
+import type { Service } from '@/api/types';
+import { useCategories, useServices } from './api';
 import { BulkTaxDialog, HistoryDialog, ImportExportDialog } from './ServiceDialogs';
 import { ServiceDrawer } from './ServiceDrawer';
 
-export function ServiceStatusBadges({ s }: { s: CatalogService }) {
+export function ServiceStatusBadges({ s }: { s: Service }) {
   return (
     <div className="flex flex-wrap gap-1">
       {s.active ? <Badge tone="ok" dot>Activo</Badge> : <Badge tone="neutral" dot>Inactivo</Badge>}
@@ -27,8 +28,8 @@ export function ServicesTab() {
   const [category, setCategory] = useState('');
   const [active, setActive] = useState('');
   const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState<CatalogService | null | 'new'>(null);
-  const [history, setHistory] = useState<CatalogService | null>(null);
+  const [editing, setEditing] = useState<Service | null | 'new'>(null);
+  const [history, setHistory] = useState<Service | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [ioOpen, setIoOpen] = useState(false);
 
@@ -116,7 +117,12 @@ export function ServicesTab() {
             {
               key: 'tax',
               header: 'Impuesto',
-              cell: (s) => (s.tax_rate ? `${s.tax_rate.name} · ${formatRateBp(s.tax_rate.rate_bp)}` : <span className="text-ink-2">Exento</span>),
+              cell: (s) =>
+                s.tax_rate ? (
+                  s.tax_rate.name.includes('%') ? s.tax_rate.name : `${s.tax_rate.name} · ${formatRateBp(s.tax_rate.rate_bp)}`
+                ) : (
+                  <span className="text-ink-2">Exento</span>
+                ),
             },
             { key: 'status', header: 'Estado', cell: (s) => <ServiceStatusBadges s={s} /> },
           ]}

@@ -4,7 +4,7 @@ import { ArrowRight, CircleCheck, FileWarning, LockOpen, ReceiptText, ShoppingCa
 import { api, isApiError } from '@/lib/api';
 import { BUSINESS_TZ, formatLongDate, formatTime } from '@/lib/dates';
 import { qk } from '@/api/queryClient';
-import { PAYMENT_METHOD_LABEL, type Invoice, type Paginated, type PaymentMethod, type ReportToday } from '@/api/types';
+import { PAYMENT_METHOD_LABEL, type InvoiceSummary, type Paginated, type PaymentMethod, type ReportToday } from '@/api/types';
 import { useAuth, usePermissions } from '@/auth/hooks';
 import { Button, Card, DataTable, EmptyState, KpiTile, Money, PageHeader, Skeleton, StatusStamp, type Column } from '@/ui';
 import { buttonSizes, buttonVariants } from '@/ui/Button';
@@ -13,7 +13,7 @@ import { registerName } from '@/features/caja/types';
 import { MethodBars } from '@/features/reportes/MethodBars';
 import { cn } from '@/lib/cn';
 
-type RecentInvoice = Pick<Invoice, 'id' | 'number' | 'issued_at' | 'patient_name' | 'status' | 'settlement' | 'total_cents'>;
+type RecentInvoice = Pick<InvoiceSummary, 'id' | 'number' | 'issued_at' | 'patient_name' | 'status' | 'settlement' | 'total_cents'>;
 
 const forbidden = (e: unknown) => isApiError(e) && e.status === 403;
 
