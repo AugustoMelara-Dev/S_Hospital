@@ -7,10 +7,12 @@ import { ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatRateBp } from '@/lib/money';
 import { ERYTHROPOIETIN_RULE } from '@/api/types';
-import { Button, Drawer, Field, Input, MoneyInput, Select, Switch, Textarea, toast } from '@/ui';
+import { cn } from '@/lib/cn';
+import { Button, Drawer, Field, Input, Money, MoneyInput, Select, Switch, Textarea, toast } from '@/ui';
 import type { Service } from '@/api/types';
-import { serviceAreaId, serviceCategoryId, serviceTaxId, useAreas, useCategories, useTaxRates } from './api';
+import { serviceAreaId, serviceCategoryId, serviceCode, serviceTaxId, useAreas, useCategories, useTaxRates } from './api';
 import { FormAlert, REASON_MESSAGE, REASON_MIN, applyServerErrors } from './formUtils';
+import { LedgerSection, ledgerRow } from './ledger';
 
 const EXEMPT = 'exento';
 
@@ -222,12 +224,12 @@ export function ServiceDrawer({ open, service, onClose }: ServiceDrawerProps) {
         </>
       }
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col">
         {isEpo && (
-          <div className="flex gap-3 rounded-[var(--radius-md)] border border-info/30 bg-info-soft px-3.5 py-3 text-[13px] text-ink">
-            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-info" aria-hidden="true" />
+          <div className="mb-4 flex gap-3 rounded-[var(--radius-sm)] border border-junta bg-slate-soft px-3.5 py-3 text-[13px] text-ink">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-slate" aria-hidden="true" />
             <div className="flex flex-col gap-0.5">
-              <p className="font-medium">Regla institucional de eritropoyetina</p>
+              <p className="font-semibold text-slate-text">Regla institucional de eritropoyetina</p>
               <p className="text-ink-2">
                 Con receta de diálisis, solo esta línea queda sin cobro; el resto de la cuenta conserva su precio. La regla no se
                 puede modificar desde aquí.
@@ -235,72 +237,100 @@ export function ServiceDrawer({ open, service, onClose }: ServiceDrawerProps) {
             </div>
           </div>
         )}
-        <Field label="Nombre" required error={errors.name?.message}>
-          <Input {...register('name')} autoComplete="off" maxLength={160} />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Categoría" required error={errors.category_id?.message}>
+        <LedgerSection title="Concepto" aside={service ? <span className="num">Código {serviceCode(service)}</span> : undefined}>
+          <Field label="Nombre" required error={errors.name?.message} className={ledgerRow('sm')}>
+            <Input {...register('name')} autoComplete="off" maxLength={160} />
+          </Field>
+          <Field label="Categoría" required error={errors.category_id?.message} className={ledgerRow('sm')}>
             <Select
+              key={categories.data ? 'cat-ready' : 'cat-loading'}
               {...register('category_id')}
               placeholder="Seleccione…"
               options={(categories.data ?? []).map((c) => ({ value: String(c.id), label: c.active ? c.name : `${c.name} (inactiva)` }))}
             />
           </Field>
-          <Field label="Área" error={errors.area_id?.message}>
+          <Field label="Área" error={errors.area_id?.message} className={ledgerRow('sm')}>
             <Select
+              key={areas.data ? 'area-ready' : 'area-loading'}
               {...register('area_id')}
               placeholder="Sin área"
               options={(areas.data ?? []).map((a) => ({ value: String(a.id), label: a.name }))}
             />
           </Field>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Precio" required error={errors.price_cents?.message}>
+        </LedgerSection>
+
+        <LedgerSection
+          title="Precio e impuesto"
+          aside={
+            isEdit ? (
+              <span>
+                Vigente <Money cents={initial.price_cents ?? 0} className="font-semibold text-ink-2" />
+              </span>
+            ) : undefined
+          }
+        >
+          <Field label="Precio" required error={errors.price_cents?.message} className={ledgerRow('sm')}>
             <Controller
               control={control}
               name="price_cents"
-              render={({ field }) => <MoneyInput value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} name={field.name} />}
+              render={({ field }) => (
+                <div className="w-44">
+                  <MoneyInput value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} name={field.name} />
+                </div>
+              )}
             />
           </Field>
-          <Field label="Tasa de impuesto" required error={errors.tax_rate_id?.message}>
-            <Select {...register('tax_rate_id')} placeholder={taxes.isLoading ? 'Cargando…' : 'Seleccione…'} options={taxOptions} />
+          {flags.price && (
+            <Field label="Motivo del cambio de precio" required error={errors.price_change_reason?.message} className={cn(ledgerRow('sm'), 'anim-fade-in items-start')}>
+              <Textarea {...register('price_change_reason')} rows={2} maxLength={500} placeholder="Ej.: Ajuste aprobado por dirección" />
+            </Field>
+          )}
+          <Field label="Tasa de impuesto" required error={errors.tax_rate_id?.message} className={ledgerRow('sm')}>
+            <Select key={taxes.data ? 'tax-ready' : 'tax-loading'} {...register('tax_rate_id')} placeholder={taxes.isLoading ? 'Cargando…' : 'Seleccione…'} options={taxOptions} />
           </Field>
-        </div>
-        {flags.price && (
-          <Field label="Motivo del cambio de precio" required error={errors.price_change_reason?.message} className="anim-fade-in">
-            <Textarea {...register('price_change_reason')} rows={2} maxLength={500} placeholder="Ej.: Ajuste aprobado por dirección" />
-          </Field>
-        )}
-        {flags.tax && (
-          <Field label="Motivo del cambio de impuesto" required error={errors.tax_change_reason?.message} className="anim-fade-in">
-            <Textarea {...register('tax_change_reason')} rows={2} maxLength={500} />
-          </Field>
-        )}
+          {flags.tax && (
+            <Field label="Motivo del cambio de impuesto" required error={errors.tax_change_reason?.message} className={cn(ledgerRow('sm'), 'anim-fade-in items-start')}>
+              <Textarea {...register('tax_change_reason')} rows={2} maxLength={500} />
+            </Field>
+          )}
+        </LedgerSection>
 
-        <fieldset className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-line px-3.5 py-3">
-          <legend className="px-1 text-[12.5px] font-medium text-ink-2">Disponibilidad</legend>
-          <Controller
-            control={control}
-            name="active"
-            render={({ field }) => <Switch label="Activo" description="Inactivo: no aparece en caja ni se puede facturar." checked={field.value} onCheckedChange={field.onChange} />}
-          />
-          <Controller
-            control={control}
-            name="visible_in_billing"
-            render={({ field }) => <Switch label="Visible en caja" description="Aparece en el buscador de Cobrar." checked={field.value} onCheckedChange={field.onChange} />}
-          />
-          <Controller
-            control={control}
-            name="is_billable"
-            render={({ field }) => <Switch label="Facturable" checked={field.value} onCheckedChange={field.onChange} />}
-          />
-        </fieldset>
-        {flags.availability && (
-          <Field label="Motivo del cambio de disponibilidad" required error={errors.availability_change_reason?.message} className="anim-fade-in">
-            <Textarea {...register('availability_change_reason')} rows={2} maxLength={500} />
-          </Field>
-        )}
-        <FormAlert message={formError} />
+        <LedgerSection title="Disponibilidad">
+          <div className="border-b border-junta py-3">
+            <Controller
+              control={control}
+              name="active"
+              render={({ field }) => <Switch label="Activo" description="Inactivo: no aparece en caja ni se puede facturar." checked={field.value} onCheckedChange={field.onChange} />}
+            />
+          </div>
+          <div className="border-b border-junta py-3">
+            <Controller
+              control={control}
+              name="visible_in_billing"
+              render={({ field }) => <Switch label="Visible en caja" description="Aparece en el buscador de Cobrar." checked={field.value} onCheckedChange={field.onChange} />}
+            />
+          </div>
+          <div className="border-b border-junta py-3 last:border-b-0">
+            <Controller
+              control={control}
+              name="is_billable"
+              render={({ field }) => <Switch label="Facturable" checked={field.value} onCheckedChange={field.onChange} />}
+            />
+          </div>
+          {flags.availability && (
+            <Field
+              label="Motivo del cambio de disponibilidad"
+              required
+              error={errors.availability_change_reason?.message}
+              className={cn(ledgerRow('sm'), 'anim-fade-in items-start')}
+            >
+              <Textarea {...register('availability_change_reason')} rows={2} maxLength={500} />
+            </Field>
+          )}
+        </LedgerSection>
+        <div className="mt-3">
+          <FormAlert message={formError} />
+        </div>
       </div>
     </Drawer>
   );

@@ -93,7 +93,8 @@ describe('shell', () => {
     expect(within(nav).getByRole('link', { name: /Cobrar/ })).toBeInTheDocument();
     expect(within(nav).queryByRole('link', { name: /Usuarios/ })).not.toBeInTheDocument();
     expect(within(nav).queryByRole('link', { name: /Auditoría/ })).not.toBeInTheDocument();
-    expect(await screen.findByText(/Caja abierta · desde/)).toHaveTextContent('Caja abierta · desde 07:02');
+    expect(await screen.findByText(/· abierta/)).toHaveTextContent('Caja · abierta 07:02');
+    expect(screen.getByRole('img', { name: /^Turno: Apertura completado/ })).toBeInTheDocument();
   });
 
   it('blocks routes without permission', async () => {

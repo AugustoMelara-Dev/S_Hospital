@@ -143,7 +143,7 @@ describe('Cobrar', () => {
     await addByKeyboard(user, search, 'Hemograma');
     const status = await screen.findByText(/Abra caja antes de emitir y cobrar una factura\./);
     expect(within(status).getByRole('link', { name: 'Ir a Caja' })).toHaveAttribute('href', '/caja');
-    expect(screen.getByRole('button', { name: /Cobrar · L 150\.00/ })).toBeDisabled();
+    for (const b of screen.getAllByRole('button', { name: /Cobrar · L 150\.00/ })) expect(b).toBeDisabled();
   });
 
   it('charges: posts invoice then payment with idempotency keys and shows the change', async () => {

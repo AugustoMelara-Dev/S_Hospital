@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { Banknote } from 'lucide-react';
 import { formatTime } from '@/lib/dates';
 import { PAYMENT_METHOD_LABEL, type CashMovement, type CashMovementType, type PaymentMethod, type Reconciliation } from '@/api/types';
-import { Badge, DataTable, Money, type Column, type Tone } from '@/ui';
+import { Badge, DataTable, Money, type Column, type GlyphShape, type Tone } from '@/ui';
 import { MethodBars } from '@/features/reportes/MethodBars';
 
 
@@ -13,37 +13,39 @@ export function ResumenTab({ reconciliation }: { reconciliation: Reconciliation 
   const totals = reconciliation.method_totals;
   const rows = METHODS.map((m) => ({ method: m, amount_cents: totals?.[m] ?? 0 }));
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <section aria-labelledby="cobros-metodo" className="rounded-[var(--radius-md)] border border-line bg-surface p-4">
-        <h3 id="cobros-metodo" className="mb-3 text-[14px] font-semibold text-ink">
+    <div className="grid overflow-hidden rounded-[var(--radius-md)] border border-junta bg-junta gap-px lg:grid-cols-[minmax(0,1fr)_360px]">
+      <section aria-labelledby="cobros-metodo" className="flex flex-col bg-surface">
+        <h3 id="cobros-metodo" className="flex min-h-11 items-center border-b border-junta px-4 text-[15px] font-bold text-ink">
           Cobros por método
         </h3>
-        <MethodBars rows={rows} label="Cobros por método en este turno" />
+        <div className="p-4">
+          <MethodBars rows={rows} label="Cobros por método en este turno" />
+        </div>
       </section>
-      <aside className="flex flex-col gap-3 self-start rounded-[var(--radius-md)] border border-line bg-surface-2/50 p-4 text-[13px] text-ink-2">
-        <p className="flex items-start gap-2">
-          <Banknote className="mt-[1px] size-4 shrink-0 text-ink-3" aria-hidden="true" />
+      <aside className="flex flex-col bg-surface text-[13.5px]">
+        <p className="flex min-h-11 items-start gap-2 border-b border-junta px-4 py-2.5 text-[13px] text-ink-2">
+          <Banknote className="mt-[2px] size-4 shrink-0 text-ink-3" aria-hidden="true" />
           <span>
-            Solo el <strong className="font-medium text-ink">efectivo</strong> entra a la gaveta. Transferencias, tarjetas y otros
+            Solo el <strong className="font-semibold text-ink">efectivo</strong> entra a la gaveta. Transferencias, tarjetas y otros
             métodos no se cuentan en el arqueo.
           </span>
         </p>
-        <dl className="flex flex-col gap-1.5 border-t border-line pt-3">
-          <div className="flex justify-between gap-3">
-            <dt>Apertura</dt>
+        <dl className="flex flex-col">
+          <div className="flex justify-between gap-3 border-b border-junta px-4 py-2.5">
+            <dt className="text-ink-2">Apertura</dt>
             <dd>
               <Money cents={reconciliation.opening_cents} />
             </dd>
           </div>
-          <div className="flex justify-between gap-3">
-            <dt>+ Cobros en efectivo</dt>
+          <div className="flex justify-between gap-3 border-b border-junta px-4 py-2.5">
+            <dt className="text-ink-2">+ Cobros en efectivo</dt>
             <dd>
               <Money cents={totals?.cash ?? 0} />
             </dd>
           </div>
-          <div className="flex justify-between gap-3 font-medium text-ink">
+          <div className="flex items-baseline justify-between gap-3 px-4 py-3 font-semibold text-ink">
             <dt>Efectivo esperado</dt>
-            <dd>
+            <dd className="text-[18px]">
               <Money cents={reconciliation.expected_cash_cents} />
             </dd>
           </div>
@@ -58,6 +60,13 @@ export const MOVEMENT_TYPE_LABEL: Record<CashMovementType, string> = {
   payment: 'Cobro',
   payment_void: 'Cobro anulado',
   closing: 'Cierre',
+};
+
+const MOVEMENT_SHAPE: Record<CashMovementType, GlyphShape> = {
+  opening: 'dot',
+  payment: 'filled',
+  payment_void: 'struck',
+  closing: 'dot',
 };
 
 const MOVEMENT_TONE: Record<CashMovementType, Tone> = {
@@ -75,7 +84,7 @@ export function MovimientosTab({ movements, loading }: { movements: CashMovement
       key: 'type',
       header: 'Tipo',
       cell: (m) => (
-        <Badge tone={MOVEMENT_TONE[m.type]} dot>
+        <Badge tone={MOVEMENT_TONE[m.type]} shape={MOVEMENT_SHAPE[m.type]}>
           {MOVEMENT_TYPE_LABEL[m.type]}
         </Badge>
       ),
@@ -87,7 +96,7 @@ export function MovimientosTab({ movements, loading }: { movements: CashMovement
         <span className="flex flex-col">
           {m.invoice_number ? (
             m.invoice_id ? (
-              <Link to={`/recibos/${m.invoice_id}`} className="num text-brand underline-offset-2 hover:underline">
+              <Link to={`/recibos/${m.invoice_id}`} className="num font-medium text-slate-text underline-offset-2 hover:underline">
                 {m.invoice_number}
               </Link>
             ) : (
@@ -103,7 +112,7 @@ export function MovimientosTab({ movements, loading }: { movements: CashMovement
     { key: 'amount', header: 'Monto', numeric: true, cell: (m) => <Money cents={m.amount_cents} signed toneNegative /> },
   ];
   return (
-    <div className="rounded-[var(--radius-md)] border border-line bg-surface">
+    <div className="overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface">
       <DataTable
         caption="Movimientos del turno"
         columns={columns}

@@ -16,7 +16,8 @@ import {
   type ReceiptSummary,
 } from '@/api/types';
 import { usePermissions } from '@/auth/hooks';
-import { Badge, Button, Card, ConfirmDialog, EmptyState, Money, PageHeader, Skeleton, StatusStamp, toast } from '@/ui';
+import { Badge, Button, ConfirmDialog, EmptyState, PageHeader, Skeleton, StatusGlyph, StatusStamp, toast } from '@/ui';
+import { Amount, Dash } from './components/Amount';
 import { invalidateAfterOperation, openReceiptPdf } from './api';
 import { PaymentDialog } from './components/PaymentDialog';
 import { ReceiptButtons } from './components/ReceiptButtons';
@@ -61,14 +62,33 @@ const REASON_DIALOG: Record<
   },
 };
 
-function Info({ label, children }: { label: string; children: ReactNode }) {
+/** One cell of the document ledger: label over value, ruled right and bottom by the junta. */
+function Info({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 text-[13px]">
-      <dt className="shrink-0 text-ink-3">{label}</dt>
-      <dd className="min-w-0 text-right break-words text-ink">{children}</dd>
+    <div className={cn('flex min-w-0 flex-col gap-1 border-r border-b border-junta px-4 py-2.5', className)}>
+      <dt className="text-[12px] leading-4 font-semibold text-ink-2">{label}</dt>
+      <dd className="min-w-0 text-[14px] leading-5 break-words text-ink">{children}</dd>
     </div>
   );
 }
+
+/** Surface panel with a header row ruled by the junta; tables run edge to edge. */
+function Panel({ title, aside, className, children }: { title: string; aside?: ReactNode; className?: string; children: ReactNode }) {
+  return (
+    <section aria-label={title} className={cn('overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface', className)}>
+      <header className="flex h-10 items-center justify-between gap-3 border-b border-junta px-4">
+        <h3 className="text-[15px] leading-5 font-bold text-ink">{title}</h3>
+        {aside && <span className="text-[12.5px] text-ink-2">{aside}</span>}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+const cellRule = 'border-b border-l border-junta first:border-l-0';
+const th = cn(cellRule, 'h-8 px-3 text-[12px] leading-4 font-semibold whitespace-nowrap text-ink-2');
+const td = cn(cellRule, 'h-11 px-3 py-2 align-middle');
+const tableClass = 'w-full border-collapse text-[14px] leading-5 [&>tbody>tr:last-child>td]:border-b-0';
 
 export function useInvoiceDetail(id: number) {
   return useQuery({
@@ -225,53 +245,59 @@ export function ReciboDetalle({ id }: { id: number }) {
 
   return (
     <>
-      <Link
-        to="/recibos"
-        className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-2 hover:text-ink [&_svg]:size-4"
-      >
-        <ArrowLeft aria-hidden="true" />
-        Recibos
-      </Link>
-      <PageHeader
-        eyebrow="Factura"
-        title={
-          <span className="flex flex-wrap items-center gap-3">
-            <span className="num">{invoice.number}</span>
-            <StatusStamp status={invoice} variant="stamp" />
-          </span>
-        }
-        description={
-          <>
-            <span className="font-medium text-ink">{invoice.patient_name}</span> · {formatDateTime(invoice.issued_at)}
-            {invoice.issued_by.name ? ` · ${invoice.issued_by.name}` : ''}
-          </>
-        }
-        actions={
-          <>
+      <PageHeader title="Factura" />
+
+      <section aria-label="Documento" className="overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface">
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4 px-5 pt-4 pb-5">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <Link
+              to="/recibos"
+              className="inline-flex w-fit items-center gap-1 text-[13px] font-semibold text-ink-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)] [&_svg]:size-4"
+            >
+              <ArrowLeft aria-hidden="true" />
+              Recibos
+            </Link>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <h2 className="num text-[44px] leading-[48px] font-bold tracking-[-0.01em] text-ink">{invoice.number}</h2>
+              <StatusStamp status={invoice} variant="stamp" />
+            </div>
+            <p className="text-[17px] leading-6 font-semibold text-ink">{invoice.patient_name}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pt-6">
             {show.pay && (
-              <Button variant="primary" leftIcon={<Wallet />} onClick={() => {
+              <Button
+                variant="primary"
+                size="lg"
+                leftIcon={<Wallet />}
+                onClick={() => {
                   setPayError(null);
                   setPayOpen(true);
-                }}>
+                }}
+              >
                 {invoice.paid_cents > 0 ? 'Registrar abono' : 'Cobrar saldo'}
               </Button>
             )}
-            {show.print && receipt && <ReceiptButtons receipt={receipt} showSave={false} primary={!show.pay} />}
+            {show.print && receipt && <ReceiptButtons receipt={receipt} size="lg" showSave={false} primary={!show.pay} />}
             {show.reprint && (
-              <Button leftIcon={<Printer />} onClick={() => {
+              <Button
+                size="lg"
+                leftIcon={<Printer />}
+                onClick={() => {
                   setReasonError(null);
                   setReasonAction('reprint');
-                }}>
+                }}
+              >
                 Reimprimir
               </Button>
             )}
             {show.issue && (
-              <Button leftIcon={<FileCheck />} loading={issuing} onClick={() => void issueReceipt()}>
+              <Button size="lg" leftIcon={<FileCheck />} loading={issuing} onClick={() => void issueReceipt()}>
                 Emitir recibo
               </Button>
             )}
             {show.void && (
               <Button
+                size="lg"
                 leftIcon={<Ban />}
                 className="text-danger"
                 onClick={() => {
@@ -284,6 +310,7 @@ export function ReciboDetalle({ id }: { id: number }) {
             )}
             {show.reverse && (
               <Button
+                size="lg"
                 leftIcon={<Undo2 />}
                 className="text-danger"
                 onClick={() => {
@@ -294,119 +321,158 @@ export function ReciboDetalle({ id }: { id: number }) {
                 Revertir
               </Button>
             )}
-          </>
-        }
-      />
-
-      {invoice.status === 'void' && (
-        <div role="note" className="mb-4 rounded-[var(--radius-md)] border border-danger/30 bg-danger-soft px-4 py-3 text-[13.5px] text-danger">
-          <p className="font-medium">
-            {invoice.reversed ? 'Factura revertida' : 'Factura anulada'}
-            {invoice.voided_at ? ` el ${formatDateTime(invoice.voided_at)}` : ''}.
-          </p>
-          {invoice.void_reason && <p className="mt-0.5 text-ink-2">Motivo: {invoice.void_reason}</p>}
+          </div>
         </div>
-      )}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        {invoice.status === 'void' && (
+          <div role="note" className="flex items-start gap-2.5 border-t border-junta bg-danger-soft px-5 py-3 text-[13.5px] text-danger">
+            <StatusGlyph shape="struck" className="mt-[5px]" />
+            <div>
+              <p className="font-semibold">
+                {invoice.reversed ? 'Factura revertida' : 'Factura anulada'}
+                {invoice.voided_at ? ` el ${formatDateTime(invoice.voided_at)}` : ''}.
+              </p>
+              {invoice.void_reason && <p className="mt-0.5 text-ink-2">Motivo: {invoice.void_reason}</p>}
+            </div>
+          </div>
+        )}
+
+        <div className="overflow-hidden border-t border-junta">
+          <dl className="-mr-px -mb-px grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6">
+            <Info label="Emitida">{formatDateTime(invoice.issued_at)}</Info>
+            <Info label="Emitida por">{invoice.issued_by.name || <Dash />}</Info>
+            {receipt ? (
+              <>
+                <Info label="Recibo No.">
+                  <span className="num font-semibold">{receipt.number_full}</span>
+                </Info>
+                <Info label="Estado del recibo">
+                  <span className="flex items-center gap-2">
+                    <StatusGlyph shape={receipt.status === 'issued' ? 'filled' : 'struck'} className={receipt.status === 'issued' ? 'text-ok' : 'text-danger'} />
+                    <span>{receipt.status === 'issued' ? 'Emitido' : 'Anulado'}</span>
+                  </span>
+                </Info>
+                <Info label="Fecha del recibo">{receiptFull ? formatDateTime(receiptFull.issued_at) : <Dash />}</Info>
+                <Info label="Reimpresiones">
+                  <span className="num">{receipt.reprint_count}</span>
+                </Info>
+              </>
+            ) : (
+              <Info label="Recibo" className="col-span-2 sm:col-span-1 xl:col-span-4">
+                <span className="text-ink-2">
+                  {invoice.status === 'paid' ? 'Falta emitir el recibo institucional.' : 'Se emite al quedar pagada la factura.'}
+                </span>
+              </Info>
+            )}
+            <Info label="CAI" className="col-span-2">
+              <span className="num text-[13px] break-all">{invoice.fiscal.cai}</span>
+            </Info>
+            <Info label="Rango autorizado" className="col-span-2">
+              <span className="num text-[13px]">
+                {invoice.fiscal.range_from} – {invoice.fiscal.range_to}
+              </span>
+            </Info>
+            <Info label="Fecha límite de emisión">{invoice.fiscal.valid_until ? formatDate(invoice.fiscal.valid_until) : <Dash />}</Info>
+            <Info label="Receta de diálisis">{invoice.dialysis_prescription ? 'Sí' : 'No'}</Info>
+          </dl>
+        </div>
+      </section>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
         <div className="flex min-w-0 flex-col gap-4">
-          <Card title="Conceptos" flush>
+          <Panel title="Conceptos" aside={`${invoice.items.length} ${invoice.items.length === 1 ? 'concepto' : 'conceptos'}`}>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-[13.5px]">
+              <table className={tableClass}>
                 <caption className="sr-only">Conceptos de la factura</caption>
                 <thead>
-                  <tr className="border-b border-line bg-surface-2/60 text-[12px] text-ink-2">
-                    <th scope="col" className="h-9 px-3 text-left font-medium">Concepto</th>
-                    <th scope="col" className="h-9 px-3 text-right font-medium">Cant.</th>
-                    <th scope="col" className="h-9 px-3 text-right font-medium">Precio</th>
-                    <th scope="col" className="h-9 px-3 text-right font-medium">Ajuste</th>
-                    <th scope="col" className="h-9 px-3 text-right font-medium">Importe</th>
+                  <tr className="bg-ground">
+                    <th scope="col" className={cn(th, 'text-left')}>Concepto</th>
+                    <th scope="col" className={cn(th, 'w-[80px] text-right')}>Cant.</th>
+                    <th scope="col" className={cn(th, 'w-[120px] text-right')}>Precio</th>
+                    <th scope="col" className={cn(th, 'w-[120px] text-right')}>Ajuste</th>
+                    <th scope="col" className={cn(th, 'w-[132px] text-right')}>Importe</th>
                   </tr>
                 </thead>
                 <tbody>
                   {invoice.items.map((it) => (
-                    <tr key={it.id} className="border-b border-line last:border-0">
-                      <td className="px-3 py-2.5">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-ink">{it.service_name}</span>
-                          <span className="flex flex-wrap items-center gap-1.5 text-[12px] text-ink-3">
-                            {it.category_name}
-                            {it.special_rule_applied && <Badge tone="brand">Sin cobro por receta</Badge>}
+                    <tr key={it.id} className={cn(it.special_rule_applied && 'bg-slate-soft/45')}>
+                      <td className={td}>
+                        <div className="flex min-w-0 flex-col">
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="font-medium text-ink">{it.service_name}</span>
+                            {it.special_rule_applied && (
+                              <Badge tone="brand" shape="diamond">
+                                Sin cobro por receta
+                              </Badge>
+                            )}
                           </span>
+                          {it.category_name && <span className="text-[12px] leading-4 text-ink-2">{it.category_name}</span>}
                         </div>
                       </td>
-                      <td className="num px-3 py-2.5 text-right">{formatHundredths(it.quantity_hundredths)}</td>
-                      <td className="px-3 py-2.5 text-right">
-                        <Money cents={it.unit_price_registered_cents} />
+                      <td className={cn(td, 'num text-right')}>{formatHundredths(it.quantity_hundredths)}</td>
+                      <td className={cn(td, 'text-right text-ink-2')}>
+                        <Amount cents={it.unit_price_registered_cents} />
                       </td>
-                      <td className="num px-3 py-2.5 text-right text-ink-2">
-                        {it.rule_adjustment_cents > 0 ? <Money cents={-it.rule_adjustment_cents} /> : '—'}
+                      <td className={cn(td, 'text-right text-ink-2')}>
+                        {it.rule_adjustment_cents > 0 ? <Amount cents={it.rule_adjustment_cents} negative /> : <Dash label="Sin ajuste" />}
                       </td>
-                      <td className="px-3 py-2.5 text-right font-medium">
-                        <Money cents={it.line_subtotal_cents} />
+                      <td className={cn(td, 'text-right font-semibold')}>
+                        <Amount cents={it.line_subtotal_cents} />
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </Card>
+          </Panel>
 
-          <Card
+          <Panel
             title="Pagos"
-            flush
-            actions={
-              postedPayments.length > 0 ? (
-                <span className="text-[12.5px] text-ink-3">
-                  {postedPayments.length} {postedPayments.length === 1 ? 'pago' : 'pagos'}
-                </span>
-              ) : undefined
-            }
+            aside={postedPayments.length > 0 ? `${postedPayments.length} ${postedPayments.length === 1 ? 'pago' : 'pagos'}` : undefined}
           >
             {invoice.payments.length === 0 ? (
-              <p className="px-4 py-6 text-center text-[13px] text-ink-3">
+              <p className="px-4 py-3 text-[13.5px] text-ink-2">
                 {invoice.total_cents === 0 ? 'Emitida sin cobro: no requiere pagos.' : 'Sin pagos registrados.'}
               </p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-[13.5px]">
+                <table className={tableClass}>
                   <caption className="sr-only">Pagos de la factura</caption>
                   <thead>
-                    <tr className="border-b border-line bg-surface-2/60 text-[12px] text-ink-2">
-                      <th scope="col" className="h-9 px-3 text-left font-medium">Fecha</th>
-                      <th scope="col" className="h-9 px-3 text-left font-medium">Método</th>
-                      <th scope="col" className="h-9 px-3 text-left font-medium">Referencia</th>
-                      <th scope="col" className="h-9 px-3 text-right font-medium">Monto</th>
-                      <th scope="col" className="h-9 px-3 text-left font-medium">Estado</th>
+                    <tr className="bg-ground">
+                      <th scope="col" className={cn(th, 'w-[168px] text-left')}>Fecha</th>
+                      <th scope="col" className={cn(th, 'text-left')}>Método</th>
+                      <th scope="col" className={cn(th, 'text-left')}>Referencia</th>
+                      <th scope="col" className={cn(th, 'w-[132px] text-right')}>Monto</th>
+                      <th scope="col" className={cn(th, 'w-[180px] text-left')}>Estado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {invoice.payments.map((p) => {
                       const voided = p.status === 'void';
                       return (
-                        <tr key={p.id} className={cn('border-b border-line last:border-0', voided && 'text-ink-3')}>
-                          <td className="tabular px-3 py-2.5">{formatDateTime(p.paid_at)}</td>
-                          <td className="px-3 py-2.5">
+                        <tr key={p.id} className={cn(voided && 'text-ink-3')}>
+                          <td className={cn(td, 'tabular')}>{formatDateTime(p.paid_at)}</td>
+                          <td className={td}>
                             {PAYMENT_METHOD_LABEL[p.method]}
                             {p.method === 'cash' && p.change_cents ? (
-                              <span className="ml-1.5 text-[12px] text-ink-3">
-                                (cambio <Money cents={p.change_cents} />)
+                              <span className="ml-1.5 text-[12px] text-ink-2">
+                                (cambio <Amount cents={p.change_cents} />)
                               </span>
                             ) : null}
                           </td>
-                          <td className="num px-3 py-2.5">{p.reference || '—'}</td>
-                          <td className="px-3 py-2.5 text-right">
-                            <Money cents={p.amount_cents} className={cn(voided && 'line-through')} />
+                          <td className={cn(td, 'num')}>{p.reference || <Dash label="Sin referencia" />}</td>
+                          <td className={cn(td, 'text-right font-semibold')}>
+                            <Amount cents={p.amount_cents} className={cn(voided && 'line-through')} />
                           </td>
-                          <td className="px-3 py-2.5">
-                            {voided ? (
-                              <span className="flex flex-col gap-0.5">
-                                <Badge tone="danger">Anulado</Badge>
-                                {p.void_reason && <span className="text-[12px]">{p.void_reason}</span>}
+                          <td className={td}>
+                            <span className="flex flex-col gap-0.5">
+                              <span className="flex items-center gap-2 font-medium text-ink">
+                                <StatusGlyph shape={voided ? 'struck' : 'filled'} className={voided ? 'text-danger' : 'text-ok'} />
+                                {voided ? 'Anulado' : 'Registrado'}
                               </span>
-                            ) : (
-                              <Badge tone="ok">Registrado</Badge>
-                            )}
+                              {voided && p.void_reason && <span className="text-[12px] text-ink-2">{p.void_reason}</span>}
+                            </span>
                           </td>
                         </tr>
                       );
@@ -415,71 +481,31 @@ export function ReciboDetalle({ id }: { id: number }) {
                 </table>
               </div>
             )}
-          </Card>
+          </Panel>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <Card title="Totales">
+        <Panel title="Totales" className="lg:sticky lg:top-[calc(var(--topbar-h)+20px)]">
+          <div className="px-4 pt-1 pb-3">
             <TotalsList
               totals={invoice}
               extra={
-                <div className="mt-1.5 flex flex-col gap-1.5 border-t border-line pt-2.5">
+                <>
                   <TotalsRow label="Pagado">
-                    <Money cents={invoice.paid_cents} />
+                    <Amount cents={invoice.paid_cents} />
                   </TotalsRow>
                   <TotalsRow label="Saldo">
-                    <Money cents={invoice.balance_cents} className={invoice.balance_cents > 0 ? 'font-semibold text-warn' : undefined} />
+                    <Amount cents={invoice.balance_cents} className={invoice.balance_cents > 0 ? 'font-bold text-warn' : undefined} />
                   </TotalsRow>
-                </div>
+                </>
               }
             />
-          </Card>
-
-          <Card title="Comprobante">
-            {receipt ? (
-              <dl className="flex flex-col gap-2">
-                <Info label="Recibo No.">
-                  <span className="num font-medium">{receipt.number_full}</span>
-                </Info>
-                <Info label="Estado">
-                  {receipt.status === 'issued' ? <Badge tone="ok">Emitido</Badge> : <Badge tone="danger">Anulado</Badge>}
-                </Info>
-                {receiptFull && <Info label="Emitido">{formatDateTime(receiptFull.issued_at)}</Info>}
-                <Info label="Reimpresiones">
-                  <span className="num">{receipt.reprint_count}</span>
-                </Info>
-                {receiptFull?.amount_words && (
-                  <div className="mt-1 rounded-[var(--radius-sm)] bg-surface-2 px-3 py-2 text-[12px] leading-snug text-ink-2">
-                    {receiptFull.amount_words}
-                  </div>
-                )}
-              </dl>
-            ) : (
-              <p className="text-[13px] text-ink-3">
-                {invoice.status === 'paid' ? 'Falta emitir el recibo institucional.' : 'Se emite al quedar pagada la factura.'}
-              </p>
-            )}
-          </Card>
-
-          <Card title="Documento">
-            <dl className="flex flex-col gap-2">
-              <Info label="CAI">
-                <span className="num text-[12px]">{invoice.fiscal.cai}</span>
-              </Info>
-              <Info label="Rango autorizado">
-                <span className="num text-[12px]">
-                  {invoice.fiscal.range_from} – {invoice.fiscal.range_to}
-                </span>
-              </Info>
-              {invoice.fiscal.valid_until && <Info label="Fecha límite de emisión">{formatDate(invoice.fiscal.valid_until)}</Info>}
-              {invoice.dialysis_prescription && (
-                <Info label="Receta de diálisis">
-                  <Badge tone="brand">Sí</Badge>
-                </Info>
-              )}
-            </dl>
-          </Card>
-        </div>
+          </div>
+          {receiptFull?.amount_words && (
+            <p className="border-t border-junta bg-surface-2 px-4 py-2.5 text-[12.5px] leading-snug font-medium text-ink-2">
+              {receiptFull.amount_words}
+            </p>
+          )}
+        </Panel>
       </div>
 
       {show.pay && (

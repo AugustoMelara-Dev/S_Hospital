@@ -1,22 +1,32 @@
 /*
- * Chart series colors (dataviz reference palette, slots 1–2, validated for
- * CVD separation on light and dark surfaces). Text stays on ink tokens.
+ * Chart tokens in the "Ladrillo hidráulico" world. Primary series: slate.
+ * Second series: barro (a fired-clay brown, distinct from the reserved oxide
+ * and ochre). Validated with the dataviz validator: CVD ΔE 14.2 light / 16.0
+ * dark, normal-vision ΔE ≥ 17.9; slate is intentionally low-chroma, so series
+ * identity is also carried by the legend and the table view.
+ * Text stays on ink tokens; gridlines are the junta, horizontal only.
  */
 .viz-root {
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --viz-grid: var(--line);
+  --series-1: var(--slate);
+  --series-2: #a86b3c;
+  --viz-grid: var(--junta);
+  --viz-base: var(--junta-strong);
   --viz-axis: var(--ink-3);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme='light'])) .viz-root {
-    --series-1: #3987e5;
-    --series-2: #d95926;
+    --series-1: #6f93b8;
+    --series-2: #c07a45;
   }
 }
 
 :root[data-theme='dark'] .viz-root {
-  --series-1: #3987e5;
-  --series-2: #d95926;
+  --series-1: #6f93b8;
+  --series-2: #c07a45;
+}
+
+.viz-root .recharts-cartesian-axis-tick text {
+  font-variant-numeric: tabular-nums;
+  font-stretch: var(--num-stretch);
 }

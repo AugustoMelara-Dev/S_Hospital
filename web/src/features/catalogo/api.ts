@@ -42,3 +42,6 @@ export function useServices(f: ServiceFilters) {
     placeholderData: (prev) => prev,
   });
 }
+
+/** Service code: the catalog id, zero-padded (the catalog has no separate code field). */
+export const serviceCode = (s: Pick<Service, 'id'>) => String(s.id).padStart(4, '0');

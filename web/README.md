@@ -34,9 +34,13 @@ src/
 - Edite solo `src/features/<su área>/`. Reemplace el stub conservando el `export default`.
   Si necesita un componente genérico nuevo, propóngalo; no duplique los de `src/ui`.
 - Importe con alias `@/`. Componentes: `import { Button, DataTable, Money, MoneyInput } from '@/ui'`.
-- Utilidades de color Tailwind mapeadas a tokens: `bg-surface`, `bg-surface-2`, `border-line`, `text-ink-2`,
-  `text-brand`, `bg-brand-soft`, `text-danger`, `bg-ok-soft`… Montos y números de documento: clase `num`
-  (mono + cifras tabulares) o `<Money cents={…} />`. Controles de formulario: clase `control`.
+- Mundo visual "Ladrillo hidráulico" (`src/styles/tokens.css`). Utilidades: `bg-rail`/`text-rail-ink`, `bg-ground`
+  (suelo), `bg-surface`/`bg-surface-2`, `bg-field` (solo inputs), `border-junta` (la única regla de 1px), `text-ink`/`-2`/`-3`,
+  `bg-oxide` (solo la acción principal), `bg-ochre`/`border-ochre-line` (campo del total), `text-slate`/`bg-slate-soft`
+  (información, selección, foco), `text-ok|warn|danger` + `bg-*-soft`. Los nombres antiguos (`border-line`, `text-brand`…)
+  siguen mapeados. Montos y números de documento: clase `num` (Archivo, cifras tabulares, ancho 92 %; nunca monoespaciada)
+  o `<Money cents={…} />`. Controles: clase `control`. Varias `KpiTile` van dentro de `<KpiGrid>`. `PageHeader` coloca el
+  título en la barra superior. `ShiftTile`/`BrandTile` solo en marca, estado del turno y grilla del arqueo.
 - Copia en español exactamente como `docs/TERMINOLOGIA.md`.
 
 ### API

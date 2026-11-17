@@ -8,7 +8,7 @@ import { extendTailwindMerge } from 'tailwind-merge';
  */
 const twMerge = extendTailwindMerge({
   extend: {
-    theme: { shadow: ['1', '2', '3'] },
+    theme: { shadow: ['1', '2', '3', 'pop'] },
   },
 });
 

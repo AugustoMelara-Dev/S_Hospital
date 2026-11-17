@@ -1,82 +1,101 @@
-import { ChevronDown, KeyRound, LogOut, Monitor, Moon, Search, Sun } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
+import { Monitor, Moon, Search, Sun } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { BUSINESS_TZ } from '@/lib/dates';
 import { useTheme, type ThemePref } from '@/lib/theme';
-import { useAuth, useMe } from '@/auth/hooks';
+import { NAV_ITEMS } from '@/app/nav';
 import { IconButton } from '@/ui/IconButton';
 import { Kbd } from '@/ui/Kbd';
-import { Menu } from '@/ui/Menu';
 import { CashStatusPill } from './CashStatusPill';
 
 const THEME_NEXT: Record<ThemePref, ThemePref> = { system: 'light', light: 'dark', dark: 'system' };
 const THEME_LABEL: Record<ThemePref, string> = { system: 'Tema: según el sistema', light: 'Tema: claro', dark: 'Tema: oscuro' };
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '')).toUpperCase();
-}
-
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useTheme();
   const Icon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
-  return <IconButton label={THEME_LABEL[theme]} icon={<Icon />} onClick={() => setTheme(THEME_NEXT[theme])} />;
+  return (
+    <IconButton
+      label={THEME_LABEL[theme]}
+      icon={<Icon strokeWidth={1.6} />}
+      onClick={() => setTheme(THEME_NEXT[theme])}
+      className={className}
+    />
+  );
 }
 
-export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
-  const me = useMe();
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+/** Section name for pages that do not render a PageHeader (e.g. 404). */
+function sectionName(pathname: string): string {
+  const hit = [...NAV_ITEMS]
+    .sort((a, b) => b.to.length - a.to.length)
+    .find((n) => (n.to === '/' ? pathname === '/' : pathname === n.to || pathname.startsWith(`${n.to}/`)));
+  return hit?.label ?? 'S_Hospital';
+}
 
+const clockFmt = new Intl.DateTimeFormat('es-HN', {
+  timeZone: BUSINESS_TZ,
+  weekday: 'long',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** "martes 17 nov 2026 · 10:42" in Honduras time. */
+export function formatClock(d: Date): string {
+  const p: Record<string, string> = {};
+  for (const part of clockFmt.formatToParts(d)) p[part.type] = part.value;
+  const month = (p.month ?? '').replace(/\./g, '');
+  return `${p.weekday} ${p.day} ${month} ${p.year} · ${p.hour}:${p.minute}`;
+}
+
+function Clock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 20_000);
+    return () => clearInterval(id);
+  }, []);
   return (
-    <header className="sticky top-0 z-20 flex h-[var(--topbar-h)] items-center gap-3 border-b border-line bg-bg/85 px-4 backdrop-blur-md md:px-6">
+    <time dateTime={now.toISOString()} className="num shrink-0 text-[13px] whitespace-nowrap text-ink-2 max-[1279px]:hidden">
+      {formatClock(now)}
+    </time>
+  );
+}
+
+export function TopBar({ onOpenPalette, titleSlotRef }: { onOpenPalette: () => void; titleSlotRef: (el: HTMLElement | null) => void }) {
+  const { pathname } = useLocation();
+  return (
+    <header className="sticky top-0 z-20 flex h-[var(--topbar-h)] items-center gap-6 border-b border-junta bg-surface px-6 max-[1099px]:gap-4 max-[1099px]:px-4">
+      {/* The title never collapses to a letter: it keeps its width and only truncates past 60% of the bar. */}
+      <div className="flex max-w-[60%] shrink-0 items-center max-[639px]:[&_h1]:text-[19px]">
+        {/* PageHeader portals the page's h1 here. */}
+        <div ref={titleSlotRef} data-page-title-slot="" className="min-w-0 empty:hidden" />
+        <p
+          aria-hidden="true"
+          className="truncate text-[22px] max-[639px]:text-[19px] leading-7 font-bold tracking-[-0.015em] text-ink [[data-page-title-slot]:not(:empty)+&]:hidden"
+        >
+          {sectionName(pathname)}
+        </p>
+      </div>
       <CashStatusPill />
-      <div className="flex-1" />
       <button
         type="button"
         onClick={onOpenPalette}
-        className={cn(
-          'pressable hidden h-8 w-64 items-center gap-2 rounded-[var(--radius-sm)] border border-line bg-surface px-2.5 text-[13px] text-ink-3 sm:flex',
-          'hover:border-line-strong',
-        )}
         aria-keyshortcuts="Control+K"
-      >
-        <Search className="size-3.5" aria-hidden="true" />
-        <span className="flex-1 text-left">Buscar</span>
-        <span className="flex items-center gap-0.5">
-          <Kbd>Ctrl</Kbd>
-          <Kbd>K</Kbd>
-        </span>
-      </button>
-      <IconButton label="Buscar (Ctrl K)" icon={<Search />} onClick={onOpenPalette} className="sm:hidden" />
-      <ThemeToggle />
-      <Menu
-        trigger={(p) => (
-          <button
-            {...p}
-            type="button"
-            className="pressable flex h-9 items-center gap-2.5 rounded-[var(--radius-sm)] py-1 pr-1.5 pl-1 hover:bg-surface-2 aria-expanded:bg-surface-2"
-          >
-            <span
-              aria-hidden="true"
-              className="flex size-7 items-center justify-center rounded-full bg-brand-soft text-[11.5px] font-semibold text-brand"
-            >
-              {initials(me.name)}
-            </span>
-            <span className="hidden flex-col items-start leading-tight md:flex">
-              <span className="max-w-[160px] truncate text-[13px] font-medium text-ink">{me.name}</span>
-              <span className="text-[11.5px] text-ink-3">{me.role.name}</span>
-            </span>
-            <ChevronDown className="size-3.5 text-ink-3" aria-hidden="true" />
-          </button>
+        className={cn(
+          'pressable ml-auto flex h-9 w-[400px] min-w-0 shrink items-center gap-2 rounded-[var(--radius-md)] border border-junta bg-field pr-2 pl-3 text-[14px] text-ink-2',
+          'hover:border-junta-strong max-[899px]:size-9 max-[899px]:shrink-0 max-[899px]:justify-center max-[899px]:px-0',
         )}
-        items={[
-          { type: 'label', label: <span className="flex flex-col"><span className="font-medium text-ink">{me.name}</span><span>@{me.username} · {me.role.name}</span></span> },
-          { type: 'separator' },
-          { label: 'Cambiar contraseña', icon: <KeyRound />, onSelect: () => navigate('/cambiar-clave') },
-          { type: 'separator' },
-          { label: 'Salir', icon: <LogOut />, danger: true, onSelect: () => void logout() },
-        ]}
-      />
+      >
+        <Search className="size-4 shrink-0" strokeWidth={1.6} aria-hidden="true" />
+        <span className="min-w-0 flex-1 truncate text-left max-[899px]:sr-only">Buscar paciente, documento o acción</span>
+        <Kbd className="max-[899px]:hidden">Ctrl K</Kbd>
+      </button>
+      <ThemeToggle className="-mx-2" />
+      <Clock />
     </header>
   );
 }

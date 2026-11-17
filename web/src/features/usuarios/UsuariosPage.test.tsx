@@ -88,7 +88,8 @@ describe('UsuariosPage', () => {
     const api = setup({ 'PATCH /roles/:id': ({ body }: { body: object }) => ({ ...roles.items[1], ...body }) });
     renderPage();
     await user.click(await screen.findByRole('tab', { name: 'Roles' }));
-    await user.click(await screen.findByText('Caja'));
+    const rolesTable = await screen.findByRole('table', { name: 'Roles' });
+    await user.click(await within(rolesTable).findByText('Caja'));
     const drawer = await screen.findByRole('dialog', { name: 'Editar rol' });
 
     const moduleBox = within(drawer).getByRole('checkbox', { name: 'Seleccionar todo: Catálogo y precios' });
@@ -107,9 +108,29 @@ describe('UsuariosPage', () => {
     setup();
     renderPage();
     await user.click(await screen.findByRole('tab', { name: 'Roles' }));
-    await user.click(await screen.findByText('Administración', { selector: 'span' }));
+    const rolesTable = await screen.findByRole('table', { name: 'Roles' });
+    await user.click(await within(rolesTable).findByText('Administración', { selector: 'span' }));
     const drawer = await screen.findByRole('dialog', { name: 'Administración' });
     expect(within(drawer).getByRole('checkbox', { name: 'Seleccionar todo: Catálogo y precios' })).toBeDisabled();
     expect(within(drawer).queryByRole('button', { name: 'Guardar rol' })).not.toBeInTheDocument();
+  });
+
+  it('permission matrix edits a role in place and keeps admin fixed', async () => {
+    const user = userEvent.setup();
+    const api = setup({ 'PATCH /roles/:id': ({ body }: { body: object }) => ({ ...roles.items[1], ...body }) });
+    renderPage();
+    await user.click(await screen.findByRole('tab', { name: 'Roles' }));
+    const matrix = await screen.findByRole('table', { name: 'Permisos por rol' });
+    expect(within(matrix).getByRole('checkbox', { name: 'Ver catálogo: Administración' })).toBeChecked();
+    expect(within(matrix).getByRole('checkbox', { name: 'Ver catálogo: Administración' })).toBeDisabled();
+
+    const save = screen.getByRole('button', { name: 'Guardar permisos' });
+    expect(save).toBeDisabled();
+    await user.click(within(matrix).getByRole('checkbox', { name: 'Administrar catálogo, precios e impuestos: Caja' }));
+    expect(screen.getByText('1 rol con cambios sin guardar')).toBeInTheDocument();
+    await user.click(save);
+    await waitFor(() => expect(api.calls('PATCH /roles/:id')).toHaveLength(1));
+    const sent = api.calls('PATCH /roles/:id')[0]?.body as { permissions: string[] };
+    expect([...sent.permissions].sort()).toEqual(['catalog.manage', 'catalog.view', 'invoices.view']);
   });
 });

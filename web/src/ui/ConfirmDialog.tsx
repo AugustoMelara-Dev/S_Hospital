@@ -76,7 +76,7 @@ export function ConfirmDialog({
       onSubmit={() => void submit()}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={loading}>
+          <Button variant="secondary" onClick={onClose} disabled={loading}>
             {cancelLabel}
           </Button>
           <Button type="submit" variant={tone === 'danger' ? 'danger' : 'primary'} loading={loading}>
@@ -99,7 +99,7 @@ export function ConfirmDialog({
           </Field>
         )}
         {error && (
-          <p role="alert" className="rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 py-2 text-[13px] text-danger">
+          <p role="alert" className="rounded-[var(--radius-sm)] border border-danger/40 bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">
             {error}
           </p>
         )}

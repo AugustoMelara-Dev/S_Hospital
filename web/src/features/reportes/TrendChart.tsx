@@ -45,14 +45,14 @@ type TipProps = { active?: boolean; label?: string | number; payload?: Array<{ d
 function ChartTooltip({ active, label, payload }: TipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-[var(--radius-sm)] border border-line bg-surface px-3 py-2 text-[12.5px] shadow-2">
-      <p className="mb-1 font-medium text-ink">{typeof label === 'string' ? formatDate(label) : label}</p>
+    <div className="rounded-[var(--radius-sm)] border border-junta bg-surface px-3 py-2 text-[12.5px] shadow-[var(--shadow-pop)]">
+      <p className="num mb-1 font-semibold text-ink">{typeof label === 'string' ? formatDate(label) : label}</p>
       {SERIES.map((s) => {
         const v = payload.find((p) => p.dataKey === s.key)?.value;
         return (
           <p key={s.key} className="flex items-center justify-between gap-4 text-ink-2">
             <span className="flex items-center gap-1.5">
-              <span aria-hidden="true" className="h-0.5 w-3 rounded-full" style={{ background: s.color }} />
+              <span aria-hidden="true" className="h-[3px] w-3" style={{ background: s.color }} />
               {s.label}
             </span>
             <span className="num text-ink">{typeof v === 'number' ? formatCents(v) : '—'}</span>
@@ -72,12 +72,12 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
   const summary = `Tendencia diaria de ${data.length} días. Facturado ${formatCents(billed)}, cobrado ${formatCents(collected)}.`;
 
   return (
-    <figure className="viz-root flex flex-col gap-3" aria-label="Facturado contra cobrado por día">
+    <figure className="viz-root m-0 flex flex-col gap-2" aria-label="Facturado contra cobrado por día">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <ul className="flex items-center gap-4 text-[12.5px] text-ink-2" aria-label="Leyenda">
           {SERIES.map((s) => (
             <li key={s.key} className="flex items-center gap-1.5">
-              <span aria-hidden="true" className="h-[2px] w-4 rounded-full" style={{ background: s.color }} />
+              <span aria-hidden="true" className="h-[3px] w-4" style={{ background: s.color }} />
               {s.label}
             </li>
           ))}
@@ -92,8 +92,8 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
           <table className="w-full text-[13px]">
             <caption className="sr-only">Facturado y cobrado por día</caption>
             <thead>
-              <tr className="border-b border-line text-[12px] text-ink-2">
-                <th scope="col" className="py-1.5 text-left font-medium">
+              <tr className="border-b border-junta text-[12px] text-ink-2">
+                <th scope="col" className="py-1.5 text-left font-semibold">
                   Fecha
                 </th>
                 <th scope="col" className="py-1.5 text-right font-medium">
@@ -106,7 +106,7 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
             </thead>
             <tbody>
               {data.map((d) => (
-                <tr key={d.date} className="border-b border-line last:border-0">
+                <tr key={d.date} className="border-b border-junta last:border-0">
                   <th scope="row" className="num py-1.5 text-left font-normal">
                     {formatDate(d.date)}
                   </th>
@@ -122,30 +122,30 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
           </table>
         </div>
       ) : (
-        <div ref={ref} className="h-[240px] w-full" aria-hidden="true">
+        <div ref={ref} className="h-[220px] w-full" aria-hidden="true">
           {width > 0 && (
-            <LineChart width={width} height={240} data={data} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
+            <LineChart width={width} height={220} data={data} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
               <CartesianGrid vertical={false} stroke="var(--viz-grid)" strokeDasharray="0" />
               <XAxis
                 dataKey="date"
                 tickFormatter={shortDay}
-                tick={{ fill: 'var(--viz-axis)', fontSize: 11, fontFamily: 'var(--font-mono)' }}
-                axisLine={{ stroke: 'var(--viz-grid)' }}
+                tick={{ fill: 'var(--viz-axis)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
+                axisLine={{ stroke: 'var(--viz-base)' }}
                 tickLine={false}
                 minTickGap={16}
               />
               <YAxis
                 tickFormatter={axisTick}
-                tick={{ fill: 'var(--viz-axis)', fontSize: 11, fontFamily: 'var(--font-mono)' }}
+                tick={{ fill: 'var(--viz-axis)', fontSize: 11, fontFamily: 'var(--font-sans)' }}
                 axisLine={false}
                 tickLine={false}
                 width={84}
               />
-              <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--line-strong)', strokeWidth: 1 }} />
+              <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--junta-strong)', strokeWidth: 1 }} />
               {SERIES.map((s) => (
                 <Line
                   key={s.key}
-                  type="monotone"
+                  type="linear"
                   dataKey={s.key}
                   name={s.label}
                   stroke={s.color}

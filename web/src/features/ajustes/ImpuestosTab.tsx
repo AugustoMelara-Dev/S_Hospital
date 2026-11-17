@@ -3,15 +3,17 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { Pencil, Percent, Plus, Star, Trash2 } from 'lucide-react';
+import { Pencil, Percent, Plus, Trash2 } from 'lucide-react';
 import { api, errorMessage } from '@/lib/api';
+import { cn } from '@/lib/cn';
 import { formatRateBp } from '@/lib/money';
 import { qk } from '@/api/queryClient';
 import { usePermissions } from '@/auth/hooks';
-import { Badge, Button, Card, ConfirmDialog, DataTable, Drawer, EmptyState, Field, IconButton, Input, Switch, Textarea, toast } from '@/ui';
+import { Badge, Button, ConfirmDialog, DataTable, Drawer, EmptyState, Field, IconButton, Input, Switch, Textarea, toast } from '@/ui';
 import type { TaxRate } from '@/api/types';
 import { taxRatesKey, useTaxRates } from '@/features/catalogo/api';
 import { FormAlert, REASON_MESSAGE, REASON_MIN, applyServerErrors } from '@/features/catalogo/formUtils';
+import { Dash, Sheet, SheetHead, StateMark, ledgerRow } from '@/features/catalogo/ledger';
 
 /** "15" → 1500, "12.5" → 1250 (no floats). */
 export function percentToBp(text: string): number | null {
@@ -94,27 +96,33 @@ function TaxDrawer({ rate, onClose }: { rate: TaxRate | null; onClose: () => voi
         </>
       }
     >
-      <div className="flex flex-col gap-4">
-        <Field label="Nombre" required error={errors.name?.message}>
+      <div className="flex flex-col">
+        <Field label="Nombre" required error={errors.name?.message} className={ledgerRow('sm')}>
           <Input {...register('name')} maxLength={60} placeholder="ISV 15 %" />
         </Field>
-        <Field label="Tasa" required error={errors.rate?.message}>
-          <Input {...register('rate')} inputMode="decimal" mono suffix={<span className="pr-1.5 text-[13px]">%</span>} className="w-32" wrapperClassName="w-32" />
+        <Field label="Tasa" required error={errors.rate?.message} className={ledgerRow('sm')}>
+          <Input {...register('rate')} inputMode="decimal" mono suffix={<span className="pr-1.5 text-[13px]">%</span>} className="text-right" wrapperClassName="w-32" />
         </Field>
-        <Controller control={control} name="active" render={({ field }) => <Switch label="Activa" checked={field.value} onCheckedChange={field.onChange} />} />
-        <Controller
-          control={control}
-          name="is_default"
-          render={({ field }) => (
-            <Switch label="Predeterminada" description="Se propone al crear conceptos nuevos." checked={field.value} onCheckedChange={field.onChange} />
-          )}
-        />
+        <div className="border-b border-junta py-3">
+          <Controller control={control} name="active" render={({ field }) => <Switch label="Activa" checked={field.value} onCheckedChange={field.onChange} />} />
+        </div>
+        <div className="border-b border-junta py-3">
+          <Controller
+            control={control}
+            name="is_default"
+            render={({ field }) => (
+              <Switch label="Predeterminada" description="Se propone al crear conceptos nuevos." checked={field.value} onCheckedChange={field.onChange} />
+            )}
+          />
+        </div>
         {rate && (
-          <Field label="Motivo" required error={errors.reason?.message}>
+          <Field label="Motivo" required error={errors.reason?.message} className={cn(ledgerRow('sm'), 'items-start')}>
             <Textarea {...register('reason')} rows={2} maxLength={500} />
           </Field>
         )}
-        <FormAlert message={formError} />
+        <div className="mt-3">
+          <FormAlert message={formError} />
+        </div>
       </div>
     </Drawer>
   );
@@ -146,44 +154,37 @@ export function ImpuestosTab() {
 
   return (
     <>
-      <Card
-        flush
-        title="Impuestos"
-        description="Tasas disponibles para los conceptos. Los conceptos sin tasa son exentos."
-        actions={
-          canEdit && (
-            <Button size="sm" variant="primary" leftIcon={<Plus />} onClick={() => setEditing('new')}>
-              Nueva tasa
-            </Button>
-          )
-        }
-      >
+      <Sheet>
+        <SheetHead
+          title="Impuestos"
+          meta="Tasas disponibles para los conceptos. Los conceptos sin tasa son exentos."
+          actions={
+            canEdit && (
+              <Button variant="primary" leftIcon={<Plus />} onClick={() => setEditing('new')}>
+                Nueva tasa
+              </Button>
+            )
+          }
+        />
         <DataTable
           caption="Tasas de impuesto"
           rows={q.data}
           loading={q.isLoading}
           rowKey={(r) => r.id}
+          density="compact"
           empty={<EmptyState compact icon={<Percent />} title="Sin tasas" />}
           columns={[
-            {
-              key: 'name',
-              header: 'Nombre',
-              cell: (r) => (
-                <span className="inline-flex items-center gap-1.5 font-medium">
-                  {r.is_default && <Star className="size-3.5 fill-warn text-warn" aria-label="Predeterminada" />}
-                  {r.name}
-                </span>
-              ),
-            },
-            { key: 'rate', header: 'Tasa', numeric: true, cell: (r) => formatRateBp(r.rate_bp) },
-            { key: 'count', header: 'Conceptos', numeric: true, cell: (r) => r.services_count ?? '—' },
+            { key: 'name', header: 'Nombre', cell: (r) => <span className="font-medium">{r.name}</span> },
+            { key: 'rate', header: 'Tasa', numeric: true, width: '120px', cell: (r) => <span className="font-semibold">{formatRateBp(r.rate_bp)}</span> },
+            { key: 'count', header: 'Conceptos', numeric: true, width: '120px', cell: (r) => r.services_count ?? <Dash /> },
             {
               key: 'status',
               header: 'Estado',
+              width: '260px',
               cell: (r) => (
-                <div className="flex gap-1">
-                  {r.active ? <Badge tone="ok" dot>Activa</Badge> : <Badge dot>Inactiva</Badge>}
-                  {r.is_default && <Badge tone="brand">Predeterminada</Badge>}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {r.active ? <StateMark shape="filled" tone="ok">Activa</StateMark> : <StateMark shape="hollow">Inactiva</StateMark>}
+                  {r.is_default && <Badge tone="info">Predeterminada</Badge>}
                 </div>
               ),
             },
@@ -208,7 +209,7 @@ export function ImpuestosTab() {
               : undefined
           }
         />
-      </Card>
+      </Sheet>
       {editing !== null && <TaxDrawer key={editing === 'new' ? 'new' : editing.id} rate={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
       <ConfirmDialog
         open={deleting !== null}

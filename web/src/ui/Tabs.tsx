@@ -60,7 +60,7 @@ export function Tabs<V extends string = string>({
 
   return (
     <div className={cn('flex flex-col', className)}>
-      <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className="flex gap-1 overflow-x-auto border-b border-line">
+      <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className="relative flex gap-4 overflow-x-auto border-b border-junta">
         {items.map((it, i) => {
           const selected = it.value === active;
           return (
@@ -78,17 +78,17 @@ export function Tabs<V extends string = string>({
               disabled={it.disabled}
               onClick={() => select(it.value)}
               className={cn(
-                'relative -mb-px inline-flex h-10 items-center gap-2 px-3 text-sm whitespace-nowrap transition-colors duration-[120ms]',
+                'relative -mb-px inline-flex h-10 items-center gap-2 px-0.5 text-sm whitespace-nowrap transition-colors duration-[120ms]',
                 'border-b-2 focus-visible:outline-offset-[-2px] disabled:opacity-50',
-                selected ? 'border-brand font-medium text-ink' : 'border-transparent text-ink-2 hover:text-ink',
+                selected ? 'border-ink font-semibold text-ink' : 'border-transparent font-semibold text-ink-2 hover:border-junta-strong hover:text-ink',
               )}
             >
               {it.label}
               {it.count !== undefined && (
                 <span
                   className={cn(
-                    'num inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 text-[11px]',
-                    selected ? 'bg-brand-soft text-brand' : 'bg-surface-2 text-ink-2',
+                    'num inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[3px] px-1.5 text-[11px] font-semibold',
+                    selected ? 'bg-ink text-surface' : 'bg-ground text-ink-2',
                   )}
                 >
                   {it.count}
@@ -107,7 +107,7 @@ export function Tabs<V extends string = string>({
             aria-labelledby={`${id}-tab-${it.value}`}
             hidden={it.value !== active}
             tabIndex={0}
-            className="pt-4 outline-none focus-visible:outline-2"
+            className="pt-5 outline-none focus-visible:outline-2"
           >
             {it.content}
           </div>

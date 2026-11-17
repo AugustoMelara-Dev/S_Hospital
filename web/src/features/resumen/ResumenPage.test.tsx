@@ -3,7 +3,8 @@ import { screen } from '@testing-library/react';
 import type { Permission, ReportToday } from '@/api/types';
 import { apiError, makeMe, mockApi } from '@/test/mockApi';
 import { renderWithProviders } from '@/test/render';
-import ResumenPage, { greeting } from './ResumenPage';
+import type { FiscalSequence } from '@/api/types';
+import ResumenPage, { fiscalAlerts, greeting } from './ResumenPage';
 
 const today: ReportToday = {
   date: '2026-11-17',
@@ -61,6 +62,20 @@ describe('ResumenPage', () => {
     expect(screen.getByRole('link', { name: /Cobrar/ })).toHaveAttribute('href', '/cobrar');
   });
 
+  it('on a day without operations, leads with the shift and Cobrar and collapses the zero figures', async () => {
+    mockApi({
+      'GET /auth/me': makeMe(),
+      'GET /reports/today': { ...today, invoices_count: 0, payments_count: 0, billed_cents: 0, collected_cents: 0, pending_cents: 0, without_charge_count: 0, by_method: [] },
+      'GET /invoices': { ...recent, items: [], total: 0 },
+      'GET /cash-sessions/current': null,
+    });
+    renderWithProviders(<ResumenPage />);
+    expect(await screen.findByRole('heading', { name: 'Aún no hay operaciones hoy' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Cobrar/ })).toHaveAttribute('aria-keyshortcuts', 'F2');
+    expect(screen.queryByText('Cobros por método')).not.toBeInTheDocument();
+    expect(screen.queryByText('Operaciones recientes')).not.toBeInTheDocument();
+  });
+
   it('hides sections whose API answers 403', async () => {
     const perms: Permission[] = ['reports.own', 'invoices.view', 'cash.view'];
     const api = mockApi({
@@ -88,5 +103,23 @@ describe('ResumenPage', () => {
     renderWithProviders(<ResumenPage />);
     const link = await screen.findByRole('link', { name: /3 operaciones pendientes de cobro/ });
     expect(link).toHaveAttribute('href', '/recibos?pending=1');
+  });
+
+  it('raises CAI alerts for expiry and range', () => {
+    const seq = {
+      id: 1,
+      active: true,
+      expired: false,
+      exhausted: false,
+      low_range: true,
+      remaining: 40,
+      valid_until: '2026-12-01',
+    } as FiscalSequence;
+    const alerts = fiscalAlerts([seq], '2026-11-17');
+    expect(alerts.map((a) => a.key)).toEqual(['due-1', 'low-1']);
+    expect(alerts.every((a) => a.tone === 'warn' && a.to === '/admin/ajustes')).toBe(true);
+    expect(fiscalAlerts([{ ...seq, expired: true, low_range: false }], '2026-11-17').map((a) => a.tone)).toEqual(['danger']);
+    expect(fiscalAlerts([{ ...seq, valid_until: '2027-06-30', low_range: false }], '2026-11-17')).toEqual([]);
+    expect(fiscalAlerts([{ ...seq, active: false }], '2026-11-17')).toEqual([]);
   });
 });

@@ -8,7 +8,7 @@ export type InputProps = Omit<ComponentProps<'input'>, 'prefix'> & {
   /** Trailing adornment (button, unit, Kbd). */
   suffix?: ReactNode;
   invalid?: boolean;
-  /** Mono + tabular figures (codes, amounts). */
+  /** Tabular, slightly condensed figures (codes, amounts). */
   mono?: boolean;
   wrapperClassName?: string;
 };
@@ -31,7 +31,7 @@ export function Input({ prefix, suffix, invalid, mono, className, wrapperClassNa
   return (
     <div className={cn('relative flex items-center', wrapperClassName)}>
       {prefix && (
-        <span className="pointer-events-none absolute left-2.5 flex items-center text-ink-3 [&_svg]:size-4">{prefix}</span>
+        <span className="pointer-events-none absolute left-2.5 flex items-center text-ink-2 [&_svg]:size-4 [&_svg]:stroke-[1.6]">{prefix}</span>
       )}
       {input}
       {suffix && <span className="absolute right-1.5 flex items-center text-ink-3">{suffix}</span>}

@@ -1,60 +1,106 @@
 /*
- * S_Hospital v2 — "Mostrador clínico" design tokens (SPEC §7).
- * Light is the default; dark applies via prefers-color-scheme unless the user
- * forced a theme with [data-theme="light"|"dark"] on <html>.
+ * S_Hospital v2 — "Ladrillo hidráulico" design tokens.
+ *
+ * A cashier floor laid in pigmented cement tiles: square modules, ONE fine
+ * joint (the junta, 1px), matt pigment doing real work.
+ *   rail   bottle green — navigation and the brand/shift tiles
+ *   ground warm stone   — the floor under everything
+ *   surface             — panels, tables, dialogs
+ *   field  white        — text inputs only
+ *   oxide               — the primary action, nothing else
+ *   ochre               — the total field
+ *   slate               — information, selection, focus
+ *
+ * Light is the primary scene (fluorescent-lit office, daytime). Dark applies
+ * via prefers-color-scheme unless [data-theme="light"|"dark"] forces a theme.
+ * Legacy aliases (--bg, --line, --brand…) keep feature code working; new code
+ * should use the world names.
  */
 :root {
   color-scheme: light;
 
-  /* Surfaces */
-  --bg: #f6f5f1;
-  --surface: #ffffff;
-  --surface-2: #efede7;
-  --surface-3: #e6e3db;
-  --line: #dad6cc;
-  --line-strong: #c4bfb2;
+  /* Rail (left navigation) */
+  --rail: #24493f;
+  --rail-ink: #e9e4da;
+  --rail-muted: #bfc9c1;
+  --rail-dim: #a9b8af;
+  --rail-hover: #2e574b;
+  --rail-line: #3b6157;
 
-  /* Ink */
-  --ink: #1b1f1d;
-  --ink-2: #4a524e;
-  --ink-3: #7a817d;
+  /* Floor and surfaces */
+  --ground: #e4dfd5;
+  --surface: #f4f1eb;
+  --surface-2: #ebe7df;
+  --field: #ffffff;
 
-  /* Brand */
-  --brand: #0f5c4d;
-  --brand-hover: #0b4a3e;
-  --brand-ink: #ffffff;
-  --brand-soft: #dcebe6;
+  /* Ink (ink-2 ≥ 5.2:1 and ink-3 ≥ 4.7:1 on ground and surface) */
+  --ink: #2a2724;
+  --ink-2: #5e5850;
+  --ink-3: #665f56;
 
-  /* Status */
-  --ok: #1e7a46;
-  --ok-soft: #e1f0e6;
-  --warn: #a15c07;
-  --warn-soft: #f8ead3;
-  --danger: #b42318;
-  --danger-hover: #951c13;
-  --danger-soft: #f8e1de;
-  --info: #1d5fa8;
-  --info-soft: #e0eaf6;
+  /* The one rule */
+  --junta: #cfc8ba;
+  --junta-strong: #b3ab9c;
 
-  /* Elevation (minimal) */
-  --shadow-1: 0 1px 0 rgb(27 31 29 / 0.04);
-  --shadow-2: 0 1px 2px rgb(27 31 29 / 0.06), 0 4px 12px rgb(27 31 29 / 0.06);
-  --shadow-3: 0 2px 4px rgb(27 31 29 / 0.06), 0 16px 40px rgb(27 31 29 / 0.14);
-  --overlay: rgb(20 24 22 / 0.38);
+  /* Pigments */
+  --oxide: #9c3b2a;
+  --oxide-hover: #86311f;
+  --oxide-deep: #7e2e20;
+  --oxide-ink: #f7f2ea;
+  --ochre: #c8902f;
+  --ochre-line: #b07c24;
+  --ochre-ink: #2a2724;
+  --slate: #3e5c76;
+  --slate-hover: #344e65;
+  --slate-ink: #f4f1eb;
+  --slate-soft: #dde5ec;
+  --slate-text: #2c4559;
 
-  /* Shape */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  /* States (always paired with a shape + label, never colour alone) */
+  --ok: #2f5b44;
+  --ok-soft: #dde8df;
+  --warn: #8a5a0e;
+  --warn-soft: #f1e3c6;
+  --danger: #a12937;
+  --danger-hover: #8a2230;
+  --danger-soft: #f3dcdc;
+  --info: var(--slate);
+  --info-soft: var(--slate-soft);
+
+  /* Legacy aliases (pre-"Ladrillo" names still used by features) */
+  --bg: var(--ground);
+  --surface-3: var(--ground);
+  --line: var(--junta);
+  --line-strong: var(--junta-strong);
+  --brand: var(--slate);
+  --brand-hover: var(--slate-hover);
+  --brand-ink: var(--slate-ink);
+  --brand-soft: var(--slate-soft);
+
+  /* Depth: no decorative shadows. One popover shadow (offset + blur). */
+  --shadow-pop: 0 6px 16px -6px rgb(42 39 36 / 0.28), 0 1px 2px rgb(42 39 36 / 0.08);
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-3: var(--shadow-pop);
+  --overlay: rgb(31 35 32 / 0.42);
+
+  /* Shape: 2 / 3 / 4px, nothing rounder */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
 
   /* Layout */
-  --sidebar-w: 72px;
+  --rail-w: 216px;
+  --rail-w-collapsed: 64px;
+  --sidebar-w: var(--rail-w);
   --topbar-h: 56px;
-  --content-max: 1440px;
+  --content-max: 1600px;
 
-  /* Type */
-  --font-sans: 'Instrument Sans Variable', 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* Type: Archivo for everything, figures slightly condensed */
+  --font-sans: 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: var(--font-sans);
+  --num-stretch: 92%;
 
   /* Motion */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -64,67 +110,98 @@
   --dur-base: 180ms;
 
   /* Focus */
-  --focus: var(--brand);
+  --focus: var(--slate);
+  --focus-halo: rgb(62 92 118 / 0.22);
+}
+
+/* Below 1100px the rail collapses to its icon width (see shell/Sidebar.tsx). */
+@media (max-width: 1099.98px) {
+  :root {
+    --rail-w: var(--rail-w-collapsed);
+    --sidebar-w: var(--rail-w-collapsed);
+  }
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --bg: #121614;
-    --surface: #1a1f1c;
-    --surface-2: #212724;
-    --surface-3: #2a312d;
-    --line: #2f3632;
-    --line-strong: #414a45;
-    --ink: #eceeec;
-    --ink-2: #b4bcb7;
-    --ink-3: #848c87;
-    --brand: #4fb39b;
-    --brand-hover: #63c4ac;
-    --brand-ink: #0b1411;
-    --brand-soft: #1c3a32;
-    --ok: #5cc48a;
-    --ok-soft: #183626;
-    --warn: #e0a24a;
-    --warn-soft: #3a2a12;
-    --danger: #f07a6e;
-    --danger-hover: #f59389;
-    --danger-soft: #3d1c19;
-    --info: #74a9e6;
-    --info-soft: #172a40;
-    --shadow-1: 0 1px 0 rgb(0 0 0 / 0.3);
-    --shadow-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
-    --shadow-3: 0 2px 4px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.5);
+    --rail: #1f3f36;
+    --rail-ink: #e9e4da;
+    --rail-muted: #b6c2ba;
+    --rail-dim: #9fb0a6;
+    --rail-hover: #28504a;
+    --rail-line: #33574d;
+    --ground: #161b19;
+    --surface: #1e2421;
+    --surface-2: #252c28;
+    --field: #232a27;
+    --ink: #e6e1d7;
+    --ink-2: #b3ada2;
+    --ink-3: #9c968b;
+    --junta: #3a413c;
+    --junta-strong: #4d5650;
+    --oxide: #b4482f;
+    --oxide-hover: #c25539;
+    --oxide-deep: #8e3624;
+    --oxide-ink: #f7f2ea;
+    --ochre: #c8902f;
+    --ochre-line: #a87720;
+    --ochre-ink: #1e1a14;
+    --slate: #8daac4;
+    --slate-hover: #a1bad0;
+    --slate-ink: #14191d;
+    --slate-soft: #24323f;
+    --slate-text: #b9cde0;
+    --ok: #7fc09a;
+    --ok-soft: #1c3127;
+    --warn: #e3a955;
+    --warn-soft: #3a2d16;
+    --danger: #f08c84;
+    --danger-hover: #f5a39c;
+    --danger-soft: #3d1f20;
+    --shadow-pop: 0 8px 20px -6px rgb(0 0 0 / 0.6), 0 1px 2px rgb(0 0 0 / 0.4);
     --overlay: rgb(0 0 0 / 0.55);
+    --focus-halo: rgb(141 170 196 / 0.28);
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #121614;
-  --surface: #1a1f1c;
-  --surface-2: #212724;
-  --surface-3: #2a312d;
-  --line: #2f3632;
-  --line-strong: #414a45;
-  --ink: #eceeec;
-  --ink-2: #b4bcb7;
-  --ink-3: #848c87;
-  --brand: #4fb39b;
-  --brand-hover: #63c4ac;
-  --brand-ink: #0b1411;
-  --brand-soft: #1c3a32;
-  --ok: #5cc48a;
-  --ok-soft: #183626;
-  --warn: #e0a24a;
-  --warn-soft: #3a2a12;
-  --danger: #f07a6e;
-  --danger-hover: #f59389;
-  --danger-soft: #3d1c19;
-  --info: #74a9e6;
-  --info-soft: #172a40;
-  --shadow-1: 0 1px 0 rgb(0 0 0 / 0.3);
-  --shadow-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
-  --shadow-3: 0 2px 4px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.5);
+  --rail: #1f3f36;
+  --rail-ink: #e9e4da;
+  --rail-muted: #b6c2ba;
+  --rail-dim: #9fb0a6;
+  --rail-hover: #28504a;
+  --rail-line: #33574d;
+  --ground: #161b19;
+  --surface: #1e2421;
+  --surface-2: #252c28;
+  --field: #232a27;
+  --ink: #e6e1d7;
+  --ink-2: #b3ada2;
+  --ink-3: #9c968b;
+  --junta: #3a413c;
+  --junta-strong: #4d5650;
+  --oxide: #b4482f;
+  --oxide-hover: #c25539;
+  --oxide-deep: #8e3624;
+  --oxide-ink: #f7f2ea;
+  --ochre: #c8902f;
+  --ochre-line: #a87720;
+  --ochre-ink: #1e1a14;
+  --slate: #8daac4;
+  --slate-hover: #a1bad0;
+  --slate-ink: #14191d;
+  --slate-soft: #24323f;
+  --slate-text: #b9cde0;
+  --ok: #7fc09a;
+  --ok-soft: #1c3127;
+  --warn: #e3a955;
+  --warn-soft: #3a2d16;
+  --danger: #f08c84;
+  --danger-hover: #f5a39c;
+  --danger-soft: #3d1f20;
+  --shadow-pop: 0 8px 20px -6px rgb(0 0 0 / 0.6), 0 1px 2px rgb(0 0 0 / 0.4);
   --overlay: rgb(0 0 0 / 0.55);
+  --focus-halo: rgb(141 170 196 / 0.28);
 }

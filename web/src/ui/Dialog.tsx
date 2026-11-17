@@ -42,9 +42,9 @@ export function Dialog({
 
   const body = (
     <>
-      <header className="flex items-start justify-between gap-4 px-5 pt-4 pb-3">
+      <header className="flex items-start justify-between gap-4 border-b border-junta px-5 py-3.5">
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 id={titleId} className="text-[16px] leading-tight font-semibold text-ink">
+          <h2 id={titleId} className="text-[17px] leading-6 font-bold tracking-[-0.01em] text-ink">
             {title}
           </h2>
           {description && (
@@ -53,11 +53,11 @@ export function Dialog({
             </p>
           )}
         </div>
-        <IconButton label="Cerrar" icon={<X />} size="sm" onClick={onClose} disabled={!dismissible} className="-mt-0.5 -mr-1.5" />
+        <IconButton label="Cerrar" icon={<X />} size="sm" onClick={onClose} disabled={!dismissible} className="-my-1 -mr-2" />
       </header>
-      {children !== undefined && <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">{children}</div>}
+      {children !== undefined && <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>}
       {footer && (
-        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line bg-surface-2/50 px-5 py-3">
+        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-junta bg-surface-2 px-5 py-3">
           {footer}
         </footer>
       )}
@@ -81,7 +81,7 @@ export function Dialog({
           aria-describedby={descId}
           tabIndex={-1}
           className={cn(
-            'anim-pop-in relative flex max-h-[80vh] w-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-line bg-surface shadow-3 outline-none',
+            'anim-pop-in relative flex max-h-[80vh] w-full flex-col overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface shadow-pop outline-none',
             SIZES[size],
             className,
           )}

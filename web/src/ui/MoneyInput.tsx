@@ -55,7 +55,7 @@ export function MoneyInput({ value, onValueChange, invalid, maxCents, onBlur, pl
       spellCheck={false}
       mono
       className="text-right"
-      prefix={<span className="num text-[13px] font-medium text-ink-2">L</span>}
+      prefix={<span className="num text-[14px] font-semibold text-ink-2">L</span>}
       placeholder={placeholder}
       value={text}
       invalid={invalid}

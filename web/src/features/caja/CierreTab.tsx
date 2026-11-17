@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Calculator, Lock, TriangleAlert } from 'lucide-react';
 import { api, errorMessage, newIdempotencyKey } from '@/lib/api';
 import type { CashSession, Reconciliation } from '@/api/types';
-import { Button, ConfirmDialog, Field, Money, Textarea, toast } from '@/ui';
+import { Button, ConfirmDialog, Field, Money, StatusGlyph, Textarea, toast } from '@/ui';
 import { ArqueoSummary } from './ArqueoTab';
 import { arqueoReady, arqueoTotal, DIFFERENCE_LABEL, differenceCents, differenceKind, toBreakdown, type ArqueoState } from './arqueo';
 import { invalidateCash } from './queries';
@@ -77,11 +77,13 @@ export function CierreTab({ session, reconciliation, arqueo, onGoToArqueo, onClo
 
   if (!ready) {
     return (
-      <div className="flex flex-col items-start gap-3 rounded-[var(--radius-md)] border border-line bg-surface p-5">
-        <p className="text-[14px] font-medium text-ink">Primero haga el arqueo</p>
-        <p className="max-w-[60ch] text-[13px] text-ink-2">
-          El monto contado se toma del arqueo. Cuente el efectivo de la gaveta, o confirme el conteo en cero si no hay efectivo.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[var(--radius-md)] border border-junta bg-surface px-4 py-3.5">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className="text-[14px] font-semibold text-ink">Primero haga el arqueo</p>
+          <p className="max-w-[75ch] text-[13px] text-ink-2">
+            El monto contado se toma del arqueo. Cuente el efectivo de la gaveta, o confirme el conteo en cero si no hay efectivo.
+          </p>
+        </div>
         <Button leftIcon={<Calculator />} onClick={onGoToArqueo}>
           Ir al arqueo
         </Button>
@@ -90,30 +92,33 @@ export function CierreTab({ session, reconciliation, arqueo, onGoToArqueo, onClo
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="flex flex-col gap-4">
         {blockers.length > 0 && (
-          <section
-            aria-labelledby="cierre-bloqueos"
-            className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-warn/30 bg-warn-soft p-4"
-          >
-            <h3 id="cierre-bloqueos" className="flex items-center gap-2 text-[14px] font-semibold text-warn">
-              <TriangleAlert className="size-4" aria-hidden="true" />
-              No se puede cerrar todavía
-            </h3>
-            <ul className="flex flex-col gap-2">
+          <section aria-labelledby="cierre-bloqueos" className="overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface">
+            <header className="flex min-h-11 items-center justify-between gap-3 border-b border-junta bg-warn-soft px-4 py-2.5">
+              <h3 id="cierre-bloqueos" className="flex items-center gap-2 text-[14px] font-bold text-warn">
+                <TriangleAlert className="size-4" aria-hidden="true" />
+                No se puede cerrar todavía
+              </h3>
+              <span className="num text-[12.5px] font-semibold text-warn">
+                {blockers.length} {blockers.length === 1 ? 'bloqueo' : 'bloqueos'}
+              </span>
+            </header>
+            <ul className="flex flex-col">
               {blockers.map((b) => (
                 <li
                   key={b.code}
-                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-[var(--radius-sm)] bg-surface px-3 py-2 text-[13.5px]"
+                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-junta px-4 py-2.5 text-[13.5px] last:border-b-0"
                 >
-                  <span className="text-ink">
+                  <span className="flex min-w-0 items-center gap-2.5 text-ink">
+                    <StatusGlyph shape="hollow" className="text-warn" />
                     {b.message}
-                    {b.count > 0 && <span className="num ml-1.5 text-ink-2">({b.count})</span>}
+                    {b.count > 0 && <span className="num text-ink-2">({b.count})</span>}
                   </span>
                   <Link
                     to="/recibos?pending=1"
-                    className="inline-flex items-center gap-1 text-[13px] font-medium text-brand underline-offset-2 hover:underline"
+                    className="inline-flex items-center gap-1 text-[13px] font-semibold text-slate-text underline-offset-2 hover:underline"
                   >
                     Resolver en Recibos
                     <ArrowRight className="size-3.5" aria-hidden="true" />
@@ -124,32 +129,34 @@ export function CierreTab({ session, reconciliation, arqueo, onGoToArqueo, onClo
           </section>
         )}
 
-        <Field
-          label="Nota de cierre"
-          required={noteRequired}
-          hint={noteRequired ? 'Obligatoria porque hay diferencia entre lo contado y lo esperado.' : 'Opcional cuando la caja cuadra.'}
-          error={touched ? noteError : null}
-        >
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={255} disabled={!canClose} />
-        </Field>
+        <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-junta bg-surface p-4">
+          <Field
+            label="Nota de cierre"
+            required={noteRequired}
+            hint={noteRequired ? 'Obligatoria porque hay diferencia entre lo contado y lo esperado.' : 'Opcional cuando la caja cuadra.'}
+            error={touched ? noteError : null}
+          >
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={255} disabled={!canClose} />
+          </Field>
 
-        {error && !confirmOpen && (
-          <p role="alert" className="rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 py-2 text-[13px] text-danger">
-            {error}
-          </p>
-        )}
-
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button variant="ghost" leftIcon={<Calculator />} onClick={onGoToArqueo}>
-            Revisar arqueo
-          </Button>
-          {canClose ? (
-            <Button variant="primary" leftIcon={<Lock />} onClick={requestClose} disabled={blockers.length > 0}>
-              Cerrar caja
-            </Button>
-          ) : (
-            <p className="text-[13px] text-ink-3">No tiene permiso para cerrar esta caja.</p>
+          {error && !confirmOpen && (
+            <p role="alert" className="rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 py-2 text-[13px] text-danger">
+              {error}
+            </p>
           )}
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button variant="ghost" leftIcon={<Calculator />} onClick={onGoToArqueo}>
+              Revisar arqueo
+            </Button>
+            {canClose ? (
+              <Button variant="primary" size="lg" leftIcon={<Lock />} onClick={requestClose} disabled={blockers.length > 0}>
+                Cerrar caja
+              </Button>
+            ) : (
+              <p className="text-[13px] text-ink-3">No tiene permiso para cerrar esta caja.</p>
+            )}
+          </div>
         </div>
       </div>
 

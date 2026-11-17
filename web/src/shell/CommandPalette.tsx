@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
-import { CornerDownLeft, Plus, Search, Vault } from 'lucide-react';
+import { CornerDownLeft, Plus, Search, Wallet } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { NAV_ITEMS } from '@/app/nav';
 import { usePermissions } from '@/auth/hooks';
@@ -65,7 +65,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         id: 'open-cash',
         group: 'Acciones',
         label: 'Abrir caja',
-        icon: <Vault />,
+        icon: <Wallet />,
         keywords: 'apertura turno caja',
         perms: ['cash.open'],
         run: () => go('/caja'),
@@ -135,10 +135,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           role="dialog"
           aria-modal="true"
           aria-label="Paleta de comandos"
-          className="relative w-full max-w-[560px] overflow-hidden rounded-[var(--radius-lg)] border border-line bg-surface shadow-3"
+          className="relative w-full max-w-[600px] overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface shadow-pop"
         >
-          <div className="flex items-center gap-2.5 border-b border-line px-4">
-            <Search className="size-4 shrink-0 text-ink-3" aria-hidden="true" />
+          <div className="flex items-center gap-2.5 border-b border-junta bg-field px-4">
+            <Search className="size-4 shrink-0 text-ink-2" strokeWidth={1.6} aria-hidden="true" />
             <input
               ref={inputRef}
               role="combobox"
@@ -158,14 +158,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             />
             <Kbd>Esc</Kbd>
           </div>
-          <div id={listId} role="listbox" aria-label="Resultados" className="max-h-[50vh] overflow-y-auto p-1.5">
-            {results.length === 0 && <p className="px-3 py-6 text-center text-[13px] text-ink-3">Sin coincidencias.</p>}
+          <div id={listId} role="listbox" aria-label="Resultados" className="max-h-[50vh] overflow-y-auto pb-1">
+            {results.length === 0 && <p className="px-4 py-6 text-center text-[13px] text-ink-2">Sin coincidencias.</p>}
             {groups.map((g) => {
               const inGroup = results.map((c, i) => ({ c, i })).filter(({ c }) => c.group === g);
               if (inGroup.length === 0) return null;
               return (
-                <div key={g} role="group" aria-label={g} className="py-1">
-                  <div className="px-2.5 pt-1 pb-1.5 text-[11.5px] font-medium tracking-[0.04em] text-ink-3 uppercase">{g}</div>
+                <div key={g} role="group" aria-label={g} className="border-t border-junta first:border-t-0">
+                  <div className="border-b border-junta bg-ground px-4 py-1.5 text-[12px] leading-4 font-semibold text-ink-2">{g}</div>
                   {inGroup.map(({ c, i }) => (
                     <div
                       key={c.id}
@@ -175,14 +175,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                       onMouseMove={() => setActive(i)}
                       onClick={() => c.run()}
                       className={cn(
-                        'flex h-9 cursor-pointer items-center gap-3 rounded-[6px] px-2.5 text-[13.5px] [&_svg]:size-4',
-                        i === clamped ? 'bg-brand-soft text-ink [&_svg]:text-brand' : 'text-ink-2 [&_svg]:text-ink-3',
+                        'flex h-9 cursor-pointer items-center gap-3 border-b border-junta px-4 text-[14px] font-medium last:border-b-0 [&_svg]:size-4 [&_svg]:stroke-[1.6]',
+                        i === clamped ? 'bg-slate text-slate-ink [&_svg]:text-slate-ink' : 'text-ink [&_svg]:text-ink-2',
                       )}
                     >
                       {c.icon}
                       <span className="flex-1 truncate">{c.label}</span>
-                      {c.hint}
-                      {i === clamped && <CornerDownLeft className="size-3.5 text-ink-3" aria-hidden="true" />}
+                      {c.hint && <span className={cn('contents', i === clamped && '[&_kbd]:border-slate-ink/50 [&_kbd]:bg-transparent [&_kbd]:text-slate-ink')}>{c.hint}</span>}
+                      {i === clamped && <CornerDownLeft className="size-3.5" aria-hidden="true" />}
                     </div>
                   ))}
                 </div>

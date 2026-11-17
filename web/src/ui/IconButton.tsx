@@ -17,9 +17,9 @@ export function IconButton({ label, icon, variant = 'ghost', size = 'md', classN
       aria-label={label}
       title={label}
       className={cn(
-        'pressable inline-flex shrink-0 items-center justify-center rounded-[var(--radius-sm)] disabled:opacity-50',
+        'pressable inline-flex shrink-0 items-center justify-center rounded-[var(--radius-md)] font-semibold disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]',
         buttonVariants[variant],
-        size === 'sm' ? 'size-7 [&_svg]:size-3.5' : 'size-9 [&_svg]:size-[18px]',
+        size === 'sm' ? 'size-8 [&_svg]:size-4' : 'size-9 [&_svg]:size-[18px]',
         className,
       )}
       {...rest}

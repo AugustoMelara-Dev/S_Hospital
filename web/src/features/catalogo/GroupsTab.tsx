@@ -7,9 +7,11 @@ import { FolderTree, Pencil, Plus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { usePermissions } from '@/auth/hooks';
 import type { Area, Category } from '@/api/types';
-import { Badge, Button, Card, DataTable, Drawer, EmptyState, Field, IconButton, Input, Switch, Textarea, toast } from '@/ui';
+import { cn } from '@/lib/cn';
+import { Button, DataTable, Drawer, EmptyState, Field, IconButton, Input, Switch, Textarea, toast } from '@/ui';
 import { useAreas, useCategories } from './api';
 import { FormAlert, REASON_MESSAGE, REASON_MIN, applyServerErrors } from './formUtils';
+import { Count, Dash, Sheet, SheetHead, StateMark, ledgerRow } from './ledger';
 
 type Group = (Category | Area) & { services_count?: number };
 type Kind = 'categories' | 'areas';
@@ -90,31 +92,35 @@ function GroupDrawer({ kind, group, onClose }: { kind: Kind; group: Group | null
         </>
       }
     >
-      <div className="flex flex-col gap-4">
-        <Field label="Nombre" required error={errors.name?.message}>
+      <div className="flex flex-col">
+        <Field label="Nombre" required error={errors.name?.message} className={ledgerRow('sm')}>
           <Input {...register('name')} autoComplete="off" maxLength={120} />
         </Field>
-        <Field label="Orden" hint="Menor número aparece primero." error={errors.sort_order?.message}>
-          <Input {...register('sort_order')} inputMode="numeric" mono className="w-28" />
+        <Field label="Orden" hint="Menor número aparece primero." error={errors.sort_order?.message} className={ledgerRow('sm')}>
+          <Input className="w-28" {...register('sort_order')} inputMode="numeric" mono />
         </Field>
-        <Controller
-          control={control}
-          name="active"
-          render={({ field }) => (
-            <Switch
-              label="Activa"
-              description={kind === 'categories' ? 'Inactiva: sus conceptos no se pueden facturar.' : undefined}
-              checked={field.value}
-              onCheckedChange={field.onChange}
-            />
-          )}
-        />
+        <div className="border-b border-junta py-3">
+          <Controller
+            control={control}
+            name="active"
+            render={({ field }) => (
+              <Switch
+                label="Activa"
+                description={kind === 'categories' ? 'Inactiva: sus conceptos no se pueden facturar.' : undefined}
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
+        </div>
         {activeChanged && (
-          <Field label="Motivo del cambio de disponibilidad" required error={errors.reason?.message}>
+          <Field label="Motivo del cambio de disponibilidad" required error={errors.reason?.message} className={cn(ledgerRow('sm'), 'anim-fade-in items-start')}>
             <Textarea {...register('reason')} rows={2} maxLength={500} />
           </Field>
         )}
-        <FormAlert message={formError} />
+        <div className="mt-3">
+          <FormAlert message={formError} />
+        </div>
       </div>
     </Drawer>
   );
@@ -131,35 +137,42 @@ export function GroupsTab({ kind }: { kind: Kind }) {
 
   return (
     <>
-      <Card
-        flush
-        title={kind === 'categories' ? 'Categorías' : 'Áreas'}
-        actions={
-          canManage && (
-            <Button size="sm" variant="primary" leftIcon={<Plus />} onClick={() => setEditing('new')}>
-              {COPY[kind].new}
-            </Button>
-          )
-        }
-      >
+      <Sheet>
+        <SheetHead
+          title={kind === 'categories' ? 'Categorías' : 'Áreas'}
+          meta={<Count n={q.data ? rows.length : undefined} one={COPY[kind].one} many={kind === 'categories' ? 'categorías' : 'áreas'} />}
+          actions={
+            canManage && (
+              <Button variant="primary" leftIcon={<Plus />} onClick={() => setEditing('new')}>
+                {COPY[kind].new}
+              </Button>
+            )
+          }
+        />
         <DataTable
           caption={kind === 'categories' ? 'Categorías' : 'Áreas'}
           rows={rows}
           loading={q.isLoading}
           rowKey={(g) => g.id}
+          density="compact"
           onRowClick={canManage ? (g) => setEditing(g) : undefined}
           empty={<EmptyState compact icon={<FolderTree />} title={COPY[kind].empty} />}
           columns={[
-            { key: 'order', header: 'Orden', numeric: true, width: '80px', cell: (g) => g.sort_order },
+            { key: 'order', header: 'Orden', numeric: true, width: '84px', cell: (g) => <span className="text-ink-2">{g.sort_order}</span> },
             { key: 'name', header: 'Nombre', cell: (g) => <span className="font-medium">{g.name}</span> },
             ...(kind === 'categories'
-              ? [{ key: 'count', header: 'Conceptos', numeric: true, cell: (g: Group) => g.services_count ?? '—' }]
+              ? [{ key: 'count', header: 'Conceptos', numeric: true, width: '120px', cell: (g: Group) => g.services_count ?? <Dash /> }]
               : []),
-            { key: 'status', header: 'Estado', cell: (g) => (g.active ? <Badge tone="ok" dot>Activa</Badge> : <Badge dot>Inactiva</Badge>) },
+            {
+              key: 'status',
+              header: 'Estado',
+              width: '160px',
+              cell: (g) => (g.active ? <StateMark shape="filled" tone="ok">Activa</StateMark> : <StateMark shape="hollow">Inactiva</StateMark>),
+            },
           ]}
           rowActions={canManage ? (g) => <IconButton size="sm" label={`Editar ${g.name}`} icon={<Pencil />} onClick={() => setEditing(g)} /> : undefined}
         />
-      </Card>
+      </Sheet>
       {editing !== null && (
         <GroupDrawer
           key={editing === 'new' ? 'new' : editing.id}

@@ -22,9 +22,9 @@ export default function AjustesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Administración"
         title="Ajustes institucionales"
         description="Identidad, numeración fiscal, impuestos, reglas de cobro e impresión."
+        className="pb-3"
       />
       <Tabs label="Secciones de ajustes" items={items} />
     </>

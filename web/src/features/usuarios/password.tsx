@@ -1,5 +1,6 @@
-import { Check, Circle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { StatusGlyph } from '@/ui';
 
 /** SPEC §5.11: ≥12 caracteres con minúscula, mayúscula, número y símbolo. */
 export const PASSWORD_RULES: Array<{ id: string; label: string; test: (p: string) => boolean }> = [
@@ -23,7 +24,7 @@ export function PasswordChecklist({ password }: { password: string }) {
             data-ok={ok}
             className={cn('flex items-center gap-1.5 text-[12.5px] transition-colors duration-[120ms]', ok ? 'text-ok' : 'text-ink-3')}
           >
-            {ok ? <Check className="size-3.5" aria-hidden="true" strokeWidth={2.5} /> : <Circle className="size-3" aria-hidden="true" />}
+            {ok ? <Check className="size-3.5" aria-hidden="true" strokeWidth={2.5} /> : <StatusGlyph shape="hollow" className="mx-0.5 size-2.5" />}
             <span>{r.label}</span>
             <span className="sr-only">{ok ? '(cumplido)' : '(pendiente)'}</span>
           </li>

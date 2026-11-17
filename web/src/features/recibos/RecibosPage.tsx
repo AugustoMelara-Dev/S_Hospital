@@ -6,7 +6,21 @@ import { api, errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/dates';
 import { qk } from '@/api/queryClient';
 import { DISPLAY_STATUS_TO_API, INVOICE_STATUS_LABEL, type InvoiceDisplayStatus, type InvoiceSummary, type Paginated } from '@/api/types';
-import { Button, Card, Checkbox, DataTable, EmptyState, Field, Input, Money, PageHeader, Select, StatusStamp, type Column } from '@/ui';
+import {
+  Button,
+  Checkbox,
+  DataTable,
+  EmptyState,
+  Field,
+  INVOICE_STATUS_SHAPE,
+  Input,
+  PageHeader,
+  Select,
+  StatusGlyph,
+  StatusStamp,
+  type Column,
+} from '@/ui';
+import { Amount, Dash } from './components/Amount';
 import { useDebouncedValue } from '@/features/cobrar/hooks';
 
 const PER_PAGE = 25;
@@ -19,22 +33,38 @@ function isDisplayStatus(v: string): v is InvoiceDisplayStatus {
   return v in INVOICE_STATUS_LABEL;
 }
 
+const GLYPH_TONE: Record<InvoiceDisplayStatus, string> = {
+  pending: 'text-warn',
+  partial: 'text-slate',
+  paid: 'text-ok',
+  no_charge: 'text-ink-2',
+  void: 'text-danger',
+};
+const LEGEND: InvoiceDisplayStatus[] = ['pending', 'partial', 'paid', 'no_charge', 'void'];
+
 const columns: Column<InvoiceSummary>[] = [
   {
     key: 'number',
     header: 'Documento',
-    cell: (r) => <span className="num font-medium text-ink">{r.number}</span>,
+    width: '200px',
+    cell: (r) => <span className="num text-[14.5px] font-semibold text-ink">{r.number}</span>,
   },
-  { key: 'issued_at', header: 'Fecha', cell: (r) => <span className="tabular text-ink-2">{formatDateTime(r.issued_at)}</span> },
-  { key: 'patient', header: 'Paciente', cell: (r) => <span className="text-ink">{r.patient_name}</span> },
-  { key: 'total', header: 'Total', numeric: true, cell: (r) => <Money cents={r.total_cents} /> },
+  { key: 'issued_at', header: 'Fecha', width: '168px', cell: (r) => <span className="tabular text-ink-2">{formatDateTime(r.issued_at)}</span> },
+  { key: 'patient', header: 'Paciente', cell: (r) => <span className="font-medium text-ink">{r.patient_name}</span> },
+  { key: 'total', header: 'Total', numeric: true, width: '128px', cell: (r) => <Amount cents={r.total_cents} className="font-semibold text-ink" /> },
   {
     key: 'balance',
     header: 'Saldo',
     numeric: true,
-    cell: (r) => <Money cents={r.balance_cents} className={r.balance_cents > 0 && r.status !== 'void' ? 'font-medium text-warn' : 'text-ink-3'} />,
+    width: '128px',
+    cell: (r) =>
+      r.balance_cents > 0 && r.status !== 'void' ? (
+        <Amount cents={r.balance_cents} className="font-semibold text-warn" />
+      ) : (
+        <Dash label="Sin saldo" />
+      ),
   },
-  { key: 'status', header: 'Estado', cell: (r) => <StatusStamp status={r} /> },
+  { key: 'status', header: 'Estado', width: '176px', cell: (r) => <StatusStamp status={r} /> },
 ];
 
 /** /recibos — facturas emitidas con filtros en la URL (?search=&date_from=&date_to=&status=&pending=1&page=). */
@@ -101,9 +131,9 @@ export default function RecibosPage() {
     <>
       <PageHeader title="Recibos" description="Facturas emitidas, cobros pendientes y reimpresiones." />
 
-      <Card className="mb-4">
-        <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_150px_150px_200px] md:items-end">
-          <Field label="Paciente o número">
+      <section aria-label="Facturas" className="overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface">
+        <div role="search" className="flex flex-wrap items-end gap-x-3 gap-y-2 border-b border-junta px-4 py-3">
+          <Field label="Paciente o número" className="min-w-[240px] flex-1">
             <Input
               type="search"
               prefix={<Search />}
@@ -117,18 +147,17 @@ export default function RecibosPage() {
               }}
             />
           </Field>
-          <Field label="Desde" error={dateError}>
-            <Input type="date" value={dateFrom} max={dateTo || undefined} onChange={(e) => update({ date_from: e.target.value })} />
+          <Field label="Desde" className="w-[150px]">
+            <Input type="date" value={dateFrom} max={dateTo || undefined} invalid={Boolean(dateError)} onChange={(e) => update({ date_from: e.target.value })} />
           </Field>
-          <Field label="Hasta">
+          <Field label="Hasta" className="w-[150px]">
             <Input type="date" value={dateTo} min={dateFrom || undefined} onChange={(e) => update({ date_to: e.target.value })} />
           </Field>
-          <Field label="Estado">
+          <Field label="Estado" className="w-[190px]">
             <Select value={status} placeholder="Todos" options={STATUS_OPTIONS} onChange={(e) => update({ status: e.target.value })} />
           </Field>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <Checkbox
+            className="h-9 items-center"
             label="Solo con saldo pendiente"
             checked={pending}
             onChange={(e) => update({ pending: e.target.checked ? '1' : null })}
@@ -136,7 +165,6 @@ export default function RecibosPage() {
           {hasFilters && (
             <Button
               variant="ghost"
-              size="sm"
               leftIcon={<FilterX />}
               onClick={() => {
                 setText('');
@@ -147,11 +175,35 @@ export default function RecibosPage() {
             </Button>
           )}
         </div>
-      </Card>
+        {dateError && (
+          <p role="alert" className="border-b border-junta bg-danger-soft px-4 py-2 text-[13px] font-medium text-danger">
+            {dateError}
+          </p>
+        )}
+        <div className="flex h-9 items-center justify-between gap-3 border-b border-junta px-4 text-[12.5px] text-ink-2">
+          <span aria-live="polite">
+            {list.data ? (
+              <>
+                <span className="num font-semibold text-ink">{list.data.total}</span> {list.data.total === 1 ? 'factura' : 'facturas'}
+                {hasFilters ? ' con los filtros aplicados' : ''}
+              </>
+            ) : (
+              'Cargando…'
+            )}
+          </span>
+          <span className="hidden items-center gap-3 sm:flex" aria-hidden="true">
+            {LEGEND.map((s) => (
+              <span key={s} className="flex items-center gap-1.5">
+                <StatusGlyph shape={INVOICE_STATUS_SHAPE[s]} className={GLYPH_TONE[s]} />
+                {INVOICE_STATUS_LABEL[s]}
+              </span>
+            ))}
+          </span>
+        </div>
 
-      <Card flush>
         {list.isError ? (
           <EmptyState
+            compact
             title="No se pudieron cargar los recibos"
             description={errorMessage(list.error)}
             action={<Button onClick={() => void list.refetch()}>Reintentar</Button>}
@@ -163,12 +215,13 @@ export default function RecibosPage() {
             rows={list.data?.items}
             rowKey={(r) => r.id}
             loading={list.isFetching}
+            density="compact"
             onRowClick={(r) => navigate(`/recibos/${r.id}`)}
             rowActions={(r) => (
               <Link
                 to={`/recibos/${r.id}`}
                 aria-label={`Ver detalle de ${r.number}`}
-                className="pressable inline-flex h-7 items-center gap-1 rounded-[var(--radius-sm)] px-2 text-[12.5px] font-medium text-brand hover:bg-brand-soft/60"
+                className="pressable inline-flex h-7 items-center gap-1 rounded-[var(--radius-sm)] px-2 text-[13px] font-semibold text-slate hover:bg-slate-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
               >
                 Ver
                 <ChevronRight className="size-3.5" aria-hidden="true" />
@@ -191,7 +244,7 @@ export default function RecibosPage() {
             }
           />
         )}
-      </Card>
+      </section>
     </>
   );
 }

@@ -3,20 +3,37 @@ import { FileSpreadsheet, History, Package, Pencil, Percent, Plus, Search } from
 import { formatRateBp } from '@/lib/money';
 import { ERYTHROPOIETIN_RULE } from '@/api/types';
 import { usePermissions } from '@/auth/hooks';
-import { Badge, Button, Card, DataTable, EmptyState, IconButton, Input, Money, Select } from '@/ui';
+import { Badge, Button, DataTable, EmptyState, IconButton, Input, Money, Select } from '@/ui';
 import type { Service } from '@/api/types';
-import { useCategories, useServices } from './api';
+import { serviceCode, useCategories, useServices } from './api';
 import { BulkTaxDialog, HistoryDialog, ImportExportDialog } from './ServiceDialogs';
 import { ServiceDrawer } from './ServiceDrawer';
+import { Count, Dash, Sheet, StateMark, Toolbar } from './ledger';
 
 export function ServiceStatusBadges({ s }: { s: Service }) {
   return (
-    <div className="flex flex-wrap gap-1">
-      {s.active ? <Badge tone="ok" dot>Activo</Badge> : <Badge tone="neutral" dot>Inactivo</Badge>}
-      {s.active && !s.visible_in_billing && <Badge tone="warn">Oculto en caja</Badge>}
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      {!s.active ? (
+        <StateMark shape="hollow">Inactivo</StateMark>
+      ) : !s.visible_in_billing ? (
+        <StateMark shape="half" tone="warn">Oculto en caja</StateMark>
+      ) : (
+        <StateMark shape="filled" tone="ok">Activo</StateMark>
+      )}
       {!s.is_billable && <Badge tone="warn">No facturable</Badge>}
       {s.special_rule_code === ERYTHROPOIETIN_RULE && <Badge tone="info">Regla eritropoyetina</Badge>}
     </div>
+  );
+}
+
+function taxLabel(s: Service) {
+  if (!s.tax_rate) return <span className="text-ink-2">Exento</span>;
+  const rate = formatRateBp(s.tax_rate.rate_bp);
+  return (
+    <span className="inline-flex items-baseline gap-1.5">
+      <span className="num font-medium">{rate}</span>
+      {!s.tax_rate.name.includes('%') && <span className="text-[12.5px] text-ink-2">{s.tax_rate.name}</span>}
+    </span>
   );
 }
 
@@ -38,8 +55,8 @@ export function ServicesTab() {
 
   return (
     <>
-      <Card flush>
-        <div className="flex flex-wrap items-end gap-2 border-b border-line p-3">
+      <Sheet>
+        <Toolbar>
           <Input
             aria-label="Buscar concepto"
             placeholder="Buscar por nombre o alias"
@@ -60,7 +77,7 @@ export function ServicesTab() {
             }}
             placeholder="Todas las categorías"
             options={(categories.data ?? []).map((c) => ({ value: String(c.id), label: c.name }))}
-            wrapperClassName="w-full sm:w-56"
+            wrapperClassName="w-full sm:w-52"
           />
           <Select
             aria-label="Estado"
@@ -76,6 +93,9 @@ export function ServicesTab() {
             ]}
             wrapperClassName="w-full sm:w-44"
           />
+          <span className="px-1">
+            <Count n={q.data?.total} one="concepto" many="conceptos" />
+          </span>
           <div className="ml-auto flex flex-wrap gap-2">
             <Button leftIcon={<FileSpreadsheet />} onClick={() => setIoOpen(true)}>
               Importar / Exportar
@@ -91,13 +111,15 @@ export function ServicesTab() {
               </>
             )}
           </div>
-        </div>
+        </Toolbar>
         <DataTable
           caption="Conceptos del catálogo"
           rows={q.data?.items}
           loading={q.isFetching}
           rowKey={(s) => s.id}
+          density="compact"
           onRowClick={canManage ? (s) => setEditing(s) : undefined}
+          isRowSelected={(s) => editing !== null && editing !== 'new' && editing.id === s.id}
           empty={
             <EmptyState
               compact
@@ -110,21 +132,17 @@ export function ServicesTab() {
             q.data ? { page: q.data.page, perPage: q.data.per_page, total: q.data.total, onPageChange: setPage } : undefined
           }
           columns={[
-            { key: 'name', header: 'Producto o servicio', cell: (s) => <span className="font-medium text-ink">{s.name}</span> },
-            { key: 'category', header: 'Categoría', cell: (s) => s.category?.name ?? '—' },
-            { key: 'area', header: 'Área', cell: (s) => s.area?.name ?? <span className="text-ink-3">—</span> },
-            { key: 'price', header: 'Precio', numeric: true, cell: (s) => <Money cents={s.price_cents} /> },
             {
-              key: 'tax',
-              header: 'Impuesto',
-              cell: (s) =>
-                s.tax_rate ? (
-                  s.tax_rate.name.includes('%') ? s.tax_rate.name : `${s.tax_rate.name} · ${formatRateBp(s.tax_rate.rate_bp)}`
-                ) : (
-                  <span className="text-ink-2">Exento</span>
-                ),
+              key: 'name',
+              header: 'Producto o servicio',
+              cell: (s) => <span className={s.active ? 'font-medium text-ink' : 'font-medium text-ink-2'}>{s.name}</span>,
             },
-            { key: 'status', header: 'Estado', cell: (s) => <ServiceStatusBadges s={s} /> },
+            { key: 'code', header: 'Código', numeric: true, width: '84px', cell: (s) => <span className="text-ink-2">{serviceCode(s)}</span> },
+            { key: 'category', header: 'Categoría', cell: (s) => s.category?.name ?? <Dash /> },
+            { key: 'area', header: 'Área', cell: (s) => s.area?.name ?? <Dash /> },
+            { key: 'price', header: 'Precio', numeric: true, width: '128px', cell: (s) => <Money cents={s.price_cents} className="font-semibold text-ink" /> },
+            { key: 'tax', header: 'ISV', width: '128px', cell: taxLabel },
+            { key: 'status', header: 'Estado', width: '220px', cell: (s) => <ServiceStatusBadges s={s} /> },
           ]}
           rowActions={(s) => (
             <>
@@ -133,7 +151,7 @@ export function ServicesTab() {
             </>
           )}
         />
-      </Card>
+      </Sheet>
 
       {editing !== null && (
         <ServiceDrawer

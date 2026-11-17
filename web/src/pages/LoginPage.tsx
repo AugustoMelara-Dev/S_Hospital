@@ -2,16 +2,14 @@ import { useState, type KeyboardEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQuery } from '@tanstack/react-query';
 import { Navigate, useLocation, useNavigate } from 'react-router';
-import { ArrowUp, CircleAlert, Lock, Wifi } from 'lucide-react';
-import { api, errorMessage, isApiError } from '@/lib/api';
-import { qk } from '@/api/queryClient';
-import type { Branding } from '@/api/types';
+import { ArrowUp, CircleAlert, Lock } from 'lucide-react';
+import { errorMessage, isApiError } from '@/lib/api';
 import { landingPath } from '@/auth/AuthProvider';
 import { useAuth } from '@/auth/hooks';
 import { FullScreenLoader } from '@/auth/guards';
-import { BrandMark } from '@/shell/BrandMark';
+import { useBranding } from '@/shell/useBranding';
+import { BrandTile } from '@/ui/BrandTile';
 import { ThemeToggle } from '@/shell/TopBar';
 import { Button } from '@/ui/Button';
 import { Field } from '@/ui/Field';
@@ -24,53 +22,27 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
-export function useBranding() {
-  return useQuery({
-    queryKey: qk.branding,
-    queryFn: () => api.get<Branding>('/branding', undefined, { skipAuthRedirect: true }),
-    staleTime: 5 * 60_000,
-    retry: 1,
-  });
-}
-
 function BrandPanel() {
   const { data } = useBranding();
-  const name = data?.hospital_name ?? 'Sistema de caja hospitalaria';
+  const name = data?.hospital_name || 'Caja hospitalaria';
   return (
-    <aside
-      className="relative hidden flex-col justify-between overflow-hidden bg-[#0f5c4d] p-10 text-white lg:flex"
-      aria-label="Institución"
-    >
-      {/* Quiet ledger texture: hairline grid + soft light, no imagery needed offline. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
-          maskImage: 'radial-gradient(ellipse at 30% 20%, #000 0%, transparent 70%)',
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-24 -bottom-24 size-[420px] rounded-full bg-[radial-gradient(circle,rgb(255_255_255/0.10),transparent_65%)]"
-      />
-      <div className="relative flex items-center gap-3">
-        {data?.has_logo ? (
-          <img src="/api/branding/logo" alt="" className="size-10 rounded-[8px] bg-white object-contain p-1 outline outline-1 outline-white/10" />
-        ) : (
-          <BrandMark className="size-10" inverted />
+    <aside className="relative hidden flex-col justify-between bg-rail px-12 py-10 text-rail-ink lg:flex" aria-label="Institución">
+      <div className="flex items-center gap-3">
+        <BrandTile size={40} />
+        <span className="text-[18px] leading-6 font-bold tracking-[-0.01em]">S_Hospital</span>
+      </div>
+      <div className="flex max-w-[440px] flex-col gap-6">
+        <BrandTile size={96} />
+        <div className="flex flex-col gap-3">
+          <h2 className="text-[36px] leading-[42px] font-bold tracking-[-0.02em] text-balance">{name}</h2>
+          {data?.slogan && <p className="text-[15px] leading-6 text-rail-muted">{data.slogan}</p>}
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-4 border-t border-rail-line pt-4 text-[13px] text-rail-muted">
+        <span>Caja hospitalaria · red local</span>
+        {data?.has_logo && (
+          <img src="/api/branding/logo" alt="" className="h-9 w-auto rounded-[2px] bg-rail-ink object-contain p-1" />
         )}
-        <span className="text-[13px] font-medium tracking-[0.04em] text-white/75 uppercase">Caja y facturación</span>
-      </div>
-      <div className="relative flex max-w-[460px] flex-col gap-4">
-        <h2 className="text-[34px] leading-[1.1] font-semibold tracking-[-0.02em] text-balance">{name}</h2>
-        {data?.slogan && <p className="text-[15px] leading-relaxed text-white/75">{data.slogan}</p>}
-      </div>
-      <div className="relative flex items-center gap-2 text-[12.5px] text-white/65">
-        <Wifi className="size-3.5" aria-hidden="true" />
-        Red local del hospital · funciona sin internet
       </div>
     </aside>
   );
@@ -117,24 +89,27 @@ export default function LoginPage() {
   const passwordField = register('password');
 
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[minmax(420px,5fr)_7fr]">
+    <div className="grid min-h-dvh bg-surface lg:grid-cols-[minmax(440px,5fr)_7fr]">
       <BrandPanel />
-      <main className="relative flex items-center justify-center px-6 py-12">
+      <main className="relative flex items-center justify-center bg-surface px-6 py-12">
         <div className="absolute top-4 right-4">
           <ThemeToggle />
         </div>
-        <div className="flex w-full max-w-[380px] flex-col gap-7">
+        <div className="flex w-full max-w-[380px] flex-col gap-8">
           <div className="flex flex-col gap-2">
-            <BrandMark className="size-9 lg:hidden" />
-            <h1 className="text-[24px] leading-tight font-semibold tracking-[-0.015em]">Iniciar sesión</h1>
-            <p className="text-[13.5px] text-ink-2">Use la cuenta que le asignó la administración.</p>
+            <div className="mb-4 flex items-center gap-3 lg:hidden">
+              <BrandTile size={32} />
+              <span className="text-[16px] leading-5 font-bold">S_Hospital</span>
+            </div>
+            <h1 className="text-[28px] leading-8 font-bold tracking-[-0.02em]">Iniciar sesión</h1>
+            <p className="text-[14px] leading-5 text-ink-2">Use la cuenta que le asignó la administración.</p>
           </div>
 
           <form onSubmit={(e) => void onSubmit(e)} noValidate className="flex flex-col gap-4">
             {formError && (
               <div
                 role="alert"
-                className="flex items-start gap-2.5 rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 py-2.5 text-[13px] text-danger"
+                className="flex items-start gap-2.5 rounded-[var(--radius-md)] border border-danger/40 bg-danger-soft px-3 py-2.5 text-[13px] font-medium text-danger"
               >
                 {formError.locked ? (
                   <Lock className="mt-[1px] size-4 shrink-0" aria-hidden="true" />
@@ -146,7 +121,7 @@ export default function LoginPage() {
             )}
 
             <Field label="Usuario o correo" error={errors.login?.message}>
-              <Input autoComplete="username" autoFocus autoCapitalize="none" spellCheck={false} {...register('login')} />
+              <Input className="min-h-10" autoComplete="username" autoFocus autoCapitalize="none" spellCheck={false} {...register('login')} />
             </Field>
 
             <Field
@@ -176,12 +151,12 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword((s) => !s)}
                     aria-pressed={showPassword}
-                    className="h-7 rounded-[4px] px-2 text-[12.5px] font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
+                    className="h-7 rounded-[3px] px-2 text-[13px] font-semibold text-slate hover:bg-slate-soft"
                   >
                     {showPassword ? 'Ocultar' : 'Mostrar'}
                   </button>
                 }
-                className="pr-[84px]"
+                className="min-h-10 pr-[84px]"
               />
             </Field>
 
@@ -197,7 +172,7 @@ export default function LoginPage() {
               {isSubmitting ? 'Comprobando acceso…' : 'Iniciar sesión'}
             </Button>
           </form>
-          <p className="text-[12.5px] text-ink-3">¿Olvidó su contraseña? Solicite un restablecimiento a la administración.</p>
+          <p className="border-t border-junta pt-4 text-[13px] text-ink-2">¿Olvidó su contraseña? Solicite un restablecimiento a la administración.</p>
         </div>
       </main>
     </div>

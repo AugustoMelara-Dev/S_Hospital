@@ -82,12 +82,12 @@ export function QuantityInput({
   }
 
   const btn =
-    'pressable flex size-7 shrink-0 items-center justify-center rounded-[5px] text-ink-2 hover:enabled:bg-surface-2 hover:enabled:text-ink disabled:opacity-40 [&_svg]:size-3.5';
+    'pressable flex size-7 shrink-0 items-center justify-center rounded-[2px] text-ink-2 hover:enabled:bg-ground hover:enabled:text-ink disabled:opacity-40 [&_svg]:size-3.5';
 
   return (
     <div
       className={cn(
-        'inline-flex h-9 items-center gap-0.5 rounded-[var(--radius-sm)] border border-line bg-surface px-0.5 focus-within:border-brand',
+        'inline-flex h-9 items-center gap-0.5 rounded-[var(--radius-md)] border border-junta bg-field px-0.5 transition-[border-color,box-shadow] duration-[120ms] focus-within:border-slate focus-within:shadow-[0_0_0_3px_var(--focus-halo)]',
         invalid && 'border-danger',
         className,
       )}
@@ -118,7 +118,7 @@ export function QuantityInput({
         onChange={handleChange}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="num h-full w-14 min-w-0 bg-transparent text-center text-sm outline-none"
+        className="num h-full w-14 min-w-0 bg-transparent text-center text-[14px] font-medium outline-none"
       />
       {stepper && (
         <button

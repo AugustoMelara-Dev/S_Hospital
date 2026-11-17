@@ -3,8 +3,10 @@ import { CircleCheck, Printer } from 'lucide-react';
 import { downloadFile, errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/dates';
 import { PAYMENT_METHOD_LABEL, type CashSession, type PaymentMethod } from '@/api/types';
-import { Badge, Button, Card, Money, toast } from '@/ui';
-import { DENOMINATIONS, DIFFERENCE_LABEL, DIFFERENCE_TONE, denominationSubtotal, differenceKind, type DenominationKey } from './arqueo';
+import { Button, Card, Money, toast } from '@/ui';
+import { cn } from '@/lib/cn';
+import { DifferenceValue } from './ArqueoTab';
+import { DENOMINATIONS, denominationSubtotal, type DenominationKey } from './arqueo';
 import { operatorName, registerName } from './types';
 
 export async function printSummary(id: number): Promise<void> {
@@ -17,9 +19,18 @@ export async function printSummary(id: number): Promise<void> {
 
 function Row({ label, children, strong }: { label: string; children: ReactNode; strong?: boolean }) {
   return (
-    <div className={strong ? 'flex justify-between gap-3 font-semibold text-ink' : 'flex justify-between gap-3'}>
+    <div className={cn('flex items-baseline justify-between gap-3 border-b border-junta px-4 py-2 last:border-b-0', strong && 'font-semibold text-ink')}>
       <dt className={strong ? undefined : 'text-ink-2'}>{label}</dt>
       <dd className="text-right">{children}</dd>
+    </div>
+  );
+}
+
+function Block({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col bg-surface">
+      <h3 className="flex h-9 items-center border-b border-junta bg-surface-2 px-4 text-[12.5px] font-semibold text-ink-2">{title}</h3>
+      {children}
     </div>
   );
 }
@@ -27,8 +38,6 @@ function Row({ label, children, strong }: { label: string; children: ReactNode; 
 /** "Resumen de cierre": closed-session figures, count breakdown and print button. */
 export function CierreResumen({ session, actions, justClosed }: { session: CashSession; actions?: ReactNode; justClosed?: boolean }) {
   const [printing, setPrinting] = useState(false);
-  const diff = session.difference_cents ?? 0;
-  const kind = differenceKind(diff);
   const bills = session.closing_breakdown?.bills ?? {};
   const methods = session.method_totals;
 
@@ -40,6 +49,7 @@ export function CierreResumen({ session, actions, justClosed }: { session: CashS
 
   return (
     <Card
+      flush
       title={
         <span className="flex items-center gap-2">
           {justClosed && <CircleCheck className="size-4 text-ok" aria-hidden="true" />}
@@ -56,58 +66,57 @@ export function CierreResumen({ session, actions, justClosed }: { session: CashS
         </>
       }
     >
-      <div className="grid gap-6 md:grid-cols-2">
-        <dl className="flex flex-col gap-2 text-[13.5px]">
-          <Row label="Apertura del turno">
-            <span className="num">{formatDateTime(session.opened_at)}</span>
-          </Row>
-          <Row label="Cierre del turno">
-            <span className="num">{session.closed_at ? formatDateTime(session.closed_at) : '—'}</span>
-          </Row>
-          <Row label="Monto de apertura">
-            <Money cents={session.opening_cents} />
-          </Row>
-          <Row label="Cobros registrados">
-            <Money cents={session.payments_total_cents} />
-          </Row>
-          <div className="my-1 border-t border-line" />
-          <Row label="Efectivo esperado">
-            <Money cents={session.expected_cash_cents} />
-          </Row>
-          <Row label="Total contado" strong>
-            <Money cents={session.counted_cents} />
-          </Row>
-          <div className="flex items-center justify-between gap-3">
-            <dt className="text-ink-2">Diferencia</dt>
-            <dd className="flex items-center gap-2">
-              <Badge tone={DIFFERENCE_TONE[kind]} dot>
-                {DIFFERENCE_LABEL[kind]}
-              </Badge>
-              <Money cents={session.difference_cents} signed className="font-semibold" />
-            </dd>
-          </div>
-          {session.closing_notes && (
-            <div className="mt-2 rounded-[var(--radius-sm)] bg-surface-2 px-3 py-2 text-[13px] text-ink-2">
-              <span className="font-medium text-ink">Nota de cierre: </span>
-              {session.closing_notes}
+      <div className="grid gap-px overflow-hidden rounded-b-[var(--radius-md)] bg-junta text-[13.5px] md:grid-cols-3">
+        <Block title="Turno">
+          <dl className="flex flex-col">
+            <Row label="Apertura del turno">
+              <span className="num">{formatDateTime(session.opened_at)}</span>
+            </Row>
+            <Row label="Cierre del turno">
+              {session.closed_at ? <span className="num">{formatDateTime(session.closed_at)}</span> : <span className="text-ink-3">—</span>}
+            </Row>
+            <Row label="Monto de apertura">
+              <Money cents={session.opening_cents} />
+            </Row>
+            <Row label="Cobros registrados">
+              <Money cents={session.payments_total_cents} />
+            </Row>
+            <Row label="Efectivo esperado">
+              <Amount cents={session.expected_cash_cents} />
+            </Row>
+            <Row label="Total contado" strong>
+              <Amount cents={session.counted_cents} />
+            </Row>
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+              <dt className="text-ink-2">Diferencia</dt>
+              <dd>{session.difference_cents == null ? <span className="text-ink-3">—</span> : <DifferenceValue cents={session.difference_cents} />}</dd>
             </div>
+          </dl>
+          {session.closing_notes && (
+            <p className="border-t border-junta px-4 py-2.5 text-[13px] text-ink-2">
+              <span className="font-semibold text-ink">Nota de cierre: </span>
+              {session.closing_notes}
+            </p>
           )}
-        </dl>
+        </Block>
 
-        <div className="flex flex-col gap-4">
-          {methods && (
-            <dl className="flex flex-col gap-1.5 text-[13.5px]">
-              <p className="text-[12px] font-medium tracking-[0.04em] text-ink-3 uppercase">Cobros por método</p>
+        <Block title="Cobros por método">
+          {methods ? (
+            <dl className="flex flex-col">
               {(Object.keys(PAYMENT_METHOD_LABEL) as PaymentMethod[]).map((m) => (
                 <Row key={m} label={PAYMENT_METHOD_LABEL[m]}>
-                  <Money cents={methods[m] ?? 0} />
+                  <Money cents={methods[m] ?? 0} className={(methods[m] ?? 0) === 0 ? 'text-ink-3' : undefined} />
                 </Row>
               ))}
             </dl>
+          ) : (
+            <p className="px-4 py-2.5 text-ink-3">—</p>
           )}
-          {session.closing_breakdown && (
-            <dl className="flex flex-col gap-1 text-[13px]">
-              <p className="text-[12px] font-medium tracking-[0.04em] text-ink-3 uppercase">Desglose del conteo</p>
+        </Block>
+
+        <Block title="Desglose del conteo">
+          {session.closing_breakdown ? (
+            <dl className="flex flex-col">
               {DENOMINATIONS.filter((d) => (bills[String(d) as DenominationKey] ?? 0) > 0).map((d) => {
                 const n = bills[String(d) as DenominationKey] ?? 0;
                 return (
@@ -120,9 +129,15 @@ export function CierreResumen({ session, actions, justClosed }: { session: CashS
                 <Money cents={session.closing_breakdown.coins_cents} />
               </Row>
             </dl>
+          ) : (
+            <p className="px-4 py-2.5 text-ink-3">—</p>
           )}
-        </div>
+        </Block>
       </div>
     </Card>
   );
+}
+
+function Amount({ cents }: { cents: number | null | undefined }) {
+  return cents === null || cents === undefined ? <span className="text-ink-3">—</span> : <Money cents={cents} />;
 }

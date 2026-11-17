@@ -19,11 +19,13 @@ export type MenuProps = {
   }) => ReactNode;
   items: MenuItem[];
   align?: 'start' | 'end';
+  /** Open below (default) or above the trigger (e.g. at the bottom of the rail). */
+  side?: 'bottom' | 'top';
   className?: string;
 };
 
 /** Accessible dropdown menu: ↑/↓/Home/End, Enter, Esc, click-outside, return focus. */
-export function Menu({ trigger, items, align = 'end', className }: MenuProps) {
+export function Menu({ trigger, items, align = 'end', side = 'bottom', className }: MenuProps) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -100,16 +102,18 @@ export function Menu({ trigger, items, align = 'end', className }: MenuProps) {
           aria-labelledby={`${id}-trigger`}
           onKeyDown={onListKey}
           className={cn(
-            'anim-pop-in absolute top-[calc(100%+6px)] z-40 min-w-[220px] rounded-[var(--radius-md)] border border-line bg-surface p-1 shadow-3',
-            align === 'end' ? 'right-0 origin-top-right' : 'left-0 origin-top-left',
+            'anim-pop-in absolute z-40 min-w-[220px] overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface py-1 text-ink shadow-pop',
+            side === 'top' ? 'bottom-[calc(100%+4px)]' : 'top-[calc(100%+4px)]',
+            align === 'end' ? 'right-0' : 'left-0',
+            side === 'top' ? (align === 'end' ? 'origin-bottom-right' : 'origin-bottom-left') : align === 'end' ? 'origin-top-right' : 'origin-top-left',
             className,
           )}
         >
           {items.map((it, i) => {
-            if (it.type === 'separator') return <div key={i} role="separator" className="my-1 h-px bg-line" />;
+            if (it.type === 'separator') return <div key={i} role="separator" className="my-1 h-px bg-junta" />;
             if (it.type === 'label')
               return (
-                <div key={i} className="px-2.5 pt-1.5 pb-1 text-[12px] text-ink-3">
+                <div key={i} className="px-3 pt-1.5 pb-1 text-[12px] leading-4 text-ink-2">
                   {it.label}
                 </div>
               );
@@ -132,9 +136,9 @@ export function Menu({ trigger, items, align = 'end', className }: MenuProps) {
                   }
                 }}
                 className={cn(
-                  'flex h-8 cursor-pointer items-center gap-2.5 rounded-[6px] px-2.5 text-[13.5px] outline-none select-none',
-                  'focus:bg-surface-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 [&_svg]:size-4 [&_svg]:text-ink-3',
-                  it.danger ? 'text-danger focus:bg-danger-soft [&_svg]:text-danger' : 'text-ink',
+                  'flex h-9 cursor-pointer items-center gap-2.5 px-3 text-[14px] font-medium outline-none select-none',
+                  'hover:bg-surface-2 focus:bg-slate focus:text-slate-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-50 [&_svg]:size-4 [&_svg]:stroke-[1.6] [&_svg]:text-ink-2 focus:[&_svg]:text-slate-ink',
+                  it.danger ? 'text-danger focus:bg-danger focus:text-white [&_svg]:text-danger' : 'text-ink',
                 )}
               >
                 {it.icon}

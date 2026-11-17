@@ -70,7 +70,9 @@ export function DataTable<T>({
   className,
   skeletonRows = 6,
 }: DataTableProps<T>) {
-  const cellPad = density === 'compact' ? 'px-3 py-1.5' : 'px-3 py-2.5';
+  const cellPad = density === 'compact' ? 'h-9 px-3 py-1' : 'h-11 px-4 py-2';
+  /** Grid of juntas: every cell ruled by the one 1px line, outer edges left to the container. */
+  const juntaCell = 'border-b border-l border-junta first:border-l-0';
   const colCount = columns.length + (rowActions ? 1 : 0);
   const showSkeleton = loading && (!rows || rows.length === 0);
 
@@ -90,11 +92,11 @@ export function DataTable<T>({
 
   return (
     <div className={cn('flex flex-col', className)}>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-[13.5px]" aria-busy={loading || undefined}>
+      <div className="relative overflow-x-auto">
+        <table className="w-full border-collapse text-[14px] leading-5" aria-busy={loading || undefined}>
           <caption className="sr-only">{caption}</caption>
           <thead>
-            <tr className="border-b border-line bg-surface-2/60">
+            <tr className="bg-ground">
               {columns.map((c) => {
                 const sorted = sort?.key === c.key ? sort.dir : undefined;
                 return (
@@ -104,7 +106,9 @@ export function DataTable<T>({
                     style={c.width ? { width: c.width } : undefined}
                     aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : undefined}
                     className={cn(
-                      'h-9 px-3 text-[12px] font-medium tracking-[0.02em] whitespace-nowrap text-ink-2',
+                      juntaCell,
+                      'h-8 px-4 text-[12px] leading-4 font-semibold whitespace-nowrap text-ink-2',
+                      density === 'compact' && 'px-3',
                       ALIGN[c.align ?? (c.numeric ? 'right' : 'left')],
                     )}
                   >
@@ -113,7 +117,7 @@ export function DataTable<T>({
                         type="button"
                         onClick={() => toggleSort(c.key)}
                         className={cn(
-                          'inline-flex items-center gap-1 rounded-[4px] hover:text-ink',
+                          'inline-flex items-center gap-1 rounded-[2px] hover:text-ink',
                           (c.align ?? (c.numeric ? 'right' : 'left')) === 'right' && 'flex-row-reverse',
                         )}
                       >
@@ -133,7 +137,7 @@ export function DataTable<T>({
                 );
               })}
               {rowActions && (
-                <th scope="col" className="w-px px-3 text-right text-[12px] font-medium text-ink-2">
+                <th scope="col" className={cn(juntaCell, 'w-px px-3 text-right text-[12px] font-semibold text-ink-2')}>
                   <span className="sr-only">Acciones</span>
                 </th>
               )}
@@ -142,9 +146,9 @@ export function DataTable<T>({
           <tbody>
             {showSkeleton &&
               Array.from({ length: skeletonRows }, (_, i) => (
-                <tr key={`sk-${i}`} className="border-b border-line last:border-0">
+                <tr key={`sk-${i}`}>
                   {Array.from({ length: colCount }, (__, j) => (
-                    <td key={j} className={cellPad}>
+                    <td key={j} className={cn(juntaCell, cellPad)}>
                       <Skeleton className={cn('h-3.5', j === 0 ? 'w-24' : 'w-full max-w-[160px]')} />
                     </td>
                   ))}
@@ -173,9 +177,9 @@ export function DataTable<T>({
                   onKeyDown={onRowClick ? (e) => rowKeyDown(e, row) : undefined}
                   aria-selected={isRowSelected ? isRowSelected(row) : undefined}
                   className={cn(
-                    'border-b border-line transition-colors duration-[100ms] last:border-0',
-                    onRowClick && 'cursor-pointer hover:bg-surface-2/70 focus-visible:bg-surface-2 focus-visible:outline-offset-[-2px]',
-                    isRowSelected?.(row) && 'bg-brand-soft/50',
+                    'transition-colors duration-[100ms] [&:last-child>td]:border-b-0',
+                    onRowClick && 'cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-offset-[-2px]',
+                    isRowSelected?.(row) && 'bg-slate-soft hover:bg-slate-soft',
                     loading && 'opacity-60',
                   )}
                 >
@@ -183,6 +187,7 @@ export function DataTable<T>({
                     <td
                       key={c.key}
                       className={cn(
+                        juntaCell,
                         cellPad,
                         'align-middle',
                         ALIGN[c.align ?? (c.numeric ? 'right' : 'left')],
@@ -194,7 +199,7 @@ export function DataTable<T>({
                     </td>
                   ))}
                   {rowActions && (
-                    <td className={cn(cellPad, 'text-right whitespace-nowrap')} onClick={(e) => e.stopPropagation()}>
+                    <td className={cn(juntaCell, cellPad, 'py-1 text-right whitespace-nowrap')} onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex items-center gap-1">{rowActions(row)}</div>
                     </td>
                   )}
@@ -213,7 +218,7 @@ export function PaginationBar({ page, perPage, total, onPageChange }: Pagination
   const from = total === 0 ? 0 : (page - 1) * perPage + 1;
   const to = Math.min(total, page * perPage);
   return (
-    <nav aria-label="Paginación" className="flex items-center justify-between gap-3 border-t border-line px-3 py-2 text-[12.5px] text-ink-2">
+    <nav aria-label="Paginación" className="flex h-11 items-center justify-between gap-3 border-t border-junta px-4 text-[13px] text-ink-2">
       <span className="tabular">
         {from}–{to} de {total}
       </span>

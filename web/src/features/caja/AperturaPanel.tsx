@@ -4,7 +4,8 @@ import { Eye, LockOpen } from 'lucide-react';
 import { api, errorMessage, isApiError, newIdempotencyKey } from '@/lib/api';
 import { qk } from '@/api/queryClient';
 import { usePermissions } from '@/auth/hooks';
-import { Button, Card, EmptyState, Field, Kbd, MoneyInput, Select, Skeleton, Textarea, toast } from '@/ui';
+import { Button, Card, EmptyState, Field, Kbd, MoneyInput, NO_SHIFT, Select, Skeleton, Textarea, toast } from '@/ui';
+import { Dash, ShiftBand } from './ShiftBand';
 import { invalidateCash, useCashRegisters } from './queries';
 import type { CashSession } from '@/api/types';
 
@@ -93,51 +94,64 @@ function AperturaForm() {
   }
 
   return (
-    <Card
-      title="Apertura de caja"
-      description="Registre el efectivo con el que inicia el turno."
-      className="max-w-[560px]"
-    >
-      <form onSubmit={(e) => void onSubmit(e)} noValidate className="flex flex-col gap-4">
-        <Field label="Caja física" required error={registerError}>
-          {registers.isPending ? (
-            <Skeleton className="h-9 w-full" />
-          ) : (
-            <Select
-              value={selected}
-              onChange={(e) => setRegisterId(e.target.value)}
-              placeholder={list.length > 1 ? 'Seleccione…' : undefined}
-              options={list.map((r) => ({ value: String(r.id), label: r.name }))}
-              disabled={list.length === 0}
-            />
-          )}
-        </Field>
-        <Field
-          label="Monto inicial (L)"
-          required
-          hint={
-            <>
-              Puede ser L 0.00.{f2Free && <> Atajo: <Kbd>F2</Kbd></>}
-            </>
-          }
-          error={amountError}
+    <div className="flex flex-col gap-4">
+      <ShiftBand
+        steps={NO_SHIFT}
+        title="Sin caja abierta"
+        subtitle="El turno empieza con la apertura."
+        stages={{
+          apertura: { value: <Dash />, note: 'Pendiente' },
+          cobros: { value: <Dash />, note: 'Pendiente' },
+          arqueo: { value: <Dash />, note: 'Pendiente' },
+          cierre: { value: <Dash />, note: 'Pendiente' },
+        }}
+      />
+      <Card title="Apertura de caja" description="Registre el efectivo con el que inicia el turno.">
+        <form
+          onSubmit={(e) => void onSubmit(e)}
+          noValidate
+          className="grid items-start gap-4 md:grid-cols-[minmax(180px,240px)_minmax(160px,220px)_minmax(0,1fr)] xl:grid-cols-[240px_220px_minmax(0,1fr)_auto]"
         >
-          <MoneyInput ref={amountRef} value={amount} onValueChange={setAmount} autoFocus />
-        </Field>
-        <Field label="Nota de apertura" hint="Opcional.">
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={255} />
-        </Field>
-        {error && (
-          <p role="alert" className="rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 py-2 text-[13px] text-danger">
-            {error}
-          </p>
-        )}
-        <div className="flex justify-end">
-          <Button type="submit" variant="primary" loading={busy} leftIcon={<LockOpen />}>
-            Abrir caja
-          </Button>
-        </div>
-      </form>
-    </Card>
+          <Field label="Caja física" required error={registerError}>
+            {registers.isPending ? (
+              <Skeleton className="h-9 w-full" />
+            ) : (
+              <Select
+                value={selected}
+                onChange={(e) => setRegisterId(e.target.value)}
+                placeholder={list.length > 1 ? 'Seleccione…' : undefined}
+                options={list.map((r) => ({ value: String(r.id), label: r.name }))}
+                disabled={list.length === 0}
+              />
+            )}
+          </Field>
+          <Field
+            label="Monto inicial (L)"
+            required
+            hint={
+              <>
+                Puede ser L 0.00.{f2Free && <> Atajo: <Kbd>F2</Kbd></>}
+              </>
+            }
+            error={amountError}
+          >
+            <MoneyInput ref={amountRef} value={amount} onValueChange={setAmount} autoFocus className="num text-right" />
+          </Field>
+          <Field label="Nota de apertura" hint="Opcional.">
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={1} maxLength={255} className="min-h-9" />
+          </Field>
+          <div className="flex md:col-span-3 md:justify-end xl:col-span-1 xl:pt-[22px]">
+            <Button type="submit" variant="primary" size="lg" loading={busy} leftIcon={<LockOpen />}>
+              Abrir caja
+            </Button>
+          </div>
+          {error && (
+            <p role="alert" className="rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 py-2 text-[13px] text-danger md:col-span-3 xl:col-span-4">
+              {error}
+            </p>
+          )}
+        </form>
+      </Card>
+    </div>
   );
 }

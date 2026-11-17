@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>S_Hospital · Cobrar</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--side:#0F172A;--side-2:#1E293B;--side-tx:#CBD5E1;--side-mut:#94A3B8;--ground:#F1F5F9;--surf:#FFFFFF;--line:#E2E8F0;--ink:#0F172A;--ink-2:#334155;--mut:#475569;--faint:#64748B;--acc:#2563EB;--acc-d:#1D4ED8;--acc-soft:#EFF6FF;--ok:#16A34A;--ok-soft:#F0FDF4;--ok-ink:#15803D}
+*{box-sizing:border-box}
+html,body{width:1440px;height:900px;overflow:hidden;margin:0}
+body{background:var(--ground);color:var(--ink);font:400 14px/1.45 Inter,sans-serif;font-feature-settings:"cv11","ss01";-webkit-font-smoothing:antialiased;display:flex}
+::selection{background:#BFDBFE;color:var(--ink)}
+input{caret-color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+kbd{font:500 11px/1 Inter,sans-serif;padding:3px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;color:var(--faint);background:var(--surf)}
+/* sidebar */
+aside{width:232px;height:900px;background:var(--side);color:var(--side-tx);display:flex;flex-direction:column;padding:20px 12px 16px}
+.brand{display:flex;gap:10px;align-items:center;padding:0 8px 22px}
+.mark{width:32px;height:32px;border-radius:8px;background:var(--acc);display:grid;place-items:center;color:#fff}
+.brand b{display:block;color:#fff;font-weight:600;font-size:15px;letter-spacing:-.01em}
+.brand span{font-size:12px;color:var(--side-mut)}
+nav a{display:flex;align-items:center;gap:11px;height:36px;padding:0 10px;border-radius:8px;color:var(--side-tx);text-decoration:none;font-weight:500;margin-bottom:2px}
+nav a.on{background:var(--side-2);color:#fff}
+nav a.on svg{color:#93C5FD}
+nav h4{margin:22px 10px 8px;font:600 11px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--side-mut)}
+.me{margin-top:auto;display:flex;gap:10px;align-items:center;padding:12px 8px 0;border-top:1px solid var(--side-2)}
+.av{width:32px;height:32px;border-radius:50%;background:#334155;color:#fff;display:grid;place-items:center;font:600 12px Inter,sans-serif}
+.me b{display:block;color:#fff;font-weight:500;font-size:13px}.me span{font-size:12px;color:var(--side-mut)}
+/* main */
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+header{height:64px;background:var(--surf);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:0 24px}
+header h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.015em}
+.pill{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:999px;background:var(--ok-soft);color:var(--ok-ink);font-size:13px;font-weight:500;border:1px solid #BBF7D0}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.gsearch{margin-left:auto;width:320px;height:36px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;color:var(--faint);background:var(--ground)}
+.gsearch span{flex:1}
+.wrap{flex:1;display:flex;gap:24px;padding:24px;min-height:0}
+.left{flex:1;display:flex;flex-direction:column;gap:20px;min-width:0}
+label.f{display:block;font-size:13px;font-weight:500;color:var(--ink-2);margin-bottom:6px}
+.field{height:44px;background:var(--surf);border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;gap:10px;padding:0 12px;color:var(--faint)}
+.field.filled{border-color:var(--acc);box-shadow:0 0 0 3px #DBEAFE}
+.field .v{flex:1;color:var(--ink);font-weight:500;font-size:15px}
+.field .meta{font-size:12px;color:var(--faint)}
+.panel{background:var(--surf);border:1px solid var(--line);border-radius:8px;flex:1;display:flex;flex-direction:column;padding:20px}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.ph h2{margin:0;font-size:16px;font-weight:600;letter-spacing:-.01em}
+.ph .field{height:36px;width:300px}
+.chips{display:flex;gap:8px;margin-bottom:16px}
+.chip{height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--ink-2)}
+.chip i{font-style:normal;color:var(--faint);font-variant-numeric:tabular-nums}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}.chip.on i{color:#CBD5E1}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tile{border:1px solid var(--line);border-radius:8px;padding:14px;height:122px;display:flex;flex-direction:column;background:var(--surf)}
+.tile.sel{border-color:#93C5FD;background:var(--acc-soft)}
+.tile .c{font-size:12px;color:var(--faint);display:flex;justify-content:space-between}
+.tile .c em{font-style:normal;font-weight:600;color:var(--acc);font-size:12px}
+.tile .n{font-weight:600;margin-top:6px;line-height:1.3;color:var(--ink)}
+.tile .p{margin-top:auto;font-size:15px;font-weight:600;text-align:left}
+.hint{margin-top:auto;display:flex;gap:18px;font-size:12px;color:var(--faint);padding-top:14px;border-top:1px solid var(--line)}
+.hint span{display:inline-flex;gap:6px;align-items:center}
+/* ticket */
+.ticket{width:420px;background:var(--surf);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px -12px rgba(15,23,42,.12)}
+.th{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line)}
+.th h2{margin:0;font-size:16px;font-weight:600}.th h2 span{color:var(--faint);font-weight:500}
+.th a{font-size:13px;color:var(--mut);font-weight:500}
+.items{padding:4px 20px}
+.it{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.it .d{flex:1}.it .n{font-weight:500}
+.it .q{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;margin-top:2px;display:flex;gap:8px;align-items:center}
+.it .a{font-weight:600;font-size:15px}
+.it s{display:block;font-size:12px;color:var(--faint);font-weight:400}
+.badge{font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;background:var(--ok-soft);color:var(--ok-ink);border:1px solid #BBF7D0}
+.chk{margin:14px 20px 0;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--ground);font-weight:500;font-size:13px;color:var(--ink-2)}
+.box{width:18px;height:18px;border-radius:5px;background:var(--acc);display:grid;place-items:center;color:#fff}
+.box svg{width:12px;height:12px;stroke-width:2.5}
+.tot{margin-top:auto;padding:16px 20px 0;border-top:1px solid var(--line)}
+.r{display:flex;justify-content:space-between;font-size:14px;color:var(--mut);padding:3px 0}
+.r b{font-weight:500;color:var(--ink-2)}
+.r.grand{margin-top:10px;padding-top:12px;border-top:1px dashed var(--line);align-items:baseline;color:var(--ink)}
+.r.grand span{font-size:15px;font-weight:600}.r.grand b{font-size:32px;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
+.act{padding:16px 20px 20px;display:flex;flex-direction:column;gap:8px}
+.btn{height:52px;border-radius:8px;background:var(--acc);color:#fff;font:600 16px Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 1px 2px rgba(37,99,235,.3),0 4px 12px -4px rgba(37,99,235,.45)}
+.btn kbd{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);color:#fff}
+.btn2{height:40px;border-radius:8px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:500;color:var(--ink-2)}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+<symbol id="cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/></symbol>
+<symbol id="rec" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4"/></symbol>
+<symbol id="box" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h3"/></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+<symbol id="tag" viewBox="0 0 24 24"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+<symbol id="users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 4a4 4 0 0 1 0 8M22 21a6 6 0 0 0-4-5.6"/></symbol>
+<symbol id="cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+<symbol id="db" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+<symbol id="shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></symbol>
+<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+<symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+<symbol id="eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="cross" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></symbol>
+</defs></svg>
+<aside>
+  <div class="brand"><div class="mark"><svg class="i"><use href="#cross"/></svg></div><div><b>S_Hospital</b><span>Hospital General San Isidro</span></div></div>
+  <nav>
+    <a href="#"><svg class="i"><use href="#home"/></svg>Resumen</a>
+    <a href="#" class="on"><svg class="i"><use href="#cash"/></svg>Cobrar</a>
+    <a href="#"><svg class="i"><use href="#rec"/></svg>Recibos</a>
+    <a href="#"><svg class="i"><use href="#box"/></svg>Caja</a>
+    <a href="#"><svg class="i"><use href="#chart"/></svg>Reportes</a>
+    <h4>Administración</h4>
+    <a href="#"><svg class="i"><use href="#tag"/></svg>Catálogo y precios</a>
+    <a href="#"><svg class="i"><use href="#users"/></svg>Usuarios</a>
+    <a href="#"><svg class="i"><use href="#cog"/></svg>Ajustes</a>
+    <a href="#"><svg class="i"><use href="#db"/></svg>Respaldos</a>
+    <a href="#"><svg class="i"><use href="#shield"/></svg>Auditoría</a>
+  </nav>
+  <div class="me"><div class="av">MF</div><div><b>María Fernanda López</b><span>Caja</span></div></div>
+</aside>
+<main>
+  <header>
+    <h1>Cobrar</h1>
+    <span class="pill"><span class="dot"></span>Caja principal · abierta 07:02</span>
+    <div class="gsearch"><svg class="i"><use href="#search"/></svg><span>Buscar…</span><kbd>Ctrl K</kbd></div>
+  </header>
+  <div class="wrap">
+    <section class="left">
+      <div><label class="f">Paciente</label>
+        <div class="field filled"><svg class="i"><use href="#user"/></svg><span class="v">José Ángel Martínez Reyes</span><span class="meta">Expediente 2024-08813</span></div></div>
+      <div class="panel">
+        <div class="ph"><h2>Servicios</h2><div class="field"><svg class="i"><use href="#search"/></svg><span style="flex:1">Buscar servicio</span><kbd>/</kbd></div></div>
+        <div class="chips"><span class="chip on">Todos <i>148</i></span><span class="chip">Consultas <i>12</i></span><span class="chip">Laboratorio <i>64</i></span><span class="chip">Imágenes <i>18</i></span><span class="chip">Farmacia <i>41</i></span><span class="chip">Procedimientos <i>13</i></span></div>
+        <div class="grid">
+          <div class="tile sel"><div class="c">Consultas<em>1</em></div><div class="n">Consulta general</div><div class="p num">L 150.00</div></div>
+          <div class="tile sel"><div class="c">Laboratorio<em>1</em></div><div class="n">Hemograma completo</div><div class="p num">L 120.00</div></div>
+          <div class="tile sel"><div class="c">Imágenes<em>1</em></div><div class="n">Rayos X tórax PA</div><div class="p num">L 380.00</div></div>
+          <div class="tile"><div class="c">Laboratorio</div><div class="n">Glucosa</div><div class="p num">L 40.00</div></div>
+          <div class="tile"><div class="c">Laboratorio</div><div class="n">Examen general de orina</div><div class="p num">L 60.00</div></div>
+          <div class="tile sel"><div class="c">Farmacia<em>2</em></div><div class="n">Eritropoyetina 4000 UI</div><div class="p num">L 25.00</div></div>
+          <div class="tile"><div class="c">Imágenes</div><div class="n">Ultrasonido</div><div class="p num">L 80.00</div></div>
+          <div class="tile"><div class="c">Procedimientos</div><div class="n">Curación</div><div class="p num">L 100.00</div></div>
+        </div>
+        <div class="hint"><span><kbd>↑↓←→</kbd> Navegar</span><span><kbd>Enter</kbd> Agregar</span><span><kbd>+</kbd><kbd>−</kbd> Cantidad</span><span><kbd>Supr</kbd> Quitar línea</span><span><kbd>F2</kbd> Cambiar paciente</span></div>
+      </div>
+    </section>
+    <section class="ticket">
+      <div class="th"><h2>Cuenta <span>· 4 conceptos</span></h2><a>Vaciar</a></div>
+      <div class="items">
+        <div class="it"><div class="d"><div class="n">Consulta general</div><div class="q">1 × L 150.00</div></div><div class="a num">L 150.00</div></div>
+        <div class="it"><div class="d"><div class="n">Hemograma completo</div><div class="q">1 × L 120.00</div></div><div class="a num">L 120.00</div></div>
+        <div class="it"><div class="d"><div class="n">Rayos X tórax PA</div><div class="q">1 × L 380.00</div></div><div class="a num">L 380.00</div></div>
+        <div class="it" style="border:0"><div class="d"><div class="n">Eritropoyetina 4000 UI</div><div class="q">2 × L 25.00 <span class="badge">Sin cobro por receta</span></div></div><div class="a num"><s>L 50.00</s>L 0.00</div></div>
+      </div>
+      <div class="chk"><span class="box"><svg class="i"><use href="#check"/></svg></span>Paciente con receta de diálisis</div>
+      <div class="tot">
+        <div class="r"><span>Subtotal</span><b class="num">L 650.00</b></div>
+        <div class="r"><span>Exento</span><b class="num">L 150.00</b></div>
+        <div class="r"><span>ISV 15 %</span><b class="num">L 75.00</b></div>
+        <div class="r"><span>Ajuste</span><b class="num">−L 50.00</b></div>
+        <div class="r grand"><span>Total</span><b class="num">L 725.00</b></div>
+      </div>
+      <div class="act">
+        <div class="btn">Cobrar L 725.00 <kbd>F4</kbd></div>
+        <div class="btn2"><svg class="i"><use href="#eye"/></svg>Vista previa</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body></html>

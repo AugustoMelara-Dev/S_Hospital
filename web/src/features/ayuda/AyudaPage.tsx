@@ -1,6 +1,8 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import {
   Archive,
+  ArrowDown,
+  ArrowUp,
   Ban,
   BarChart3,
   FileDigit,
@@ -15,7 +17,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
-import { Card, EmptyState, Input, Kbd, PageHeader } from '@/ui';
+import { EmptyState, Input, Kbd, PageHeader } from '@/ui';
 
 type Guide = { id: string; title: string; icon: ReactNode; summary: string; steps: string[] };
 
@@ -169,7 +171,7 @@ const SHORTCUTS: Array<{ keys: string[]; action: string }> = [
   { keys: ['F2'], action: 'Nueva operación (foco en el nombre del paciente)' },
   { keys: ['F4'], action: 'Cobrar la cuenta actual' },
   { keys: ['Esc'], action: 'Cerrar diálogo, panel o lista abierta' },
-  { keys: ['↑', '↓'], action: 'Moverse por resultados y listas' },
+  { keys: ['Flecha arriba', 'Flecha abajo'], action: 'Moverse por resultados y listas' },
   { keys: ['Enter'], action: 'Agregar el concepto seleccionado o confirmar' },
 ];
 
@@ -184,47 +186,77 @@ function matches(g: Guide, q: string) {
   return norm([g.title, g.summary, ...g.steps].join(' ')).includes(q);
 }
 
-function GuideCard({ g }: { g: Guide }) {
+const KEY_ICON: Record<string, ReactNode> = {
+  'Flecha arriba': <ArrowUp className="size-3" strokeWidth={2.2} aria-label="Flecha arriba" />,
+  'Flecha abajo': <ArrowDown className="size-3" strokeWidth={2.2} aria-label="Flecha abajo" />,
+};
+
+const anchor = (id: string) => `ayuda-${id}`;
+
+function jump(id: string) {
+  const el = document.getElementById(anchor(id));
+  if (!el) return;
+  el.scrollIntoView({ block: 'start' });
+  const focusable = el.querySelector<HTMLElement>('h2, h3');
+  focusable?.focus({ preventScroll: true });
+}
+
+function GuideArticle({ g }: { g: Guide }) {
   return (
-    <Card className="h-full">
-      <article className="flex flex-col gap-3">
-        <header className="flex items-start gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-brand-soft text-brand [&_svg]:size-[18px]" aria-hidden="true">
-            {g.icon}
-          </span>
-          <div className="flex flex-col">
-            <h3 className="text-[14px] font-semibold text-ink">{g.title}</h3>
-            <p className="text-[12.5px] text-ink-3">{g.summary}</p>
-          </div>
-        </header>
-        <ol className="flex flex-col gap-1.5">
-          {g.steps.map((s, i) => (
-            <li key={i} className="flex gap-2.5 text-[13px] text-ink-2">
-              <span className="num mt-[1px] flex size-5 shrink-0 items-center justify-center rounded-full border border-line text-[11px] text-ink-3">
-                {i + 1}
-              </span>
-              <span>{s}</span>
-            </li>
-          ))}
-        </ol>
-      </article>
-    </Card>
+    <article id={anchor(g.id)} className="scroll-mt-4 border-t border-junta py-5 first:border-t-0 first:pt-3">
+      <header className="flex items-start gap-3">
+        <span className="mt-0.5 text-ink-3 [&_svg]:size-[18px] [&_svg]:stroke-[1.6]" aria-hidden="true">
+          {g.icon}
+        </span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h3 tabIndex={-1} className="text-[16px] leading-6 font-bold text-ink outline-none">
+            {g.title}
+          </h3>
+          <p className="text-[14px] leading-5 text-ink-2">{g.summary}</p>
+        </div>
+      </header>
+      <ol className="mt-3 flex flex-col pl-[30px]">
+        {g.steps.map((step, i) => (
+          <li key={i} className="grid grid-cols-[24px_minmax(0,1fr)] gap-2 py-1 text-[15px] leading-6 text-ink">
+            <span className="num pt-px text-[14px] font-semibold text-ink-2">{i + 1}.</span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+    </article>
   );
 }
 
-function Group({ title, guides }: { title: string; guides: Guide[] }) {
+function Group({ id, title, guides }: { id: string; title: string; guides: Guide[] }) {
   if (guides.length === 0) return null;
   return (
-    <section aria-labelledby={`g-${title}`} className="flex flex-col gap-3">
-      <h2 id={`g-${title}`} className="text-[13px] font-semibold tracking-[0.04em] text-ink-2 uppercase">
+    <section id={anchor(id)} aria-labelledby={`h-${id}`} className="scroll-mt-4">
+      <h2 id={`h-${id}`} tabIndex={-1} className="border-b border-junta-strong pb-2 text-[20px] leading-7 font-bold tracking-[-0.01em] text-ink outline-none">
         {title}
       </h2>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {guides.map((g) => (
-          <GuideCard key={g.id} g={g} />
-        ))}
-      </div>
+      {guides.map((g) => (
+        <GuideArticle key={g.id} g={g} />
+      ))}
     </section>
+  );
+}
+
+function IndexLink({ id, children, strong }: { id: string; children: ReactNode; strong?: boolean }) {
+  return (
+    <a
+      href={`#${anchor(id)}`}
+      onClick={(e) => {
+        e.preventDefault();
+        jump(id);
+      }}
+      className={
+        strong
+          ? 'flex h-8 items-center rounded-[var(--radius-sm)] px-2 text-[13.5px] font-semibold text-ink hover:bg-surface-2'
+          : 'flex min-h-7 items-center rounded-[var(--radius-sm)] py-1 pr-2 pl-5 text-[13px] leading-5 text-ink-2 hover:bg-surface-2 hover:text-ink'
+      }
+    >
+      {children}
+    </a>
   );
 }
 
@@ -238,10 +270,9 @@ export default function AyudaPage() {
 
   return (
     <>
-      <PageHeader
-        title="Ayuda"
-        description="Guías paso a paso para las tareas de caja y administración."
-        actions={
+      <PageHeader title="Ayuda" description="Guías paso a paso para las tareas de caja y administración." className="pb-3" />
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[200px_minmax(0,1fr)] xl:grid-cols-[200px_minmax(0,calc(68ch+4rem))_minmax(280px,1fr)]">
+        <aside className="flex flex-col gap-3 lg:sticky lg:top-4">
           <Input
             aria-label="Buscar en la ayuda"
             type="search"
@@ -249,44 +280,71 @@ export default function AyudaPage() {
             prefix={<Search />}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            wrapperClassName="w-72"
           />
-        }
-      />
-      <div className="flex flex-col gap-8">
-        {none && <EmptyState icon={<Receipt />} title="Sin resultados" description="Pruebe con otra palabra, por ejemplo «anular» o «caja»." />}
-        <Group title="Trabajo diario" guides={daily} />
-        <Group title="Administración autorizada" guides={admin} />
+          {!none && (
+            <nav aria-label="Índice de la ayuda" className="flex flex-col gap-0.5 border-t border-junta pt-3">
+              {daily.length > 0 && <IndexLink id="diario" strong>Trabajo diario</IndexLink>}
+              {daily.map((g) => (
+                <IndexLink key={g.id} id={g.id}>
+                  {g.title}
+                </IndexLink>
+              ))}
+              {admin.length > 0 && <IndexLink id="admin" strong>Administración autorizada</IndexLink>}
+              {admin.map((g) => (
+                <IndexLink key={g.id} id={g.id}>
+                  {g.title}
+                </IndexLink>
+              ))}
+              {shortcuts.length > 0 && <IndexLink id="atajos" strong>Atajos de teclado</IndexLink>}
+            </nav>
+          )}
+        </aside>
+
+        <div className="min-w-0 rounded-[var(--radius-md)] border border-junta bg-surface px-8 py-6 max-[1099px]:px-5">
+          <div className="flex max-w-[68ch] flex-col gap-8">
+            {none && <EmptyState icon={<Receipt />} title="Sin resultados" description="Pruebe con otra palabra, por ejemplo «anular» o «caja»." />}
+            <Group id="diario" title="Trabajo diario" guides={daily} />
+            <Group id="admin" title="Administración autorizada" guides={admin} />
+          </div>
+        </div>
         {shortcuts.length > 0 && (
-          <section aria-labelledby="g-atajos" className="flex flex-col gap-3">
-            <h2 id="g-atajos" className="text-[13px] font-semibold tracking-[0.04em] text-ink-2 uppercase">
+          <section
+            id={anchor('atajos')}
+            aria-labelledby="h-atajos"
+            className="flex scroll-mt-4 flex-col overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface lg:col-start-2 xl:sticky xl:top-4 xl:col-start-3 xl:row-start-1"
+          >
+            <h2 id="h-atajos" tabIndex={-1} className="border-b border-junta px-4 py-2.5 text-[15px] leading-5 font-bold text-ink outline-none">
               Atajos de teclado
             </h2>
-            <Card flush className="max-w-[720px]">
-              <table className="w-full text-[13.5px]">
-                <caption className="sr-only">Atajos de teclado</caption>
-                <thead>
-                  <tr className="border-b border-line bg-surface-2/60 text-left text-[12px] text-ink-2">
-                    <th scope="col" className="w-40 px-4 py-2 font-medium">Tecla</th>
-                    <th scope="col" className="px-4 py-2 font-medium">Acción</th>
+            <table className="w-full border-collapse text-[13.5px] leading-5">
+              <caption className="sr-only">Atajos de teclado</caption>
+              <thead>
+                <tr className="bg-ground text-left text-[12px] text-ink-2">
+                  <th scope="col" className="h-8 w-32 border-b border-junta px-3 font-semibold">
+                    Tecla
+                  </th>
+                  <th scope="col" className="h-8 border-b border-l border-junta px-3 font-semibold">
+                    Acción
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {shortcuts.map((s) => (
+                  <tr key={s.action} className="[&:last-child>td]:border-b-0">
+                    <td className="h-11 border-b border-junta px-3">
+                      <span className="inline-flex items-center gap-1">
+                        {s.keys.map((k) => (
+                          <Kbd key={k} className="h-[22px] min-w-[22px] text-[12px]">
+                            {KEY_ICON[k] ?? k}
+                          </Kbd>
+                        ))}
+                      </span>
+                    </td>
+                    <td className="h-11 border-b border-l border-junta px-3 py-1.5 text-ink">{s.action}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {shortcuts.map((s) => (
-                    <tr key={s.action} className="border-b border-line last:border-0">
-                      <td className="px-4 py-2.5">
-                        <span className="inline-flex items-center gap-1">
-                          {s.keys.map((k) => (
-                            <Kbd key={k}>{k}</Kbd>
-                          ))}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-ink-2">{s.action}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
+                ))}
+              </tbody>
+            </table>
           </section>
         )}
       </div>

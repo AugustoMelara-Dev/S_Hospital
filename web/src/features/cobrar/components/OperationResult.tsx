@@ -1,24 +1,43 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { CircleAlert, CircleCheck, FileText, Plus, RotateCcw } from 'lucide-react';
+import { FileText, Plus, RotateCcw } from 'lucide-react';
+import { cn } from '@/lib/cn';
+import { formatCents } from '@/lib/money';
 import { PAYMENT_METHOD_LABEL, type Invoice, type Payment, type ReceiptSummary } from '@/api/types';
-import { Button, Card, Kbd, Money } from '@/ui';
+import { Button, StatusGlyph } from '@/ui';
 import { ReceiptButtons } from '@/features/recibos/components/ReceiptButtons';
 
-function Item({ label, children }: { label: string; children: ReactNode }) {
+/** One cell of the ledger grid (label over value, ruled by juntas). */
+function Cell({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-[12px] text-ink-3">{label}</dt>
-      <dd className="text-[14px] text-ink">{children}</dd>
+    <div className={cn('flex min-w-0 flex-col gap-1 bg-surface px-4 py-3', className)}>
+      <dt className="text-[12px] leading-4 font-semibold text-ink-2">{label}</dt>
+      <dd className="min-w-0 text-[15px] leading-5 break-words text-ink">{children}</dd>
     </div>
   );
 }
 
+const ledger = 'grid overflow-hidden border-y border-junta bg-junta [gap:1px]';
+
 const newOpButton = (onNew: () => void) => (
-  <Button leftIcon={<Plus />} onClick={onNew} rightIcon={<Kbd className="ml-1">F2</Kbd>}>
+  <Button size="lg" leftIcon={<Plus />} onClick={onNew} kbd="F2" aria-keyshortcuts="F2">
     Nueva operación
   </Button>
 );
+
+/** Document masthead: state line, the document number as the headline, patient. */
+function Masthead({ glyph, tone, heading, invoice, note }: { glyph: 'filled' | 'hollow'; tone: string; heading: string; invoice: Invoice; note: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-2 px-6 pt-5 pb-5">
+      <h2 className="flex items-center gap-2 text-[15px] leading-5 font-bold text-ink">
+        <StatusGlyph shape={glyph} className={cn('size-3', tone)} />
+        {heading}
+      </h2>
+      <p className="num text-[40px] leading-[44px] font-bold tracking-[-0.01em] text-ink">{invoice.number}</p>
+      <p className="text-[13.5px] leading-5 text-ink-2">{note}</p>
+    </div>
+  );
+}
 
 /** "Operación cobrada": documento, paciente, total, método, cambio + receipt actions. */
 export function ChargedPanel({
@@ -36,53 +55,60 @@ export function ChargedPanel({
   onNew: () => void;
 }) {
   const noCharge = invoice.total_cents === 0;
+  const cash = payment?.method === 'cash';
+  const extras = (cash && payment.received_cents != null ? 1 : 0) + (payment?.reference ? 1 : 0);
   return (
-    <Card className="anim-pop-in mx-auto w-full max-w-[640px]">
-      <div className="flex flex-col gap-5" role="status" aria-live="polite">
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-full bg-ok-soft text-ok [&_svg]:size-5">
-            <CircleCheck aria-hidden="true" />
-          </span>
-          <div className="flex flex-col">
-            <h2 className="text-[18px] font-semibold text-ink">{noCharge ? 'Operación emitida sin cobro' : 'Operación cobrada'}</h2>
-            <p className="text-[13px] text-ink-2">
-              {receipt ? (
+    <section className="anim-pop-in mx-auto w-full max-w-[880px] overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface">
+      <div role="status" aria-live="polite" className="flex flex-col">
+        <div className="grid md:grid-cols-[minmax(0,1fr)_300px]">
+          <Masthead
+            glyph="filled"
+            tone="text-ok"
+            heading={noCharge ? 'Operación emitida sin cobro' : 'Operación cobrada'}
+            invoice={invoice}
+            note={
+              receipt ? (
                 <>
-                  Recibo <span className="num">{receipt.number_full}</span> listo para imprimir.
+                  Recibo <span className="num font-semibold text-ink">{receipt.number_full}</span> listo para imprimir.
                 </>
               ) : (
                 receiptError || 'El recibo institucional aún no está disponible.'
-              )}
-            </p>
-          </div>
+              )
+            }
+          />
+          {cash && (
+            <div className="flex flex-col justify-end gap-1 border-t border-junta bg-surface-2 px-6 py-5 text-right text-ink md:border-t-0 md:border-l">
+              <span className="text-[13px] font-bold tracking-[0.06em] text-ink-2 uppercase">Cambio</span>
+              <span className="num text-[52px] leading-[56px] font-bold tracking-[-0.02em]">{formatCents(payment.change_cents ?? 0)}</span>
+            </div>
+          )}
         </div>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-[var(--radius-sm)] border border-line bg-surface-2/50 p-4 sm:grid-cols-3">
-          <Item label="Documento">
-            <span className="num font-medium">{invoice.number}</span>
-          </Item>
-          <Item label="Paciente">{invoice.patient_name}</Item>
-          <Item label="Total">
-            <Money cents={invoice.total_cents} className="font-semibold" />
-          </Item>
-          {payment && <Item label="Método">{PAYMENT_METHOD_LABEL[payment.method]}</Item>}
-          {payment?.method === 'cash' && (
-            <Item label="Cambio">
-              <Money cents={payment.change_cents ?? 0} className="text-[18px] font-semibold" />
-            </Item>
+        <dl className={cn(ledger, 'grid-cols-2 sm:grid-cols-4')}>
+          <Cell label="Paciente" className={extras > 0 ? undefined : 'col-span-2'}>
+            {invoice.patient_name}
+          </Cell>
+          <Cell label="Total">
+            <span className="num font-semibold">{formatCents(invoice.total_cents)}</span>
+          </Cell>
+          <Cell label="Método">{payment ? PAYMENT_METHOD_LABEL[payment.method] : 'Sin cobro'}</Cell>
+          {cash && payment.received_cents != null && (
+            <Cell label="Recibido">
+              <span className="num">{formatCents(payment.received_cents)}</span>
+            </Cell>
           )}
           {payment?.reference && (
-            <Item label="Referencia">
+            <Cell label="Referencia">
               <span className="num">{payment.reference}</span>
-            </Item>
+            </Cell>
           )}
         </dl>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 px-6 py-4">
           {receipt ? (
-            <ReceiptButtons receipt={receipt} primary />
+            <ReceiptButtons receipt={receipt} primary size="lg" />
           ) : (
             <Link
               to={`/recibos/${invoice.id}`}
-              className="pressable inline-flex h-9 items-center gap-2 rounded-[var(--radius-sm)] border border-line bg-surface px-3.5 text-sm font-medium text-ink hover:bg-surface-2 [&_svg]:size-4"
+              className="pressable inline-flex h-10 items-center gap-2 rounded-[var(--radius-md)] border border-junta bg-surface px-4 text-sm font-semibold text-ink hover:bg-surface-2 [&_svg]:size-4"
             >
               <FileText aria-hidden="true" />
               Ver documento
@@ -92,7 +118,7 @@ export function ChargedPanel({
           {newOpButton(onNew)}
         </div>
       </div>
-    </Card>
+    </section>
   );
 }
 
@@ -109,43 +135,38 @@ export function PendingPanel({
   onNew: () => void;
 }) {
   return (
-    <Card className="anim-pop-in mx-auto w-full max-w-[640px]">
-      <div className="flex flex-col gap-5">
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-full bg-warn-soft text-warn [&_svg]:size-5">
-            <CircleAlert aria-hidden="true" />
-          </span>
-          <div className="flex flex-col">
-            <h2 className="text-[18px] font-semibold text-ink">Emitido pendiente de cobro</h2>
-            <p className="text-[13px] text-ink-2">La factura se emitió, pero el cobro no se registró.</p>
-          </div>
-        </div>
-        <p role="alert" className="rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 py-2 text-[13px] text-danger">
-          {error}
-        </p>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-[var(--radius-sm)] border border-line bg-surface-2/50 p-4 sm:grid-cols-3">
-          <Item label="Documento">
-            <span className="num font-medium">{invoice.number}</span>
-          </Item>
-          <Item label="Paciente">{invoice.patient_name}</Item>
-          <Item label="Saldo">
-            <Money cents={invoice.balance_cents} className="font-semibold" />
-          </Item>
-        </dl>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="primary" leftIcon={<RotateCcw />} onClick={onRetry}>
-            Cobrar pendiente
-          </Button>
-          <Link
-            to={`/recibos/${invoice.id}`}
-            className="pressable inline-flex h-9 items-center rounded-[var(--radius-sm)] px-3.5 text-sm font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
-          >
-            Ver en Recibos
-          </Link>
-          <span className="flex-1" />
-          {newOpButton(onNew)}
-        </div>
+    <section className="anim-pop-in mx-auto w-full max-w-[880px] overflow-hidden rounded-[var(--radius-md)] border border-junta bg-surface">
+      <Masthead
+        glyph="hollow"
+        tone="text-warn"
+        heading="Emitido pendiente de cobro"
+        invoice={invoice}
+        note="La factura se emitió, pero el cobro no se registró."
+      />
+      <p role="alert" className="mx-6 mb-4 rounded-[var(--radius-md)] border border-danger bg-danger-soft px-3 py-2 text-[13px] text-danger">
+        {error}
+      </p>
+      <dl className={cn(ledger, 'grid-cols-2 sm:grid-cols-3')}>
+        <Cell label="Paciente" className="col-span-2">
+          {invoice.patient_name}
+        </Cell>
+        <Cell label="Saldo">
+          <span className="num text-[20px] font-bold">{formatCents(invoice.balance_cents)}</span>
+        </Cell>
+      </dl>
+      <div className="flex flex-wrap items-center gap-2 px-6 py-4">
+        <Button variant="primary" size="lg" leftIcon={<RotateCcw />} onClick={onRetry}>
+          Cobrar pendiente
+        </Button>
+        <Link
+          to={`/recibos/${invoice.id}`}
+          className="pressable inline-flex h-10 items-center rounded-[var(--radius-md)] px-4 text-sm font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink"
+        >
+          Ver en Recibos
+        </Link>
+        <span className="flex-1" />
+        {newOpButton(onNew)}
       </div>
-    </Card>
+    </section>
   );
 }

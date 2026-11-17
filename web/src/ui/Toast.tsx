@@ -57,10 +57,10 @@ export function useToast() {
 }
 
 const ICONS: Record<ToastTone, ReactNode> = {
-  success: <CircleCheck className="text-ok" />,
-  error: <CircleAlert className="text-danger" />,
-  info: <Info className="text-info" />,
-  warning: <TriangleAlert className="text-warn" />,
+  success: <CircleCheck className="text-ok" strokeWidth={1.8} />,
+  error: <CircleAlert className="text-danger" strokeWidth={1.8} />,
+  info: <Info className="text-slate" strokeWidth={1.8} />,
+  warning: <TriangleAlert className="text-warn" strokeWidth={1.8} />,
 };
 
 function ToastCard({ item }: { item: ToastItem }) {
@@ -98,20 +98,20 @@ function ToastCard({ item }: { item: ToastItem }) {
       onFocus={pause}
       onBlur={start}
       className={cn(
-        'anim-toast-in pointer-events-auto flex w-[360px] max-w-[calc(100vw-32px)] items-start gap-3 rounded-[var(--radius-md)]',
-        'border border-line bg-surface px-3.5 py-3 shadow-3',
+        'anim-toast-in pointer-events-auto flex w-[380px] max-w-[calc(100vw-32px)] items-start gap-3 rounded-[var(--radius-md)]',
+        'border border-junta bg-surface px-4 py-3 shadow-pop',
       )}
     >
       <span className="mt-[1px] shrink-0 [&_svg]:size-[18px]" aria-hidden="true">
         {ICONS[item.tone]}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <p className="text-[13.5px] font-medium text-ink">{item.title}</p>
-        {item.description && <p className="text-[12.5px] text-ink-2">{item.description}</p>}
+        <p className="text-[14px] leading-5 font-semibold text-ink">{item.title}</p>
+        {item.description && <p className="text-[13px] leading-[18px] text-ink-2">{item.description}</p>}
         {item.action && (
           <button
             type="button"
-            className="mt-1 self-start text-[12.5px] font-medium text-brand underline-offset-2 hover:underline"
+            className="mt-1 self-start text-[13px] font-semibold text-slate underline-offset-2 hover:underline"
             onClick={() => {
               item.action?.onClick();
               dismissToast(item.id);
@@ -125,7 +125,7 @@ function ToastCard({ item }: { item: ToastItem }) {
         type="button"
         aria-label="Cerrar aviso"
         onClick={() => dismissToast(item.id)}
-        className="-mt-0.5 -mr-1 flex size-6 shrink-0 items-center justify-center rounded-[4px] text-ink-3 hover:bg-surface-2 hover:text-ink"
+        className="-mt-0.5 -mr-1.5 flex size-7 shrink-0 items-center justify-center rounded-[3px] text-ink-2 hover:bg-surface-2 hover:text-ink"
       >
         <X className="size-3.5" aria-hidden="true" />
       </button>

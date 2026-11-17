@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Cobrar · S_Hospital</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--violet:#4E3563;--violet-2:#5E4574;--violet-ink:#D9CFE4;--paper:#EFEEE9;--card:#F8F7F3;--ink:#1E1B22;--ink-2:#55505C;--ink-3:#6C6672;--green:#3F6B47;--green-d:#335A3A;--ochre:#B9822E;--red:#B3261E;--line:#D6D0C4;--line-2:#E4DFD5;--hi:#E7E1EE}
+*{box-sizing:border-box}
+html,body{width:1440px;height:900px;overflow:hidden;margin:0}
+body{background:var(--paper);color:var(--ink);font:400 14px/1.4 "Hanken Grotesk",sans-serif;font-variant-numeric:tabular-nums}
+::selection{background:var(--violet);color:#fff}
+.serial{font-family:Oswald,sans-serif;color:var(--red);letter-spacing:.06em;font-variant-numeric:tabular-nums}
+svg{display:block}
+/* header */
+header{height:56px;background:var(--violet);color:#fff;display:flex;align-items:center;padding:0 24px;gap:28px}
+.brand{font-weight:700;font-size:15px;white-space:nowrap}.brand span{font-weight:400;color:var(--violet-ink)}
+nav{display:flex;height:100%;gap:2px}
+nav a{display:flex;align-items:center;gap:6px;padding:0 14px;color:var(--violet-ink);text-decoration:none;font-weight:500;border-bottom:3px solid transparent;border-top:3px solid transparent}
+nav a.on{color:#fff;border-bottom-color:#E9C98F;font-weight:600}
+.hr{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:13px}
+.shift{display:flex;align-items:center;gap:8px;color:var(--violet-ink)}.shift b{color:#fff;font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;background:#8FC79A}
+.search{display:flex;align-items:center;gap:8px;height:32px;width:200px;padding:0 8px 0 10px;border-radius:6px;background:var(--violet-2);color:var(--violet-ink)}
+kbd{font:500 11px "Hanken Grotesk";padding:2px 6px;border-radius:4px;border:1px solid currentColor;opacity:.85;margin-left:auto}
+.user{display:flex;align-items:center;gap:8px;color:#fff;font-weight:500}
+.av{width:30px;height:30px;border-radius:50%;background:#E9C98F;color:var(--violet);display:grid;place-items:center;font-weight:700;font-size:12px}
+/* main */
+main{display:grid;grid-template-columns:1fr 420px;gap:24px;padding:24px 32px;height:844px}
+h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em}
+.top{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}.top p{margin:0;color:var(--ink-3)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+label{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+.field{height:42px;border:1px solid var(--line);border-radius:6px;background:var(--card);display:flex;align-items:center;gap:10px;padding:0 12px;font-size:15px}
+.field.focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(78,53,99,.18)}
+.caret{width:1.5px;height:18px;background:var(--violet);margin-left:-8px}
+.pid{margin-left:auto;font-size:12px;color:var(--ink-3)}
+.wrap{position:relative}
+.dd{position:absolute;top:70px;left:0;right:0;z-index:2;background:#FCFBF8;border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(30,27,34,.14),0 2px 4px rgba(30,27,34,.06);padding:4px}
+.opt{display:grid;grid-template-columns:1fr 120px 90px;align-items:center;height:38px;padding:0 10px;border-radius:5px}
+.opt.hl{background:var(--hi)}.opt mark{background:none;font-weight:700;color:var(--ink)}
+.opt .a{color:var(--ink-3);font-size:13px}.opt .p{text-align:right}
+.ddf{display:flex;gap:16px;padding:8px 10px 4px;border-top:1px solid var(--line-2);margin-top:4px;font-size:12px;color:var(--ink-3)}.ddf kbd{margin:0 4px 0 0;opacity:1}
+/* table */
+.acct{background:var(--card);border:1px solid var(--line);border-radius:8px}
+.acct h2{font-size:15px;font-weight:700;margin:0;padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}.acct h2 span{font-weight:500;color:var(--ink-3)}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;font-weight:600;color:var(--ink-3);text-align:left;padding:10px 16px;border-bottom:1px solid var(--line)}
+td{padding:12px 16px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.n{text-align:right;white-space:nowrap}
+.sub{display:block;font-size:12px;color:var(--ink-3);margin-top:2px}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;margin-left:8px;vertical-align:1px}
+.ex{background:#E5ECE4;color:var(--green-d)}.rx{background:#F3E6CF;color:#7A5418}
+.adj{display:block;font-size:12px;color:var(--ochre);font-weight:600;margin-top:2px}
+.chk{display:flex;align-items:center;gap:10px;padding:14px 16px;font-weight:500}
+.box{width:18px;height:18px;border-radius:4px;background:var(--violet);display:grid;place-items:center}
+/* total panel */
+aside{background:var(--card);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;overflow:hidden}
+.lines{padding:20px 24px 8px}
+.l{display:flex;justify-content:space-between;padding:7px 0;color:var(--ink-2)}.l b{font-weight:500;color:var(--ink)}
+.l.o b,.l.o{color:#8A5F1E}
+.tot{position:relative;margin:8px 0 0;padding:28px 24px 26px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden}
+.tot::before{content:"";position:absolute;right:-70px;top:50%;width:300px;height:300px;transform:translateY(-50%);border-radius:50%;
+ background:repeating-radial-gradient(circle at 50% 50%,transparent 0 17px,rgba(78,53,99,.13) 17px 18px),repeating-radial-gradient(circle at 54% 47%,transparent 0 17px,rgba(63,107,71,.12) 17px 18px);
+ -webkit-mask:radial-gradient(circle,#000 0 140px,transparent 146px);mask:radial-gradient(circle,#000 0 140px,transparent 146px)}
+.tot>*{position:relative}
+.tl{font-size:13px;font-weight:700;color:var(--ink-2)}
+.big{font-size:64px;line-height:1;font-weight:500;margin-top:8px}.big small{font-size:32px;margin-right:6px;letter-spacing:.04em}
+.ready{display:flex;align-items:center;gap:8px;margin-top:14px;color:var(--green-d);font-weight:600;font-size:13px}
+.acts{padding:20px 24px;display:grid;gap:10px}
+.btn{height:52px;border-radius:7px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:16px}
+.pri{background:var(--green);color:#fff;box-shadow:0 2px 6px rgba(51,90,58,.28)}.pri kbd{margin-left:6px;font-size:12px;border-color:rgba(255,255,255,.6)}
+.sec{height:44px;background:transparent;border:1px solid var(--line);color:var(--ink);font-weight:600;font-size:14px}
+.next{margin-top:auto;padding:16px 24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--ink-3)}
+.next .serial{font-size:17px}
+</style></head><body>
+<header>
+ <div class="brand">S_Hospital <span>· Hospital General San Isidro</span></div>
+ <nav><a>Resumen</a><a class="on">Cobrar</a><a>Recibos</a><a>Caja</a><a>Reportes</a><a>Administración <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></a></nav>
+ <div class="hr">
+  <div class="shift"><i class="dot"></i>Caja principal · <b>abierta 07:02</b></div>
+  <div class="search"><svg width="14" height="14" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6"/></svg>Buscar<kbd>Ctrl K</kbd></div>
+  <div class="user"><span class="av">MF</span>María Fernanda López</div>
+ </div>
+</header>
+<main>
+<section>
+ <div class="top"><h1>Cobrar</h1><p>Nueva factura · 17 nov 2026</p></div>
+ <div class="row">
+  <div><label>Paciente</label><div class="field">José Ángel Martínez Reyes</div></div>
+  <div class="wrap"><label>Agregar concepto</label>
+   <div class="field focus"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5" fill="none" stroke="#55505C" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="#55505C" stroke-width="1.6"/></svg>hemo<i class="caret"></i></div>
+   <div class="dd">
+    <div class="opt hl"><span><mark>Hemo</mark>grama completo</span><span class="a">Laboratorio</span><span class="p">L 120.00</span></div>
+    <div class="opt"><span><mark>Hemo</mark>globina glicosilada</span><span class="a">Laboratorio</span><span class="p">L 350.00</span></div>
+    <div class="opt"><span><mark>Hemo</mark>cultivo</span><span class="a">Laboratorio</span><span class="p">L 450.00</span></div>
+    <div class="opt"><span><mark>Hemo</mark>globina y hematocrito</span><span class="a">Laboratorio</span><span class="p">L 60.00</span></div>
+    <div class="ddf"><span><kbd>↑↓</kbd>moverse</span><span><kbd>Enter</kbd>agregar</span><span><kbd>Esc</kbd>cerrar</span></div>
+   </div>
+  </div>
+ </div>
+ <div class="acct">
+  <h2>Cuenta <span>· 4 conceptos</span></h2>
+  <table>
+   <tr><th>Concepto</th><th>Área</th><th class="n">Cant.</th><th class="n">Precio</th><th class="n">Importe</th></tr>
+   <tr><td>Consulta general<span class="tag ex">Exento</span></td><td>Consulta externa</td><td class="n">1</td><td class="n">150.00</td><td class="n">150.00</td></tr>
+   <tr><td>Hemograma completo</td><td>Laboratorio</td><td class="n">1</td><td class="n">120.00</td><td class="n">120.00</td></tr>
+   <tr><td>Rayos X tórax PA</td><td>Rayos X</td><td class="n">1</td><td class="n">380.00</td><td class="n">380.00</td></tr>
+   <tr><td>Eritropoyetina 4000 UI<span class="tag rx">Sin cobro por receta</span></td><td>Farmacia</td><td class="n">2</td><td class="n">25.00</td><td class="n">L 0.00<span class="adj">ajuste −L 50.00</span></td></tr>
+  </table>
+  <div class="chk"><span class="box"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2.5 6.2l2.4 2.3 4.6-5" fill="none" stroke="#fff" stroke-width="1.8"/></svg></span>Paciente con receta de diálisis</div>
+ </div>
+</section>
+<aside>
+ <div class="lines">
+  <div class="l">Subtotal<b>L 650.00</b></div>
+  <div class="l">Exento<b>L 150.00</b></div>
+  <div class="l">ISV 15 %<b>L 75.00</b></div>
+  <div class="l o">Ajuste por receta<b>−L 50.00</b></div>
+ </div>
+ <div class="tot">
+  <div class="tl">Total a cobrar</div>
+  <div class="big serial"><small>L</small>725.00</div>
+  <div class="ready"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.2 7.2l1.9 1.8 3.7-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Listo para cobrar</div>
+ </div>
+ <div class="acts">
+  <div class="btn pri">Cobrar · L 725.00<kbd>F4</kbd></div>
+  <div class="btn sec">Vista previa</div>
+ </div>
+ <div class="next">Próxima factura<span class="serial">№ 000-001-01-00000128</span></div>
+</aside>
+</main>
+</body></html>

@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Clock, User, Wallet } from 'lucide-react';
 import { formatDateTime, formatTime } from '@/lib/dates';
 import type { CashSession, Reconciliation } from '@/api/types';
-import { Badge, KpiTile, Tabs } from '@/ui';
+import { Badge, KpiGrid, KpiTile, Tabs, shiftStepsFromSession } from '@/ui';
 import { ArqueoTab } from './ArqueoTab';
 import { CierreTab } from './CierreTab';
-import { EMPTY_ARQUEO, type ArqueoState } from './arqueo';
+import { arqueoReady, arqueoTotal, DIFFERENCE_LABEL, differenceCents, differenceKind } from './arqueo';
+import { clearArqueoDraft, useArqueoDraft } from './arqueoDraft';
 import { useSessionDetail } from './queries';
 import { MovimientosTab, ResumenTab } from './SessionTabs';
+import { Dash, ShiftBand } from './ShiftBand';
 import { operatorName, registerName } from './types';
+import { formatCents } from '@/lib/money';
 
 type TabValue = 'resumen' | 'movimientos' | 'arqueo' | 'cierre';
 
@@ -35,50 +37,72 @@ function fallbackReconciliation(s: CashSession): Reconciliation {
   };
 }
 
-/** Open session: header, stat band and the Resumen / Movimientos / Arqueo / Cierre tabs. */
+const DIFF_TONE = { balanced: 'ok', overage: 'warn', shortage: 'danger' } as const;
+
+/** Open session: shift band, figures and the Resumen / Movimientos / Arqueo / Cierre tabs. */
 export function SessionView({ session, canClose, onClosed, movementsPreloaded }: SessionViewProps) {
   const [tab, setTab] = useState<TabValue>('resumen');
-  const [arqueo, setArqueo] = useState<ArqueoState>(EMPTY_ARQUEO);
+  // The count lives in a shared per-session store so the top-bar chip and Resumen see it too.
+  const [arqueo, setArqueo] = useArqueoDraft(session.id);
   const rec = session.reconciliation ?? fallbackReconciliation(session);
   const detail = useSessionDetail(!movementsPreloaded && tab === 'movimientos' ? session.id : null, { poll: true });
   const movements = (movementsPreloaded ? session.movements : detail.data?.movements) ?? undefined;
 
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13.5px] text-ink-2">
-        <span className="flex items-center gap-2 font-semibold text-ink">
-          <Wallet className="size-4 text-ink-3" aria-hidden="true" />
-          {registerName(session)}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <User className="size-4 text-ink-3" aria-hidden="true" />
-          {operatorName(session)}
-        </span>
-        <span className="flex items-center gap-1.5" title={formatDateTime(session.opened_at)}>
-          <Clock className="size-4 text-ink-3" aria-hidden="true" />
-          Abierta desde <span className="num text-ink">{formatTime(session.opened_at)}</span>
-        </span>
-        <Badge tone="ok" dot>
-          Turno abierto
-        </Badge>
-      </div>
+  const counted = arqueoTotal(arqueo);
+  const ready = arqueoReady(arqueo);
+  const kind = differenceKind(differenceCents(counted, rec.expected_cash_cents));
+  const steps = shiftStepsFromSession({ ...session, reconciliation: rec }, ready);
+  const blockers = rec.blockers.length;
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiTile label="Apertura" cents={rec.opening_cents} />
+  return (
+    <div className="flex flex-col gap-4">
+      <ShiftBand
+        steps={steps}
+        title={registerName(session)}
+        subtitle={
+          <>
+            <span className="block">{operatorName(session)}</span>
+            <span className="block" title={formatDateTime(session.opened_at)}>
+              Abierta desde <span className="num text-ink">{formatTime(session.opened_at)}</span>
+            </span>
+          </>
+        }
+        stages={{
+          apertura: { value: formatTime(session.opened_at), note: 'Completado' },
+          cobros: {
+            value: rec.payments_count,
+            note: rec.payments_count > 0 ? (rec.payments_count === 1 ? 'cobro registrado' : 'cobros registrados') : 'Sin cobros aún',
+          },
+          arqueo: ready
+            ? { value: formatCents(counted), note: DIFFERENCE_LABEL[kind], tone: DIFF_TONE[kind] }
+            : { value: <Dash />, note: 'Sin conteo' },
+          cierre:
+            blockers > 0
+              ? { value: blockers, note: blockers === 1 ? 'bloqueo pendiente' : 'bloqueos pendientes', tone: 'warn' }
+              : { value: <Dash />, note: ready ? 'Listo para cerrar' : 'Pendiente' },
+        }}
+        aside={
+          <Badge tone="ok" shape="filled">
+            Turno abierto
+          </Badge>
+        }
+      />
+
+      <KpiGrid columns={4} aria-label="Cifras del turno">
+        <KpiTile label="Apertura" cents={rec.opening_cents} hint="Fondo inicial de la gaveta" />
         <KpiTile
           label="Cobros registrados"
           cents={rec.payments_total_cents}
-          tone="brand"
           hint={`${rec.payments_count} ${rec.payments_count === 1 ? 'cobro' : 'cobros'}`}
         />
-        <KpiTile label="Efectivo esperado" cents={rec.expected_cash_cents} tone="ok" hint="Apertura + efectivo cobrado" />
+        <KpiTile label="Efectivo esperado" cents={rec.expected_cash_cents} tone="info" hint="Apertura + efectivo cobrado" />
         <KpiTile
           label="Saldo pendiente"
           cents={rec.pending_cents}
           tone={rec.pending_count > 0 ? 'warn' : 'neutral'}
           hint={rec.pending_count > 0 ? `${rec.pending_count} sin cobrar` : 'Sin pendientes'}
         />
-      </div>
+      </KpiGrid>
 
       <Tabs<TabValue>
         label="Secciones de la caja"
@@ -113,7 +137,10 @@ export function SessionView({ session, canClose, onClosed, movementsPreloaded }:
                 reconciliation={rec}
                 arqueo={arqueo}
                 onGoToArqueo={() => setTab('arqueo')}
-                onClosed={onClosed}
+                onClosed={(closed) => {
+                  clearArqueoDraft(session.id);
+                  onClosed(closed);
+                }}
                 canClose={canClose}
               />
             ),

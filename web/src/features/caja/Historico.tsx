@@ -6,7 +6,7 @@ import { formatDateTime } from '@/lib/dates';
 import type { CashSession, Paginated, User } from '@/api/types';
 import { useAuth, usePermissions } from '@/auth/hooks';
 import { Badge, Card, DataTable, Dialog, Field, IconButton, Input, Money, Select, Skeleton, type Column } from '@/ui';
-import { DIFFERENCE_LABEL, DIFFERENCE_TONE, differenceKind } from './arqueo';
+import { DifferenceValue } from './ArqueoTab';
 import { CierreResumen, printSummary } from './CierreResumen';
 import { invalidateCash, useCashRegisters, useSessionDetail, useSessionList } from './queries';
 import { MovimientosTab } from './SessionTabs';
@@ -47,11 +47,13 @@ export function Historico() {
       header: 'Estado',
       cell: (s) =>
         s.status === 'open' ? (
-          <Badge tone="ok" dot>
+          <Badge tone="ok" shape="filled">
             Abierta
           </Badge>
         ) : (
-          <Badge tone="neutral">Cerrada</Badge>
+          <Badge tone="neutral" shape="struck">
+            Cerrada
+          </Badge>
         ),
     },
     { key: 'opening', header: 'Apertura', numeric: true, cell: (s) => <Money cents={s.opening_cents} /> },
@@ -77,20 +79,14 @@ export function Historico() {
       numeric: true,
       cell: (s) => {
         if (s.difference_cents === null || s.difference_cents === undefined) return <span className="text-ink-3">—</span>;
-        const k = differenceKind(s.difference_cents);
-        return (
-          <span className="inline-flex items-center gap-2">
-            <Badge tone={DIFFERENCE_TONE[k]}>{DIFFERENCE_LABEL[k]}</Badge>
-            <Money cents={s.difference_cents} signed />
-          </span>
-        );
+        return <DifferenceValue cents={s.difference_cents} className="justify-end" />;
       },
     },
   ];
 
   return (
     <Card title="Histórico de caja" description="Turnos anteriores y abiertos que puede consultar." flush>
-      <div className="flex flex-wrap items-end gap-3 border-b border-line px-4 py-3">
+      <div className="flex flex-wrap items-end gap-3 border-b border-junta bg-surface-2 px-4 py-2.5">
         <Field label="Desde" className="w-[160px]" error={rangeError}>
           <Input type="date" value={params.date_from ?? ''} onChange={(e) => set({ date_from: e.target.value || undefined })} />
         </Field>
@@ -129,6 +125,7 @@ export function Historico() {
         rows={rangeError ? [] : list.data?.items}
         rowKey={(s) => s.id}
         loading={list.isFetching}
+        density="compact"
         onRowClick={(s) => setDetailId(s.id)}
         rowActions={(s) => (
           <>

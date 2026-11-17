@@ -5,7 +5,7 @@ import { ServicesTab } from './ServicesTab';
 export default function CatalogoPage() {
   return (
     <>
-      <PageHeader eyebrow="Administración" title="Catálogo y precios" description="Productos, servicios, categorías y áreas." />
+      <PageHeader title="Catálogo y precios" description="Productos, servicios, categorías y áreas." className="pb-3" />
       <Tabs
         label="Secciones del catálogo"
         items={[

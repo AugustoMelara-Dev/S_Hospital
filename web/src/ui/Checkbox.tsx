@@ -21,24 +21,24 @@ export function Checkbox({ label, description, className, id, disabled, ...rest 
           disabled={disabled}
           aria-describedby={descId}
           className={cn(
-            'peer size-[18px] appearance-none rounded-[5px] border border-line-strong bg-surface',
+            'peer size-[18px] appearance-none rounded-[3px] border border-junta-strong bg-field',
             'transition-[background-color,border-color] duration-[120ms] ease-out',
-            'checked:border-brand checked:bg-brand enabled:hover:border-brand disabled:cursor-not-allowed',
+            'checked:border-slate checked:bg-slate enabled:hover:border-slate disabled:cursor-not-allowed',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]',
           )}
         />
         <Check
           aria-hidden="true"
-          strokeWidth={3}
-          className="pointer-events-none absolute inset-0 m-auto size-3 scale-50 text-brand-ink opacity-0 transition-[opacity,scale] duration-[120ms] ease-out peer-checked:scale-100 peer-checked:opacity-100"
+          strokeWidth={2.6}
+          className="pointer-events-none absolute inset-0 m-auto size-3 scale-50 text-slate-ink opacity-0 transition-[opacity,scale] duration-[120ms] ease-out peer-checked:scale-100 peer-checked:opacity-100"
         />
       </span>
       <span className="flex flex-col gap-0.5">
-        <label htmlFor={inputId} className="text-sm leading-[1.35] text-ink select-none">
+        <label htmlFor={inputId} className="text-sm leading-5 font-medium text-ink select-none">
           {label}
         </label>
         {description && (
-          <span id={descId} className="text-[12.5px] text-ink-3">
+          <span id={descId} className="text-[12.5px] leading-4 text-ink-3">
             {description}
           </span>
         )}

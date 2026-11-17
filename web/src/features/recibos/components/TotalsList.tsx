@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import type { TaxBreakdownEntry } from '@/api/types';
-import { Money } from '@/ui';
+import { Amount } from './Amount';
 
 export type TotalsLike = {
   subtotal_cents: number;
@@ -9,45 +9,75 @@ export type TotalsLike = {
   tax_cents: number;
   total_cents: number;
   tax_breakdown: TaxBreakdownEntry[];
+  /** Receta ajuste already taken out of subtotal_cents by the server. */
+  rule_adjustment_cents?: number;
 };
 
-function Row({ label, children, strong }: { label: ReactNode; children: ReactNode; strong?: boolean }) {
+/** One ledger line: label left, amount hard right, ruled by the junta. */
+function Row({ label, children, strong, className }: { label: ReactNode; children: ReactNode; strong?: boolean; className?: string }) {
   return (
-    <div className={cn('flex items-baseline justify-between gap-4', strong ? 'text-ink' : 'text-ink-2')}>
-      <dt className={cn(strong ? 'text-[14px] font-semibold' : 'text-[13px]')}>{label}</dt>
-      <dd className={cn('num text-right', strong ? 'text-[22px] font-semibold tracking-[-0.02em]' : 'text-[13.5px] text-ink')}>
+    <div
+      className={cn(
+        'flex items-baseline justify-between gap-4 border-b border-junta last:border-b-0',
+        strong ? 'pt-3 pb-1 text-ink' : 'h-8 items-center text-ink-2',
+        className,
+      )}
+    >
+      <dt className={cn(strong ? 'text-[13px] font-bold tracking-[0.06em] uppercase' : 'text-[13.5px]')}>{label}</dt>
+      <dd className={cn('num text-right text-ink', strong ? 'text-[32px] leading-9 font-bold tracking-[-0.02em]' : 'text-[14px] font-medium')}>
         {children}
       </dd>
     </div>
   );
 }
 
-/** Subtotal, Exento, ISV por tasa y Total — values exactly as the server returned them. */
-export function TotalsList({ totals, extra, className }: { totals: TotalsLike | undefined; extra?: ReactNode; className?: string }) {
+/**
+ * Subtotal, Ajuste por receta, Exento, ISV por tasa y Total — server values. With a receta
+ * ajuste the Subtotal shows the gross (subtotal + ajuste) so the column adds up.
+ */
+export function TotalsList({
+  totals,
+  extra,
+  className,
+  showTotal = true,
+}: {
+  totals: TotalsLike | undefined;
+  extra?: ReactNode;
+  className?: string;
+  /** Hide the Total row when the surrounding view already shows it large. */
+  showTotal?: boolean;
+}) {
   const taxes = totals?.tax_breakdown.filter((t) => t.rate_bp > 0) ?? [];
+  const adjustment = totals?.rule_adjustment_cents ?? 0;
   return (
-    <dl className={cn('flex flex-col gap-1.5', className)}>
+    <dl className={cn('flex flex-col', className)}>
       <Row label="Subtotal">
-        <Money cents={totals?.subtotal_cents} />
+        <Amount cents={totals ? totals.subtotal_cents + adjustment : undefined} />
       </Row>
+      {adjustment > 0 && (
+        <Row label="Ajuste por receta">
+          <Amount cents={adjustment} negative />
+        </Row>
+      )}
       <Row label="Exento">
-        <Money cents={totals?.exempt_cents} />
+        <Amount cents={totals?.exempt_cents} />
       </Row>
       {taxes.length > 0 ? (
         taxes.map((t) => (
           <Row key={t.rate_bp} label={t.label}>
-            <Money cents={t.tax_cents ?? null} />
+            <Amount cents={t.tax_cents ?? null} />
           </Row>
         ))
       ) : (
         <Row label="ISV 15 %">
-          <Money cents={totals?.tax_cents} />
+          <Amount cents={totals?.tax_cents} />
         </Row>
       )}
-      <div className="my-1.5 h-px bg-line" />
-      <Row label="Total" strong>
-        <Money cents={totals?.total_cents} />
-      </Row>
+      {showTotal && (
+        <Row label="Total" strong>
+          <Amount cents={totals?.total_cents} />
+        </Row>
+      )}
       {extra}
     </dl>
   );

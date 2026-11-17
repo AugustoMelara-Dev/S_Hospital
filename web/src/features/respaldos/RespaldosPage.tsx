@@ -1,19 +1,20 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, CircleCheck, Database, Download, HardDrive, Plus, ServerCog, TriangleAlert } from 'lucide-react';
+import { Database, Download, HardDrive, Plus } from 'lucide-react';
 import { api, downloadFile, errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/dates';
 import type { Backup, BackupPage, BackupStatus, SystemStatus } from '@/api/types';
 import { usePermissions } from '@/auth/hooks';
-import { Badge, Button, Card, ConfirmDialog, DataTable, EmptyState, IconButton, KpiTile, PageHeader, Skeleton, toast, type Tone } from '@/ui';
+import { Button, ConfirmDialog, DataTable, EmptyState, IconButton, KpiGrid, KpiTile, PageHeader, Skeleton, toast, type GlyphShape, type Tone } from '@/ui';
+import { Count, Dash, LedgerFact, Sheet, SheetHead, StateMark } from '@/features/catalogo/ledger';
 
 export const backupsKey = ['backups'] as const;
 export const BACKUP_POLL_MS = 2000;
 
-const STATUS: Record<BackupStatus, { label: string; tone: Tone }> = {
-  pending: { label: 'En proceso', tone: 'info' },
-  success: { label: 'Correcto', tone: 'ok' },
-  failed: { label: 'Fallido', tone: 'danger' },
+const STATUS: Record<BackupStatus, { label: string; tone: Tone; shape: GlyphShape }> = {
+  pending: { label: 'En proceso', tone: 'info', shape: 'half' },
+  success: { label: 'Correcto', tone: 'ok', shape: 'filled' },
+  failed: { label: 'Fallido', tone: 'danger', shape: 'struck' },
 };
 
 const DIALECT_LABEL: Record<string, string> = { mysql: 'MariaDB/MySQL', mariadb: 'MariaDB', sqlite: 'SQLite' };
@@ -33,65 +34,77 @@ export function formatBytes(n: number | null | undefined): string {
 function SystemStatusCard() {
   const q = useQuery({ queryKey: ['system', 'status'], queryFn: () => api.get<SystemStatus>('/system/status'), refetchInterval: 60_000 });
   const s = q.data;
-  const row = (label: string, value: ReactNode) => (
-    <div className="flex items-center justify-between gap-3 border-b border-line py-2 text-[13px] last:border-0">
-      <span className="text-ink-2">{label}</span>
-      <span className="text-right text-ink">{value}</span>
-    </div>
-  );
   return (
-    <Card title="Estado del sistema" actions={<ServerCog className="size-4 text-ink-3" aria-hidden="true" />}>
-      {q.isLoading ? (
-        <Skeleton lines={4} />
-      ) : q.isError || !s ? (
-        <p className="text-[13px] text-danger">{errorMessage(q.error, 'No se pudo consultar el estado.')}</p>
-      ) : (
-        <div className="flex flex-col">
-          {row('Versión', <span className="num">{s.version}</span>)}
-          {row(
-            'Base de datos',
-            <Badge tone="ok" dot>
-              {[DIALECT_LABEL[s.database.dialect] ?? s.database.dialect, s.database.server_version].filter(Boolean).join(' ') || 'Conectada'}
-            </Badge>,
-          )}
-          {row(
-            'Migraciones',
-            s.database.up_to_date === false ? <Badge tone="warn">Pendientes</Badge> : <Badge tone="ok">Al día</Badge>,
-          )}
-          {row(
-            'Espacio en disco',
-            s.disk ? (
-              <span className="num">
-                {formatBytes(s.disk.free_bytes)} libres de {formatBytes(s.disk.total_bytes)}
-              </span>
-            ) : (
-              '—'
-            ),
-          )}
-          {row('Último respaldo', s.backups.last_success ? <span className="tabular">{formatDateTime(s.backups.last_success.created_at)}</span> : 'Ninguno')}
-        </div>
-      )}
-    </Card>
+    <Sheet>
+      <SheetHead title="Estado del sistema" />
+      <div className="px-4 py-1">
+        {q.isLoading ? (
+          <div className="py-3">
+            <Skeleton lines={4} />
+          </div>
+        ) : q.isError || !s ? (
+          <p className="py-3 text-[13px] text-danger">{errorMessage(q.error, 'No se pudo consultar el estado.')}</p>
+        ) : (
+          <div className="flex flex-col">
+            <LedgerFact label="Versión" labelWidth="sm">
+              <span className="num">{s.version}</span>
+            </LedgerFact>
+            <LedgerFact label="Base de datos" labelWidth="sm">
+              <StateMark shape="filled" tone="ok">
+                {[DIALECT_LABEL[s.database.dialect] ?? s.database.dialect, s.database.server_version].filter(Boolean).join(' ') || 'Conectada'}
+              </StateMark>
+            </LedgerFact>
+            <LedgerFact label="Migraciones" labelWidth="sm">
+              {s.database.up_to_date === false ? (
+                <StateMark shape="hollow" tone="warn">Pendientes</StateMark>
+              ) : (
+                <StateMark shape="filled" tone="ok">Al día</StateMark>
+              )}
+            </LedgerFact>
+            <LedgerFact label="Espacio en disco" labelWidth="sm">
+              {s.disk ? (
+                <span className="num">
+                  {formatBytes(s.disk.free_bytes)} libres de {formatBytes(s.disk.total_bytes)}
+                </span>
+              ) : (
+                <Dash />
+              )}
+            </LedgerFact>
+            <LedgerFact label="Último respaldo" labelWidth="sm">
+              {s.backups.last_success ? <span className="num">{formatDateTime(s.backups.last_success.created_at)}</span> : 'Ninguno'}
+            </LedgerFact>
+          </div>
+        )}
+      </div>
+    </Sheet>
   );
 }
 
 function RestoreCard() {
   return (
-    <Card title="Restaurar un respaldo">
-      <div className="flex flex-col gap-2 text-[13px] text-ink-2">
+    <Sheet>
+      <SheetHead title="Restaurar un respaldo" />
+      <div className="flex flex-col gap-2 px-4 py-3 text-[13px] leading-5 text-ink-2">
         <p>
           La restauración reemplaza toda la base de datos y la realiza <strong className="text-ink">soporte técnico</strong> en el servidor,
           con la aplicación detenida. No se hace desde el navegador.
         </p>
-        <ol className="ml-4 list-decimal space-y-1">
-          <li>Descargue el respaldo y verifique su SHA-256.</li>
-          <li>Detenga el servicio de la aplicación en el servidor.</li>
-          <li>Restaure el archivo con la herramienta de soporte usando la clave de cifrado de respaldos.</li>
-          <li>Inicie la aplicación y verifique el estado del sistema.</li>
+        <ol className="flex flex-col">
+          {[
+            'Descargue el respaldo y verifique su SHA-256.',
+            'Detenga el servicio de la aplicación en el servidor.',
+            'Restaure el archivo con la herramienta de soporte usando la clave de cifrado de respaldos.',
+            'Inicie la aplicación y verifique el estado del sistema.',
+          ].map((step, i) => (
+            <li key={i} className="grid grid-cols-[20px_minmax(0,1fr)] gap-2 border-b border-junta py-1.5 last:border-b-0">
+              <span className="num font-semibold text-ink">{i + 1}</span>
+              <span>{step}</span>
+            </li>
+          ))}
         </ol>
         <p className="text-[12px] text-ink-3">El procedimiento detallado está en la guía de soporte del servidor.</p>
       </div>
-    </Card>
+    </Sheet>
   );
 }
 
@@ -137,7 +150,6 @@ export default function RespaldosPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Administración"
         title="Respaldos"
         description="Copias cifradas de la base de datos. Se crea una automáticamente cada día."
         actions={
@@ -159,40 +171,42 @@ export default function RespaldosPage() {
       />
       <div className="flex flex-col gap-4">
         {canView && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <KpiGrid columns={3} aria-label="Resumen de respaldos">
             <KpiTile
               label="Último exitoso"
-              icon={<CircleCheck />}
               tone={lastOk ? 'ok' : 'warn'}
               loading={q.isLoading}
               value={lastOk ? formatDateTime(lastOk.created_at) : 'Ninguno'}
-              hint={lastOk ? formatBytes(lastOk.size_bytes) : 'Cree un respaldo manual.'}
+              hint={lastOk ? `${formatBytes(lastOk.size_bytes)}, copia cifrada` : 'Cree un respaldo manual.'}
             />
-            <KpiTile label="Respaldos registrados" icon={<Archive />} loading={q.isLoading} value={backups.length} />
-            <KpiTile label="Fallidos" icon={<TriangleAlert />} tone={failed > 0 ? 'danger' : 'neutral'} loading={q.isLoading} value={failed} />
-          </div>
+            <KpiTile label="Respaldos registrados" loading={q.isLoading} value={backups.length} />
+            <KpiTile label="Fallidos" tone={failed > 0 ? 'danger' : 'neutral'} loading={q.isLoading} value={failed} />
+          </KpiGrid>
         )}
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
           {canView ? (
-            <Card flush title="Historial">
+            <Sheet>
+              <SheetHead title="Historial" meta={<Count n={q.data?.length} one="respaldo" many="respaldos" />} />
               <DataTable
                 caption="Historial de respaldos"
                 rows={q.data}
                 loading={q.isLoading}
                 rowKey={(b) => b.id}
+                density="compact"
                 empty={<EmptyState compact icon={<Database />} title="Sin respaldos" description="Todavía no se ha creado ningún respaldo." />}
                 columns={[
-                  { key: 'date', header: 'Fecha', cell: (b) => <span className="tabular">{formatDateTime(b.created_at)}</span> },
-                  { key: 'kind', header: 'Tipo', cell: (b) => (b.kind === 'scheduled' ? 'Automático' : 'Manual') },
-                  { key: 'size', header: 'Tamaño', numeric: true, cell: (b) => formatBytes(b.size_bytes) },
+                  { key: 'date', header: 'Fecha', width: '170px', cell: (b) => <span className="num">{formatDateTime(b.created_at)}</span> },
+                  { key: 'kind', header: 'Tipo', width: '120px', cell: (b) => (b.kind === 'scheduled' ? 'Automático' : 'Manual') },
+                  { key: 'size', header: 'Tamaño', numeric: true, width: '110px', cell: (b) => (b.size_bytes == null ? <Dash /> : formatBytes(b.size_bytes)) },
                   {
                     key: 'status',
                     header: 'Estado',
+                    width: '140px',
                     cell: (b) => (
                       <span title={b.error ?? undefined}>
-                        <Badge tone={STATUS[b.status].tone} dot>
+                        <StateMark shape={STATUS[b.status].shape} tone={STATUS[b.status].tone}>
                           {STATUS[b.status].label}
-                        </Badge>
+                        </StateMark>
                       </span>
                     ),
                   },
@@ -201,11 +215,11 @@ export default function RespaldosPage() {
                     header: 'SHA-256',
                     cell: (b) =>
                       b.sha256 ? (
-                        <span className="num text-[12px] text-ink-2" title={b.sha256}>
+                        <span className="num text-[12.5px] text-ink-2" title={b.sha256}>
                           {b.sha256.slice(0, 12)}…
                         </span>
                       ) : (
-                        <span className="text-ink-3">—</span>
+                        <Dash />
                       ),
                   },
                 ]}
@@ -223,11 +237,11 @@ export default function RespaldosPage() {
                     : undefined
                 }
               />
-            </Card>
+            </Sheet>
           ) : (
-            <Card>
+            <Sheet>
               <EmptyState compact icon={<HardDrive />} title="Historial no disponible" description="Su rol no incluye ver respaldos." />
-            </Card>
+            </Sheet>
           )}
           <div className="flex flex-col gap-4">
             {can('system.status') && <SystemStatusCard />}

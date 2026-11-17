@@ -5,10 +5,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { FileText, Pencil, Printer } from 'lucide-react';
 import { api, downloadFile, errorMessage } from '@/lib/api';
+import { cn } from '@/lib/cn';
 import type { CopiesMode, PaperSize, PrintProfile, ReceiptSeries, ReceiptSettings } from '@/api/types';
 import { usePermissions } from '@/auth/hooks';
-import { Badge, Button, Card, DataTable, Drawer, EmptyState, Field, IconButton, Input, Select, Skeleton, Switch, Textarea, toast } from '@/ui';
+import { Badge, Button, DataTable, Drawer, EmptyState, Field, IconButton, Input, Select, Skeleton, Switch, Textarea, toast } from '@/ui';
 import { FormAlert, applyServerErrors } from '@/features/catalogo/formUtils';
+import { LedgerSection, Sheet, SheetHead, StateMark, ledgerRow } from '@/features/catalogo/ledger';
 
 export const receiptSettingsKey = ['receipt-settings'] as const;
 
@@ -56,11 +58,11 @@ function ProfilesCard({ profiles, canEdit }: { profiles: PrintProfile[]; canEdit
   }
 
   return (
-    <Card
-      flush
-      title="Perfiles de impresión"
-      description="El recibo institucional se imprime en carta, media carta o A5. Las térmicas son solo compatibilidad."
-      actions={
+    <Sheet>
+      <SheetHead
+        title="Perfiles de impresión"
+        meta="El recibo institucional se imprime en carta, media carta o A5. Las térmicas son solo compatibilidad."
+        actions={
         <div className="flex items-center gap-2">
           <label htmlFor="default-profile" className="text-[12.5px] whitespace-nowrap text-ink-2">
             Perfil predeterminado
@@ -79,12 +81,13 @@ function ProfilesCard({ profiles, canEdit }: { profiles: PrintProfile[]; canEdit
             className="h-8"
           />
         </div>
-      }
-    >
+        }
+      />
       <DataTable
         caption="Perfiles de impresión"
         rows={profiles}
         rowKey={(p) => p.id}
+        density="compact"
         columns={[
           {
             key: 'name',
@@ -93,7 +96,7 @@ function ProfilesCard({ profiles, canEdit }: { profiles: PrintProfile[]; canEdit
               <div className="flex flex-col">
                 <span className="font-medium">
                   {p.name}
-                  {p.is_default && <Badge tone="brand" className="ml-2">Predeterminado</Badge>}
+                  {p.is_default && <Badge tone="info" className="ml-2">Predeterminado</Badge>}
                 </span>
                 <span className="text-[12px] text-ink-3">
                   {PAPER_LABEL[p.paper] ?? p.paper} · <span className="num">{p.width_mm}×{p.height_mm} mm</span>
@@ -159,7 +162,7 @@ function ProfilesCard({ profiles, canEdit }: { profiles: PrintProfile[]; canEdit
           </Button>
         )}
       />
-    </Card>
+    </Sheet>
   );
 }
 
@@ -233,41 +236,45 @@ function SeriesDrawer({ series, onClose }: { series: ReceiptSeries; onClose: () 
         </>
       }
     >
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Serie" hint="No se puede cambiar.">
-            <Input value={series.series} readOnly mono tabIndex={-1} className="bg-surface-2" />
+      <div className="flex flex-col">
+        <LedgerSection title="Serie">
+          <Field label="Serie" hint="No se puede cambiar." className={ledgerRow('sm')}>
+            <Input value={series.series} readOnly mono tabIndex={-1} className="bg-surface-2 w-40" />
           </Field>
-          <Field label="Prefijo" required error={errors.prefix?.message}>
-            <Input {...register('prefix')} mono maxLength={32} />
+          <Field label="Prefijo" required error={errors.prefix?.message} className={ledgerRow('sm')}>
+            <Input className="w-40" {...register('prefix')} mono maxLength={32} />
           </Field>
+        </LedgerSection>
+        <LedgerSection title="Rango">
+          <Field label="Desde" hint="No se puede cambiar." className={ledgerRow('sm')}>
+            <Input value={String(series.min_number)} readOnly mono tabIndex={-1} className="bg-surface-2 w-40" />
+          </Field>
+          <Field label="Hasta" required error={errors.max_number?.message} className={ledgerRow('sm')}>
+            <Input className="w-40" {...register('max_number')} inputMode="numeric" mono />
+          </Field>
+          <Field label="Correlativo actual" hint="Solo lectura." className={ledgerRow('sm')}>
+            <Input value={String(series.current_number)} readOnly mono tabIndex={-1} className="bg-surface-2 w-40" />
+          </Field>
+          <Field label="Autorización del rango" error={errors.range_authorization?.message} className={ledgerRow('sm')}>
+            <Input {...register('range_authorization')} maxLength={128} />
+          </Field>
+        </LedgerSection>
+        <LedgerSection title="Impresión">
+          <Field label="Texto legal" error={errors.legal_text?.message} className={cn(ledgerRow('sm'), 'items-start')}>
+            <Textarea {...register('legal_text')} rows={3} maxLength={2000} />
+          </Field>
+          <Field label="Color del número" error={errors.number_color?.message} className={ledgerRow('sm')}>
+            <div className="flex items-center gap-3">
+              <Input className="w-32" {...register('number_color')} mono maxLength={7} />
+              <span className="num text-[14px] font-semibold" style={{ color: /^#[0-9a-f]{6}$/i.test(color) ? color : undefined }}>
+                {series.series}-{String(series.current_number + 1).padStart(8, '0')}
+              </span>
+            </div>
+          </Field>
+        </LedgerSection>
+        <div className="mt-3">
+          <FormAlert message={formError} />
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          <Field label="Desde" hint="No se puede cambiar.">
-            <Input value={String(series.min_number)} readOnly mono tabIndex={-1} className="bg-surface-2" />
-          </Field>
-          <Field label="Hasta" required error={errors.max_number?.message}>
-            <Input {...register('max_number')} inputMode="numeric" mono />
-          </Field>
-          <Field label="Correlativo actual" hint="Solo lectura.">
-            <Input value={String(series.current_number)} readOnly mono tabIndex={-1} className="bg-surface-2" />
-          </Field>
-        </div>
-        <Field label="Autorización del rango" error={errors.range_authorization?.message}>
-          <Input {...register('range_authorization')} maxLength={128} />
-        </Field>
-        <Field label="Texto legal" error={errors.legal_text?.message}>
-          <Textarea {...register('legal_text')} rows={3} maxLength={2000} />
-        </Field>
-        <Field label="Color del número" error={errors.number_color?.message}>
-          <div className="flex items-center gap-2">
-            <Input {...register('number_color')} mono maxLength={7} className="w-32" />
-            <span className="num text-[14px] font-semibold" style={{ color: /^#[0-9a-f]{6}$/i.test(color) ? color : undefined }}>
-              {series.series}-{String(series.current_number + 1).padStart(8, '0')}
-            </span>
-          </div>
-        </Field>
-        <FormAlert message={formError} />
       </div>
     </Drawer>
   );
@@ -285,16 +292,18 @@ export function ImpresionTab() {
   return (
     <div className="flex flex-col gap-4">
       <ProfilesCard profiles={q.data?.profiles ?? []} canEdit={canEdit} />
-      <Card flush title="Series de recibo institucional" description="Numeración propia del recibo, independiente de la factura.">
+      <Sheet>
+        <SheetHead title="Series de recibo institucional" meta="Numeración propia del recibo, independiente de la factura." />
         <DataTable
           caption="Series de recibo"
           rows={q.data?.series ?? []}
           rowKey={(s) => s.id}
+          density="compact"
           onRowClick={canEdit ? (s) => setEditing(s) : undefined}
           empty={<EmptyState compact icon={<Printer />} title="Sin series de recibo" />}
           columns={[
             { key: 'series', header: 'Serie', cell: (s) => <span className="num">{s.series}</span> },
-            { key: 'range', header: 'Rango', cell: (s) => <span className="num">{s.min_number}–{s.max_number}</span> },
+            { key: 'range', header: 'Rango', align: 'right', cell: (s) => <span className="num">{s.min_number}–{s.max_number}</span> },
             { key: 'current', header: 'Correlativo actual', numeric: true, cell: (s) => s.current_number },
             {
               key: 'next',
@@ -305,11 +314,15 @@ export function ImpresionTab() {
                 </span>
               ),
             },
-            { key: 'status', header: 'Estado', cell: (s) => (s.active ? <Badge tone="brand" dot>Activa</Badge> : <Badge dot>Inactiva</Badge>) },
+            {
+              key: 'status',
+              header: 'Estado',
+              cell: (s) => (s.active ? <StateMark shape="filled" tone="ok">Activa</StateMark> : <StateMark shape="hollow">Inactiva</StateMark>),
+            },
           ]}
           rowActions={canEdit ? (s) => <IconButton size="sm" label={`Editar serie ${s.series}`} icon={<Pencil />} onClick={() => setEditing(s)} /> : undefined}
         />
-      </Card>
+      </Sheet>
       {editing && <SeriesDrawer key={editing.id} series={editing} onClose={() => setEditing(null)} />}
     </div>
   );

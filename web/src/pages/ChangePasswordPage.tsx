@@ -3,12 +3,13 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router';
-import { Check, CircleAlert, ShieldCheck } from 'lucide-react';
+import { CircleAlert } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { api, errorMessage, isApiError } from '@/lib/api';
 import { landingPath } from '@/auth/AuthProvider';
 import { useAuth, useMe } from '@/auth/hooks';
-import { BrandMark } from '@/shell/BrandMark';
+import { StatusGlyph } from '@/ui/Badge';
+import { BrandTile } from '@/ui/BrandTile';
 import { Button } from '@/ui/Button';
 import { Field } from '@/ui/Field';
 import { Input } from '@/ui/Input';
@@ -80,31 +81,29 @@ export default function ChangePasswordPage() {
   ];
 
   return (
-    <div className="flex min-h-dvh items-start justify-center px-4 py-[8vh]">
-      <div className="flex w-full max-w-[440px] flex-col gap-6">
-        <div className="flex items-center gap-3">
-          <BrandMark className="size-9" />
-          <div className="flex flex-col">
-            <span className="text-[13px] text-ink-3">{me.name}</span>
-            <span className="text-[12px] text-ink-3">{me.role.name}</span>
-          </div>
-        </div>
-        <section className="rounded-[var(--radius-lg)] border border-line bg-surface p-6 shadow-2">
-          <div className="mb-5 flex flex-col gap-1.5">
-            <div className="flex items-center gap-2 text-brand">
-              <ShieldCheck className="size-5" aria-hidden="true" />
-              <h1 className="text-[20px] leading-tight font-semibold text-ink">{forced ? 'Proteja su cuenta' : 'Cambiar contraseña'}</h1>
-            </div>
-            <p className="text-[13.5px] text-ink-2">
+    <div className="flex min-h-dvh flex-col bg-ground">
+      <header className="flex h-[var(--topbar-h)] shrink-0 items-center gap-3 bg-rail px-6 text-rail-ink">
+        <BrandTile size={32} />
+        <span className="text-[16px] leading-5 font-bold tracking-[-0.01em]">S_Hospital</span>
+        <span className="ml-auto flex flex-col items-end">
+          <span className="text-[13px] leading-4 font-medium">{me.name}</span>
+          <span className="text-[12px] leading-4 text-rail-muted">{me.role.name}</span>
+        </span>
+      </header>
+      <div className="flex flex-1 items-start justify-center px-4 py-[8vh]">
+        <section className="w-full max-w-[460px] rounded-[var(--radius-md)] border border-junta bg-surface">
+          <div className="flex flex-col gap-1.5 border-b border-junta px-6 py-5">
+            <h1 className="text-[22px] leading-7 font-bold tracking-[-0.015em] text-ink">{forced ? 'Proteja su cuenta' : 'Cambiar contraseña'}</h1>
+            <p className="text-[14px] leading-5 text-ink-2">
               {forced
                 ? 'Antes de continuar, reemplace la contraseña temporal por una propia.'
                 : 'Elija una contraseña que no use en otros sistemas.'}
             </p>
           </div>
 
-          <form onSubmit={(e) => void onSubmit(e)} noValidate className="flex flex-col gap-4">
+          <form onSubmit={(e) => void onSubmit(e)} noValidate className="flex flex-col gap-4 px-6 py-5">
             {formError && (
-              <div role="alert" className="flex items-start gap-2 rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 py-2.5 text-[13px] text-danger">
+              <div role="alert" className="flex items-start gap-2 rounded-[var(--radius-md)] border border-danger/40 bg-danger-soft px-3 py-2.5 text-[13px] font-medium text-danger">
                 <CircleAlert className="mt-[1px] size-4 shrink-0" aria-hidden="true" />
                 {formError}
               </div>
@@ -119,31 +118,23 @@ export default function ChangePasswordPage() {
               <Input type="password" autoComplete="new-password" {...register('confirm')} />
             </Field>
 
-            <ul id="pw-policy" aria-label="Requisitos de la contraseña" className="grid gap-1.5 rounded-[var(--radius-sm)] border border-line bg-surface-2/60 p-3 sm:grid-cols-2">
+            <ul id="pw-policy" aria-label="Requisitos de la contraseña" className="grid gap-x-4 gap-y-2 rounded-[var(--radius-md)] border border-junta bg-ground px-3.5 py-3 sm:grid-cols-2">
               {checks.map((c) => (
-                <li key={c.id} className={cn('flex items-center gap-2 text-[12.5px] transition-colors duration-[120ms]', c.ok ? 'text-ok' : 'text-ink-3')}>
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      'flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-[120ms]',
-                      c.ok ? 'border-ok bg-ok text-white dark:text-[#0b1411]' : 'border-line-strong',
-                    )}
-                  >
-                    {c.ok && <Check className="size-2.5" strokeWidth={3.5} />}
-                  </span>
+                <li key={c.id} className={cn('flex items-center gap-2 text-[13px] leading-4', c.ok ? 'font-medium text-ink' : 'text-ink-2')}>
+                  <StatusGlyph shape={c.ok ? 'filled' : 'hollow'} className={c.ok ? 'text-ok' : 'text-ink-3'} />
                   {c.label}
                   <span className="sr-only">{c.ok ? ': cumplido' : ': pendiente'}</span>
                 </li>
               ))}
             </ul>
 
-            <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+            <div className="-mx-6 mt-1 -mb-5 flex flex-col-reverse gap-2 border-t border-junta bg-surface-2 px-6 py-3 sm:flex-row sm:justify-end">
               {forced ? (
-                <Button variant="ghost" onClick={() => void logout()}>
+                <Button variant="secondary" onClick={() => void logout()}>
                   Salir
                 </Button>
               ) : (
-                <Button variant="ghost" onClick={() => navigate(-1)}>
+                <Button variant="secondary" onClick={() => navigate(-1)}>
                   Cancelar
                 </Button>
               )}

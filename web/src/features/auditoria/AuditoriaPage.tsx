@@ -2,11 +2,12 @@ import { useDeferredValue, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ScrollText, Search, X } from 'lucide-react';
 import { api } from '@/lib/api';
+import { cn } from '@/lib/cn';
 import { formatDateTime } from '@/lib/dates';
 import { AUDIT_RESULT_LABEL, type AuditLog, type AuditResult, type Paginated } from '@/api/types';
-import { Badge, Button, Card, DataTable, Dialog, EmptyState, Field, Input, PageHeader, Select, type Tone } from '@/ui';
+import { Button, DataTable, Drawer, EmptyState, Field, Input, PageHeader, Select, type GlyphShape, type Tone } from '@/ui';
+import { Count, Dash, LedgerFact, LedgerSection, Sheet, StateMark, Toolbar } from '@/features/catalogo/ledger';
 
-/** Spanish labels for common audit actions; unknown codes are shown as-is. */
 /** Labels for every action code the backend writes (`audit(...)` calls in api/app). */
 export const AUDIT_ACTION_LABEL: Record<string, string> = {
   'auth.login': 'Inicio de sesión',
@@ -65,7 +66,21 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
 
 export const actionLabel = (a: string) => AUDIT_ACTION_LABEL[a] ?? a;
 
+/** Filter label beside its control, one toolbar row. */
+const INLINE = 'flex-row items-center gap-2';
+
 const RESULT_TONE: Record<AuditResult, Tone> = { success: 'ok', failed: 'warn', denied: 'danger' };
+const RESULT_SHAPE: Record<AuditResult, GlyphShape> = { success: 'filled', failed: 'half', denied: 'struck' };
+
+function ResultMark({ result }: { result: AuditResult }) {
+  return (
+    <StateMark shape={RESULT_SHAPE[result]} tone={RESULT_TONE[result]}>
+      {AUDIT_RESULT_LABEL[result]}
+    </StateMark>
+  );
+}
+
+const entityOf = (log: AuditLog) => (log.entity_type ? `${log.entity_type}${log.entity_id ? ` #${log.entity_id}` : ''}` : null);
 
 export type AuditFilters = { search: string; action: string; date_from: string; date_to: string; page: number };
 
@@ -86,63 +101,86 @@ function AuditDetail({ log, onClose }: { log: AuditLog | null; onClose: () => vo
   const oldV = log?.old_values ?? {};
   const newV = log?.new_values ?? {};
   const keys = Array.from(new Set([...Object.keys(oldV), ...Object.keys(newV)])).sort();
+  const changedCount = keys.filter((k) => show(oldV[k]) !== show(newV[k])).length;
   return (
-    <Dialog open={log !== null} onClose={onClose} size="lg" title={log ? actionLabel(log.action) : ''} description={log ? formatDateTime(log.created_at) : undefined}>
+    <Drawer
+      open={log !== null}
+      onClose={onClose}
+      width="lg"
+      title={log ? actionLabel(log.action) : ''}
+      description={log ? <span className="num">{formatDateTime(log.created_at)}</span> : undefined}
+      footer={<Button onClick={onClose}>Cerrar</Button>}
+    >
       {log && (
-        <div className="flex flex-col gap-4">
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-[13px]">
-            <dt className="text-ink-2">Responsable</dt>
-            <dd>{log.user_name ?? '—'}</dd>
-            <dt className="text-ink-2">Resultado</dt>
-            <dd>
-              <Badge tone={RESULT_TONE[log.result]} dot>
-                {AUDIT_RESULT_LABEL[log.result]}
-              </Badge>
-            </dd>
-            <dt className="text-ink-2">Registro</dt>
-            <dd className="num">{log.entity_type ? `${log.entity_type}${log.entity_id ? ` #${log.entity_id}` : ''}` : '—'}</dd>
-            <dt className="text-ink-2">Motivo</dt>
-            <dd>{log.reason ?? '—'}</dd>
-            <dt className="text-ink-2">Dirección IP</dt>
-            <dd className="num">{log.ip ?? '—'}</dd>
-            <dt className="text-ink-2">Código</dt>
-            <dd className="num text-ink-3">{log.action}</dd>
-          </dl>
-          {keys.length > 0 ? (
-            <div className="overflow-hidden rounded-[var(--radius-md)] border border-line">
-              <table className="w-full text-[13px]">
-                <caption className="sr-only">Valores anteriores y nuevos</caption>
-                <thead>
-                  <tr className="border-b border-line bg-surface-2/60 text-left text-[12px] text-ink-2">
-                    <th scope="col" className="px-3 py-2 font-medium">Campo</th>
-                    <th scope="col" className="px-3 py-2 font-medium">Antes</th>
-                    <th scope="col" className="px-3 py-2 font-medium">Después</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {keys.map((k) => {
-                    const changed = show(oldV[k]) !== show(newV[k]);
-                    return (
-                      <tr key={k} className="border-b border-line align-top last:border-0">
-                        <th scope="row" className="num px-3 py-2 text-left font-normal text-ink-2">{k}</th>
-                        <td className={changed ? 'px-3 py-2 break-all text-danger line-through decoration-danger/40' : 'px-3 py-2 break-all text-ink-2'}>
-                          {k in oldV ? show(oldV[k]) : '—'}
-                        </td>
-                        <td className={changed ? 'px-3 py-2 break-all font-medium text-ok' : 'px-3 py-2 break-all text-ink-2'}>
-                          {k in newV ? show(newV[k]) : '—'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-[13px] text-ink-3">Este evento no registra cambios de valores.</p>
-          )}
+        <div className="flex flex-col">
+          <LedgerSection title="Evento">
+            <LedgerFact label="Responsable" labelWidth="sm">
+              {log.user_name ?? <span className="text-ink-2">Sistema</span>}
+              {log.username && <span className="num ml-2 text-[12.5px] text-ink-3">{log.username}</span>}
+            </LedgerFact>
+            <LedgerFact label="Resultado" labelWidth="sm">
+              <ResultMark result={log.result} />
+            </LedgerFact>
+            <LedgerFact label="Registro" labelWidth="sm">
+              {entityOf(log) ? <span className="num">{entityOf(log)}</span> : <Dash />}
+            </LedgerFact>
+            <LedgerFact label="Motivo" labelWidth="sm">
+              {log.reason ?? <Dash />}
+            </LedgerFact>
+            <LedgerFact label="Dirección IP" labelWidth="sm">
+              {log.ip ? <span className="num">{log.ip}</span> : <Dash />}
+            </LedgerFact>
+            <LedgerFact label="Código" labelWidth="sm">
+              <span className="num text-ink-2">{log.action}</span>
+            </LedgerFact>
+          </LedgerSection>
+          <LedgerSection
+            title="Cambios"
+            aside={keys.length > 0 ? `${changedCount} de ${keys.length} ${keys.length === 1 ? 'campo' : 'campos'} cambiaron` : undefined}
+          >
+            {keys.length > 0 ? (
+              <div className="mt-2 overflow-hidden rounded-[var(--radius-sm)] border border-junta">
+                <table className="w-full border-collapse text-[13px] leading-5">
+                  <caption className="sr-only">Valores anteriores y nuevos</caption>
+                  <thead>
+                    <tr className="bg-ground text-left text-[12px] text-ink-2">
+                      <th scope="col" className="h-8 w-[30%] border-b border-junta px-3 font-semibold">Campo</th>
+                      <th scope="col" className="h-8 border-b border-l border-junta px-3 font-semibold">Antes</th>
+                      <th scope="col" className="h-8 border-b border-l border-junta px-3 font-semibold">Después</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {keys.map((k) => {
+                      const changed = show(oldV[k]) !== show(newV[k]);
+                      return (
+                        <tr key={k} className="align-top [&:last-child>*]:border-b-0">
+                          <th scope="row" className={cn('num border-b border-junta px-3 py-2 text-left font-normal', changed ? 'font-semibold text-ink' : 'text-ink-2')}>
+                            {k}
+                          </th>
+                          <td
+                            className={cn(
+                              'num border-b border-l border-junta px-3 py-2 break-all',
+                              changed ? 'bg-danger-soft text-danger line-through decoration-danger/50' : 'text-ink-2',
+                            )}
+                          >
+                            {k in oldV ? show(oldV[k]) : '—'}
+                          </td>
+                          <td className={cn('num border-b border-l border-junta px-3 py-2 break-all', changed ? 'bg-ok-soft font-semibold text-ok' : 'text-ink-2')}>
+                            {k in newV ? show(newV[k]) : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="py-2.5 text-[13px] text-ink-2">Este evento no registra cambios de valores.</p>
+            )}
+          </LedgerSection>
         </div>
       )}
-    </Dialog>
+    </Drawer>
   );
 }
 
@@ -170,13 +208,13 @@ export default function AuditoriaPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Administración" title="Auditoría" description="Registro inalterable de las acciones sensibles del sistema." />
-      <Card flush>
-        <div className="flex flex-wrap items-end gap-3 border-b border-line p-3">
-          <Field label="Usuario" className="w-full sm:w-60">
-            <Input placeholder="Nombre o usuario" prefix={<Search />} value={search} onChange={(e) => reset(() => setSearch(e.target.value))} />
+      <PageHeader title="Auditoría" description="Registro inalterable de las acciones sensibles del sistema." className="pb-3" />
+      <Sheet>
+        <Toolbar className="gap-x-4">
+          <Field label="Usuario" className={INLINE}>
+            <Input placeholder="Nombre o usuario" prefix={<Search />} value={search} onChange={(e) => reset(() => setSearch(e.target.value))} wrapperClassName="w-56" />
           </Field>
-          <Field label="Acción" className="w-full sm:w-64">
+          <Field label="Acción" className={INLINE}>
             <Select
               value={action}
               onChange={(e) => reset(() => setAction(e.target.value))}
@@ -184,13 +222,14 @@ export default function AuditoriaPage() {
               options={Object.entries(AUDIT_ACTION_LABEL)
                 .map(([value, label]) => ({ value, label }))
                 .sort((a, b) => a.label.localeCompare(b.label, 'es'))}
+              wrapperClassName="w-60"
             />
           </Field>
-          <Field label="Desde" className="w-40">
-            <Input type="date" value={dateFrom} onChange={(e) => reset(() => setDateFrom(e.target.value))} />
+          <Field label="Desde" className={INLINE}>
+            <Input className="w-40" type="date" value={dateFrom} onChange={(e) => reset(() => setDateFrom(e.target.value))} />
           </Field>
-          <Field label="Hasta" className="w-40" error={rangeError}>
-            <Input type="date" value={dateTo} min={dateFrom || undefined} onChange={(e) => reset(() => setDateTo(e.target.value))} />
+          <Field label="Hasta" className={INLINE} error={rangeError}>
+            <Input className="w-40" type="date" value={dateTo} min={dateFrom || undefined} onChange={(e) => reset(() => setDateTo(e.target.value))} />
           </Field>
           {filtered && (
             <Button
@@ -208,13 +247,17 @@ export default function AuditoriaPage() {
               Limpiar filtros
             </Button>
           )}
-        </div>
+          <span className="ml-auto">
+            <Count n={q.data?.total} one="evento" many="eventos" />
+          </span>
+        </Toolbar>
         <DataTable
           caption="Registro de auditoría"
           rows={q.data?.items}
           loading={q.isFetching}
           rowKey={(l) => l.id}
           onRowClick={setSelected}
+          isRowSelected={(l) => selected?.id === l.id}
           density="compact"
           empty={
             <EmptyState
@@ -226,26 +269,31 @@ export default function AuditoriaPage() {
           }
           pagination={q.data ? { page: q.data.page, perPage: q.data.per_page, total: q.data.total, onPageChange: setPage } : undefined}
           columns={[
-            { key: 'date', header: 'Fecha y hora', width: '150px', cell: (l) => <span className="tabular whitespace-nowrap">{formatDateTime(l.created_at)}</span> },
-            { key: 'action', header: 'Acción', cell: (l) => <span className="font-medium">{actionLabel(l.action)}</span> },
-            { key: 'user', header: 'Responsable', cell: (l) => l.user_name ?? <span className="text-ink-3">Sistema</span> },
+            { key: 'date', header: 'Fecha y hora', width: '150px', cell: (l) => <span className="num whitespace-nowrap">{formatDateTime(l.created_at)}</span> },
+            { key: 'action', header: 'Acción', width: '240px', cell: (l) => <span className="font-medium">{actionLabel(l.action)}</span> },
+            { key: 'user', header: 'Responsable', width: '190px', cell: (l) => l.user_name ?? <span className="text-ink-2">Sistema</span> },
             {
-              key: 'result',
-              header: 'Resultado',
-              cell: (l) => (
-                <Badge tone={RESULT_TONE[l.result]} dot>
-                  {AUDIT_RESULT_LABEL[l.result]}
-                </Badge>
-              ),
+              key: 'entity',
+              header: 'Registro',
+              width: '150px',
+              cell: (l) => (entityOf(l) ? <span className="num text-[13px] text-ink-2">{entityOf(l)}</span> : <Dash />),
             },
+            { key: 'result', header: 'Resultado', width: '130px', cell: (l) => <ResultMark result={l.result} /> },
             {
               key: 'reason',
               header: 'Motivo',
-              cell: (l) => (l.reason ? <span className="line-clamp-1 max-w-[360px] text-ink-2" title={l.reason}>{l.reason}</span> : <span className="text-ink-3">—</span>),
+              cell: (l) =>
+                l.reason ? (
+                  <span className="line-clamp-1 text-ink-2" title={l.reason}>
+                    {l.reason}
+                  </span>
+                ) : (
+                  <Dash />
+                ),
             },
           ]}
         />
-      </Card>
+      </Sheet>
       <AuditDetail log={selected} onClose={() => setSelected(null)} />
     </>
   );

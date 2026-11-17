@@ -27,16 +27,18 @@ import {
   EmptyState,
   Field,
   Input,
+  KpiGrid,
   KpiTile,
   Money,
   PageHeader,
   Select,
+  StatusGlyph,
   StatusStamp,
   Tabs,
   toast,
   type Column,
 } from '@/ui';
-import { DIFFERENCE_LABEL, DIFFERENCE_TONE, differenceKind } from '@/features/caja/arqueo';
+import { DifferenceValue } from '@/features/caja/ArqueoTab';
 import { MethodBars } from './MethodBars';
 import { PERIOD_LABEL, PRESETS, presetRange, validateRange, type PeriodPreset } from './period';
 import { TrendChart } from './TrendChart';
@@ -89,7 +91,7 @@ function Limited<T>({ rows, render, limit = 10 }: { rows: T[]; render: (rows: T[
     <div className="flex flex-col">
       {render(shown)}
       {rows.length > limit && (
-        <div className="flex justify-center border-t border-line py-2">
+        <div className="flex justify-center border-t border-junta py-1.5">
           <Button size="sm" variant="ghost" onClick={() => setAll((v) => !v)}>
             {all ? 'Ver menos' : `Ver todas (${rows.length})`}
           </Button>
@@ -165,10 +167,30 @@ export default function ReportesPage() {
     <>
       <PageHeader
         title="Reportes"
-        description="Facturación, cobros, caja y gratuidades del período."
+        className="pb-4"
+        description={
+          <span role="group" aria-label="Período" className="inline-flex h-9 max-w-full gap-px overflow-x-auto rounded-[var(--radius-md)] border border-junta bg-junta align-middle">
+            {PRESETS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                aria-pressed={draft.preset === p}
+                onClick={() => choosePreset(p)}
+                className={cn(
+                  'pressable h-full px-3 text-[13px] font-semibold whitespace-nowrap focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--focus)]',
+                  draft.preset === p ? 'bg-slate text-slate-ink' : 'bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink',
+                )}
+              >
+                {PERIOD_LABEL[p]}
+              </button>
+            ))}
+          </span>
+        }
         actions={
           <>
-            <Badge tone={all ? 'brand' : 'neutral'}>{all ? 'Todas las cajas' : 'Solo sus operaciones'}</Badge>
+            <Badge tone={all ? 'info' : 'neutral'} shape={all ? 'filled' : 'hollow'}>
+              {all ? 'Todas las cajas' : 'Solo sus operaciones'}
+            </Badge>
             {can('reports.export') && (
               <>
                 <Button leftIcon={<FileText />} loading={exporting === 'pdf'} disabled={dirty} onClick={() => void exportAs('pdf')}>
@@ -188,89 +210,73 @@ export default function ReportesPage() {
         }
       />
 
-      <form onSubmit={apply} noValidate className="mb-5 flex flex-col gap-3 rounded-[var(--radius-md)] border border-line bg-surface p-4 shadow-1">
-        <div role="group" aria-label="Período" className="flex flex-wrap gap-1.5">
-          {PRESETS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              aria-pressed={draft.preset === p}
-              onClick={() => choosePreset(p)}
-              className={cn(
-                'pressable h-8 rounded-full border px-3 text-[13px] font-medium',
-                draft.preset === p ? 'border-brand bg-brand-soft text-brand' : 'border-line bg-surface text-ink-2 hover:text-ink',
-              )}
-            >
-              {PERIOD_LABEL[p]}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <Field label="Desde" className="w-[160px]" error={touched && rangeError ? rangeError : null}>
-            <Input
-              type="date"
-              value={draft.date_from}
-              onChange={(e) => setDraft((d) => ({ ...d, preset: 'custom', date_from: e.target.value }))}
-            />
-          </Field>
-          <Field label="Hasta" className="w-[160px]">
-            <Input
-              type="date"
-              value={draft.date_to}
-              onChange={(e) => setDraft((d) => ({ ...d, preset: 'custom', date_to: e.target.value }))}
-            />
-          </Field>
-          <Field label="Método" className="w-[160px]">
+      <form
+        onSubmit={apply}
+        noValidate
+        aria-label="Filtros del reporte"
+        className="mb-4 flex flex-wrap items-end gap-x-3 gap-y-3 rounded-[var(--radius-md)] border border-junta bg-surface px-4 py-3"
+      >
+        <Field label="Desde" className="w-[148px]" error={touched && rangeError ? rangeError : null}>
+          <Input
+            type="date"
+            value={draft.date_from}
+            onChange={(e) => setDraft((d) => ({ ...d, preset: 'custom', date_from: e.target.value }))}
+          />
+        </Field>
+        <Field label="Hasta" className="w-[148px]">
+          <Input
+            type="date"
+            value={draft.date_to}
+            onChange={(e) => setDraft((d) => ({ ...d, preset: 'custom', date_to: e.target.value }))}
+          />
+        </Field>
+        <Field label="Método" className="w-[140px]">
+          <Select
+            value={draft.method}
+            onChange={(e) => setDraft((d) => ({ ...d, method: e.target.value as Filters['method'] }))}
+            placeholder="Todos"
+            options={(Object.keys(PAYMENT_METHOD_LABEL) as PaymentMethod[]).map((m) => ({ value: m, label: PAYMENT_METHOD_LABEL[m] }))}
+          />
+        </Field>
+        <Field label="Estado" className="w-[170px]">
+          <Select
+            value={draft.status}
+            onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value as Filters['status'] }))}
+            placeholder="Todos"
+            options={STATUS_OPTIONS}
+          />
+        </Field>
+        {all && users.isSuccess && (
+          <Field label="Cajero" className="w-[170px]">
             <Select
-              value={draft.method}
-              onChange={(e) => setDraft((d) => ({ ...d, method: e.target.value as Filters['method'] }))}
+              value={draft.user_id}
+              onChange={(e) => setDraft((d) => ({ ...d, user_id: e.target.value }))}
               placeholder="Todos"
-              options={(Object.keys(PAYMENT_METHOD_LABEL) as PaymentMethod[]).map((m) => ({ value: m, label: PAYMENT_METHOD_LABEL[m] }))}
+              options={users.data.items.map((u) => ({ value: String(u.id), label: u.name }))}
             />
           </Field>
-          <Field label="Estado" className="w-[180px]">
+        )}
+        {all && categories.isSuccess && (
+          <Field label="Categoría" className="w-[170px]">
             <Select
-              value={draft.status}
-              onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value as Filters['status'] }))}
-              placeholder="Todos"
-              options={STATUS_OPTIONS}
+              value={draft.category_id}
+              onChange={(e) => setDraft((d) => ({ ...d, category_id: e.target.value }))}
+              placeholder="Todas"
+              options={categories.data.map((c) => ({ value: String(c.id), label: c.name }))}
             />
           </Field>
-          {all && users.isSuccess && (
-            <Field label="Cajero" className="w-[200px]">
-              <Select
-                value={draft.user_id}
-                onChange={(e) => setDraft((d) => ({ ...d, user_id: e.target.value }))}
-                placeholder="Todos"
-                options={users.data.items.map((u) => ({ value: String(u.id), label: u.name }))}
-              />
-            </Field>
+        )}
+        <div className="ml-auto flex items-center gap-3 self-end">
+          {dirty && (
+            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-warn" role="status">
+              <StatusGlyph shape="hollow" />
+              Cambios sin aplicar
+            </span>
           )}
-          {all && categories.isSuccess && (
-            <Field label="Categoría" className="w-[200px]">
-              <Select
-                value={draft.category_id}
-                onChange={(e) => setDraft((d) => ({ ...d, category_id: e.target.value }))}
-                placeholder="Todas"
-                options={categories.data.map((c) => ({ value: String(c.id), label: c.name }))}
-              />
-            </Field>
-          )}
-          <div className="flex items-center gap-3">
-            <Button type="submit" variant={dirty ? 'primary' : 'secondary'} loading={report.isFetching && !loading}>
-              Aplicar
-            </Button>
-            {dirty && (
-              <span className="text-[12.5px] text-warn" role="status">
-                Cambios sin aplicar
-              </span>
-            )}
-          </div>
+          <Button type="submit" variant={dirty ? 'primary' : 'secondary'} loading={report.isFetching && !loading}>
+            Aplicar
+          </Button>
         </div>
-        <p className="text-[12.5px] text-ink-3">
-          Mostrando del <span className="num">{formatDate(applied.date_from)}</span> al{' '}
-          <span className="num">{formatDate(applied.date_to)}</span> (hora de Honduras).
-        </p>
       </form>
 
       {report.isError && !data ? (
@@ -287,42 +293,90 @@ export default function ReportesPage() {
           />
         </Card>
       ) : (
-        <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <KpiTile label="Facturado" cents={s?.billed_cents} loading={loading} tone="brand" hint={s ? `${s.invoices_count} operaciones` : undefined} />
+        <div className="flex flex-col gap-4">
+          <KpiGrid className="grid-cols-2 md:grid-cols-4" aria-label="Indicadores del período">
+            <KpiTile label="Facturado" cents={s?.billed_cents} loading={loading} hint={s ? `${s.invoices_count} operaciones` : undefined} />
             <KpiTile label="Cobrado" cents={s?.collected_cents} loading={loading} tone="ok" hint={s ? `${s.paid_count} pagadas` : undefined} />
-            <KpiTile label="Saldo" cents={s?.pending_cents} loading={loading} tone="warn" hint={s ? `${s.partial_count} con pago parcial` : undefined} />
+            <KpiTile
+              label="Saldo"
+              cents={s?.pending_cents}
+              loading={loading}
+              tone={s && s.pending_cents > 0 ? 'warn' : 'neutral'}
+              hint={s ? `${s.partial_count} con pago parcial` : undefined}
+            />
             <KpiTile label="Sin cobro" value={s?.without_charge_count} loading={loading} hint="Operaciones emitidas sin cobro" />
-            <KpiTile label="Ticket promedio" cents={s?.average_ticket_cents} loading={loading} />
-            <KpiTile label="Anulado" cents={s?.voided_cents} loading={loading} tone="danger" />
-            <KpiTile label="Reversado" cents={s?.reversed_cents} loading={loading} tone="danger" />
+            <KpiTile label="Ticket promedio" cents={s?.average_ticket_cents} loading={loading} hint={s ? `${s.payments_count} cobros` : undefined} />
+            <KpiTile
+              label="Anulado"
+              cents={s?.voided_cents}
+              loading={loading}
+              tone={s && s.voided_cents > 0 ? 'danger' : 'neutral'}
+              hint={s ? `${s.voided_count} ${s.voided_count === 1 ? 'anulada' : 'anuladas'}` : undefined}
+            />
+            <KpiTile label="Reversado" cents={s?.reversed_cents} loading={loading} tone={s && s.reversed_cents > 0 ? 'danger' : 'neutral'} />
             <KpiTile
               label="Líneas gratuitas"
               value={s?.free_lines_count}
               loading={loading}
               hint={s ? <>Valor <Money cents={s.free_value_cents} /></> : undefined}
             />
-          </div>
+          </KpiGrid>
 
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <Card title="Tendencia diaria" description="Facturado vs Cobrado por día.">
-              {data && data.daily.length > 0 ? (
-                <TrendChart data={data.daily} />
-              ) : (
-                <EmptyState compact icon={<BarChart3 />} title={loading ? 'Cargando…' : 'Sin datos en el período'} />
+          <div className="grid gap-px overflow-hidden rounded-[var(--radius-md)] border border-junta bg-junta lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+            <section aria-labelledby="rep-tendencia" className="flex min-w-0 flex-col bg-surface">
+              <header className="flex min-h-11 items-center justify-between gap-3 border-b border-junta px-4 py-2">
+                <h2 id="rep-tendencia" className="text-[15px] leading-5 font-bold text-ink">
+                  Tendencia diaria
+                </h2>
+                <p className="text-[12px] leading-4 text-ink-2">
+                  Facturado vs Cobrado por día, del <span className="num">{formatDate(applied.date_from)}</span> al{' '}
+                  <span className="num">{formatDate(applied.date_to)}</span> (hora de Honduras).
+                </p>
+              </header>
+              <div className="px-4 py-3">
+                {data && data.daily.length > 0 ? (
+                  <TrendChart data={data.daily} />
+                ) : (
+                  <EmptyState compact icon={<BarChart3 />} title={loading ? 'Cargando…' : 'Sin datos en el período'} />
+                )}
+              </div>
+            </section>
+            <section aria-labelledby="rep-metodo" className="flex min-w-0 flex-col bg-surface">
+              <header className="flex min-h-11 items-center border-b border-junta px-4 py-2">
+                <h2 id="rep-metodo" className="text-[15px] leading-5 font-bold text-ink">
+                  Cobros por método
+                </h2>
+              </header>
+              <div className="p-4">
+                {data ? (
+                  <MethodBars
+                    label="Cobros por método en el período"
+                    rows={(Object.keys(PAYMENT_METHOD_LABEL) as PaymentMethod[]).map((m) => {
+                      const r = data.by_method.find((x) => x.method === m);
+                      return { method: m, amount_cents: r?.amount_cents ?? 0, count: r?.count ?? 0 };
+                    })}
+                  />
+                ) : null}
+              </div>
+              {data && data.top_services.length > 0 && (
+                <div className="border-t border-junta">
+                  <h3 className="flex h-9 items-center border-b border-junta bg-surface-2 px-4 text-[12.5px] font-semibold text-ink-2">
+                    Servicios con mayor facturación
+                  </h3>
+                  <ol className="flex flex-col text-[13px]">
+                    {data.top_services.slice(0, 5).map((t) => (
+                      <li key={t.service_name} className="flex items-baseline justify-between gap-3 border-b border-junta px-4 py-1.5 last:border-b-0">
+                        <span className="min-w-0 truncate text-ink">{t.service_name}</span>
+                        <span className="flex shrink-0 items-baseline gap-3">
+                          <span className="num text-[12px] text-ink-3">× {formatHundredths(t.quantity_hundredths)}</span>
+                          <Money cents={t.amount_cents} className="text-ink" />
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               )}
-            </Card>
-            <Card title="Cobros por método">
-              {data ? (
-                <MethodBars
-                  label="Cobros por método en el período"
-                  rows={(Object.keys(PAYMENT_METHOD_LABEL) as PaymentMethod[]).map((m) => {
-                    const r = data.by_method.find((x) => x.method === m);
-                    return { method: m, amount_cents: r?.amount_cents ?? 0, count: r?.count ?? 0 };
-                  })}
-                />
-              ) : null}
-            </Card>
+            </section>
           </div>
 
           {data && <DetailTabs data={data} />}
@@ -335,7 +389,7 @@ export default function ReportesPage() {
 function DocLink({ id, number }: { id?: number; number: string }) {
   if (!id) return <span className="num">{number}</span>;
   return (
-    <Link to={`/recibos/${id}`} className="num text-brand underline-offset-2 hover:underline">
+    <Link to={`/recibos/${id}`} className="num font-medium text-slate-text underline-offset-2 hover:underline">
       {number}
     </Link>
   );
@@ -346,7 +400,7 @@ function DetailTabs({ data }: { data: ReportSummary }) {
     { key: 'doc', header: 'Documento', cell: (i) => <DocLink id={i.id} number={i.number} /> },
     { key: 'date', header: 'Fecha', cell: (i) => <span className="num">{formatDateTime(i.issued_at)}</span> },
     { key: 'patient', header: 'Paciente', cell: (i) => i.patient_name },
-    { key: 'user', header: 'Cajero', cell: (i) => i.cashier_name || '—' },
+    { key: 'user', header: 'Cajero', cell: (i) => i.cashier_name || <span className="text-ink-3">—</span> },
     { key: 'status', header: 'Estado', cell: (i) => <StatusStamp status={i} /> },
     { key: 'total', header: 'Total', numeric: true, cell: (i) => <Money cents={i.total_cents} /> },
     { key: 'balance', header: 'Saldo', numeric: true, cell: (i) => <Money cents={i.balance_cents} /> },
@@ -366,11 +420,20 @@ function DetailTabs({ data }: { data: ReportSummary }) {
     { key: 'patient', header: 'Paciente', cell: (p) => p.patient_name },
     { key: 'method', header: 'Método', cell: (p) => PAYMENT_METHOD_LABEL[p.method] },
     { key: 'ref', header: 'Referencia', cell: (p) => p.reference || <span className="text-ink-3">—</span> },
-    { key: 'user', header: 'Cajero', cell: (p) => p.cashier_name || '—' },
+    { key: 'user', header: 'Cajero', cell: (p) => p.cashier_name || <span className="text-ink-3">—</span> },
     {
       key: 'status',
       header: 'Estado',
-      cell: (p) => (p.status === 'void' ? <Badge tone="danger">Anulado</Badge> : <Badge tone="ok">Registrado</Badge>),
+      cell: (p) =>
+        p.status === 'void' ? (
+          <Badge tone="danger" shape="struck">
+            Anulado
+          </Badge>
+        ) : (
+          <Badge tone="ok" shape="filled">
+            Registrado
+          </Badge>
+        ),
     },
     { key: 'amount', header: 'Monto', numeric: true, cell: (p) => <Money cents={p.amount_cents} /> },
   ];
@@ -391,15 +454,15 @@ function DetailTabs({ data }: { data: ReportSummary }) {
       numeric: true,
       cell: (x) => {
         if (x.difference_cents === null || x.difference_cents === undefined) {
-          return x.status === 'open' ? <Badge tone="ok">Abierta</Badge> : <span className="text-ink-3">—</span>;
+          return x.status === 'open' ? (
+            <Badge tone="ok" shape="filled">
+              Abierta
+            </Badge>
+          ) : (
+            <span className="text-ink-3">—</span>
+          );
         }
-        const k = differenceKind(x.difference_cents);
-        return (
-          <span className="inline-flex items-center gap-2">
-            <Badge tone={DIFFERENCE_TONE[k]}>{DIFFERENCE_LABEL[k]}</Badge>
-            <Money cents={x.difference_cents} signed />
-          </span>
-        );
+        return <DifferenceValue cents={x.difference_cents} className="justify-end" />;
       },
     },
   ];
@@ -417,7 +480,7 @@ function DetailTabs({ data }: { data: ReportSummary }) {
   const gratuities: FreeRow[] = data.gratuities.map((l, i) => ({ ...l, _k: i }));
 
   return (
-    <Card flush>
+    <Card flush className="overflow-hidden">
       <div className="px-4 pt-1">
         <Tabs
           label="Detalle del reporte"

@@ -50,8 +50,8 @@ export function Field({ label, children, hint, error, required = false, id, clas
   return (
     <FieldContext.Provider value={{ id: controlId, describedBy, invalid: Boolean(error), required }}>
       <div className={cn('flex flex-col gap-1.5', className)}>
-        <div className={cn('flex items-baseline justify-between gap-3', hideLabel && 'sr-only')}>
-          <label htmlFor={controlId} className="text-[13px] font-medium text-ink">
+        <div className={cn('flex items-center justify-between gap-3', hideLabel && 'sr-only')}>
+          <label htmlFor={controlId} className="text-[12px] leading-4 font-semibold text-ink-2">
             {label}
             {required && (
               <span className="ml-0.5 text-danger" aria-hidden="true">
@@ -63,13 +63,13 @@ export function Field({ label, children, hint, error, required = false, id, clas
         </div>
         {children}
         {error ? (
-          <p id={errorId} className="flex items-start gap-1.5 text-[12.5px] text-danger" role="alert">
-            <CircleAlert className="mt-[2px] size-3.5 shrink-0" aria-hidden="true" />
+          <p id={errorId} className="flex items-start gap-1.5 text-[12.5px] leading-4 font-medium text-danger" role="alert">
+            <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
             <span>{error}</span>
           </p>
         ) : null}
         {hint ? (
-          <p id={hintId} className="text-[12.5px] text-ink-3">
+          <p id={hintId} className="text-[12.5px] leading-4 text-ink-3">
             {hint}
           </p>
         ) : null}

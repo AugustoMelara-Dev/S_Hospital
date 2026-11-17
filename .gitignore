@@ -48,3 +48,7 @@ Thumbs.db
 /installer/
 /output/
 /tmp/
+
+# Impeccable: estado efímero y capturas de revisión
+.impeccable/questions/
+.impeccable/review/

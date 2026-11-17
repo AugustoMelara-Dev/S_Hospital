@@ -3,7 +3,7 @@ import { ArrowLeftRight, Banknote, CreditCard, Ellipsis } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatCents } from '@/lib/money';
 import { PAYMENT_METHOD_LABEL, type CreatePaymentRequest, type PaymentMethod } from '@/api/types';
-import { Button, Dialog, Field, Input, Money, MoneyInput } from '@/ui';
+import { Button, Dialog, Field, Input, MoneyInput } from '@/ui';
 
 const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
 
@@ -128,38 +128,41 @@ export function PaymentDialog({
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
             Cancelar
           </Button>
-          <Button type="submit" variant="primary" loading={submitting} loadingText="Registrando cobro…">
+          <Button type="submit" variant="primary" size="lg" kbd="Enter" loading={submitting} loadingText="Registrando cobro…">
             {`Confirmar cobro · ${formatCents(charge)}`}
           </Button>
         </>
       }
     >
       <div className="flex flex-col gap-4">
+        {/* The ochre field: the amount due is the largest figure in the dialog. */}
+        <div className="-mx-5 -mt-4 flex items-baseline justify-between gap-4 border-b border-ochre-line bg-ochre px-5 pt-3 pb-3.5 text-ochre-ink">
+          <span className="text-[13px] font-bold tracking-[0.06em] uppercase">{allowAmountEdit ? 'Saldo' : 'Total a cobrar'}</span>
+          <span className="num text-[40px] leading-[44px] font-bold tracking-[-0.02em]">{formatCents(dueCents)}</span>
+        </div>
+
         {summary}
 
-        {allowAmountEdit ? (
+        {allowAmountEdit && (
           <Field
             label="Monto a cobrar"
             required
             error={touched ? amountError : null}
-            hint={
-              <>
-                Saldo: <span className="num">{formatCents(dueCents)}</span>. Un monto menor registra un abono.
-              </>
-            }
+            hint="Un monto menor que el saldo registra un abono."
           >
-            <MoneyInput value={amount} onValueChange={setAmount} />
+            <div className="[&_input]:h-11 [&_input]:text-[18px] [&_input]:font-semibold">
+              <MoneyInput value={amount} onValueChange={setAmount} />
+            </div>
           </Field>
-        ) : (
-          <div className="flex items-baseline justify-between rounded-[var(--radius-sm)] bg-surface-2 px-3 py-2.5">
-            <span className="text-[13px] text-ink-2">Total a cobrar</span>
-            <Money cents={dueCents} className="text-[20px] font-semibold text-ink" />
-          </div>
         )}
 
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 text-[13px] font-medium text-ink">Método de pago</legend>
-          <div role="radiogroup" aria-label="Método de pago" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <fieldset className="flex flex-col">
+          <legend className="mb-1.5 text-[12px] leading-4 font-semibold text-ink-2">Método de pago</legend>
+          <div
+            role="radiogroup"
+            aria-label="Método de pago"
+            className="grid grid-cols-2 overflow-hidden rounded-[var(--radius-md)] border border-junta bg-junta [gap:1px] sm:grid-cols-4"
+          >
             {METHODS.map((m, i) => {
               const checked = method === m;
               return (
@@ -175,11 +178,9 @@ export function PaymentDialog({
                   onClick={() => selectMethod(m)}
                   onKeyDown={(e) => onRadioKey(e, i)}
                   className={cn(
-                    'pressable flex h-11 items-center justify-center gap-2 rounded-[var(--radius-sm)] border text-[13.5px] font-medium [&_svg]:size-4',
-                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]',
-                    checked
-                      ? 'border-brand bg-brand-soft text-brand shadow-[inset_0_0_0_1px_var(--brand)]'
-                      : 'border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink',
+                    'flex h-10 items-center justify-center gap-2 text-[13.5px] font-semibold [&_svg]:size-4',
+                    'transition-colors duration-[var(--dur-fast)] focus-visible:relative focus-visible:z-10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--focus)]',
+                    checked ? 'bg-slate text-slate-ink' : 'bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink',
                   )}
                 >
                   {METHOD_ICON[m]}
@@ -191,29 +192,36 @@ export function PaymentDialog({
         </fieldset>
 
         {isCash ? (
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start">
-            <Field
-              label="Efectivo recibido"
-              error={receivedError}
-              hint={received === null ? 'Vacío equivale al monto exacto.' : undefined}
-              labelAside={
-                <button
-                  type="button"
-                  className="text-[12.5px] font-medium text-brand underline-offset-2 hover:underline"
-                  onClick={() => {
-                    setReceived(charge);
-                    receivedRef.current?.focus();
-                  }}
-                >
-                  Monto exacto
-                </button>
-              }
-            >
-              <MoneyInput ref={receivedRef} value={received} onValueChange={setReceived} />
-            </Field>
-            <div className="flex min-w-[150px] flex-col gap-1.5 sm:items-end" aria-live="polite">
-              <span className="text-[13px] font-medium text-ink">Cambio</span>
-              <span data-testid="payment-change" className="num flex h-9 items-center text-[20px] font-semibold text-ink">
+          <div className="grid overflow-hidden rounded-[var(--radius-md)] border border-junta bg-junta [gap:1px] sm:grid-cols-2">
+            <div className="bg-surface p-3">
+              <Field
+                label="Efectivo recibido"
+                error={receivedError}
+                hint={received === null ? 'Vacío equivale al monto exacto.' : undefined}
+                labelAside={
+                  <button
+                    type="button"
+                    className="text-[12.5px] font-semibold text-slate underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus)]"
+                    onClick={() => {
+                      setReceived(charge);
+                      receivedRef.current?.focus();
+                    }}
+                  >
+                    Monto exacto
+                  </button>
+                }
+              >
+                <div className="[&_input]:h-12 [&_input]:text-[24px] [&_input]:font-semibold">
+                  <MoneyInput ref={receivedRef} value={received} onValueChange={setReceived} />
+                </div>
+              </Field>
+            </div>
+            <div className="flex flex-col justify-between gap-1.5 bg-surface p-3 text-right" aria-live="polite">
+              <span className="text-[12px] leading-4 font-semibold text-ink-2">Cambio</span>
+              <span
+                data-testid="payment-change"
+                className={cn('num text-[36px] leading-[48px] font-bold tracking-[-0.02em]', change > 0 ? 'text-ink' : 'text-ink-3')}
+              >
                 {formatCents(change)}
               </span>
             </div>
@@ -231,7 +239,7 @@ export function PaymentDialog({
         )}
 
         {error && (
-          <p role="alert" className="rounded-[var(--radius-sm)] border border-danger/30 bg-danger-soft px-3 py-2 text-[13px] text-danger">
+          <p role="alert" className="rounded-[var(--radius-md)] border border-danger bg-danger-soft px-3 py-2 text-[13px] text-danger">
             {error}
           </p>
         )}
