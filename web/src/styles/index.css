@@ -1,0 +1,336 @@
+@import '@fontsource-variable/archivo/wdth.css';
+@import 'tailwindcss';
+@import './tokens.css';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * Map tokens into Tailwind utilities.
+ * World names: bg-rail text-rail-ink bg-ground bg-surface bg-field border-junta
+ * bg-oxide text-oxide bg-ochre border-ochre-line text-slate bg-slate-soft …
+ * Legacy names stay mapped onto the same world (bg-bg, border-line, text-brand…).
+ */
+@theme inline {
+  --color-rail: var(--rail);
+  --color-rail-ink: var(--rail-ink);
+  --color-rail-muted: var(--rail-muted);
+  --color-rail-dim: var(--rail-dim);
+  --color-rail-hover: var(--rail-hover);
+  --color-rail-line: var(--rail-line);
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-field: var(--field);
+  --color-junta: var(--junta);
+  --color-junta-strong: var(--junta-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-oxide: var(--oxide);
+  --color-oxide-hover: var(--oxide-hover);
+  --color-oxide-deep: var(--oxide-deep);
+  --color-oxide-ink: var(--oxide-ink);
+  --color-ochre: var(--ochre);
+  --color-ochre-line: var(--ochre-line);
+  --color-ochre-ink: var(--ochre-ink);
+  --color-slate: var(--slate);
+  --color-slate-hover: var(--slate-hover);
+  --color-slate-ink: var(--slate-ink);
+  --color-slate-soft: var(--slate-soft);
+  --color-slate-text: var(--slate-text);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  /* legacy */
+  --color-bg: var(--bg);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+
+  --font-sans: 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;
+
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius: 3px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --shadow-pop: var(--shadow-pop);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 20px;
+    font-variant-numeric: tabular-nums;
+    background: var(--ground);
+    color: var(--ink);
+    caret-color: var(--slate);
+    accent-color: var(--slate);
+    scrollbar-color: var(--junta-strong) transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    min-height: 100dvh;
+    background: var(--ground);
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  a {
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+  ::selection {
+    background: var(--slate);
+    color: var(--slate-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  button:not(:disabled),
+  [role='button'] {
+    cursor: pointer;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--ink-3);
+    opacity: 1;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--junta-strong);
+    border: 3px solid transparent;
+    border-radius: 2px;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--ink-3);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Money and document numbers: Archivo, tabular figures, slightly condensed. Not monospace. */
+@utility num {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-stretch: var(--num-stretch);
+  letter-spacing: 0;
+}
+
+@utility focus-ring {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Shared recipe for inputs, selects and textareas: white field, one junta, slate focus. */
+@utility control {
+  width: 100%;
+  min-height: 36px;
+  padding-inline: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--junta);
+  background: var(--field);
+  color: var(--ink);
+  font-size: 14px;
+  transition-property: border-color, box-shadow, background-color;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: ease;
+  &:hover:not(:disabled) {
+    border-color: var(--junta-strong);
+  }
+  &:focus-visible {
+    outline: none;
+    border-color: var(--slate);
+    box-shadow: 0 0 0 3px var(--focus-halo);
+  }
+  &[aria-invalid='true'] {
+    border-color: var(--danger);
+  }
+  &[aria-invalid='true']:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--danger) 22%, transparent);
+  }
+  &:disabled {
+    background: var(--surface-2);
+    color: var(--ink-3);
+    cursor: not-allowed;
+  }
+}
+
+/* Scale on press (better-ui: always 0.96). */
+@utility pressable {
+  transition-property: scale, background-color, border-color, color, box-shadow, opacity;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-out);
+  &:active:not(:disabled):not([aria-disabled='true']) {
+    scale: 0.96;
+  }
+}
+
+/*
+ * The hydraulic tile, the signature move. Used ONLY for the brand mark, the
+ * shift status and the arqueo grid.
+ *
+ * .brand-tile — 4 quadrants with quarter-circle pigment (oxide core, ochre
+ * ring) meeting at the centre to form a rosette, juntas in rail green.
+ * Size it with width/height; the rosette scales with --tile-size.
+ */
+.brand-tile {
+  --tile-size: 32px;
+  --tile-core: calc(var(--tile-size) * 0.28);
+  --tile-ring: calc(var(--tile-size) * 0.44);
+  --tile-joint: var(--rail);
+  width: var(--tile-size);
+  height: var(--tile-size);
+  flex: none;
+  border-radius: 1px;
+  background:
+    linear-gradient(var(--tile-joint), var(--tile-joint)) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--tile-joint), var(--tile-joint)) 0 50% / 100% 1px no-repeat,
+    radial-gradient(circle at 100% 100%, #9c3b2a 0 var(--tile-core), #c8902f var(--tile-core) var(--tile-ring), transparent var(--tile-ring)) 0 0 / 50% 50% no-repeat,
+    radial-gradient(circle at 0 100%, #9c3b2a 0 var(--tile-core), #c8902f var(--tile-core) var(--tile-ring), transparent var(--tile-ring)) 100% 0 / 50% 50% no-repeat,
+    radial-gradient(circle at 100% 0, #9c3b2a 0 var(--tile-core), #c8902f var(--tile-core) var(--tile-ring), transparent var(--tile-ring)) 0 100% / 50% 50% no-repeat,
+    radial-gradient(circle at 0 0, #9c3b2a 0 var(--tile-core), #c8902f var(--tile-core) var(--tile-ring), transparent var(--tile-ring)) 100% 100% / 50% 50% no-repeat,
+    #e9e4da;
+}
+
+/* .shift-tile — square split in 4 quadrants by juntas; filled quadrants in rail green. */
+.shift-tile {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 1px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--junta-strong);
+  border-radius: 1px;
+  background: var(--junta-strong);
+}
+.shift-tile > span {
+  background: var(--surface);
+  transition: background-color 240ms var(--ease-out);
+}
+.shift-tile > span[data-done='true'] {
+  background: var(--rail);
+}
+:root[data-theme='dark'] .shift-tile > span[data-done='true'] {
+  background: var(--ok);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .shift-tile > span[data-done='true'] {
+    background: var(--ok);
+  }
+}
+
+/* Overlay enter animations (occasional → standard motion, < 250ms). */
+@keyframes shs-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes shs-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+@keyframes shs-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes shs-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes shs-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.anim-fade-in {
+  animation: shs-fade-in var(--dur-base) var(--ease-out);
+}
+.anim-pop-in {
+  animation: shs-pop-in var(--dur-base) var(--ease-out);
+}
+.anim-slide-in-right {
+  animation: shs-slide-in-right 240ms var(--ease-drawer);
+}
+.anim-toast-in {
+  animation: shs-toast-in var(--dur-base) var(--ease-out);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--ground) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: shs-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-xs);
+}
+
+/* Theme switch: suppress transitions for one frame (see lib/theme.ts). */
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .pressable:active {
+    scale: 1 !important;
+  }
+}

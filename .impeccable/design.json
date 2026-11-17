@@ -1,0 +1,792 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T22:02:46.772Z",
+  "title": "Design System: S_Hospital",
+  "extensions": {
+    "colorMeta": {
+      "rail": {
+        "role": "neutral",
+        "displayName": "Verde botella de riel",
+        "canonical": "#24493f",
+        "oklch": "oklch(37.4% 0.0463 174.1)",
+        "tonalRamp": [
+          "oklch(15% 0.0077 174.1)",
+          "oklch(26% 0.0247 174.1)",
+          "oklch(37% 0.0417 174.1)",
+          "oklch(48% 0.0463 174.1)",
+          "oklch(60% 0.0463 174.1)",
+          "oklch(72% 0.0433 174.1)",
+          "oklch(84% 0.0247 174.1)",
+          "oklch(95% 0.0077 174.1)"
+        ],
+        "dark": "#1f3f36"
+      },
+      "rail-ink": {
+        "role": "neutral",
+        "displayName": "Hueso de riel",
+        "canonical": "#e9e4da",
+        "oklch": "oklch(92% 0.0145 84.6)",
+        "tonalRamp": [
+          "oklch(15% 0.0024 84.6)",
+          "oklch(26% 0.0077 84.6)",
+          "oklch(37% 0.013 84.6)",
+          "oklch(48% 0.0145 84.6)",
+          "oklch(60% 0.0145 84.6)",
+          "oklch(72% 0.0135 84.6)",
+          "oklch(84% 0.0077 84.6)",
+          "oklch(95% 0.0024 84.6)"
+        ]
+      },
+      "rail-muted": {
+        "role": "neutral",
+        "displayName": "Hueso apagado de riel",
+        "canonical": "#bfc9c1",
+        "oklch": "oklch(82.6% 0.0155 151.7)",
+        "tonalRamp": [
+          "oklch(15% 0.0026 151.7)",
+          "oklch(26% 0.0083 151.7)",
+          "oklch(37% 0.014 151.7)",
+          "oklch(48% 0.0155 151.7)",
+          "oklch(60% 0.0155 151.7)",
+          "oklch(72% 0.0145 151.7)",
+          "oklch(84% 0.0083 151.7)",
+          "oklch(95% 0.0026 151.7)"
+        ]
+      },
+      "rail-hover": {
+        "role": "neutral",
+        "displayName": "Verde riel hover",
+        "canonical": "#2e574b",
+        "oklch": "oklch(42.3% 0.0509 172.8)",
+        "tonalRamp": [
+          "oklch(15% 0.0085 172.8)",
+          "oklch(26% 0.0271 172.8)",
+          "oklch(37% 0.0458 172.8)",
+          "oklch(48% 0.0509 172.8)",
+          "oklch(60% 0.0509 172.8)",
+          "oklch(72% 0.0475 172.8)",
+          "oklch(84% 0.0271 172.8)",
+          "oklch(95% 0.0085 172.8)"
+        ],
+        "dark": "#28504a"
+      },
+      "rail-line": {
+        "role": "neutral",
+        "displayName": "Junta de riel",
+        "canonical": "#3b6157",
+        "oklch": "oklch(46.1% 0.0466 175.6)",
+        "tonalRamp": [
+          "oklch(15% 0.0078 175.6)",
+          "oklch(26% 0.0249 175.6)",
+          "oklch(37% 0.0419 175.6)",
+          "oklch(48% 0.0466 175.6)",
+          "oklch(60% 0.0466 175.6)",
+          "oklch(72% 0.0435 175.6)",
+          "oklch(84% 0.0249 175.6)",
+          "oklch(95% 0.0078 175.6)"
+        ],
+        "dark": "#33574d"
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Piedra cálida",
+        "canonical": "#e4dfd5",
+        "oklch": "oklch(90.5% 0.0145 84.6)",
+        "tonalRamp": [
+          "oklch(15% 0.0024 84.6)",
+          "oklch(26% 0.0077 84.6)",
+          "oklch(37% 0.0131 84.6)",
+          "oklch(48% 0.0145 84.6)",
+          "oklch(60% 0.0145 84.6)",
+          "oklch(72% 0.0136 84.6)",
+          "oklch(84% 0.0077 84.6)",
+          "oklch(95% 0.0024 84.6)"
+        ],
+        "dark": "#161b19"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Hueso",
+        "canonical": "#f4f1eb",
+        "oklch": "oklch(95.9% 0.0086 84.6)",
+        "tonalRamp": [
+          "oklch(15% 0.0014 84.6)",
+          "oklch(26% 0.0046 84.6)",
+          "oklch(37% 0.0077 84.6)",
+          "oklch(48% 0.0086 84.6)",
+          "oklch(60% 0.0086 84.6)",
+          "oklch(72% 0.008 84.6)",
+          "oklch(84% 0.0046 84.6)",
+          "oklch(95% 0.0014 84.6)"
+        ],
+        "dark": "#1e2421"
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Hueso hondo",
+        "canonical": "#ebe7df",
+        "oklch": "oklch(92.9% 0.0116 84.6)",
+        "tonalRamp": [
+          "oklch(15% 0.0019 84.6)",
+          "oklch(26% 0.0062 84.6)",
+          "oklch(37% 0.0104 84.6)",
+          "oklch(48% 0.0116 84.6)",
+          "oklch(60% 0.0116 84.6)",
+          "oklch(72% 0.0108 84.6)",
+          "oklch(84% 0.0062 84.6)",
+          "oklch(95% 0.0019 84.6)"
+        ],
+        "dark": "#252c28"
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Blanco de campo",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100% 0 89.9)",
+        "tonalRamp": [
+          "oklch(15% 0 89.9)",
+          "oklch(26% 0 89.9)",
+          "oklch(37% 0 89.9)",
+          "oklch(48% 0 89.9)",
+          "oklch(60% 0 89.9)",
+          "oklch(72% 0 89.9)",
+          "oklch(84% 0 89.9)",
+          "oklch(95% 0 89.9)"
+        ],
+        "dark": "#232a27"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "#2a2724",
+        "oklch": "oklch(27.5% 0.007 67.5)",
+        "tonalRamp": [
+          "oklch(15% 0.0012 67.5)",
+          "oklch(26% 0.0037 67.5)",
+          "oklch(37% 0.0063 67.5)",
+          "oklch(48% 0.007 67.5)",
+          "oklch(60% 0.007 67.5)",
+          "oklch(72% 0.0066 67.5)",
+          "oklch(84% 0.0037 67.5)",
+          "oklch(95% 0.0012 67.5)"
+        ],
+        "dark": "#e6e1d7"
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Tinta secundaria",
+        "canonical": "#5e5850",
+        "oklch": "oklch(46.4% 0.0149 75.2)",
+        "tonalRamp": [
+          "oklch(15% 0.0025 75.2)",
+          "oklch(26% 0.0079 75.2)",
+          "oklch(37% 0.0134 75.2)",
+          "oklch(48% 0.0149 75.2)",
+          "oklch(60% 0.0149 75.2)",
+          "oklch(72% 0.0139 75.2)",
+          "oklch(84% 0.0079 75.2)",
+          "oklch(95% 0.0025 75.2)"
+        ],
+        "dark": "#b3ada2"
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Tinta terciaria",
+        "canonical": "#665f56",
+        "oklch": "oklch(48.9% 0.0167 74.3)",
+        "tonalRamp": [
+          "oklch(15% 0.0028 74.3)",
+          "oklch(26% 0.0089 74.3)",
+          "oklch(37% 0.015 74.3)",
+          "oklch(48% 0.0167 74.3)",
+          "oklch(60% 0.0167 74.3)",
+          "oklch(72% 0.0156 74.3)",
+          "oklch(84% 0.0089 74.3)",
+          "oklch(95% 0.0028 74.3)"
+        ],
+        "dark": "#9c968b"
+      },
+      "junta": {
+        "role": "neutral",
+        "displayName": "Junta",
+        "canonical": "#cfc8ba",
+        "oklch": "oklch(83.5% 0.0207 84.6)",
+        "tonalRamp": [
+          "oklch(15% 0.0034 84.6)",
+          "oklch(26% 0.011 84.6)",
+          "oklch(37% 0.0186 84.6)",
+          "oklch(48% 0.0207 84.6)",
+          "oklch(60% 0.0207 84.6)",
+          "oklch(72% 0.0193 84.6)",
+          "oklch(84% 0.011 84.6)",
+          "oklch(95% 0.0034 84.6)"
+        ],
+        "dark": "#3a413c"
+      },
+      "junta-strong": {
+        "role": "neutral",
+        "displayName": "Junta fuerte",
+        "canonical": "#b3ab9c",
+        "oklch": "oklch(74.4% 0.023 83.3)",
+        "tonalRamp": [
+          "oklch(15% 0.0038 83.3)",
+          "oklch(26% 0.0123 83.3)",
+          "oklch(37% 0.0207 83.3)",
+          "oklch(48% 0.023 83.3)",
+          "oklch(60% 0.023 83.3)",
+          "oklch(72% 0.0214 83.3)",
+          "oklch(84% 0.0123 83.3)",
+          "oklch(95% 0.0038 83.3)"
+        ],
+        "dark": "#4d5650"
+      },
+      "oxide": {
+        "role": "primary",
+        "displayName": "Óxido de ladrillo",
+        "canonical": "#9c3b2a",
+        "oklch": "oklch(48.5% 0.1333 32.1)",
+        "tonalRamp": [
+          "oklch(15% 0.0222 32.1)",
+          "oklch(26% 0.0711 32.1)",
+          "oklch(37% 0.12 32.1)",
+          "oklch(48% 0.1333 32.1)",
+          "oklch(60% 0.1333 32.1)",
+          "oklch(72% 0.1244 32.1)",
+          "oklch(84% 0.0711 32.1)",
+          "oklch(95% 0.0222 32.1)"
+        ],
+        "dark": "#b4482f"
+      },
+      "oxide-hover": {
+        "role": "primary",
+        "displayName": "Óxido hover",
+        "canonical": "#86311f",
+        "oklch": "oklch(43.3% 0.1208 33.6)",
+        "tonalRamp": [
+          "oklch(15% 0.0201 33.6)",
+          "oklch(26% 0.0644 33.6)",
+          "oklch(37% 0.1087 33.6)",
+          "oklch(48% 0.1208 33.6)",
+          "oklch(60% 0.1208 33.6)",
+          "oklch(72% 0.1128 33.6)",
+          "oklch(84% 0.0644 33.6)",
+          "oklch(95% 0.0201 33.6)"
+        ],
+        "dark": "#c25539"
+      },
+      "oxide-deep": {
+        "role": "primary",
+        "displayName": "Óxido hondo",
+        "canonical": "#7e2e20",
+        "oklch": "oklch(41.5% 0.1143 32.1)",
+        "tonalRamp": [
+          "oklch(15% 0.019 32.1)",
+          "oklch(26% 0.0609 32.1)",
+          "oklch(37% 0.1028 32.1)",
+          "oklch(48% 0.1143 32.1)",
+          "oklch(60% 0.1143 32.1)",
+          "oklch(72% 0.1067 32.1)",
+          "oklch(84% 0.0609 32.1)",
+          "oklch(95% 0.019 32.1)"
+        ],
+        "dark": "#8e3624"
+      },
+      "oxide-ink": {
+        "role": "primary",
+        "displayName": "Tinta sobre óxido",
+        "canonical": "#f7f2ea",
+        "oklch": "oklch(96.3% 0.0119 79.8)",
+        "tonalRamp": [
+          "oklch(15% 0.002 79.8)",
+          "oklch(26% 0.0064 79.8)",
+          "oklch(37% 0.0107 79.8)",
+          "oklch(48% 0.0119 79.8)",
+          "oklch(60% 0.0119 79.8)",
+          "oklch(72% 0.0111 79.8)",
+          "oklch(84% 0.0064 79.8)",
+          "oklch(95% 0.002 79.8)"
+        ]
+      },
+      "ochre": {
+        "role": "secondary",
+        "displayName": "Ocre de campo",
+        "canonical": "#c8902f",
+        "oklch": "oklch(69.2% 0.1278 76.8)",
+        "tonalRamp": [
+          "oklch(15% 0.0213 76.8)",
+          "oklch(26% 0.0682 76.8)",
+          "oklch(37% 0.115 76.8)",
+          "oklch(48% 0.1278 76.8)",
+          "oklch(60% 0.1278 76.8)",
+          "oklch(72% 0.1193 76.8)",
+          "oklch(84% 0.0682 76.8)",
+          "oklch(95% 0.0213 76.8)"
+        ],
+        "dark": "#c8902f"
+      },
+      "ochre-line": {
+        "role": "secondary",
+        "displayName": "Línea ocre",
+        "canonical": "#b07c24",
+        "oklch": "oklch(62.4% 0.1182 75.7)",
+        "tonalRamp": [
+          "oklch(15% 0.0197 75.7)",
+          "oklch(26% 0.063 75.7)",
+          "oklch(37% 0.1063 75.7)",
+          "oklch(48% 0.1182 75.7)",
+          "oklch(60% 0.1182 75.7)",
+          "oklch(72% 0.1103 75.7)",
+          "oklch(84% 0.063 75.7)",
+          "oklch(95% 0.0197 75.7)"
+        ],
+        "dark": "#a87720"
+      },
+      "ochre-ink": {
+        "role": "secondary",
+        "displayName": "Tinta sobre ocre",
+        "canonical": "#2a2724",
+        "oklch": "oklch(27.5% 0.007 67.5)",
+        "tonalRamp": [
+          "oklch(15% 0.0012 67.5)",
+          "oklch(26% 0.0037 67.5)",
+          "oklch(37% 0.0063 67.5)",
+          "oklch(48% 0.007 67.5)",
+          "oklch(60% 0.007 67.5)",
+          "oklch(72% 0.0066 67.5)",
+          "oklch(84% 0.0037 67.5)",
+          "oklch(95% 0.0012 67.5)"
+        ],
+        "dark": "#1e1a14"
+      },
+      "slate": {
+        "role": "tertiary",
+        "displayName": "Pizarra",
+        "canonical": "#3e5c76",
+        "oklch": "oklch(46.2% 0.0554 245.5)",
+        "tonalRamp": [
+          "oklch(15% 0.0092 245.5)",
+          "oklch(26% 0.0296 245.5)",
+          "oklch(37% 0.0499 245.5)",
+          "oklch(48% 0.0554 245.5)",
+          "oklch(60% 0.0554 245.5)",
+          "oklch(72% 0.0517 245.5)",
+          "oklch(84% 0.0296 245.5)",
+          "oklch(95% 0.0092 245.5)"
+        ],
+        "dark": "#8daac4"
+      },
+      "slate-hover": {
+        "role": "tertiary",
+        "displayName": "Pizarra hover",
+        "canonical": "#344e65",
+        "oklch": "oklch(41.3% 0.05 246.1)",
+        "tonalRamp": [
+          "oklch(15% 0.0083 246.1)",
+          "oklch(26% 0.0267 246.1)",
+          "oklch(37% 0.045 246.1)",
+          "oklch(48% 0.05 246.1)",
+          "oklch(60% 0.05 246.1)",
+          "oklch(72% 0.0467 246.1)",
+          "oklch(84% 0.0267 246.1)",
+          "oklch(95% 0.0083 246.1)"
+        ],
+        "dark": "#a1bad0"
+      },
+      "slate-soft": {
+        "role": "tertiary",
+        "displayName": "Pizarra suave",
+        "canonical": "#dde5ec",
+        "oklch": "oklch(91.8% 0.0129 244.3)",
+        "tonalRamp": [
+          "oklch(15% 0.0021 244.3)",
+          "oklch(26% 0.0069 244.3)",
+          "oklch(37% 0.0116 244.3)",
+          "oklch(48% 0.0129 244.3)",
+          "oklch(60% 0.0129 244.3)",
+          "oklch(72% 0.012 244.3)",
+          "oklch(84% 0.0069 244.3)",
+          "oklch(95% 0.0021 244.3)"
+        ],
+        "dark": "#24323f"
+      },
+      "slate-text": {
+        "role": "tertiary",
+        "displayName": "Texto pizarra",
+        "canonical": "#2c4559",
+        "oklch": "oklch(37.9% 0.0462 243.5)",
+        "tonalRamp": [
+          "oklch(15% 0.0077 243.5)",
+          "oklch(26% 0.0246 243.5)",
+          "oklch(37% 0.0416 243.5)",
+          "oklch(48% 0.0462 243.5)",
+          "oklch(60% 0.0462 243.5)",
+          "oklch(72% 0.0431 243.5)",
+          "oklch(84% 0.0246 243.5)",
+          "oklch(95% 0.0077 243.5)"
+        ],
+        "dark": "#b9cde0"
+      },
+      "ok": {
+        "role": "status",
+        "displayName": "Verde hecho",
+        "canonical": "#2f5b44",
+        "oklch": "oklch(43.2% 0.0627 159.4)",
+        "tonalRamp": [
+          "oklch(15% 0.0105 159.4)",
+          "oklch(26% 0.0334 159.4)",
+          "oklch(37% 0.0564 159.4)",
+          "oklch(48% 0.0627 159.4)",
+          "oklch(60% 0.0627 159.4)",
+          "oklch(72% 0.0585 159.4)",
+          "oklch(84% 0.0334 159.4)",
+          "oklch(95% 0.0105 159.4)"
+        ],
+        "dark": "#7fc09a"
+      },
+      "ok-soft": {
+        "role": "status",
+        "displayName": "Verde hecho suave",
+        "canonical": "#dde8df",
+        "oklch": "oklch(92% 0.0168 151.1)",
+        "tonalRamp": [
+          "oklch(15% 0.0028 151.1)",
+          "oklch(26% 0.009 151.1)",
+          "oklch(37% 0.0151 151.1)",
+          "oklch(48% 0.0168 151.1)",
+          "oklch(60% 0.0168 151.1)",
+          "oklch(72% 0.0157 151.1)",
+          "oklch(84% 0.009 151.1)",
+          "oklch(95% 0.0028 151.1)"
+        ],
+        "dark": "#1c3127"
+      },
+      "warn": {
+        "role": "status",
+        "displayName": "Ámbar pendiente",
+        "canonical": "#8a5a0e",
+        "oklch": "oklch(50.8% 0.104 71.5)",
+        "tonalRamp": [
+          "oklch(15% 0.0173 71.5)",
+          "oklch(26% 0.0555 71.5)",
+          "oklch(37% 0.0936 71.5)",
+          "oklch(48% 0.104 71.5)",
+          "oklch(60% 0.104 71.5)",
+          "oklch(72% 0.0971 71.5)",
+          "oklch(84% 0.0555 71.5)",
+          "oklch(95% 0.0173 71.5)"
+        ],
+        "dark": "#e3a955"
+      },
+      "warn-soft": {
+        "role": "status",
+        "displayName": "Ámbar suave",
+        "canonical": "#f1e3c6",
+        "oklch": "oklch(92% 0.0412 85.3)",
+        "tonalRamp": [
+          "oklch(15% 0.0069 85.3)",
+          "oklch(26% 0.022 85.3)",
+          "oklch(37% 0.0371 85.3)",
+          "oklch(48% 0.0412 85.3)",
+          "oklch(60% 0.0412 85.3)",
+          "oklch(72% 0.0385 85.3)",
+          "oklch(84% 0.022 85.3)",
+          "oklch(95% 0.0069 85.3)"
+        ],
+        "dark": "#3a2d16"
+      },
+      "danger": {
+        "role": "status",
+        "displayName": "Rojo anulado",
+        "canonical": "#a12937",
+        "oklch": "oklch(47.5% 0.1553 19.3)",
+        "tonalRamp": [
+          "oklch(15% 0.0259 19.3)",
+          "oklch(26% 0.0828 19.3)",
+          "oklch(37% 0.1398 19.3)",
+          "oklch(48% 0.1553 19.3)",
+          "oklch(60% 0.1553 19.3)",
+          "oklch(72% 0.145 19.3)",
+          "oklch(84% 0.0828 19.3)",
+          "oklch(95% 0.0259 19.3)"
+        ],
+        "dark": "#f08c84"
+      },
+      "danger-hover": {
+        "role": "status",
+        "displayName": "Rojo hover",
+        "canonical": "#8a2230",
+        "oklch": "oklch(42.5% 0.1385 18.1)",
+        "tonalRamp": [
+          "oklch(15% 0.0231 18.1)",
+          "oklch(26% 0.0739 18.1)",
+          "oklch(37% 0.1246 18.1)",
+          "oklch(48% 0.1385 18.1)",
+          "oklch(60% 0.1385 18.1)",
+          "oklch(72% 0.1292 18.1)",
+          "oklch(84% 0.0739 18.1)",
+          "oklch(95% 0.0231 18.1)"
+        ],
+        "dark": "#f5a39c"
+      },
+      "danger-soft": {
+        "role": "status",
+        "displayName": "Rojo suave",
+        "canonical": "#f3dcdc",
+        "oklch": "oklch(91.3% 0.0254 17.6)",
+        "tonalRamp": [
+          "oklch(15% 0.0042 17.6)",
+          "oklch(26% 0.0136 17.6)",
+          "oklch(37% 0.0229 17.6)",
+          "oklch(48% 0.0254 17.6)",
+          "oklch(60% 0.0254 17.6)",
+          "oklch(72% 0.0238 17.6)",
+          "oklch(84% 0.0136 17.6)",
+          "oklch(95% 0.0042 17.6)"
+        ],
+        "dark": "#3d1f20"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Total",
+        "purpose": "Cifra del total en el campo ocre de Cobrar; 44/52px si supera 12 caracteres."
+      },
+      "headline": {
+        "displayName": "Título de página",
+        "purpose": "Único h1, portado a la barra superior de 56px."
+      },
+      "figure": {
+        "displayName": "Cifra de libro",
+        "purpose": "Cifra de celdas KPI y del arqueo."
+      },
+      "title": {
+        "displayName": "Título de panel",
+        "purpose": "h2 de paneles y secciones; 17px en diálogos y drawers."
+      },
+      "body": {
+        "displayName": "Texto",
+        "purpose": "Texto, celdas y controles, con cifras tabulares por defecto."
+      },
+      "label": {
+        "displayName": "Rótulo",
+        "purpose": "Rótulos de campo, cabeceras de columna y de KPI."
+      },
+      "total-label": {
+        "displayName": "Rótulo de total",
+        "purpose": "Solo TOTAL / CAMBIO / SALDO junto a la cifra final y el sello de estado de documentos."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-pop",
+        "value": "0 6px 16px -6px rgb(42 39 36 / 0.28), 0 1px 2px rgb(42 39 36 / 0.08)",
+        "purpose": "Solo lo que flota: diálogos, drawers, menús, tooltips del riel, toasts."
+      },
+      {
+        "name": "shadow-pop-dark",
+        "value": "0 8px 20px -6px rgb(0 0 0 / 0.6), 0 1px 2px rgb(0 0 0 / 0.4)",
+        "purpose": "La misma sombra en tema oscuro."
+      },
+      {
+        "name": "focus-halo",
+        "value": "0 0 0 3px rgb(62 92 118 / 0.22)",
+        "purpose": "Halo de foco de controles de texto (pizarra)."
+      },
+      {
+        "name": "overlay",
+        "value": "rgb(31 35 32 / 0.42)",
+        "purpose": "Velo bajo diálogos y drawers."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Transiciones de estado, presión y entrada de overlays."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "Movimientos simétricos."
+      },
+      {
+        "name": "ease-drawer",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Entrada del drawer desde la derecha (240ms)."
+      },
+      {
+        "name": "dur-fast",
+        "value": "120ms",
+        "purpose": "Hover, bordes y presión (scale 0.96)."
+      },
+      {
+        "name": "dur-base",
+        "value": "180ms",
+        "purpose": "Entrada de diálogos, menús y toasts."
+      },
+      {
+        "name": "shift-fill",
+        "value": "240ms",
+        "purpose": "Relleno de un cuarto del ladrillo del turno."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile",
+        "value": "640px"
+      },
+      {
+        "name": "search-collapse",
+        "value": "900px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "rail-collapse",
+        "value": "1100px"
+      },
+      {
+        "name": "clock",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón primario",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "La única acción principal de la vista, en óxido, con su atajo. Deshabilitado cae a pieza de superficie, no a óxido translúcido.",
+      "html": "<button class=\"ds-btn-primary\">Guardar <kbd class=\"ds-kbd-oxide\">F4</kbd></button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:0;border-radius:4px;background:var(--oxide,#9c3b2a);color:var(--oxide-ink,#f7f2ea);font:600 14px/20px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;cursor:pointer;transition:scale 120ms cubic-bezier(0.23,1,0.32,1),background-color 120ms cubic-bezier(0.23,1,0.32,1)}.ds-btn-primary:hover{background:var(--oxide-hover,#86311f)}.ds-btn-primary:focus-visible{outline:2px solid var(--slate,#3e5c76);outline-offset:2px}.ds-btn-primary:active{scale:0.96}.ds-btn-primary:disabled{background:var(--surface,#f4f1eb);color:var(--ink-3,#665f56);border:1px solid var(--junta,#cfc8ba);cursor:not-allowed}.ds-kbd-oxide{display:inline-flex;align-items:center;height:18px;padding:0 5px;border-radius:3px;border:1px solid color-mix(in oklab,#f7f2ea 35%,#9c3b2a);background:var(--oxide-deep,#7e2e20);color:var(--oxide-ink,#f7f2ea);font:600 11px/16px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif}"
+    },
+    {
+      "name": "Botón de cobrar",
+      "kind": "button",
+      "refersTo": "button-pay",
+      "description": "Variante xl de 56px bajo el campo del total, con el Kbd separado al borde derecho.",
+      "html": "<button class=\"ds-btn-pay\"><span>Cobrar · L 57.50</span><kbd class=\"ds-kbd-pay\">F4</kbd></button>",
+      "css": ".ds-btn-pay{display:flex;width:100%;align-items:center;justify-content:space-between;height:56px;padding:0 20px;border:0;border-radius:4px;background:var(--oxide,#9c3b2a);color:var(--oxide-ink,#f7f2ea);font:700 18px/24px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;font-variant-numeric:tabular-nums;cursor:pointer;transition:scale 120ms cubic-bezier(0.23,1,0.32,1),background-color 120ms cubic-bezier(0.23,1,0.32,1)}.ds-btn-pay:hover{background:var(--oxide-hover,#86311f)}.ds-btn-pay:focus-visible{outline:2px solid var(--slate,#3e5c76);outline-offset:2px}.ds-btn-pay:active{scale:0.96}.ds-kbd-pay{display:inline-flex;align-items:center;height:18px;padding:0 5px;border-radius:3px;border:1px solid color-mix(in oklab,#f7f2ea 35%,#9c3b2a);background:var(--oxide-deep,#7e2e20);color:var(--oxide-ink,#f7f2ea);font:600 11px/16px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;height:20px;padding:0 6px;font-size:12px}"
+    },
+    {
+      "name": "Botón secundario",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Variante por defecto: hueso con junta.",
+      "html": "<button class=\"ds-btn-secondary\">Vista previa <kbd class=\"ds-kbd\">F6</kbd></button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:1px solid var(--junta,#cfc8ba);border-radius:4px;background:var(--surface,#f4f1eb);color:var(--ink,#2a2724);font:600 14px/20px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;cursor:pointer;transition:scale 120ms cubic-bezier(0.23,1,0.32,1),background-color 120ms,border-color 120ms}.ds-btn-secondary:hover{background:var(--surface-2,#ebe7df);border-color:var(--junta-strong,#b3ab9c)}.ds-btn-secondary:focus-visible{outline:2px solid var(--slate,#3e5c76);outline-offset:2px}.ds-btn-secondary:active{scale:0.96}.ds-kbd{display:inline-flex;align-items:center;height:18px;padding:0 5px;border-radius:3px;border:1px solid var(--junta,#cfc8ba);background:var(--surface,#f4f1eb);color:var(--ink-2,#5e5850);font:600 11px/16px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif}"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Blanco de campo, una junta, foco pizarra con halo; rótulo con su atajo.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Nombre del paciente <kbd class=\"ds-field-kbd\">F2</kbd></span><input class=\"ds-input\" placeholder=\"Nombre completo\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px;font-family:'Archivo Variable', 'Segoe UI', system-ui, sans-serif}.ds-field-label{display:flex;justify-content:space-between;align-items:center;font:600 12px/16px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;color:var(--ink-2,#5e5850)}.ds-field-kbd{height:16px;padding:0 5px;border-radius:3px;border:1px solid var(--junta,#cfc8ba);background:var(--surface,#f4f1eb);font:600 11px/14px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif}.ds-input{height:36px;padding:0 10px;border:1px solid var(--junta,#cfc8ba);border-radius:4px;background:var(--field,#fff);color:var(--ink,#2a2724);font:400 14px/20px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;transition:border-color 120ms,box-shadow 120ms}.ds-input::placeholder{color:var(--ink-3,#665f56)}.ds-input:hover{border-color:var(--junta-strong,#b3ab9c)}.ds-input:focus-visible{outline:none;border-color:var(--slate,#3e5c76);box-shadow:0 0 0 3px rgb(62 92 118 / 0.22)}"
+    },
+    {
+      "name": "Riel de navegación",
+      "kind": "nav",
+      "refersTo": "rail",
+      "description": "Riel verde botella; el ítem activo es una pieza de piedra con icono óxido.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-rail-item\" href=\"#\">Resumen</a><a class=\"ds-rail-item\" href=\"#\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" class=\"ds-rail-icon\"><rect x=\"3\" y=\"6\" width=\"18\" height=\"12\" rx=\"1\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/></svg>Cobrar</a><a class=\"ds-rail-item\" href=\"#\">Recibos</a></nav>",
+      "css": ".ds-rail{display:flex;flex-direction:column;gap:2px;width:216px;padding:12px;background:var(--rail,#24493f);font-family:'Archivo Variable', 'Segoe UI', system-ui, sans-serif}.ds-rail-item{display:flex;align-items:center;gap:12px;height:36px;padding:0 12px;border-radius:4px;color:var(--rail-ink,#e9e4da);font:500 14px/20px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;text-decoration:none;cursor:pointer;transition:background-color 120ms}.ds-rail-item:hover{background:var(--rail-hover,#2e574b)}.ds-rail-item:focus-visible{outline:2px solid var(--rail-ink,#e9e4da);outline-offset:0}.ds-rail-item[aria-current=page]{background:var(--ground,#e4dfd5);color:var(--ink,#2a2724);font-weight:600}.ds-rail-item[aria-current=page] .ds-rail-icon{color:var(--oxide,#9c3b2a)}"
+    },
+    {
+      "name": "Estado de factura",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Glifo de forma + etiqueta; el color solo acompaña. Badge con fondo suave para etiquetas.",
+      "html": "<span class=\"ds-status\"><svg viewBox=\"0 0 10 10\" width=\"10\" height=\"10\" class=\"ds-g-warn\"><rect x=\"1.1\" y=\"1.1\" width=\"7.8\" height=\"7.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\"/></svg>Pendiente de cobro</span> <span class=\"ds-status\"><svg viewBox=\"0 0 10 10\" width=\"10\" height=\"10\" class=\"ds-g-ok\"><rect x=\"0.5\" y=\"0.5\" width=\"9\" height=\"9\" fill=\"currentColor\"/></svg>Pagada</span> <span class=\"ds-badge\"><svg viewBox=\"0 0 10 10\" width=\"8\" height=\"8\"><path d=\"M5 0.4 9.6 5 5 9.6 0.4 5Z\" fill=\"currentColor\"/></svg>Sin cobro por receta</span>",
+      "css": ".ds-status{display:inline-flex;align-items:center;gap:8px;font:500 13px/20px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;color:var(--ink,#2a2724)}.ds-g-warn{color:var(--warn,#8a5a0e)}.ds-g-ok{color:var(--ok,#2f5b44)}.ds-badge{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 6px;border-radius:3px;background:var(--slate-soft,#dde5ec);color:var(--slate-text,#2c4559);font:600 11.5px/18px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif}"
+    },
+    {
+      "name": "Campo del total",
+      "kind": "custom",
+      "refersTo": "total-field",
+      "description": "Firma de Cobrar: filas que suman al total y la cifra más grande de la pantalla, sobre ocre.",
+      "html": "<dl class=\"ds-total\"><div class=\"ds-total-row\"><dt>Subtotal</dt><dd>L 75.00</dd></div><div class=\"ds-total-row\"><dt>Ajuste por receta</dt><dd>−L 25.00</dd></div><div class=\"ds-total-row\"><dt>Exento</dt><dd>L 0.00</dd></div><div class=\"ds-total-row\"><dt>ISV 15 %</dt><dd>L 7.50</dd></div><div class=\"ds-total-final\"><dt>Total</dt><dd>L 57.50</dd></div></dl>",
+      "css": ".ds-total{margin:0;padding:16px 24px 20px;background:var(--ochre,#c8902f);color:var(--ochre-ink,#2a2724);font-family:'Archivo Variable', 'Segoe UI', system-ui, sans-serif}.ds-total-row{display:flex;justify-content:space-between;align-items:center;height:32px;border-bottom:1px solid var(--ochre-line,#b07c24);font-size:15px}.ds-total dd{margin:0;font-variant-numeric:tabular-nums;font-stretch:92%;font-weight:500}.ds-total-final{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px}.ds-total-final dt{font:700 15px/20px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;letter-spacing:0.06em;text-transform:uppercase}.ds-total-final dd{font-size:58px;line-height:64px;font-weight:700;letter-spacing:-0.02em;font-stretch:88%}"
+    },
+    {
+      "name": "Chip del turno",
+      "kind": "custom",
+      "refersTo": "shift-chip",
+      "description": "Ladrillo de cuatro cuartos que se llena en orden (Apertura, Cobros, Arqueo, Cierre, en sentido horario) más la caja y el paso siguiente.",
+      "html": "<a class=\"ds-shift-chip\" href=\"#\"><span class=\"ds-shift-tile\" role=\"img\" aria-label=\"Turno: Apertura completado, Cobros completado, Arqueo pendiente, Cierre pendiente\"><span data-done=\"true\"></span><span data-done=\"true\"></span><span></span><span></span></span><span class=\"ds-shift-lines\"><b>Caja principal · abierta 15:37</b><small>Sigue: Arqueo</small></span></a>",
+      "css": ".ds-shift-chip{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 12px 0 8px;border:1px solid var(--junta,#cfc8ba);border-radius:4px;background:var(--ground,#e4dfd5);font-family:'Archivo Variable', 'Segoe UI', system-ui, sans-serif;text-decoration:none;cursor:pointer;transition:border-color 120ms,scale 120ms cubic-bezier(0.23,1,0.32,1)}.ds-shift-chip:hover{border-color:var(--junta-strong,#b3ab9c)}.ds-shift-chip:focus-visible{outline:2px solid var(--slate,#3e5c76);outline-offset:2px}.ds-shift-chip:active{scale:0.96}.ds-shift-tile{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;width:24px;height:24px;border:1px solid var(--junta-strong,#b3ab9c);border-radius:1px;background:var(--junta-strong,#b3ab9c)}.ds-shift-tile>span{background:var(--surface,#f4f1eb);transition:background-color 240ms cubic-bezier(0.23,1,0.32,1)}.ds-shift-tile>span[data-done=true]{background:var(--rail,#24493f)}.ds-shift-lines{display:flex;flex-direction:column}.ds-shift-lines b{font:600 13px/16px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;color:var(--ink,#2a2724)}.ds-shift-lines small{font:400 12px/16px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;color:var(--ink-2,#5e5850)}"
+    },
+    {
+      "name": "Grilla KPI",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Celdas de libro mayor que comparten una sola junta; no tarjetas flotantes.",
+      "html": "<div class=\"ds-kpi-grid\"><div class=\"ds-kpi\"><span>Apertura</span><strong>L 500.00</strong><small>Fondo inicial de la gaveta</small></div><div class=\"ds-kpi\"><span>Cobros registrados</span><strong>L 0.00</strong><small>0 cobros</small></div><div class=\"ds-kpi\"><span>Efectivo esperado</span><strong>L 500.00</strong><small>Apertura + efectivo cobrado</small></div></div>",
+      "css": ".ds-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;overflow:hidden;border:1px solid var(--junta,#cfc8ba);border-radius:4px;background:var(--junta,#cfc8ba);font-family:'Archivo Variable', 'Segoe UI', system-ui, sans-serif}.ds-kpi{display:flex;flex-direction:column;gap:6px;padding:12px 16px 14px;background:var(--surface,#f4f1eb)}.ds-kpi span{font:600 12px/16px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;color:var(--ink-2,#5e5850)}.ds-kpi strong{font:600 24px/28px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;font-stretch:92%;color:var(--ink,#2a2724)}.ds-kpi small{font:400 12px/16px 'Archivo Variable', 'Segoe UI', system-ui, sans-serif;color:var(--ink-3,#665f56)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "El piso de ladrillo hidráulico",
+    "overview": "La caja del hospital es un pasillo hondureño de cemento pigmentado: módulos cuadrados, una sola junta fina de 1px entre pieza y pieza, y pigmentos mate que trabajan en lugar de decorar. El suelo es piedra cálida-gris; sobre él se asientan paneles hueso planos; a la izquierda corre un riel verde botella con texto hueso. Tres pigmentos tienen trabajo asignado y ningún otro: el óxido es la acción principal, el ocre es el campo del total, la pizarra es información, selección y foco.\n\nLa densidad es de oficina: texto base de 14/20px, tablas de 44px por fila, todo navegable con teclado y con su atajo visible al lado. Las cifras son la tipografía protagonista: Archivo con figuras tabulares y un ancho ligeramente condensado, alineadas duro a la derecha. El total de Cobrar es la cifra más grande de la pantalla, siempre. Los estados se distinguen por forma y etiqueta (cuadro lleno, hueco, medio, tachado, rombo); el color solo acompaña.\n\nEl sistema rechaza el dashboard genérico de tarjetas blancas iguales flotando sobre gris con un único acento, y rechaza las sombras decorativas: la profundidad la da el tono del suelo contra la superficie y la junta, no el relieve.",
+    "keyCharacteristics": [
+      "Una sola regla de 1px (la junta) para separar todo: celdas, paneles, cabeceras, pies.",
+      "Tres pigmentos con un trabajo cada uno (óxido, ocre, pizarra) sobre neutros cálidos.",
+      "Archivo para todo; cifras tabulares, condensadas y alineadas a la derecha.",
+      "Radios pequeños (2–4px); nada más redondo salvo el avatar de iniciales.",
+      "El ladrillo de cuatro cuartos como única firma: marca, estado del turno y arqueo.",
+      "Teclado primero: cada acción principal lleva su tecla en un Kbd."
+    ],
+    "rules": [
+      {
+        "name": "The Three Pigments Rule",
+        "body": "Óxido = presionar lo principal; ocre = el total; pizarra = información, selección y foco. Ningún pigmento cambia de trabajo, y una vista tiene a lo sumo un botón óxido.",
+        "section": "colors"
+      },
+      {
+        "name": "The White Field Rule",
+        "body": "El blanco puro es exclusivo de los campos donde se escribe. Paneles y tarjetas son hueso sobre piedra, nunca blanco sobre gris.",
+        "section": "colors"
+      },
+      {
+        "name": "The Disabled Is Not Faded Rule",
+        "body": "El primario deshabilitado no es óxido translúcido: cae a una pieza de superficie con junta y tinta terciaria, y su Kbd vuelve al tono neutro.",
+        "section": "colors"
+      },
+      {
+        "name": "The Hard Right Rule",
+        "body": "Todo monto va con la utilidad de cifras (tabular, condensado) y alineado a la derecha en su columna, para que los decimales caigan uno sobre otro.",
+        "section": "typography"
+      },
+      {
+        "name": "The Title In The Bar Rule",
+        "body": "El título de página vive en la barra superior de 56px. No hay antetítulo, kicker ni eyebrow sobre ningún encabezado; el contexto va en la descripción.",
+        "section": "typography"
+      },
+      {
+        "name": "The Junta Not Shadow Rule",
+        "body": "Si algo necesita separarse de lo que tiene al lado, lleva una junta de 1px; solo lo que flota sobre la página lleva sombra.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do separar con una junta de 1px (#CFC8BA en claro) y compartirla entre celdas vecinas.",
+      "Do poner un solo botón óxido por vista, con su tecla en un Kbd.",
+      "Do escribir todo monto con la utilidad de cifras (tabular, ancho 92%) y alinearlo a la derecha.",
+      "Do hacer del total la cifra más grande de la pantalla en cualquier vista de cobro, sobre ocre.",
+      "Do distinguir estados por glifo y etiqueta; el color de estado solo acompaña.",
+      "Do mostrar \"No disponible\" (nunca L 0.00) cuando falta un monto.",
+      "Do mantener los radios en 2–4px y el blanco solo para campos de texto."
+    ],
+    "donts": [
+      "Don't construir dashboards de tarjetas blancas iguales flotando sobre gris con un acento.",
+      "Don't usar sombras en botones, paneles o tarjetas; la sombra pop es solo para lo que flota.",
+      "Don't usar el ladrillo de cuatro cuartos ni la roseta como decoración, viñeta o ilustración: solo marca, turno y arqueo.",
+      "Don't usar óxido para estados, enlaces o acentos, ni ocre fuera de un campo de total.",
+      "Don't poner antetítulos, kickers o eyebrows sobre los encabezados.",
+      "Don't introducir otra familia tipográfica ni una monoespaciada para cifras.",
+      "Don't usar los alias heredados (`--brand`, `--line`, `--bg`) en código nuevo; usar los nombres del mundo (slate, junta, ground)."
+    ]
+  }
+}

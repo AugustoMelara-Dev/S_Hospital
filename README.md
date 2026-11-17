@@ -1,274 +1,116 @@
-# S_Hospital
+# S_Hospital v2
 
-Sistema hospitalario local para facturacion, caja, pagos, reportes, catalogo de servicios, recibos institucionales y respaldos. Esta preparado para trabajar sin internet en produccion: un servidor Windows ejecuta React, Laravel y MariaDB, y las estaciones acceden por navegador dentro de la LAN.
+Sistema de **caja hospitalaria** para redes locales sin internet: facturación con numeración
+fiscal CAI (Honduras), cobros, caja por turnos con arqueo, recibos institucionales en PDF,
+catálogo de servicios, reportes, usuarios y roles, auditoría y respaldos cifrados.
 
-## Alcance operativo
+Un servidor en la LAN ejecuta la aplicación y la base de datos; las computadoras de caja
+solo necesitan un navegador (`http://<IP-del-servidor>:8080`).
 
-- Facturas con nombre del paciente, precios historicos, impuestos, pagos, pendientes y anulaciones auditadas.
-- Regla de eritropoyetina: L 25.00 o gratuita cuando se marca receta de dialisis.
-- Caja con apertura, ingresos por metodo, reversos, cierre, monto esperado y diferencia.
-- Recibo institucional PDF en Media carta, Carta o A5. El operador elige el papel; margenes, fuentes y escala son internos.
-- Reportes ejecutivo, de caja y auditoria, con exportaciones PDF/Excel.
-- Roles, permisos y bitacora de acciones sensibles.
-- Respaldos locales cifrados, manuales y programados.
+> v2 es una reescritura completa de la versión 1 (PHP/Laravel). La v1 se conserva en la rama
+> `release/entrega-20261021`.
 
-No es un expediente clinico electronico ni una contabilidad financiera de partida doble. Los reportes controlan facturacion, cobros y caja. Los egresos operativos no se registran mientras no exista un modulo de egresos autorizado.
+## Módulos
+
+| Módulo | Qué hace |
+|---|---|
+| **Cobrar** | Punto de venta por teclado: paciente, búsqueda de conceptos, cantidades, totales calculados por el servidor, cobro en efectivo/tarjeta/transferencia con cambio, recibo automático. |
+| **Recibos** | Historial de operaciones, detalle, reimpresión con motivo, cobro de saldo, anulación y reversión auditadas. |
+| **Caja** | Apertura, movimientos, arqueo por denominaciones (L 500 a L 1), cierre con diferencia justificada, histórico y resumen PDF. |
+| **Resumen** | Indicadores del día, cobros por método, pendientes que requieren atención. |
+| **Reportes** | Periodos de hasta 92 días con filtros; operaciones, detalle, cobros, caja y gratuidades; exportación PDF y Excel. |
+| **Catálogo y precios** | Conceptos, categorías y áreas; historial de precios; impuesto en lote; importar/exportar CSV y Excel. |
+| **Usuarios y permisos** | Usuarios, roles personalizables con 32 permisos, cambio de clave obligatorio, bloqueo por intentos fallidos. |
+| **Ajustes institucionales** | Identidad del hospital y logo, numeración fiscal CAI, tasas de ISV, abonos parciales, perfiles de impresión y serie de recibos. |
+| **Respaldos y auditoría** | Respaldo diario automático cifrado (AES-256-GCM) y manual; bitácora inmutable de acciones sensibles. |
+
+### Reglas de negocio clave
+
+- El **servidor decide los totales**. Todo el dinero se maneja en centavos enteros, nunca en flotantes.
+- **ISV** por grupo de tasa con redondeo comercial; los centavos se reparten por mayor residuo para que la suma de las líneas cuadre siempre con el total.
+- **Eritropoyetina**: con receta de diálisis queda sin cobro solo la línea del medicamento elegible. El resto de la cuenta se cobra normalmente.
+- Las facturas **nunca se borran**: se anulan o revierten, siempre con permiso, motivo y auditoría. Guardan una copia de precios, nombres y datos fiscales del momento de emisión.
+- El recibo institucional sale en carta, media carta, A5 o A4, sin QR, códigos de barras ni códigos internos.
 
 ## Arquitectura
 
-- Frontend: React 19, TypeScript estricto, Vite, TanStack Query, React Hook Form y Zod.
-- API: Laravel 12, Sanctum, Policies, Actions/Services y transacciones de base de datos.
-- Datos: MariaDB/MySQL; dinero persistido y calculado sin `float`.
-- Produccion LAN: Nginx, PHP-FPM, MariaDB, worker, scheduler y Soketi dentro de Docker Compose.
-- Operacion: no requiere internet despues de instalar el paquete offline.
-
-La auditoria integral del 2026-07-21, sus comandos reproducibles, E2E con MariaDB real, restauracion cifrada y riesgos residuales se documentan en [`docs/refactor-migration/12-final-result.md`](docs/refactor-migration/12-final-result.md).
-
-## Requisitos
-
-### Desarrollo
-
-- Docker Desktop con Docker Compose v2.
-- Git.
-- Node.js y PHP no son obligatorios si todos los comandos se ejecutan en Docker.
-
-### Servidor hospitalario
-
-- Windows 10/11 o Windows Server de 64 bits.
-- Docker Desktop activo, virtualizacion habilitada y al menos 5 GB libres.
-- IP LAN fija o reserva DHCP.
-- Perfil de red privada y acceso administrativo para configurar firewall.
-
-## Desarrollo con Docker
-
-1. Cree el entorno local:
-
-   ```powershell
-   Copy-Item .env.example .env
-   ```
-
-2. Asigne valores locales no reutilizados en produccion a `DB_PASSWORD` y `DB_ROOT_PASSWORD`. Para esta pila de desarrollo no necesita completar los secretos de Soketi.
-
-3. Levante los servicios e inicialice la base:
-
-   ```powershell
-   docker compose up -d
-   docker compose exec backend php artisan migrate --seed
-   ```
-
-4. Abra:
-
-   - Frontend: `http://127.0.0.1:5173`
-   - API: `http://127.0.0.1:8000`
-
-`migrate --seed` crea perfiles, serie institucional, catalogo y usuarios de validacion solamente cuando Laravel corre en `local` o `testing`:
-
-- `admin.validacion` / `Password123!`
-- `supervisor.validacion` / `Password123!`
-- `cajero.validacion` / `Password123!`
-
-Esas cuentas no se crean en `production` y nunca deben usarse en el hospital.
-
-Para detener sin borrar datos:
-
-```powershell
-docker compose stop
+```
+api/   Python 3.12 · FastAPI · SQLAlchemy 2 · Alembic · ReportLab · openpyxl
+web/   React 19 · TypeScript · Vite · TanStack Query · React Hook Form + Zod · Tailwind 4
+docs/  SPEC.md (contrato API + reglas) · TERMINOLOGIA.md (textos y flujos de pantalla)
 ```
 
-No ejecute `down -v` sobre una instalacion con datos que deban conservarse.
+- Base de datos: **MariaDB 11 / MySQL 8** en producción. SQLite solo se usa en desarrollo y pruebas.
+- Un solo proceso sirve la API (`/api`) y el SPA compilado (`/`). No hace falta nginx ni internet.
+- Sesión por cookie httpOnly, protección CSRF por cabecera y escrituras idempotentes (`Idempotency-Key`), para que un doble clic o un reintento nunca dupliquen un cobro.
 
-## Variables de entorno
+## Instalación en servidor (Docker)
 
-La plantilla raiz es [`.env.example`](.env.example). No contiene secretos. El instalador conserva valores existentes y genera los secretos vacios en la primera instalacion.
+Requisitos: Docker con Compose.
 
-| Grupo | Variables | Uso |
-|---|---|---|
-| Aplicacion | `APP_KEY`, `APP_SCHEME`, `APP_PORT`, `SERVER_IP` | Cifrado de Laravel y URL final de la LAN. |
-| Base de datos | `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_ROOT_PASSWORD` | MariaDB interna. No se publica a la LAN. |
-| Navegador | `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS`, `SESSION_LIFETIME`, `SESSION_SECURE_COOKIE` | Sesion y origen permitido. El instalador deriva IP y puerto. |
-| Tiempo real | `PUSHER_APP_ID`, `PUSHER_APP_KEY`, `PUSHER_APP_SECRET`, `SOKETI_PORT` | Eventos internos de la LAN; no usan un servicio cloud. |
-| Respaldos | `HOSPITAL_BACKUP_ENCRYPTION_KEY`, retenciones y horarios `HOSPITAL_*` | Cifrado, frecuencia y conservacion. La clave debe guardarse fuera del servidor. |
-| Actualizaciones | `HOSPITAL_MIGRATION_BACKUP_CONFIRMED` | Confirma que existe un backup reciente antes de migrar una instalacion existente. |
-
-En LAN HTTP controlada, `HOSPITAL_ALLOW_INSECURE_HTTP=1` documenta la excepcion y `SESSION_SECURE_COOKIE=false`. Con HTTPS, cambie `APP_SCHEME=https`, elimine la excepcion y use `SESSION_SECURE_COOKIE=true`.
-
-## Instalacion recomendada en LAN
-
-### Instalador grafico para una sola PC
-
-En la computadora tecnica con Docker e Inno Setup 6:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\build_windows_installer.ps1
+```bash
+cp .env.example .env
 ```
 
-Copie a la memoria USB la carpeta completa
-`installer-output\ENTREGA-USB`. En el hospital se copia el EXE al Escritorio,
-se hace doble clic y se sigue **Siguiente -> Instalar**. El asistente grafico:
+Edite `.env`: contraseñas de BD, `SHS_SECRET_KEY`, `SHS_BACKUP_KEY` y la clave del primer administrador.
 
-1. extrae el paquete completo en `C:\S_Hospital`;
-2. diagnostica Windows, puertos, Docker y espacio;
-3. verifica y carga las imagenes offline;
-4. genera automaticamente las claves tecnicas locales;
-5. inicia Nginx, Laravel, MariaDB, worker, scheduler y Soketi;
-6. ejecuta migraciones y seeders base idempotentes;
-7. crea el administrador inicial con una contraseña temporal aleatoria;
-8. configura accesos directos, arranque automatico, respaldos y firewall;
-9. comprueba `/up`.
-
-Docker Desktop debe instalarse primero. El constructor permite incluir su
-instalador oficial en `ENTREGA-USB` mediante `-DockerDesktopInstallerPath`.
-Los pasos exactos estan en
-[`docs/GENERAR_INSTALADOR_WINDOWS.md`](docs/GENERAR_INSTALADOR_WINDOWS.md).
-
-### Paquete offline tecnico
-
-El resultado intermedio queda en `offline-release\` con Compose,
-documentacion, checksums y las imagenes necesarias. Para una reparacion
-tecnica tambien se puede copiar esa carpeta completa y ejecutar como
-Administrador:
-
-```powershell
-.\setup.bat
+```bash
+docker compose up -d --build
 ```
 
-El paquete offline solo ofrece Docker porque no incluye fuentes ni dependencias para una instalacion bare-metal.
+- Abra `http://<IP-del-servidor>:8080` e ingrese con el administrador definido en `.env`. Se le pedirá cambiar la clave.
+- En **Administración → Ajustes institucionales**, registre el nombre, el RTN y la **numeración fiscal (CAI)** antes de facturar.
+- Guarde `SHS_BACKUP_KEY` fuera del servidor. Sin ella los respaldos no se pueden descifrar.
 
-### Instalacion desde el repositorio
+Para una demostración con datos de prueba use `SHS_SEED_DEMO=true`. Los usuarios `admin`, `supervisor`, `cajero` y `auditor` tienen la clave `Hospital#2026`. **Nunca lo use en producción.**
 
-En una maquina con internet tambien puede ejecutar `setup.bat` desde la raiz y elegir Docker. El mismo asistente construira las imagenes de produccion.
+## Desarrollo (Windows)
 
-### Administrador inicial
-
-No existe contraseña predeterminada de produccion. El instalador solicita una clave temporal de al menos 12 caracteres con mayuscula, minuscula, numero y simbolo, no la muestra y obliga a cambiarla en el primer inicio.
-
-Si la instalacion fue automatizada y aun no hay administrador activo:
+Este script crea el venv, instala dependencias, migra, siembra la demo y abre la API (:8000) y Vite (:5173):
 
 ```powershell
-$secure = Read-Host "Clave temporal" -AsSecureString
-$pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-try {
-    $env:HOSPITAL_INITIAL_ADMIN_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
-    docker compose -f docker-compose.prod.yml exec -T -e HOSPITAL_INITIAL_ADMIN_PASSWORD backend php artisan auth:create-initial-admin --username=admin.hospital --email=admin@hospital.local --name="Administrador de Hospital"
-}
-finally {
-    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer)
-    Remove-Item Env:\HOSPITAL_INITIAL_ADMIN_PASSWORD -ErrorAction SilentlyContinue
-}
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1
 ```
 
-No pase la clave con `--password` ni la escriba en scripts o historial de consola.
-
-## Migraciones y seeders
-
-Desarrollo completo:
+Manual:
 
 ```powershell
-docker compose exec backend php artisan migrate --seed
+cd api;  python -m venv .venv; .venv\Scripts\pip install -r requirements-dev.txt
+.venv\Scripts\python -m app.cli migrate; .venv\Scripts\python -m app.cli seed --demo
+.venv\Scripts\python -m app.cli serve --reload
+cd ..\web; npm ci; npm run dev
 ```
 
-Produccion manual, despues de un backup verificado:
+Documentación interactiva de la API: `http://localhost:8000/api/docs`.
+
+## Pruebas y calidad
 
 ```powershell
-docker compose -f docker-compose.prod.yml --env-file .env exec -T backend php artisan migrate --force
-docker compose -f docker-compose.prod.yml --env-file .env exec -T backend php artisan db:seed --force
+cd api; .venv\Scripts\python -m pytest; .venv\Scripts\ruff check .
+cd web; npm run typecheck; npm run lint; npm run test; npm run build
+cd web; npm run e2e      # Playwright contra la API real (ver web/README.md)
 ```
 
-`DatabaseSeeder` es reproducible. En produccion carga permisos, papeles institucionales, serie de recibos y catalogo; `DevelopmentValidationSeeder` se autoexcluye fuera de `local/testing`.
+La integración continua (`.github/workflows/ci.yml`) ejecuta:
 
-## Comandos de trabajo
+- lint y pruebas de la API;
+- migraciones y semilla sobre **MariaDB real**;
+- las compuertas del frontend;
+- la construcción de la imagen Docker.
 
-Backend:
+## Respaldos
 
-```powershell
-docker compose exec backend php artisan test
-docker compose exec backend vendor/bin/pint --test
-docker compose exec backend vendor/bin/phpstan analyse
+- **Automáticos**: a diario a la hora `SHS_DAILY_BACKUP_TIME`. Se guardan en el volumen `app_data`, carpeta `/data/backups`.
+- **Manuales**: en *Administración → Respaldos*.
+- Cada archivo `.enc` va comprimido y cifrado con AES-256-GCM, y su SHA-256 queda registrado.
+- **Restaurar** (soporte técnico): el comando descifra el respaldo a un `.sql` o `.db` sin tocar la base de datos en uso.
+
+```bash
+docker compose exec app python -m app.services.backups restore /data/backups/<archivo>.enc --out /data/restore
 ```
 
-Frontend:
+Después importe el `.sql` con `mariadb` en una ventana de mantenimiento.
 
-```powershell
-docker compose exec frontend npm run dev
-docker compose exec frontend npm run typecheck
-docker compose exec frontend npm run lint
-docker compose exec frontend npm run test
-docker compose exec frontend npm run test:coverage:check
-docker compose exec frontend npm run build
-```
+## Licencia
 
-E2E mockeado mantenido:
-
-```powershell
-docker compose exec frontend npx playwright test
-```
-
-E2E de release con backend real requiere PHP y dependencias locales, y una clave desechable en variable de entorno:
-
-```powershell
-$env:E2E_RELEASE_PASSWORD = "ClaveDesechable123!"
-Set-Location frontend
-npm run e2e
-```
-
-El E2E de MariaDB limpio esta en `scripts\run_release_e2e_mariadb.ps1` y exige `-SeedPassword` o `E2E_RELEASE_PASSWORD`.
-
-La matriz administrativa `e2e/refactor-total.spec.ts` solo se habilita contra
-un servidor real cuando se provisionan `REFACTOR_TOTAL_E2E_USERNAME` y
-`REFACTOR_TOTAL_E2E_PASSWORD` con una cuenta temporal. No contiene credenciales
-predeterminadas y se omite con una razon explicita si faltan esas variables.
-
-## Build y operacion productiva
-
-Construir y arrancar manualmente desde fuentes:
-
-```powershell
-docker compose -f docker-compose.prod.yml --env-file .env build
-docker compose -f docker-compose.prod.yml --env-file .env up -d
-docker compose -f docker-compose.prod.yml --env-file .env ps
-```
-
-Acceso esperado:
-
-- Servidor: `http://localhost:8000`
-- Clientes: `http://IP-FIJA-DEL-SERVIDOR:8000`
-
-No exponga el puerto de MariaDB a la LAN. Permita solo el puerto web y Soketi si la configuracion final lo requiere. Use una UPS y copie respaldos cifrados a un medio externo controlado.
-
-## Respaldos, restauracion y actualizaciones
-
-Crear backup manual:
-
-```powershell
-docker compose -f docker-compose.prod.yml exec -T backend php artisan hospital:backup --type=manual
-```
-
-Antes de una actualizacion, confirme un respaldo cifrado exitoso y siga [docs/backup-restore-runbook.md](docs/backup-restore-runbook.md). Nunca restaure primero sobre produccion: valide en una base descartable.
-
-## Verificacion de entrega
-
-Preflight del servidor:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000
-```
-
-El preflight detecta la instalacion Docker oficial y valida que `mysql`,
-`backend`, `nginx`, `queue-worker` y `scheduler` esten corriendo. Para una pila
-aislada use tambien `-EnvFile RUTA_ENV -RuntimeMode Docker -DockerProject NOMBRE`.
-
-Las pruebas automatizadas no sustituyen estas aceptaciones en sitio:
-
-- abrir el sistema desde una segunda PC de la LAN;
-- imprimir una factura/recibo real en Media carta, Carta y A5;
-- comprobar corte, orientacion y legibilidad en la impresora del hospital;
-- ejecutar y restaurar un respaldo de prueba;
-- validar numeracion fiscal y datos institucionales con la administracion responsable.
-
-## Documentacion
-
-- [Arquitectura y decisiones del refactor](docs/superpowers/specs/2026-07-09-s-hospital-total-rewrite-design.md)
-- [Runbook de backup y restauracion](docs/backup-restore-runbook.md)
-- [Reporte vivo de pruebas](docs/testing-report.md)
-- [Changelog](CHANGELOG.md)
+Software propietario. Consulte [LICENSE](LICENSE).

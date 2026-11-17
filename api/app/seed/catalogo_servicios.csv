@@ -1,0 +1,152 @@
+categoria,servicio,source_key,precio_lps,taxable,regla_especial,activo,visible_en_cobro,facturable,descripcion,aliases
+Servicios generales,Anti D,csv:service:servicios-generales:anti-d,850.00,si,,si,si,si,,
+Servicios generales,Maternidad,csv:service:servicios-generales:maternidad,85.00,si,,si,si,si,,
+Servicios generales,Legrado,csv:service:servicios-generales:legrado,205.00,si,,si,si,si,,
+Servicios generales,Ginecología,csv:service:servicios-generales:ginecologia,205.00,si,,si,si,si,,
+Servicios generales,Cesárea,csv:service:servicios-generales:cesarea,305.00,si,,si,si,si,,
+Servicios generales,Pediatría,csv:service:servicios-generales:pediatria,205.00,si,,si,si,si,,
+Servicios generales,Neonato,csv:service:servicios-generales:neonato,205.00,si,,si,si,si,,
+Servicios generales,Medicina,csv:service:servicios-generales:medicina,205.00,si,,si,si,si,,
+Servicios generales,Internamiento,csv:service:servicios-generales:estancia-administrativa,205.00,si,,si,si,si,,Estancia administrativa
+Servicios generales,Cirugía,csv:service:servicios-generales:cirugia,305.00,si,,si,si,si,,Cirugía (Operación)
+Servicios generales,Observación 24h,csv:service:servicios-generales:observacion-24h,105.00,si,,si,si,si,,Observación las 24 horas
+Servicios generales,Atención inmediata 24h,csv:service:servicios-generales:atencion-inmediata-24h,10.00,si,,si,si,si,,Emergencia las 24 horas
+Servicios generales,AQV,csv:service:servicios-generales:aqv,55.00,si,,si,si,si,,Cirugía para no tener familia (AQV)
+Servicios generales,Cirugía Menor,csv:service:servicios-generales:cirugia-menor,155.00,si,,si,si,si,,Cirugía Menor en el Quirófano
+Servicios generales,Sutura,csv:service:servicios-generales:sutura,35.00,si,,si,si,si,,
+Servicios generales,Antitetánico,csv:service:servicios-generales:antitetanico,105.00,si,,si,si,si,,Antitetánico (Tetuman)
+Servicios generales,Insulina,csv:service:servicios-generales:insulina,55.00,si,,si,si,si,,
+Servicios generales,Constancia Médica,csv:service:servicios-generales:constancia-medica,55.00,si,,si,si,si,,
+Servicios generales,Procedimiento,csv:service:servicios-generales:procedimiento,150.00,si,,si,si,si,,
+Servicios generales,Cita,csv:service:servicios-generales:registro-administrativo,10.00,si,,si,si,si,,Registro administrativo
+Servicios generales,Glucometría,csv:service:servicios-generales:glucometria,30.00,si,,si,si,si,,
+Servicios generales,Nebulización,csv:service:servicios-generales:nebulizacion,30.00,si,,si,si,si,,
+Servicios generales,Escápula,csv:service:servicios-generales:escapula,45.00,si,,si,si,si,,
+Servicios generales,Tarjeta Control de Medicamentos,csv:service:servicios-generales:tarjeta-control-de-medicamentos,25.00,si,,si,si,si,,
+Servicios generales,Cambio de Sonda,csv:service:servicios-generales:cambio-de-sonda,20.00,si,,si,si,si,,
+Laboratorio,Ultrasonido,csv:service:laboratorio:ultrasonido,80.00,si,,si,si,si,,
+Laboratorio,Aso,csv:service:laboratorio:aso,20.00,si,,si,si,si,,
+Laboratorio,Alumina,csv:service:laboratorio:alumina,15.00,si,,si,si,si,,
+Laboratorio,Ácido Úrico,csv:service:laboratorio:acido-urico,15.00,si,,si,si,si,,
+Laboratorio,Amilasa,csv:service:laboratorio:amilasa,15.00,si,,si,si,si,,
+Laboratorio,Antígenos Febriles,csv:service:laboratorio:antigenos-febriles,20.00,si,,si,si,si,,
+Laboratorio,Bilirrubina T/D,csv:service:laboratorio:bilirrubina-t-d,20.00,si,,si,si,si,,
+Laboratorio,Bum,csv:service:laboratorio:bum,15.00,si,,si,si,si,,Bun
+Laboratorio,Bl.BD.DT,csv:service:laboratorio:bl-bd-dt,35.00,si,,si,si,si,,
+Laboratorio,Colesterol,csv:service:laboratorio:colesterol,20.00,si,,si,si,si,,
+Laboratorio,Calcio,csv:service:laboratorio:calcio,20.00,si,,si,si,si,,
+Laboratorio,CPK,csv:service:laboratorio:cpk,25.00,si,,si,si,si,,
+Laboratorio,CPKMD,csv:service:laboratorio:cpkmd,25.00,si,,si,si,si,,
+Laboratorio,Creatinina,csv:service:laboratorio:creatinina,15.00,si,,si,si,si,,Creatinura (Creatinina)
+Laboratorio,Coloración de Gram,csv:service:laboratorio:coloracion-de-gram,10.00,si,,si,si,si,,
+Laboratorio,Combos Directos,csv:service:laboratorio:combos-directos,15.00,si,,si,si,si,,
+Laboratorio,Combos Indirectos,csv:service:laboratorio:combos-indirectos,15.00,si,,si,si,si,,Combos Idirectos
+Laboratorio,Diferencial,csv:service:laboratorio:diferencial,10.00,si,,si,si,si,,
+Laboratorio,Chagas,csv:service:laboratorio:chagas,65.00,si,,si,si,si,,
+Laboratorio,CTYF,csv:service:laboratorio:ctyf,20.00,si,,si,si,si,,
+Laboratorio,Depranositos,csv:service:laboratorio:depranositos,15.00,si,,si,si,si,,
+Laboratorio,EKG Electrocardiograma,csv:service:laboratorio:ekg-electrocardiograma,105.00,si,,si,si,si,,E.K.G. (DEL CORAZÓN) (Electrocardiograma)
+Laboratorio,Pritocitos (G.R.),csv:service:laboratorio:pritocitos-g-r,10.00,si,,si,si,si,,
+Laboratorio,Exámenes de Frascos,csv:service:laboratorio:examenes-de-frascos,10.00,si,,si,si,si,,
+Laboratorio,Factor Rematoideo RA TES RA/RT,csv:service:laboratorio:factor-rematoideo-ra-tes-ra-rt,15.00,si,,si,si,si,,
+Laboratorio,Fosfato Alcalina FA,csv:service:laboratorio:fosfato-alcalina-fa,20.00,si,,si,si,si,,
+Laboratorio,F.S.P.,csv:service:laboratorio:f-s-p,10.00,si,,si,si,si,,
+Laboratorio,Fosfato Ácida,csv:service:laboratorio:fosfato-acida,20.00,si,,si,si,si,,
+Laboratorio,Glóbulos Blancos,csv:service:laboratorio:globulos-blancos,10.00,si,,si,si,si,,
+Laboratorio,Gravindex,csv:service:laboratorio:gravindex,25.00,si,,si,si,si,,
+Laboratorio,Grupo Factor RH,csv:service:laboratorio:grupo-factor-rh,15.00,si,,si,si,si,,
+Laboratorio,Glucosa,csv:service:laboratorio:glucosa,15.00,si,,si,si,si,,Glucosa (Glicemia)
+Laboratorio,General de Orina,csv:service:laboratorio:general-de-orina,15.00,si,,si,si,si,,
+Laboratorio,Glucosuria,csv:service:laboratorio:glucosuria,15.00,si,,si,si,si,,
+Laboratorio,General de Heces,csv:service:laboratorio:general-de-heces,15.00,si,,si,si,si,,
+Laboratorio,Hemograma Completo,csv:service:laboratorio:hemograma-completo,35.00,si,,si,si,si,,
+Laboratorio,Hemograma (HB),csv:service:laboratorio:hemograma-hb,10.00,si,,si,si,si,,
+Laboratorio,Hematocrito,csv:service:laboratorio:hematocrito,10.00,si,,si,si,si,,Hematocrito (HTC)
+Laboratorio,Hepatitis ABC,csv:service:laboratorio:hepatitis-abc,65.00,si,,si,si,si,,
+Laboratorio,HDL Colesterol,csv:service:laboratorio:hdl-colesterol,20.00,si,,si,si,si,,
+Laboratorio,Helicobacter Pylori,csv:service:laboratorio:helicobacter-pylori,85.00,si,,si,si,si,,
+Laboratorio,CD4,csv:service:laboratorio:cd4,50.00,si,,si,si,si,,
+Laboratorio,Urocultivo,csv:service:laboratorio:urocultivo,80.00,si,,si,si,si,,
+Laboratorio,Hemoglobina Glicosilada HBA.C,csv:service:laboratorio:hemoglobina-glicosilada-hba-c,105.00,si,,si,si,si,,Hemoglobina Glicosilade (HBA.C)
+Laboratorio,Tiempo de Coagulación,csv:service:laboratorio:tiempo-de-coagulacion,80.00,si,,si,si,si,,Tiempo de Cuabulación
+Laboratorio,Exudado Vaginal,csv:service:laboratorio:exudado-vaginal,85.00,si,,si,si,si,,
+Laboratorio,Hemocultivo,csv:service:laboratorio:hemocultivo,10.00,si,,si,si,si,,
+Laboratorio,Examen Embarazada,csv:service:laboratorio:examen-embarazada,10.00,si,,si,si,si,,
+Laboratorio,Postavirus,csv:service:laboratorio:postavirus,105.00,si,,si,si,si,,
+Laboratorio,NST,csv:service:laboratorio:nst,145.00,si,,si,si,si,,
+Laboratorio,K.D.H. (tarifa L. 10),csv:service:laboratorio:kdh-tarifa-10,10.00,si,,no,no,no,Pendiente de confirmación administrativa; no disponible para cobro.,
+Laboratorio,L.D. (Colesterol),csv:service:laboratorio:l-d-colesterol,20.00,si,,si,si,si,,
+Laboratorio,Lelatex,csv:service:laboratorio:lelatex,20.00,si,,si,si,si,,
+Laboratorio,Orina 24 Horas,csv:service:laboratorio:orina-24-horas,25.00,si,,si,si,si,,Orina en 24 Horas
+Laboratorio,Plaquetas,csv:service:laboratorio:plaquetas,10.00,si,,si,si,si,,
+Laboratorio,Perfil Lipídico,csv:service:laboratorio:perfil-lipidico,25.00,si,,si,si,si,,Perfil Lipidicamino
+Laboratorio,PCR,csv:service:laboratorio:pcr,15.00,si,,si,si,si,,
+Laboratorio,Potasio,csv:service:laboratorio:potasio,20.00,si,,si,si,si,,
+Laboratorio,Proteínas Totales,csv:service:laboratorio:proteinas-totales,15.00,si,,si,si,si,,
+Laboratorio,Proteinuria,csv:service:laboratorio:proteinuria,15.00,si,,si,si,si,,
+Laboratorio,Reticulositos,csv:service:laboratorio:reticulositos,10.00,si,,si,si,si,,Retoculositos
+Laboratorio,RPR Tarjeta Salud,csv:service:laboratorio:rpr-tarjeta-salud,15.00,si,,si,si,si,,R.P.R. (Tarjeta de Salud)
+Laboratorio,BDRL,csv:service:laboratorio:bdrl,15.00,si,,si,si,si,,
+Laboratorio,Sodio,csv:service:laboratorio:sodio,20.00,si,,si,si,si,,
+Laboratorio,Sangre Oculta,csv:service:laboratorio:sangre-oculta,10.00,si,,si,si,si,,
+Laboratorio,TP y TTP,csv:service:laboratorio:tp-y-ttp,100.00,si,,si,si,si,,
+Laboratorio,Test Pack Embarazo,csv:service:laboratorio:test-pack-embarazo,25.00,si,,si,si,si,,Test Pack (prueba de embarazo)
+Laboratorio,T3 T4 TSH,csv:service:laboratorio:t3-t4-tsh,195.00,si,,si,si,si,,
+Laboratorio,T4,csv:service:laboratorio:t4,195.00,si,,si,si,si,,
+Laboratorio,TSH,csv:service:laboratorio:tsh,195.00,si,,si,si,si,,
+Laboratorio,Tipo T/PT/RH,csv:service:laboratorio:tipo-t-pt-rh,15.00,si,,si,si,si,,
+Laboratorio,Toxo Test,csv:service:laboratorio:toxo-test,35.00,si,,si,si,si,,
+Laboratorio,Triglicéridos,csv:service:laboratorio:trigliceridos,15.00,si,,si,si,si,,
+Laboratorio,TGO,csv:service:laboratorio:tgo,20.00,si,,si,si,si,,TSGO (TGO)
+Laboratorio,IGP,csv:service:laboratorio:igp,20.00,si,,si,si,si,,TSGP (IGP)
+Laboratorio,TRH (TIPO),csv:service:laboratorio:trh-tipo,15.00,si,,si,si,si,,
+Laboratorio,Transaminosas,csv:service:laboratorio:transaminosas,35.00,si,,si,si,si,,
+Laboratorio,Eritrosedimentación,csv:service:laboratorio:eritrosedimentacion,10.00,si,,si,si,si,,Use (ves) Eritrosedimentación
+Laboratorio,Gases Arteriales,csv:service:laboratorio:gases-arteriales,305.00,si,,si,si,si,,
+Laboratorio,Gases Arteriales (si viene de la privada),csv:service:laboratorio:gases-arteriales-privada,600.00,si,,si,si,si,Variante tarifaria explícita en la lista institucional aportada.,
+Laboratorio,Transaminasa,csv:service:laboratorio:transaminasa,25.00,si,,si,si,si,,
+Laboratorio,Sangre Periférica,csv:service:laboratorio:sangre-periferica,20.00,si,,si,si,si,,
+Laboratorio,Citología,csv:service:laboratorio:citologia,10.00,si,,si,si,si,,Citología (Tomada en el Centro de Salud)
+Laboratorio,Examen Pildore,csv:service:laboratorio:examen-pildore,155.00,si,,si,si,si,,
+Laboratorio,K.D.H. (tarifa L. 35),csv:service:laboratorio:kdh-tarifa-35,35.00,si,,no,no,no,Pendiente de confirmación administrativa; no disponible para cobro.,
+Laboratorio,PSA,csv:service:laboratorio:psa,155.00,si,,si,si,si,,
+Laboratorio,Unidad de Sangre,csv:service:laboratorio:unidad-de-sangre,1330.00,si,,si,si,si,,
+Laboratorio,Unidad de Sangre fuera del hospital,csv:service:laboratorio:unidad-de-sangre-fuera-del-hospital,1500.00,si,,si,si,si,Condición tarifaria indicada en la lista institucional aportada.,
+Laboratorio,Lemaneasis,csv:service:laboratorio:lemaneasis,20.00,si,,si,si,si,,
+Radiología,Dedo,csv:service:radiologia:dedo,45.00,si,,si,si,si,,
+Radiología,Cráneo,csv:service:radiologia:craneo,85.00,si,,si,si,si,,CRÁNEO A.P. LAT. TANG. Towne
+Radiología,Huesos de Cara,csv:service:radiologia:huesos-de-cara,85.00,si,,si,si,si,,"Hueso de Cara, Huesos Prop. de Nariz"
+Radiología,Senos Nasales,csv:service:radiologia:senos-nasales,95.00,si,,si,si,si,,Senos para Nasales (SPNL)
+Radiología,Columna Cervical AP y Lat.,csv:service:radiologia:columna-cervical,85.00,si,,si,si,si,,
+Radiología,Cuello,csv:service:radiologia:cuello,65.00,si,,si,si,si,,Cuello AP y Lat.
+Radiología,Clavícula,csv:service:radiologia:clavicula,45.00,si,,si,si,si,,Clvicula
+Radiología,Hombro,csv:service:radiologia:hombro,45.00,si,,si,si,si,,Hombro AP
+Radiología,Brazo,csv:service:radiologia:brazo,65.00,si,,si,si,si,,Brazo AP y Lat.
+Radiología,Codo,csv:service:radiologia:codo,65.00,si,,si,si,si,,Codo AP y Lat.
+Radiología,Antebrazo,csv:service:radiologia:antebrazo,65.00,si,,si,si,si,,Antebrazo AP y Lat.
+Radiología,Muñeca,csv:service:radiologia:muneca,65.00,si,,si,si,si,,
+Radiología,Mano,csv:service:radiologia:mano,65.00,si,,si,si,si,,Mano PA Lat y Obi.
+Radiología,Tórax,csv:service:radiologia:torax,45.00,si,,si,si,si,,Tórax P.A. AP y Aseo
+Radiología,Examen de pie y acostado,csv:service:radiologia:examen-de-pie-y-acostado,85.00,si,,si,si,si,,
+Radiología,Columna Dorsal Lumbar y Sagro AP y Lat.,csv:service:radiologia:columna-lumbar,85.00,si,,si,si,si,,Columna Lumbar
+Radiología,Contenido Uterino,csv:service:radiologia:contenido-uterino,45.00,si,,si,si,si,,
+Radiología,Cadena (Pélvico),csv:service:radiologia:cadena-pelvico,45.00,si,,si,si,si,,
+Radiología,Pelvis,csv:service:radiologia:pelvis,45.00,si,,si,si,si,,
+Radiología,Fémur,csv:service:radiologia:femur,65.00,si,,si,si,si,,Muslo (Fémur) AP y LAT.
+Radiología,Rodilla,csv:service:radiologia:rodilla,65.00,si,,si,si,si,,Rodilla AP y LAT.
+Radiología,Pierna,csv:service:radiologia:pierna,65.00,si,,si,si,si,,Pierna AP y LAT.
+Radiología,Tobillo,csv:service:radiologia:tobillo,65.00,si,,si,si,si,,Tobillo AP y LAT.
+Radiología,Pre D.P. Oblicua y Lat.,csv:service:radiologia:pre-d-p-oblicua-y-lat,65.00,si,,si,si,si,,
+Radiología,Articulación Proxofeno Coxofeno,csv:service:radiologia:articulacion-proxofeno-coxofeno,45.00,si,,si,si,si,,
+Radiología,Maxiliar Superior,csv:service:radiologia:maxiliar-superior,65.00,si,,si,si,si,,
+Radiología,Tibia derecha,csv:service:radiologia:tibia-derecha,65.00,si,,si,si,si,,
+Radiología,Mandíbula,csv:service:radiologia:mandibula,85.00,si,,si,si,si,,
+Radiología,Lumbosacra,csv:service:radiologia:lumbosacra,85.00,si,,si,si,si,,
+Radiología,Abdomen Simple,csv:service:radiologia:abdomen-simple,45.00,si,,si,si,si,,
+Radiología,Abdomen Embarazo,csv:service:radiologia:abdomen-embarazo,45.00,si,,si,si,si,,
+Radiología,Columna Cervical,csv:service:radiologia:columna-cervical-simple,45.00,si,,si,si,si,,
+Radiología,Poner Yeso,csv:service:radiologia:poner-yeso,45.00,si,,si,si,si,,
+Odontología,Extracción,csv:service:odontologia:extraccion,20.00,si,,si,si,si,,
+Odontología,Limpieza,csv:service:odontologia:limpieza,105.00,si,,si,si,si,,
+Odontología,Tapado,csv:service:odontologia:tapado,105.00,si,,si,si,si,,
+Medicamentos,Eritropoyetina,csv:service:medicamentos:eritropoyetina,25.00,si,eritropoyetina_gratis_con_receta_dialisis,si,si,si,,

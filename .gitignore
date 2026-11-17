@@ -1,42 +1,54 @@
-*.env
-.env.local
-.env.production
-.env.*.local
-install-logs/
-offline-release/
-offline-release.rar
-installer-output/
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# --- Node ---
 node_modules/
-Sistema-Caja-Hospitalaria-RC*.zip
-nginx/ssl/
-qa/support-packets/
-qa/financial-data-audit/screenshots/
-qa/screenshots/**/*.png
-qa/screenshots/**/*.jpg
-qa/screenshots/**/*.jpeg
-qa/screenshots/**/*.webp
-qa/screenshots/**/*.json
-qa/RECOVERY_CERTIFICATION.md
+web/dist/
+web/coverage/
+web/test-results/
+web/playwright-report/
 
-backend/.env
-backend/build/
-backend/storage/app/private/backups/
-backend/storage/framework/testing-production-proofs-empty/
-backend/storage/framework/testing-production-proofs/
-backend/storage/framework/testing-production-proofs-missing-evidence/
-backend/storage/framework/testing-production-proofs-partial/
-backend/storage/logs/
-backend/bootstrap/cache/
-backend/vendor/
+# --- Runtime data ---
+.env
+*.local
+api/storage/
+api/*.db
+backups/
+logs/
 
-# Local clean-Windows certification diagnostics; do not commit host/network details.
-qa/pre-installation-final/windows-clean/00-environment/
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
 
-frontend/dist/
-frontend/node_modules/
-frontend/.pnpm-store/
-frontend/test-results/
-frontend/playwright-report/
-frontend/debug.log
+# --- Local agent tooling ---
+.claude/
+.serena/
+.superpowers/
+.opencode/
 
-.worktrees/
+# --- Legacy v1 leftovers (untracked build output of the PHP version) ---
+/backend/
+/frontend/
+/artifacts/
+/evidencia/
+/hospital-ai/
+/installer/
+/output/
+/tmp/
+
+# Impeccable: estado efímero y capturas de revisión
+.impeccable/questions/
+.impeccable/review/
