@@ -1,0 +1,221 @@
+@import '@fontsource-variable/instrument-sans';
+@import '@fontsource-variable/jetbrains-mono';
+@import 'tailwindcss';
+@import './tokens.css';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* Map tokens into Tailwind utilities: bg-surface, text-ink-2, border-line, etc. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --font-sans: 'Instrument Sans Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.45;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    min-height: 100dvh;
+    background: var(--bg);
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: var(--brand-soft);
+    color: var(--ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  button:not(:disabled),
+  [role='button'] {
+    cursor: pointer;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--ink-3);
+    opacity: 1;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Money and document numbers: mono + tabular figures. */
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: -0.02em;
+}
+
+@utility focus-ring {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Shared recipe for inputs, selects and textareas. */
+@utility control {
+  width: 100%;
+  min-height: 36px;
+  padding-inline: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  transition-property: border-color, box-shadow, background-color;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: ease;
+  &:hover:not(:disabled) {
+    border-color: var(--line-strong);
+  }
+  &:focus-visible {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 22%, transparent);
+  }
+  &[aria-invalid='true'] {
+    border-color: var(--danger);
+  }
+  &[aria-invalid='true']:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--danger) 22%, transparent);
+  }
+  &:disabled {
+    background: var(--surface-2);
+    color: var(--ink-3);
+    cursor: not-allowed;
+  }
+}
+
+/* Scale on press (better-ui: always 0.96). */
+@utility pressable {
+  transition-property: scale, background-color, border-color, color, box-shadow, opacity;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-out);
+  &:active:not(:disabled):not([aria-disabled='true']) {
+    scale: 0.96;
+  }
+}
+
+/* Overlay enter animations (occasional → standard motion, < 250ms). */
+@keyframes shs-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes shs-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+@keyframes shs-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes shs-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes shs-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.anim-fade-in {
+  animation: shs-fade-in var(--dur-base) var(--ease-out);
+}
+.anim-pop-in {
+  animation: shs-pop-in var(--dur-base) var(--ease-out);
+}
+.anim-slide-in-right {
+  animation: shs-slide-in-right 240ms var(--ease-drawer);
+}
+.anim-toast-in {
+  animation: shs-toast-in var(--dur-base) var(--ease-out);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: shs-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* Theme switch: suppress transitions for one frame (see lib/theme.ts). */
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .pressable:active {
+    scale: 1 !important;
+  }
+}
