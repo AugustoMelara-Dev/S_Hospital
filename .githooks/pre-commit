@@ -1,7 +1,0 @@
-#!/bin/sh
-# Worktree-local hook: runs the repository's pre-commit guard from this tree.
-# Enable with: git -c core.hooksPath=.githooks commit ...
-# (or `git config core.hooksPath .githooks` in a standalone clone).
-set -e
-root="$(git rev-parse --show-toplevel)"
-exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$root/scripts/pre-commit-guard.ps1" -RepoRoot "$root"
